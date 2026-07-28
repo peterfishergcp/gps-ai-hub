@@ -118,3 +118,11 @@ terraform/
 
 # Allow tracking in projects folder
 !projects/
+
+# Scratchpad files
+scratchpad.md
+scratchpad.txt
+scratchpad.*
+*.scratch
+scratch/
+.scratchpad/
