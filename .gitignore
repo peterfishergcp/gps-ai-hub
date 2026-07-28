@@ -1,21 +1,77 @@
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
+# ==========================================
+# Security & Secret Protection (.gitignore)
+# ==========================================
 
-# Node
-node_modules/
-npm-debug.log
-yarn-error.log
+# Environment & API Key Files
+.env
+.env.*
+!.env.example
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.asc
+*credential*.json
+*credentials*.json
+*service_account*.json
+*sa_key*.json
+*gcp_key*.json
+adc.json
+id_rsa
+id_ed25519
 
-# Python
+# Cloud & Auth Tokens
+.gcloud/
+.aws/
+.azure/
+.config/
+.npmrc
+
+# Python Dependencies & Virtual Envs
 __pycache__/
 *.py[cod]
 *$py.class
 .venv/
-env/
 venv/
+ENV/
+env/
+*.venv
 
-# Antigravity CLI temporary & brain logs
+# Node.js & Web Build Artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+dist/
+build/
+
+# Zip & Heavy Archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+
+# Databases & Logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# OS & Editor Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+
+# Agent & Workspace Temporary Files
 .tempmediaStorage/
 .system_generated/
+.brain/
