@@ -5,20 +5,12 @@ import {
     ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
-import https from "https";
 import { createServer } from "http";
+import { Readable } from "stream";
 import dotenv from "dotenv";
 import mammoth from "mammoth";
 
 dotenv.config();
-
-// Configure HTTP Keep-Alive agent for fast Graph API connection pooling
-const keepAliveAgent = new https.Agent({
-    keepAlive: true,
-    maxSockets: 50,
-    keepAliveMsecs: 30000
-});
-axios.defaults.httpsAgent = keepAliveAgent;
 
 // Helper to retrieve Microsoft Graph authorization headers using OAuth 2.0
 async function getGraphHeaders(req) {
@@ -75,12 +67,13 @@ async function getGraphHeaders(req) {
 
 const server = createServer(async (req, res) => {
     // Normalize headers to bypass Cloud Run's proxy stripping/modification
+    // The MCP Spec requires exact matches for Accept headers.
     const reqProxy = new Proxy(req, {
         get(target, prop, receiver) {
             if (prop === 'headers') {
                 return {
                     ...target.headers,
-                    'accept': 'application/json, text/event-stream'
+                    'accept': 'application/json, text/event-stream' // Force accepted list
                 };
             }
             return Reflect.get(target, prop, receiver);
@@ -113,34 +106,6 @@ const server = createServer(async (req, res) => {
                 version: "1.0.0",
             }, {
                 capabilities: { tools: {} },
-                instructions: `
-SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
-
-1. MANDATORY PAGE-LEVEL CITATION REQUIREMENT:
-   - EVERY SINGLE RESPONSE MUST INCLUDE AT LEAST ONE CLICKABLE CITATION WITH A PAGE OR SECTION LINK.
-   - For every document, paragraph, fact, or summary derived from SharePoint, extract the file's 'webUrl' property and append the page anchor '#page=X'.
-   - Mandatory Citation Syntax: [Document Name (Page X)](webUrl#page=X)
-
-2. HANDLING TABLE OF CONTENTS (TOC) & FRONT-MATTER PAGE OFFSETS:
-   - Physical PDF Page Index vs. Printed Page Number: Documents often contain unnumbered cover pages, tables of contents, or Roman numeral front matter (i, ii, iii) that shift the physical PDF page number.
-   - RULE: The URL anchor parameter '#page=N' MUST ALWAYS use the PHYSICAL PAGE INDEX (the 1-indexed sequential position of the page in the viewer file) so clicking the link lands on the exact page.
-   - LABEL RULE: You may display both the printed page number and physical page number in the link text for clarity, e.g.:
-     - [Q3 Report (Page 3 / Physical PDF Page 7)](webUrl#page=7)
-   - SECTION HEADING FALLBACK: For Word (.docx) files or documents where physical page numbers vary, use section or heading anchor links:
-     - [Q3 Report - Executive Summary](webUrl#section=Executive%20Summary)
-
-3. EXPECTED OUTPUT TEMPLATE:
-   Your response MUST follow this structure:
-
-   ### 📄 Summary & Answer
-   <Your detailed answer containing inline page-level citation links, e.g., "As stated in [Q3 Financial Report (Printed Page 3 / Physical Page 7)](https://demoalto.sharepoint.com/sites/Finance/Shared%20Documents/Q3_Report.pdf#page=7), total revenue increased by 18%.">
-
-   ### 📚 Sources & Citations
-   - 🔗 [Document Name 1 (Printed Page X / Physical Page Y)](webUrl#page=Y)
-   - 🔗 [Document Name 2 - Section Name](webUrl#section=HeadingName)
-
-   ---
-   *Note: Microsoft SharePoint Graph API search results may be paginated or partial. If you suspect missing results, please try again with a more specific query or document title.*`
             });
 
             // --- MCP Tool Handlers ---
@@ -630,17 +595,6 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
                         };
                     } else {
                         throw new Error(`Tool not found: ${name}`);
-                    }
-
-                    // Simple empty result check
-                    const hasNoResults = (
-                        (Array.isArray(resultObj.sites) && resultObj.sites.length === 0) ||
-                        (Array.isArray(resultObj.libraries) && resultObj.libraries.length === 0) ||
-                        (Array.isArray(resultObj.items) && resultObj.items.length === 0)
-                    );
-
-                    if (hasNoResults) {
-                        resultObj.userPrompt = "we didn't receive any query results for your query, would you try again and be more specific with your query.";
                     }
 
                     return { content: [{ type: "text", text: JSON.stringify(resultObj, null, 2) }] };

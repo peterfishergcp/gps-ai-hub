@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-SERVICE_NAME="l400-sharepoint-mcp-server"
+SERVICE_NAME="sharepoint-mcp-server"
 REGION="us-central1"
 
 # Load environment variables from .env if it exists
@@ -15,9 +15,9 @@ echo "🚀 Starting deployment of $SERVICE_NAME to Cloud Run..."
 gcloud run deploy "$SERVICE_NAME" \
   --source . \
   --region "$REGION" \
+  --project "uppdemos" \
   --allow-unauthenticated \
   --port 3000 \
-  --project ai-hub-459714 \
-  --set-env-vars "MS_GRAPH_TENANT_ID=$MS_GRAPH_TENANT_ID,MS_GRAPH_CLIENT_ID=$MS_GRAPH_CLIENT_ID,MS_GRAPH_CLIENT_SECRET=$MS_GRAPH_CLIENT_SECRET,SHAREPOINT_INSTANCE_URL=$SHAREPOINT_INSTANCE_URL"
+  --set-env-vars "MS_GRAPH_TENANT_ID=$MS_GRAPH_TENANT_ID,MS_GRAPH_CLIENT_ID=$MS_GRAPH_CLIENT_ID,MS_GRAPH_CLIENT_SECRET=$MS_GRAPH_CLIENT_SECRET"
 
 echo "✅ Deployment complete!"
