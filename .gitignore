@@ -75,3 +75,46 @@ Thumbs.db
 .tempmediaStorage/
 .system_generated/
 .brain/
+
+# ==========================================
+# Ignore Legacy Workspace Folders
+# ==========================================
+a2a_ge/
+A2UI_sample/
+adk_cityscape/
+adk-cepf-multiagent_completed/
+adk-cepf-multiagent_orig/
+adk-covered-ca-sdlc-insights/
+adk-samples/
+adk-streaming/
+adkpaint/
+adksamples/
+adktoday/
+agents/
+agy_demo/
+agy_gettingstarted/
+apex_labs/
+autoraters/
+byomcp/
+course-creation-ai-agent-architecture-main/
+gemini-enterprise-connector-eval-main/
+geminiadk_agent/
+geminicli/
+gov/
+gps_adk/
+labs/
+langchain/
+mcp-servers/
+mcp-toolbox/
+media_agent_adk/
+my-agents/
+my-gemini-cli-project/
+next26/
+originalds/
+rag/
+skills/
+terraform/
+*.pdf
+
+# Allow tracking in projects folder
+!projects/
