@@ -72,6 +72,9 @@ Set your Azure AD environment variables in a local `.env` file or export them:
 MS_GRAPH_TENANT_ID=your_tenant_id
 MS_GRAPH_CLIENT_ID=your_client_id
 MS_GRAPH_CLIENT_SECRET=your_client_secret
+
+# OPTIONAL: Only needed if using Application Client Credentials without a logged-in user context.
+# If using Delegated User Tokens (e.g., via Gemini Enterprise OAuth), leave this blank to default to /me.
 MS_GRAPH_USER_PRINCIPAL_NAME=user@yourdomain.com
 ```
 
