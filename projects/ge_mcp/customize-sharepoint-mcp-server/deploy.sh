@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-SERVICE_NAME="l400-sharepoint-mcp-server"
+SERVICE_NAME="customize-sharepoint-mcp-server"
 REGION="us-central1"
 
 # Load environment variables from .env if it exists

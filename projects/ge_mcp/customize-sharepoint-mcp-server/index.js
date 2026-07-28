@@ -109,7 +109,7 @@ const server = createServer(async (req, res) => {
             });
 
             const mcpServer = new Server({
-                name: "sharepoint-mcp-server",
+                name: "customize-sharepoint-mcp-server",
                 version: "1.0.0",
             }, {
                 capabilities: { tools: {} },

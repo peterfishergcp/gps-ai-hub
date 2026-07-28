@@ -1,5 +1,5 @@
 {
-  "name": "sharepoint-mcp-server",
+  "name": "customize-sharepoint-mcp-server",
   "version": "1.0.0",
   "description": "SharePoint MCP Server integrated with Microsoft Graph API and Gemini Enterprise",
   "main": "index.js",
