@@ -2,6 +2,8 @@
 
 This repository provides an enterprise-grade Model Context Protocol (MCP) connector bridging Microsoft Graph API with Gemini Enterprise.
 
+> **Acknowledgements & Attribution**: Based on original work and reference architecture by **Upasana Pati** ([upasana1105/UP_Demos/byomcp](https://github.com/upasana1105/UP_Demos/tree/main/byomcp)).
+
 Built specifically to empower AI agents with seamless access to your corporate knowledge base, this connector provides fully autonomous document management across your Entra ID tenant while enforcing strict governance and security compliance through Gemini Enterprise's native Action Approval dialogs.
 
 ---
