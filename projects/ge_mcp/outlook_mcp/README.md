@@ -2,6 +2,10 @@
 
 A native Node.js Model Context Protocol (MCP) server that connects AI assistants (such as Gemini Enterprise) directly to Microsoft Outlook Mail, Calendar, and Contacts via the Microsoft Graph API.
 
+> **Acknowledgements & Attribution**: Based on original work and reference architecture by **Upasana Pati** ([upasana1105/UP_Demos/byomcp](https://github.com/upasana1105/UP_Demos/tree/main/byomcp)).
+
+> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only. This is not an official Google product or officially supported Google Cloud project. The views, code, and opinions expressed in this repository are those of the author(s) and do not necessarily reflect the position, opinions, or official policy of Google LLC or Google Cloud Platform.
+
 ---
 
 ## 🌟 Key Features & Capabilities

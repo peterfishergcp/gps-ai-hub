@@ -4,6 +4,8 @@ This repository provides an enterprise-grade **Model Context Protocol (MCP)** co
 
 > **Acknowledgements & Attribution**: Based on original work and reference architecture by **Upasana Pati** ([upasana1105/UP_Demos/byomcp](https://github.com/upasana1105/UP_Demos/tree/main/byomcp)).
 
+> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only. This is not an official Google product or officially supported Google Cloud project. The views, code, and opinions expressed in this repository are those of the author(s) and do not necessarily reflect the position, opinions, or official policy of Google LLC or Google Cloud Platform.
+
 Built specifically to empower AI agents with seamless access to your corporate knowledge base, this connector provides fully autonomous document management across your Entra ID tenant while enforcing strict governance and security compliance through Gemini Enterprise's native Action Approval dialogs.
 
 ---
