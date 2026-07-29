@@ -119,8 +119,8 @@ const server = createServer(async (req, res) => {
             const currentDateStr = new Date().toISOString().split('T')[0];
 
             const mcpServer = new Server({
-                name: "outlook-mcp-server",
-                version: "1.1.0",
+                name: "customize-outlook-mcp-server",
+                version: "1.0.0",
             }, {
                 capabilities: { tools: {} },
                 instructions: `

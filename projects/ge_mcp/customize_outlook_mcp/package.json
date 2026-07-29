@@ -1,5 +1,5 @@
 {
-  "name": "outlook-mcp-server",
+  "name": "customize_outlook_mcp",
   "version": "1.0.0",
   "description": "Outlook MCP Server integrated with Microsoft Graph API (Mail & Calendar) and Gemini Enterprise",
   "main": "index.js",

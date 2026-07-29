@@ -18,7 +18,7 @@ Welcome to the **Gemini Enterprise Model Context Protocol (MCP) Connectors** rep
   - **12 Read/Write Actions**: Site discovery, document library listing, file creation, update, rename, move, and deletion (protected by Gemini Enterprise Action Approval dialogs).
   - **Performance**: Integrated HTTP Keep-Alive socket pooling (`keepAlive: true`) for low-latency queries.
 
-### 2. ✉️ [Microsoft Outlook MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/outlook_mcp)
+### 2. ✉️ [Microsoft Outlook MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize_outlook_mcp)
 - **Purpose**: Seamless AI interaction with Outlook Mail, Calendar, and Contacts via Microsoft Graph.
 - **Key Features**:
   - **Temporal & Date-Aware Searching**: Built-in system time anchors and OData filtering (`fromDate`/`toDate`) for relative date arithmetic ("emails from last week", "today's schedule").
