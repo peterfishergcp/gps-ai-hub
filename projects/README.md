@@ -1,37 +1,63 @@
-# Gemini Enterprise MCP Connectors Repository
+# Google Cloud GPS AI Hub
 
-Welcome to the **Gemini Enterprise Model Context Protocol (MCP) Connectors** repository. This project provides enterprise-grade MCP servers that bridge Microsoft Graph API and corporate enterprise systems directly into **Gemini Enterprise**.
+Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repository houses enterprise reference architectures, production-grade Model Context Protocol (MCP) connectors, and technical demonstrations for **Gemini Enterprise** and **Google GenAI / Vertex AI SDKs**.
 
-> **Acknowledgements & Attribution**: Based on original work and reference architecture by **Upasana Pati** ([upasana1105/UP_Demos/byomcp](https://github.com/upasana1105/UP_Demos/tree/main/byomcp)).
+> **Acknowledgements & Attribution**: MCP connectors are based on original work and reference architecture by **Upasana Pati** ([upasana1105/UP_Demos/byomcp](https://github.com/upasana1105/UP_Demos/tree/main/byomcp)).
 
 > **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is not an official Google product or officially supported Google Cloud project. This code is provided as-is for demonstration purposes and is NOT intended or supported for production workloads. The views, code, and opinions expressed in this repository are those of the author(s) and do not necessarily reflect the position, opinions, or official policy of Google LLC or Google Cloud Platform.
 
 ---
 
-## 🚀 Featured MCP Connectors
+## 💡 Repository Projects Overview
 
-### 1. 📁 [Customize SharePoint MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize-sharepoint-mcp-server)
-- **Purpose**: Autonomous SharePoint document management, site navigation, and deep-link citation rendering.
-- **Key Features**:
-  - **Mandatory Page-Level Citations**: Generates direct links with `#page=N` or `#section=HeadingName` anchors, accounting for Table of Contents viewer page offsets.
-  - **Multi-Format Text Extraction**: Full content extraction across Word (`.docx`), PowerPoint (`.pptx`), Excel (`.xlsx`), and text files.
-  - **12 Read/Write Actions**: Site discovery, document library listing, file creation, update, rename, move, and deletion (protected by Gemini Enterprise Action Approval dialogs).
-  - **Performance**: Integrated HTTP Keep-Alive socket pooling (`keepAlive: true`) for low-latency queries.
+This repository is organized into two main demonstration suites:
 
-### 2. ✉️ [Microsoft Outlook MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize_outlook_mcp)
-- **Purpose**: Seamless AI interaction with Outlook Mail, Calendar, and Contacts via Microsoft Graph.
-- **Key Features**:
-  - **Temporal & Date-Aware Searching**: Built-in system time anchors and OData filtering (`fromDate`/`toDate`) for relative date arithmetic ("emails from last week", "today's schedule").
-  - **Latest / Oldest Sorting**: `sortOrder: "desc"` (most recent first) or `"asc"` (oldest first).
-  - **Thread & Multi-Email Batching**: Retrieve complete back-and-forth conversation threads (`get_email_thread_lookup`) or batch fetch multiple email bodies in a single call (`get_batch_messages_detail_lookup`).
-  - **Calendar & Contacts**: Query upcoming meetings, create new calendar events, and search contacts.
+1. **[Gemini Enterprise MCP Connectors (`/ge_mcp`)](#1-gemini-enterprise-mcp-connectors-ge_mcp)**
+2. **[Gemini Thinking Mode & Zero Memory Retention Demos (`/gemini_thinking_mode_demo`)](#2-gemini-thinking-mode--zero-memory-retention-demos-gemini_thinking_mode_demo)**
 
-### 3. 📂 [Universal SharePoint MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/sharepoint-mcp-server)
-- **Purpose**: Base reference implementation for SharePoint and OneDrive enterprise document connectivity.
+---
+
+## 1. 🔌 Gemini Enterprise MCP Connectors (`/ge_mcp`)
+
+Enterprise-grade Model Context Protocol (MCP) servers that bridge Microsoft Graph API and corporate enterprise systems directly into **Gemini Enterprise**.
+
+### Featured Connectors:
+
+- 📁 **[Customize SharePoint MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize-sharepoint-mcp-server)**:
+  - Autonomous SharePoint document management, site navigation, and deep-link citation rendering.
+  - Page-level citations (`#page=N`), multi-format text extraction (`.docx`, `.pptx`, `.xlsx`), and 12 read/write actions protected by Gemini Enterprise Action Approval dialogs.
+
+- ✉️ **[Microsoft Outlook MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize_outlook_mcp)**:
+  - Seamless AI interaction with Outlook Mail, Calendar, and Contacts via Microsoft Graph.
+  - Date-aware temporal search, conversation thread retrieval, multi-email batching, calendar event creation, and contacts lookup.
+
+- 📂 **[Universal SharePoint MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/sharepoint-mcp-server)**:
+  - Reference implementation for SharePoint and OneDrive enterprise document connectivity.
+
+---
+
+## 2. 🧠 Gemini Thinking Mode & Zero Memory Retention Demos (`/gemini_thinking_mode_demo`)
+
+Technical demonstrations and empirical payload dissections showcasing **Gemini Thinking Mode** control and **Zero Data Retention / Zero Memory** behavior using the Google GenAI SDK (`google-genai`).
+
+### Featured Demos:
+
+- 💬 **[Interactions API Zero Memory (`demo_interactions_api_zero_memory.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_interactions_api_zero_memory.py)**:
+  - Demonstrates that omitting `previous_interaction_id` on the recommended `client.interactions.create()` API ensures follow-up turns execute completely unlinked with **ZERO memory** of previous turns.
+
+- 🔍 **[Payload Dissection & Empirical Proof (`demo_prove_no_thoughts.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_prove_no_thoughts.py)**:
+  - Empirically dissects API response candidate parts to prove that `include_thoughts=False` completely omits human-readable thought process text (`part.thought == None`) from payloads.
+
+- 🔄 **[Thought Signature Preservation (`demo_thought_signature_comparison.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_thought_signature_comparison.py)**:
+  - Demonstrates passing thought signatures across sessions to preserve reasoning state vs inaccessible state when signatures are omitted.
+
+- ⚡ **[Gemini 3 Thinking Levels (`demo_thinking_levels.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_thinking_levels.py)**:
+  - Demonstrates configuring `MINIMAL`, `LOW`, `MEDIUM`, and `HIGH` thinking levels on Gemini 3 models (`gemini-3.5-flash`, `gemini-3-flash-preview`).
 
 ---
 
 ## 🔒 Security & Governance
 
-- **Delegated OAuth 2.0 & Application Auth**: Supports both user Bearer token delegation and Client Credentials fallback via Microsoft Entra ID.
-- **Action Approval Consent**: All data modification actions (creating, updating, renaming, moving, deleting) automatically trigger Gemini Enterprise's native consent dialogs before executing.
+- **Delegated OAuth 2.0 & Application Auth**: MCP connectors support user Bearer token delegation and Client Credentials fallback via Microsoft Entra ID.
+- **Enterprise Consent Dialogs**: All data modification actions trigger native Gemini Enterprise action approval dialogs.
+- **Zero Data Retention Controls**: Demonstrates stateless execution options ensuring no customer data or thoughts persist on Google Cloud servers.
