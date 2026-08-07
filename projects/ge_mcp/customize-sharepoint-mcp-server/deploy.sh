@@ -17,7 +17,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --region "$REGION" \
   --allow-unauthenticated \
   --port 3000 \
-  --project ai-hub-459714 \
+  --project <INSERTYOURPROJECT_ID> \
   --set-env-vars "MS_GRAPH_TENANT_ID=$MS_GRAPH_TENANT_ID,MS_GRAPH_CLIENT_ID=$MS_GRAPH_CLIENT_ID,MS_GRAPH_CLIENT_SECRET=$MS_GRAPH_CLIENT_SECRET,SHAREPOINT_INSTANCE_URL=$SHAREPOINT_INSTANCE_URL"
 
 echo "✅ Deployment complete!"
