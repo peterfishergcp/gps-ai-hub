@@ -59,7 +59,7 @@ def test_thinking_levels():
                 print("\n[No separate thought signature text returned in candidate parts]")
                 
             print("\n[Model Final Answer]:")
-            print(response.text[:300] + "..." if len(response.text) > 300 else response.text)
+            print(response.text)  # Print full response text without truncation
             
         except Exception as e:
             print(f"Error demonstrating {level_name}: {e}")
