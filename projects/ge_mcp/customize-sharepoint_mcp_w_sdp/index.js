@@ -22,19 +22,21 @@ const keepAliveAgent = new https.Agent({
 axios.defaults.httpsAgent = keepAliveAgent;
 
 // --- SDP & Microsoft Purview Policy Configuration ---
+const PURVIEW_SENSITIVITY_GUID = process.env.PURVIEW_LABEL_GUID || "INSERT_YOUR_PURVIEW_LABEL_GUID_HERE";
+
 const SDP_PURVIEW_CONFIG = {
-    contentPolicy: process.env.SDP_CONTENT_POLICY || "projects/ai-hub-459714/locations/us/contentPolicies/purview_cepf",
+    contentPolicy: process.env.SDP_CONTENT_POLICY || "projects/INSERT_YOUR_PROJECT_ID_HERE/locations/us/contentPolicies/INSERT_YOUR_POLICY_NAME_HERE",
     labelMappings: {
         "CUSTOM_CEPF_LABEL": {
-            purviewGuid: "27c86af4-afb5-4c50-9816-2f0e144288d0",
+            purviewGuid: PURVIEW_SENSITIVITY_GUID,
             displayName: "CUSTOM_CEPF_LABEL"
         },
         "purview_cepf": {
-            purviewGuid: "27c86af4-afb5-4c50-9816-2f0e144288d0",
+            purviewGuid: PURVIEW_SENSITIVITY_GUID,
             displayName: "CUSTOM_CEPF_LABEL"
         }
     },
-    defaultPurviewGuid: "27c86af4-afb5-4c50-9816-2f0e144288d0"
+    defaultPurviewGuid: PURVIEW_SENSITIVITY_GUID
 };
 
 /**
@@ -408,7 +410,7 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
 
                     // --- SDP BLOCK POLICY ENFORCEMENT ---
                     const RESTRICTED_CONTENT_TOOLS = ["query_file_content_lookup", "query_file_download_url_lookup"];
-                    if (sdpContext.purviewGuid === "27c86af4-afb5-4c50-9816-2f0e144288d0" && RESTRICTED_CONTENT_TOOLS.includes(name)) {
+                    if (sdpContext.purviewGuid === PURVIEW_SENSITIVITY_GUID && RESTRICTED_CONTENT_TOOLS.includes(name)) {
                         console.error(`[SDP BLOCK ENFORCED] Blocked tool execution "${name}" under Purview Sensitivity Label GUID: ${sdpContext.purviewGuid}`);
                         return {
                             content: [{

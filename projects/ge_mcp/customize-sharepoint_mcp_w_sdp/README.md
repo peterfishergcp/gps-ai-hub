@@ -112,9 +112,9 @@ This enhanced version (`customize-sharepoint_mcp_w_sdp`) bridges **Google Cloud 
 
 When requests pass through Google Cloud infrastructure, API Gateways, or Gemini Enterprise, SDP headers or content policies (e.g., `X-Goog-Sdp-Policy`, `X-Goog-Sdp-Label`, or `X-Sdp-Label`) are automatically inspected and mapped to Microsoft Purview Sensitivity Label GUIDs:
 
-* **Google SDP Content Policy**: `projects/ai-hub-459714/locations/us/contentPolicies/purview_cepf`
+* **Google SDP Content Policy**: `projects/INSERT_YOUR_PROJECT_ID_HERE/locations/us/contentPolicies/INSERT_YOUR_POLICY_NAME_HERE`
 * **SDP Policy Tag / Source**: `purview_cepf` / `CUSTOM_CEPF_LABEL`
-* **Microsoft Purview Sensitivity Label GUID**: `27c86af4-afb5-4c50-9816-2f0e144288d0`
+* **Microsoft Purview Sensitivity Label GUID**: `INSERT_YOUR_PURVIEW_LABEL_GUID_HERE`
 
 ```
   [ Incoming HTTP Request / MCP Tool Call ]
@@ -127,7 +127,7 @@ When requests pass through Google Cloud infrastructure, API Gateways, or Gemini 
                      │
                      ├──► Non-Restricted Policy ──► Execute SharePoint Action
                      │
-                     └──► Restricted Policy (e.g. 27c86af4-afb5-4c50-9816-2f0e144288d0)
+                     └──► Restricted Policy (e.g. INSERT_YOUR_PURVIEW_LABEL_GUID_HERE)
                           └──► Block Document Reading / Downloading
                                └──► Return HTTP 403 ACCESS_DENIED_BY_SDP_POLICY
 ```
@@ -142,11 +142,11 @@ Whenever a tool request targets sensitive document reading (`query_file_content_
 ```json
 {
   "error": "ACCESS_DENIED_BY_SDP_POLICY",
-  "message": "Access to tool 'query_file_content_lookup' is blocked under Google SDP Content Policy 'purview_cepf' (Microsoft Purview Sensitivity Label GUID: 27c86af4-afb5-4c50-9816-2f0e144288d0).",
+  "message": "Access to tool 'query_file_content_lookup' is blocked under Google SDP Content Policy 'purview_cepf' (Microsoft Purview Sensitivity Label GUID: INSERT_YOUR_PURVIEW_LABEL_GUID_HERE).",
   "securityMetadata": {
-    "sdpContentPolicy": "projects/ai-hub-459714/locations/us/contentPolicies/purview_cepf",
+    "sdpContentPolicy": "projects/INSERT_YOUR_PROJECT_ID_HERE/locations/us/contentPolicies/INSERT_YOUR_POLICY_NAME_HERE",
     "sdpPolicySource": "purview_cepf",
-    "microsoftPurviewSensitivityLabelGuid": "27c86af4-afb5-4c50-9816-2f0e144288d0",
+    "microsoftPurviewSensitivityLabelGuid": "INSERT_YOUR_PURVIEW_LABEL_GUID_HERE",
     "labelDisplayName": "CUSTOM_CEPF_LABEL",
     "policyAction": "BLOCKED"
   }
@@ -170,7 +170,7 @@ Instead of header-based mapping (Option 1), an MCP server can be configured to d
    import { DlpServiceClient } from '@google-cloud/dlp';
    const dlpClient = new DlpServiceClient();
 
-   async function inspectExtractedText(extractedText, projectId = "ai-hub-459714") {
+   async function inspectExtractedText(extractedText, projectId = "INSERT_YOUR_PROJECT_ID_HERE") {
        const [response] = await dlpClient.inspectContent({
            parent: `projects/${projectId}/locations/us`,
            inspectConfig: {
