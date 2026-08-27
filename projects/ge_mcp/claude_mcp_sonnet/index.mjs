@@ -212,7 +212,9 @@ const server = createServer(async (req, res) => {
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
       });
-      res.write(`event: endpoint\ndata: ${url.origin || ("http://" + host)}/mcp\n\n`);
+      const proto = req.headers["x-forwarded-proto"] || "https";
+      const fullOrigin = `${proto}://${host}`;
+      res.write(`event: endpoint\ndata: ${fullOrigin}/mcp\n\n`);
       return;
     }
 
