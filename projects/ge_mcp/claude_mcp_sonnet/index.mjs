@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
 import { createServer } from "http";
 import { GoogleAuth } from "google-auth-library";
 
@@ -124,19 +118,66 @@ const A2UI_EXAMPLES = {
   },
 };
 
-const server = createServer(async (req, res) => {
-  const reqProxy = new Proxy(req, {
-    get(target, prop, receiver) {
-      if (prop === "headers") {
-        return {
-          ...target.headers,
-          accept: "application/json, text/event-stream",
-        };
-      }
-      return Reflect.get(target, prop, receiver);
+const TOOLS = [
+  {
+    name: "ask_claude_sonnet",
+    description: "Send a prompt to Anthropic Claude Sonnet 3.5/5 hosted on Vertex AI and retrieve a completion.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        prompt: {
+          type: "string",
+          description: "User prompt or instructions for Claude Sonnet.",
+        },
+        system_prompt: {
+          type: "string",
+          description: "Optional system prompt to guide Claude's persona or formatting.",
+        },
+        max_tokens: {
+          type: "integer",
+          description: "Maximum tokens to generate (default: 1024).",
+        },
+      },
+      required: ["prompt"],
     },
-  });
+  },
+  {
+    name: "generate_a2ui_component",
+    description: "Generates an A2UI (Agent-to-User-Interface) compliant JSON component specification for A2A and ADK agents using Claude Sonnet.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        component_type: {
+          type: "string",
+          description: "Type of UI component needed (e.g. 'card', 'data_table', 'form', 'modal', 'alert').",
+        },
+        content_description: {
+          type: "string",
+          description: "Description of the data, fields, or elements to display inside the A2UI component.",
+        },
+      },
+      required: ["component_type", "content_description"],
+    },
+  },
+  {
+    name: "get_a2ui_integration_guide",
+    description: "Returns documentation, schemas, and best practices for integrating A2UI components with ADK agents and A2A protocol.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Optional query or topic filter for the guide (e.g. 'schemas', 'adk', 'a2a').",
+        },
+      },
+    },
+  },
+];
 
+// Map of active SSE client connections: sessionId -> res
+const sseClients = new Map();
+
+const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Mcp-Session-Id, Mcp-Protocol-Version, Authorization, Accept");
@@ -157,143 +198,186 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/mcp" || url.pathname === "/") {
-    try {
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
-        enableJsonResponse: true,
+    // 1. GET Request: SSE Connection
+    if (req.method === "GET") {
+      const sessionId = Math.random().toString(36).substring(2, 15);
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
       });
 
-      const mcpServer = new Server(
-        {
-          name: "claude-mcp-sonnet",
-          version: "1.0.0",
-        },
-        {
-          capabilities: { tools: {} },
+      sseClients.set(sessionId, res);
+
+      const proto = req.headers["x-forwarded-proto"] || "https";
+      const fullOrigin = `${proto}://${host}`;
+      res.write(`event: endpoint\ndata: ${fullOrigin}/mcp?sessionId=${sessionId}\n\n`);
+
+      // Keep SSE connection alive with periodic heartbeat
+      const keepAliveInterval = setInterval(() => {
+        if (!res.writableEnded) {
+          res.write(": keepalive\n\n");
         }
-      );
+      }, 15000);
 
-      mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
-        return {
-          tools: [
-            {
-              name: "ask_claude_sonnet",
-              description: "Send a prompt to Anthropic Claude Sonnet 3.5/5 hosted on Vertex AI and retrieve a completion.",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  prompt: {
-                    type: "string",
-                    description: "User prompt or instructions for Claude Sonnet.",
-                  },
-                  system_prompt: {
-                    type: "string",
-                    description: "Optional system prompt to guide Claude's persona or formatting.",
-                  },
-                  max_tokens: {
-                    type: "integer",
-                    description: "Maximum tokens to generate (default: 1024).",
-                  },
-                },
-                required: ["prompt"],
-              },
-            },
-            {
-              name: "generate_a2ui_component",
-              description: "Generates an A2UI (Agent-to-User-Interface) compliant JSON component specification for A2A and ADK agents using Claude Sonnet.",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  component_type: {
-                    type: "string",
-                    description: "Type of UI component needed (e.g. 'card', 'data_table', 'form', 'modal', 'alert').",
-                  },
-                  content_description: {
-                    type: "string",
-                    description: "Description of the data, fields, or elements to display inside the A2UI component.",
-                  },
-                },
-                required: ["component_type", "content_description"],
-              },
-            },
-            {
-              name: "get_a2ui_integration_guide",
-              description: "Returns documentation, schemas, and best practices for integrating A2UI components with ADK agents and A2A protocol.",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  query: {
-                    type: "string",
-                    description: "Optional query or topic filter for the guide (e.g. 'schemas', 'adk', 'a2a').",
-                  },
-                },
-              },
-            },
-          ],
-        };
+      req.on("close", () => {
+        clearInterval(keepAliveInterval);
+        sseClients.delete(sessionId);
       });
+      return;
+    }
 
-      mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
-        const { name, arguments: args = {} } = request.params;
+    // 2. POST Request: JSON-RPC over HTTP
+    let bodyChunks = [];
+    req.on("data", (chunk) => bodyChunks.push(chunk));
+    req.on("end", async () => {
+      const fullBody = Buffer.concat(bodyChunks).toString();
+      try {
+        const parsedBody = JSON.parse(fullBody || "{}");
         const authHeader = req.headers.authorization;
-        console.error(`[MCP CALL] Executing tool '${name}' with args: ${JSON.stringify(args)}`);
 
-        let resultText = "";
+        // 2a. Handshake: initialize
+        if (parsedBody.method === "initialize") {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              jsonrpc: "2.0",
+              id: parsedBody.id,
+              result: {
+                protocolVersion: "2024-11-05",
+                capabilities: { tools: {} },
+                serverInfo: { name: "claude-mcp-sonnet", version: "1.0.0" },
+              },
+            })
+          );
+          return;
+        }
 
-        if (name === "ask_claude_sonnet") {
-          resultText = await callClaudeVertex({
-            prompt: args.prompt,
-            systemPrompt: args.system_prompt,
-            maxTokens: args.max_tokens || 1024,
-            authHeader,
-          });
-        } else if (name === "generate_a2ui_component") {
-          const systemPrompt = `You are an expert A2UI (Agent-to-User-Interface) generator for A2A protocol and ADK agents.
+        // 2b. List Tools
+        if (parsedBody.method === "tools/list") {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              jsonrpc: "2.0",
+              id: parsedBody.id,
+              result: { tools: TOOLS },
+            })
+          );
+          return;
+        }
+
+        // 2c. Method Repair for Direct LLM Tool Calls
+        let method = parsedBody.method;
+        if (
+          method &&
+          (method.includes("ask_claude_sonnet") ||
+            method.includes("generate_a2ui_component") ||
+            method.includes("get_a2ui_integration_guide"))
+        ) {
+          console.error(`[LLM REPAIR] Auto-correcting direct method '${method}' to 'tools/call'`);
+          const toolName = method.includes("ask_claude_sonnet")
+            ? "ask_claude_sonnet"
+            : method.includes("generate_a2ui_component")
+            ? "generate_a2ui_component"
+            : "get_a2ui_integration_guide";
+
+          const toolArgs = parsedBody.params?.arguments || parsedBody.params || {};
+          parsedBody.method = "tools/call";
+          parsedBody.params = { name: toolName, arguments: toolArgs };
+          method = "tools/call";
+        }
+
+        // 2d. Call Tool
+        if (method === "tools/call") {
+          const { name, arguments: args = {} } = parsedBody.params || {};
+          console.error(`[MCP CALL] Executing tool '${name}' with args: ${JSON.stringify(args)}`);
+
+          let resultText = "";
+
+          if (name === "ask_claude_sonnet") {
+            resultText = await callClaudeVertex({
+              prompt: args.prompt,
+              systemPrompt: args.system_prompt,
+              maxTokens: args.max_tokens || 1024,
+              authHeader,
+            });
+          } else if (name === "generate_a2ui_component") {
+            const systemPrompt = `You are an expert A2UI (Agent-to-User-Interface) generator for A2A protocol and ADK agents.
 Always output valid A2UI JSON schema specifications wrapped in a single JSON block.
 Supported root types: a2ui.Card, a2ui.DataTable, a2ui.Form, a2ui.Modal, a2ui.Alert.`;
 
-          const prompt = `Generate an A2UI component of type '${args.component_type}' displaying the following information: ${args.content_description}.`;
+            const prompt = `Generate an A2UI component of type '${args.component_type}' displaying the following information: ${args.content_description}.`;
 
-          resultText = await callClaudeVertex({
-            prompt,
-            systemPrompt,
-            maxTokens: 1500,
-            authHeader,
-          });
-        } else if (name === "get_a2ui_integration_guide") {
-          resultText = JSON.stringify(
-            {
-              title: "A2UI & ADK Integration Best Practices",
-              protocol: "A2A (Agent-to-Agent)",
-              sdk: "Google ADK (Agent Development Kit)",
-              rendering_flow: [
-                "1. ADK Agent calls `generate_a2ui_component` via Claude Sonnet MCP server.",
-                "2. MCP server returns structured A2UI JSON specification.",
-                "3. Agent outputs A2UI JSON block inside its response stream.",
-                "4. Web Client / A2A Front-end parses `a2ui.*` schemas and dynamically renders UI widgets.",
-              ],
-              sample_templates: A2UI_EXAMPLES,
+            resultText = await callClaudeVertex({
+              prompt,
+              systemPrompt,
+              maxTokens: 1500,
+              authHeader,
+            });
+          } else if (name === "get_a2ui_integration_guide") {
+            resultText = JSON.stringify(
+              {
+                title: "A2UI & ADK Integration Best Practices",
+                protocol: "A2A (Agent-to-Agent)",
+                sdk: "Google ADK (Agent Development Kit)",
+                rendering_flow: [
+                  "1. ADK Agent calls `generate_a2ui_component` via Claude Sonnet MCP server.",
+                  "2. MCP server returns structured A2UI JSON specification.",
+                  "3. Agent outputs A2UI JSON block inside its response stream.",
+                  "4. Web Client / A2A Front-end parses `a2ui.*` schemas and dynamically renders UI widgets.",
+                ],
+                sample_templates: A2UI_EXAMPLES,
+              },
+              null,
+              2
+            );
+          } else {
+            throw new Error(`Unknown tool name: ${name}`);
+          }
+
+          const responsePayload = JSON.stringify({
+            jsonrpc: "2.0",
+            id: parsedBody.id,
+            result: {
+              content: [{ type: "text", text: resultText }],
             },
-            null,
-            2
-          );
-        } else {
-          throw new Error(`Unknown tool name: ${name}`);
+          });
+
+          // Send direct HTTP JSON response
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(responsePayload);
+
+          // If session query param is present, also write to the active SSE client stream
+          const sessionId = url.searchParams.get("sessionId");
+          if (sessionId && sseClients.has(sessionId)) {
+            const sseRes = sseClients.get(sessionId);
+            if (!sseRes.writableEnded) {
+              sseRes.write(`event: message\ndata: ${responsePayload}\n\n`);
+            }
+          }
+          return;
         }
 
-        return { content: [{ type: "text", text: resultText }] };
-      });
-
-      mcpServer.connect(transport).catch(() => {});
-
-      await transport.handleRequest(reqProxy, res);
-    } catch (error) {
-      console.error("Transport error:", error);
-      if (!res.headersSent) {
-        res.statusCode = 500;
-        res.end("Internal Server Error: " + error.message);
+        // Catch-all response for other JSON-RPC methods
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: parsedBody.id || 1,
+            result: {},
+          })
+        );
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: null,
+            error: { code: -32603, message: err.message },
+          })
+        );
       }
-    }
+    });
     return;
   }
 
