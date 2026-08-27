@@ -205,7 +205,17 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname === "/mcp" || url.pathname === "/") {
+  if (url.pathname === "/mcp" || url.pathname === "/" || url.pathname === "/sse") {
+    if (req.method === "GET") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      });
+      res.write(`event: endpoint\ndata: ${url.origin || ("http://" + host)}/mcp\n\n`);
+      return;
+    }
+
     let bodyChunks = [];
     req.on("data", (chunk) => bodyChunks.push(chunk));
     req.on("end", async () => {
