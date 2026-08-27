@@ -1,5 +1,7 @@
 # **Guide: Connecting Salesforce MCP to Gemini Enterprise ![][image1]**
 
+> **DISCLAIMER:** This project is provided solely as an illustrative sample and proof-of-concept for educational and demonstration purposes. This is **NOT** an official Google product or officially supported Google software. It is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE pursuant to Section 7 & Section 8 of the Apache License 2.0.
+
 This comprehensive guide details the exact steps required to securely connect a Salesforce Hosted Model Context Protocol (MCP) server to Gemini Enterprise. Based on rigorous real-world testing, these instructions include specific configurations to bypass common authentication failures and workarounds for known User Interface (UI) bugs during record creation.
 
 ## **Phase 0: Choosing and Enabling the Right MCP Server**

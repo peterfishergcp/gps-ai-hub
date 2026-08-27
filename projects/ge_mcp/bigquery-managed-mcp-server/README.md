@@ -1,5 +1,7 @@
 # 🚀 Google-Managed BigQuery MCP Connector for Gemini Enterprise
 
+> **DISCLAIMER:** This project is provided solely as an illustrative sample and proof-of-concept for educational and demonstration purposes. This is **NOT** an official Google product or officially supported Google software. It is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE pursuant to Section 7 & Section 8 of the Apache License 2.0.
+
 This repository provides the official enterprise onboarding and configuration guide (modeled after Sannya Dang's official Google-managed MCP standards) for connecting the **Google-Managed BigQuery Native MCP Server** directly to **Gemini Enterprise**.
 
 Unlike custom Cloud Run proxy deployments, this managed connector is fully native to Google Cloud. It leverages Google's official OAuth 2.0 endpoints and your Google Cloud Project's native IAM permissions to provide AI agents with secure, zero-infrastructure access to your BigQuery data warehouse.

@@ -1,5 +1,7 @@
 # 🚀 Universal Box MCP Connector for Gemini Enterprise
 
+> **DISCLAIMER:** This project is provided solely as an illustrative sample and proof-of-concept for educational and demonstration purposes. This is **NOT** an official Google product or officially supported Google software. It is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE pursuant to Section 7 & Section 8 of the Apache License 2.0.
+
 This repository provides an enterprise-grade **Model Context Protocol (MCP)** onboarding and configuration guide for connecting the official **Box Native MCP Server** (`https://mcp.box.com`) directly to **Gemini Enterprise**.
 
 Built specifically to empower AI agents with secure, seamless access to your corporate Box repository, this integration enables fully autonomous document discovery, deep content extraction, and folder navigation across your Box enterprise tenant while enforcing strict governance and user-level access controls.
