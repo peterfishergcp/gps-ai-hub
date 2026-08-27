@@ -56,7 +56,6 @@ async function callClaudeVertex({
   const payload = {
     anthropic_version: "vertex-2023-10-16",
     max_tokens: maxTokens,
-    temperature,
     messages: requestMessages,
   };
 
@@ -175,7 +174,12 @@ const TOOLS = [
     description: "Returns documentation, schemas, and best practices for integrating A2UI components with ADK agents and A2A protocol.",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        query: {
+          type: "string",
+          description: "Optional query or topic filter for the guide (e.g. 'schemas', 'adk', 'a2a').",
+        },
+      },
     },
   },
 ];
@@ -240,9 +244,26 @@ const server = createServer(async (req, res) => {
           return;
         }
 
+        // Method Repair for LLM Direct Invocation Hallucinations
+        let method = parsedBody.method;
+        if (method && (method.includes("ask_claude_sonnet") || method.includes("generate_a2ui_component") || method.includes("get_a2ui_integration_guide"))) {
+          console.error(`[LLM REPAIR] Auto-correcting direct method '${method}' to 'tools/call'`);
+          const toolName = method.includes("ask_claude_sonnet")
+            ? "ask_claude_sonnet"
+            : method.includes("generate_a2ui_component")
+            ? "generate_a2ui_component"
+            : "get_a2ui_integration_guide";
+
+          const toolArgs = parsedBody.params?.arguments || parsedBody.params || {};
+          parsedBody.method = "tools/call";
+          parsedBody.params = { name: toolName, arguments: toolArgs };
+          method = "tools/call";
+        }
+
         // 3. Call Tool
-        if (parsedBody.method === "tools/call") {
-          const { name, arguments: args } = parsedBody.params || {};
+        if (method === "tools/call") {
+          const { name, arguments: args = {} } = parsedBody.params || {};
+          console.error(`[MCP CALL] Executing tool '${name}' with args: ${JSON.stringify(args)}`);
 
           let resultText = "";
 
