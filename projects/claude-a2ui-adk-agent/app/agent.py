@@ -19,7 +19,7 @@ from google.adk.agents import Agent
 from google.adk.apps import App
 from google.adk.models import Gemini
 from google.adk.tools.mcp_tool import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 from google.genai import types
 
 _, project_id = google.auth.default()
@@ -32,9 +32,9 @@ CLAUDE_MCP_URL = os.getenv(
     "https://claude-mcp-sonnet-726122012742.us-central1.run.app/mcp"
 )
 
-# Connect to the deployed Claude Sonnet MCP Server via SSE/HTTP stream
+# Connect to the deployed Claude Sonnet MCP Server via Streamable HTTP
 claude_mcp_tools = McpToolset(
-    connection_params=SseConnectionParams(url=CLAUDE_MCP_URL)
+    connection_params=StreamableHTTPConnectionParams(url=CLAUDE_MCP_URL)
 )
 
 INSTRUCTION = """
