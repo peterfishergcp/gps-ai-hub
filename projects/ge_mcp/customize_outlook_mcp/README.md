@@ -108,7 +108,75 @@ chmod +x deploy.sh
 
 ---
 
-## 🔒 Required Microsoft Graph Azure AD Permissions
+## 🔒 Prerequisites & Security Setup
+
+### 1. Override Organization Policy Constraint (Custom MCP Data Stores)
+By default, Gemini Enterprise blocks the creation of Custom Model Context Protocol (MCP) data stores using a managed organization policy constraint. Before registering this custom MCP server in Gemini Enterprise, an Organization Policy Administrator must override this restriction.
+
+> 📖 **Official Documentation**: See [Override the organization policy for Custom MCP data stores](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/custom-mcp-server/override-constraint-for-custom-mcp-data-stores) for complete GCP details.
+
+> **Role Required:** Ensure you have the **Organization Policy Administrator** role (`roles/orgpolicy.policyAdmin`).
+
+1. In the Google Cloud console, navigate to the **Organization Policies** page.
+2. In the project selector at the top, select the specific project for which you want to change enforcement (do **not** apply at org level unless intended for all projects).
+3. In the **Filter** field, enter: `Disable custom MCP server connector for Gemini Enterprise`.
+4. Click the policy name to navigate to policy details.
+5. Click **Manage Policy**.
+6. Select **Override parent's policy**.
+7. Add a new rule and set enforcement toggle to **OFF**.
+8. Click **Set Policy**.
+9. Verify status is updated to **Not enforced**.
+
+---
+
+### 2. Configure Allowed Egress FQDNs (`allowedDataSources` Constraint)
+If your organization enforces the **Restrict egress domains for data connectors** managed organization policy constraint, you must allowlist the target domains (FQDNs) under `allowedDataSources` before provisioning the data store in Gemini Enterprise.
+
+> 📖 **Official Documentation**: See [Configure allowed egress FQDNs](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/configure-allowed-egress-fqdns) for complete GCP details.
+
+The domains you need to allowlist in your `allowedDataSources` policy typically include:
+* `graph.microsoft.com`
+* `login.microsoftonline.com`
+* `bigquery.googleapis.com`
+* `accounts.google.com`
+* `oauth2.googleapis.com`
+* `googleapis.com`
+* `<your-cloud-run-url>.run.app`
+
+---
+
+## 🔒 Security Note & Enterprise Authentication
+
+### Why `--allow-unauthenticated` is Used in Cloud Run
+The provided `deploy.sh` script deploys Cloud Run using `--allow-unauthenticated`. This is intentional and safe for standard setups because:
+* **Dual-Layer Application Authentication**: The MCP server code itself enforces user authentication at the application level via OAuth 2.0 (e.g. Microsoft Entra ID / Google OAuth) before allowing access to downstream APIs like Microsoft Graph.
+* **Header Preservation**: Gemini Enterprise passes end-user OAuth Bearer tokens directly to the connector. Unauthenticated ingress ensures Cloud Run does not strip or reject these authorization headers at the network boundary.
+
+### Restricting Access via HTTPS Load Balancer & IAP (Enterprise Pattern)
+If your organization's compliance policy prohibits public Cloud Run endpoints:
+1. Deploy Cloud Run with `--no-allow-unauthenticated` or `--ingress=internal-and-cloud-load-balancing`.
+2. Place an **External Application Load Balancer (HTTPS)** in front of your Cloud Run service.
+3. Enable **Identity-Aware Proxy (IAP)** on the Load Balancer to enforce Zero-Trust Google IAM access control before traffic reaches the Cloud Run instance.
+
+### Secret Management Best Practices (Google Secret Manager)
+The default `deploy.sh` script passes sensitive values (such as `MS_GRAPH_CLIENT_SECRET`) using environment variables via `--set-env-vars`. For production workloads, it is strongly recommended to store sensitive credentials in **Google Secret Manager**:
+
+1. **Create the secret in Secret Manager**:
+   ```bash
+   gcloud secrets create ms-graph-client-secret --data-file=- <<< "$MS_GRAPH_CLIENT_SECRET"
+   ```
+2. **Mount the secret in Cloud Run**:
+   Replace `--set-env-vars` in `deploy.sh` with `--set-secrets`:
+   ```bash
+   gcloud run deploy "$SERVICE_NAME" \
+     --set-secrets "MS_GRAPH_CLIENT_SECRET=ms-graph-client-secret:latest" \
+     --set-env-vars "MS_GRAPH_TENANT_ID=$MS_GRAPH_TENANT_ID,MS_GRAPH_CLIENT_ID=$MS_GRAPH_CLIENT_ID"
+   ```
+3. **Grant Secret Access**: Ensure the Cloud Run service account has the `Secret Manager Secret Accessor` (`roles/secretmanager.secretAccessor`) role.
+
+---
+
+### 3. Required Microsoft Graph Azure AD Permissions
 
 Ensure your Azure App Registration has the following API Permissions granted:
 - `Mail.Read` / `Mail.ReadWrite` / `Mail.Send`

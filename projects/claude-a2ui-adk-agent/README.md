@@ -1,6 +1,6 @@
 # claude-a2ui-adk-agent
 
-> **DISCLAIMER:** This project is provided solely as an illustrative sample and proof-of-concept for educational and demonstration purposes. This is **NOT** an official Google product or officially supported Google software. It is provided "as is" without warranty or guarantee of any kind.
+> **DISCLAIMER:** This project is provided solely as an illustrative sample and proof-of-concept for educational and demonstration purposes. This is **NOT** an official Google product or officially supported Google software. It is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE pursuant to Section 7 & Section 8 of the Apache License 2.0.
 
 An ADK agent that integrates with the Cloud Run hosted **Claude Sonnet MCP Server** (`claude-mcp-sonnet`) to generate **A2UI (Agent-to-User-Interface)** compliant JSON components and invoke Anthropic Claude Sonnet 3.5/5 on Vertex AI.
 

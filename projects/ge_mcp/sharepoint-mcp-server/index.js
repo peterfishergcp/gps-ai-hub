@@ -5,10 +5,12 @@ import {
     ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
+import https from "https";
 import { createServer } from "http";
 import { Readable } from "stream";
 import dotenv from "dotenv";
 import mammoth from "mammoth";
+import * as XLSX from "xlsx";
 
 dotenv.config();
 
@@ -360,15 +362,13 @@ const server = createServer(async (req, res) => {
                         console.error(`[RESOLVER] Auto-resolving human folder/item name "${inputItemId}" in drive "${driveId}" via recursive search...`);
                         try {
                             const res = await axios.get(`https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/root/search(q='${encodeURIComponent(inputItemId)}')`, { headers });
-                            const matched = res.data.value.find(i => i.name.toLowerCase() === inputItemId.toLowerCase());
+                            const items = res.data.value || [];
+                            const matched = items.find(i => i.name.toLowerCase() === inputItemId.toLowerCase());
                             if (matched) {
-                                console.error(`[RESOLVER] Found matching item GUID via recursive search for "${inputItemId}": ${matched.id}`);
+                                console.error(`[RESOLVER] Found exact matching item GUID for "${inputItemId}": ${matched.id}`);
                                 return matched.id;
                             }
-                            if (res.data.value.length > 0) {
-                                console.error(`[RESOLVER] Using top search result GUID for "${inputItemId}": ${res.data.value[0].id}`);
-                                return res.data.value[0].id;
-                            }
+                            console.error(`[RESOLVER] No exact name match found for "${inputItemId}". Returning input ID.`);
                             return inputItemId;
                         } catch(e) {
                             console.error(`[RESOLVER LOG] Search fallback error:`, e.message);
@@ -448,20 +448,35 @@ const server = createServer(async (req, res) => {
                                 const mammothResult = await mammoth.extractRawText({ buffer: bufferData });
                                 extractedText = mammothResult.value;
                             } 
-                            // 2. Route PowerPoint, Excel, and general binary streams to native zero-dependency XML stripper
-                            else if (contentType.includes('presentationml') || contentType.includes('spreadsheetml') || contentType.includes('zip') || contentType.includes('octet-stream')) {
-                                console.error("[EXTRACTION LOG] Detected PowerPoint/Excel/Binary stream, executing native regex XML stripper...");
-                                const rawXmlString = bufferData.toString('utf-8');
-                                extractedText = rawXmlString
-                                    .replace(/<[^>]+>/g, ' ')
-                                    .replace(/\s+/g, ' ')
-                                    .trim();
-                            } else {
+                            // 2. Check for Excel spreadsheets via XLSX parser
+                            else if (contentType.includes('spreadsheetml') || contentType.includes('excel')) {
+                                console.error("[EXTRACTION LOG] Detected Excel document, parsing workbook sheets...");
+                                const workbook = XLSX.read(bufferData, { type: 'buffer' });
+                                const sheetsText = [];
+                                for (const sheetName of workbook.SheetNames) {
+                                    const sheet = workbook.Sheets[sheetName];
+                                    const csvData = XLSX.utils.sheet_to_csv(sheet);
+                                    if (csvData.trim()) {
+                                        sheetsText.push(`--- Sheet: ${sheetName} ---\n${csvData}`);
+                                    }
+                                }
+                                extractedText = sheetsText.join("\n\n");
+                            }
+                            // 3. Fallback for plain text, CSV, JSON, and standard text streams
+                            else if (contentType.includes('text') || contentType.includes('json') || contentType.includes('xml')) {
                                 extractedText = bufferData.toString('utf-8');
+                            }
+                            else {
+                                // For unsupported binary streams (PPTX, PDFs), attempt UTF-8 string conversion with fallback notice
+                                const rawStr = bufferData.toString('utf-8');
+                                const cleaned = rawStr.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
+                                extractedText = cleaned.length > 50 
+                                    ? cleaned 
+                                    : `[Binary content extracted from item ${itemId} (${contentType || 'application/octet-stream'})]`;
                             }
                         } catch (extractionErr) {
                             console.error("[EXTRACTION LOG] Buffer extraction fallback warning:", extractionErr.message);
-                            extractedText = bufferData.toString('utf-8');
+                            extractedText = `[Error extracting document text: ${extractionErr.message}]`;
                         }
                         
                         resultObj = { content: extractedText || "No readable text content could be extracted from this document." };
