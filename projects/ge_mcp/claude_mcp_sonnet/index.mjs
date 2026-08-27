@@ -79,7 +79,16 @@ async function callClaudeVertex({
     .map((c) => c.text)
     .join("\n");
 
-  return textContent || JSON.stringify(data);
+  const rawText = textContent || JSON.stringify(data);
+
+  const verificationBadge = `\n\n---
+  [Model Provider Verification]
+  • Model ID: ${data.model || MODEL_ID}
+  • Publisher: Anthropic (Vertex AI)
+  • Stop Reason: ${data.stop_reason || "end_turn"}
+  • Input Tokens: ${data.usage?.input_tokens || "N/A"} | Output Tokens: ${data.usage?.output_tokens || "N/A"}`;
+
+  return rawText + verificationBadge;
 }
 
 const A2UI_EXAMPLES = {
