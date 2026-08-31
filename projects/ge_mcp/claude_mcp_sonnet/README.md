@@ -6,18 +6,18 @@
 
 ## 🎯 Primary Purpose
 
-This Model Context Protocol (MCP) server enables **Gemini Enterprise** users and agents running on the **Google Agent Platform (ADK / Agent Engine)** to seamlessly invoke **Anthropic Claude Sonnet 3.5/5** models hosted on **Google Cloud Vertex AI**.
+This project wraps the Vertex AI **Anthropic Claude Sonnet 3.5/5** model endpoint into a production-ready **MCP Server running on Google Cloud Run**.
 
-By exposing Claude Sonnet as a standardized, production-ready MCP service over Server-Sent Events (SSE), enterprise users can leverage Claude's advanced reasoning, long-context comprehension, and specialized generation directly within Gemini Enterprise apps, agent pipelines, and custom frontends—without leaving their secure Google Cloud governance perimeter.
+By containerizing and deploying the Claude model endpoint as an SSE-compatible MCP server on Cloud Run, we can easily register it as a **Bring-Your-Own (BYO) MCP Connector** inside **Gemini Enterprise**. This allows Gemini Enterprise users and agents on the **Google Agent Platform (ADK / Agent Engine)** to seamlessly invoke Claude Sonnet for multi-model reasoning, long-context analysis, and specialized completions directly within their enterprise workflows—all governed by Google Cloud IAM and security policies.
 
 ---
 
 ## 💡 Key Highlights & Architecture
 
+* **BYO MCP Connector for Gemini Enterprise**: By hosting the Anthropic Claude Vertex AI model endpoint inside an MCP server on Cloud Run, you can register it as a custom **Bring-Your-Own (BYO) MCP Connector** in the Gemini Enterprise Admin Console.
 * **Fully Managed & Serverless on Google Cloud**: The Anthropic Claude models on Google Cloud offer fully managed and serverless models as APIs. To use a Claude model on the Agent Platform, requests are sent directly to the Agent Platform API endpoint. Because Anthropic Claude models use a managed API on Vertex AI, **there is no need to provision or manage underlying infrastructure**.
 * **Incremental SSE Response Streaming**: You can stream your Claude responses to reduce end-user latency perception. A streamed response uses Server-Sent Events (SSE) to incrementally stream completion chunks back to the client or UI in real time.
 * **Pay-As-You-Go & Provisioned Throughput**: You pay for Claude models as you use them (pay-as-you-go), or you pay a fixed fee when using provisioned throughput. For pay-as-you-go pricing, see the Anthropic Claude models on the Google Cloud pricing page.
-* **Seamless Gemini Enterprise Connection**: Enables Gemini Enterprise to invoke Anthropic Claude models (`publishers/anthropic/models/claude-sonnet-5:rawPredict`) on Vertex AI using IAM authentication.
 * **Read-Only Non-Disruptive Tool Annotations**: Tools are pre-configured with `readOnlyHint: true` and `destructiveHint: false` so Gemini Enterprise executes queries seamlessly without triggering user confirmation prompts.
 * **Model Provider Verification Badging**: Every response automatically includes an audit metadata badge verifying the model ID, publisher, token usage, and completion stop reason.
 * **Agent-to-User-Interface (A2UI) Generation (Secondary Capability)**: Includes specialized tools to generate structured A2UI JSON components (`a2ui.Card`, `a2ui.DataTable`, `a2ui.Form`, `a2ui.Modal`) for rendering rich interactive widgets in ADK and Agent-to-Agent (A2A) interfaces.
@@ -34,18 +34,19 @@ By exposing Claude Sonnet as a standardized, production-ready MCP service over S
 
 ---
 
-## 🔌 Connecting to Gemini Enterprise
+## 🔌 Registering as a BYO MCP Connector in Gemini Enterprise
 
-To add this Claude Sonnet MCP server to **Gemini Enterprise**:
+Because the Claude model endpoint is wrapped as an MCP server running on Cloud Run, registering it as a **BYO MCP Connector** in **Gemini Enterprise** takes just a few clicks:
 
-1. Navigate to **Gemini Enterprise Admin Console** > **MCP Tools / Extensions**.
-2. Select **Add Remote MCP Server (SSE)**.
-3. Enter the server details:
-   * **Name**: `claude-sonnet-vertex`
+1. Deploy the MCP server container to Cloud Run (or use the deployed SSE endpoint).
+2. Open **Gemini Enterprise Admin Console** > **Connectors & Tools** > **Add Custom / BYO MCP Connector**.
+3. Select **Remote MCP Server (SSE Transport)**.
+4. Enter the connector configuration:
+   * **Connector Name**: `claude-sonnet-vertex`
    * **SSE Endpoint URL**: `https://claude-mcp-sonnet-726122012742.us-central1.run.app/mcp`
-   * **Auth**: Google Cloud IAM / Application Default Credentials.
+   * **Authentication**: Google Cloud IAM / Service Account ADC.
 
-Once registered, users can ask Gemini Enterprise:
+Once registered, users can invoke Claude directly in Gemini Enterprise chat:
 > *"Use Claude Sonnet to analyze this contract and give me a second opinion."*
 
 ---
