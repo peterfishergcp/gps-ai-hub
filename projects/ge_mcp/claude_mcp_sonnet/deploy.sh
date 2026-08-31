@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Copyright 2026 Google LLC
-# Interactive Setup & Deployment Script for Claude Sonnet MCP Server
+# Interactive Setup & Deployment Script for Claude Model MCP Server
 
 set -e
 
 echo "=================================================================="
-echo "🚀 Claude Sonnet MCP Server - Interactive Deployer for Cloud Run"
+echo "🚀 Claude MCP Server - Interactive Deployer for Cloud Run"
 echo "=================================================================="
 
 # 1. Detect or Prompt for GCP Project ID
@@ -17,11 +17,25 @@ PROJECT_ID="${INPUT_PROJECT:-$DEFAULT_PROJECT}"
 read -p "Enter GCP Region [default: us-central1]: " INPUT_REGION
 REGION="${INPUT_REGION:-us-central1}"
 
-# 3. Service Name & Model Choice
-SERVICE_NAME="claude-mcp-sonnet"
-read -p "Enter Claude Model ID [default: claude-sonnet-5]: " INPUT_MODEL
-MODEL_ID="${INPUT_MODEL:-claude-sonnet-5}"
+# 3. Select Claude Model Choice with sonnet as default
+echo ""
+echo "Select Anthropic Claude Model:"
+echo "  1) claude-sonnet-5 (Default - Latest Claude Sonnet)"
+echo "  2) claude-3-5-sonnet-v2@20241022 (Claude 3.5 Sonnet v2)"
+echo "  3) claude-3-5-haiku@20241022 (Claude 3.5 Haiku)"
+echo "  4) claude-3-opus@20240229 (Claude 3 Opus)"
+echo "  5) Custom Model ID"
+read -p "Choose option [1-5, default: 1]: " MODEL_CHOICE
 
+case "$MODEL_CHOICE" in
+  2) MODEL_ID="claude-3-5-sonnet-v2@20241022" ;;
+  3) MODEL_ID="claude-3-5-haiku@20241022" ;;
+  4) MODEL_ID="claude-3-opus@20240229" ;;
+  5) read -p "Enter custom model ID: " CUSTOM_MODEL; MODEL_ID="${CUSTOM_MODEL}" ;;
+  *) MODEL_ID="claude-sonnet-5" ;;
+esac
+
+SERVICE_NAME="claude-mcp-sonnet"
 IMAGE_NAME="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:latest"
 
 echo ""
@@ -34,7 +48,7 @@ echo "=================================================================="
 echo ""
 
 # Enable required Google Cloud APIs
-echo "⚙️ Enabling required GCP APIs (Cloud Run, Cloud Build, Vertex AI)..."
+echo "⚙️ Enabling required GCP APIs (Cloud Run, Cloud Build, Vertex AI / Agent Platform)..."
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com aiplatform.googleapis.com --project="${PROJECT_ID}"
 
 # Build container image with Cloud Build
