@@ -57,6 +57,8 @@ async function callClaudeVertex({
 
   if (systemPrompt) {
     payload.system = systemPrompt;
+  }
+
   console.error(`[MODEL CALL] Invoking Model: '${MODEL_ID}' via Endpoint: ${endpointUrl}`);
 
   const response = await fetch(endpointUrl, {
