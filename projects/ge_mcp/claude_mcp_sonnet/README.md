@@ -12,6 +12,40 @@ By containerizing and deploying the Claude model endpoint as an SSE-compatible M
 
 ---
 
+## 🏗️ System Architecture Diagram
+
+```mermaid
+flowchart TD
+    subgraph Enterprise Clients
+        GE[Gemini Enterprise Web UI]
+        ADK[ADK Python Agents / Agent Engine]
+    end
+
+    subgraph Google Cloud Infrastructure
+        subgraph BYO MCP Connector Layer
+            GE -->|1. Invokes Tool over SSE| CloudRun[Google Cloud Run Service: claude-mcp-sonnet]
+            ADK -->|1. Invokes Tool over SSE| CloudRun
+            
+            subgraph MCP Server Container
+                CloudRun -->|JSON-RPC 2.0 / SSE Endpoint| MCPServer[MCP Server: Node.js / index.mjs]
+                MCPServer -->|Tool: ask_claude_sonnet| LLMBridge[LLM Request Handler]
+                MCPServer -->|Tool: generate_a2ui_component| A2UIGen[A2UI Schema Generator]
+            end
+        end
+
+        subgraph Vertex AI Managed Services
+            LLMBridge -->|2. rawPredict / streamRawPredict via IAM| VertexAI[Vertex AI Model API: publishers/anthropic/models/claude-sonnet-5]
+            A2UIGen -->|2. Generates A2UI Component JSON| VertexAI
+        end
+    end
+
+    VertexAI -->|3. Streaming SSE Completion & Usage Metadata| CloudRun
+    CloudRun -->|4. Text Completion + Verification Badge| GE
+    CloudRun -->|4. Interactive A2UI Component / Response| ADK
+```
+
+---
+
 ## 💡 Key Highlights & Architecture
 
 * **BYO MCP Connector for Gemini Enterprise**: By hosting the Anthropic Claude Vertex AI model endpoint inside an MCP server on Cloud Run, you can register it as a custom **Bring-Your-Own (BYO) MCP Connector** in the Gemini Enterprise Admin Console.
