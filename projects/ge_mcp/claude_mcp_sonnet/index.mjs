@@ -130,7 +130,11 @@ const A2UI_EXAMPLES = {
 const TOOLS = [
   {
     name: "ask_claude_sonnet",
-    description: "Send a prompt to Anthropic Claude Sonnet 3.5/5 hosted on Vertex AI and retrieve a completion.",
+    description: "Send a prompt to Anthropic Claude Sonnet 5 hosted on Gemini Enterprise Agent Platform Model Garden and retrieve a completion.",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: {
       type: "object",
       properties: {
@@ -153,6 +157,10 @@ const TOOLS = [
   {
     name: "generate_a2ui_component",
     description: "Generates an A2UI (Agent-to-User-Interface) compliant JSON component specification for A2A and ADK agents using Claude Sonnet.",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: {
       type: "object",
       properties: {
@@ -171,6 +179,10 @@ const TOOLS = [
   {
     name: "get_a2ui_integration_guide",
     description: "Returns documentation, schemas, and best practices for integrating A2UI components with ADK agents and A2A protocol.",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+    },
     inputSchema: {
       type: "object",
       properties: {
