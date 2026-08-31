@@ -44,6 +44,11 @@ flowchart LR
     CloudRun -->|4. Response + Model Verification Badge| GEBox
 ```
 
+### 🔒 Why IAM Authentication Matters in this Architecture:
+* **Zero API Key Leakage**: Authentication uses Google Cloud Service Accounts and Application Default Credentials (ADC), eliminating stored or static API keys.
+* **Enterprise Security & Audit Logging**: All requests routed to `rawPredict` / `streamRawPredict` are authorized via IAM roles (`roles/aiplatform.user`), ensuring full Cloud Logging compliance and audit tracking.
+* **VPC Service Control Perimeter**: Requests remain inside your enterprise's Google Cloud security boundary.
+
 ---
 
 ## 💡 Key Highlights & Architecture
