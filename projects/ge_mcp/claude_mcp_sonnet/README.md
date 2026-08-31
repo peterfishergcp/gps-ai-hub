@@ -17,33 +17,31 @@ This directly enables Gemini Enterprise users to access Claude models right from
 ## 🏗️ System Architecture Diagram
 
 ```mermaid
-flowchart TD
-    subgraph Enterprise End-Users & Workflows
-        GE[Gemini Enterprise Web UI / Search & Chat]
-        NoCode[No-Code Enterprise Agents & Extensions]
+flowchart LR
+    subgraph GE["Gemini Enterprise"]
+        GEBox["Gemini Enterprise Suite
+        • Web UI / Chat
+        • Search & Deep Analysis
+        • Coding & Refactoring
+        • No-Code Agents & Extensions"]
     end
 
-    subgraph Google Cloud Infrastructure
-        subgraph BYO MCP Connector Layer
-            GE -->|1. Invoke Claude Connector over SSE| CloudRun[Google Cloud Run Service: claude-mcp-sonnet]
-            NoCode -->|1. Invoke Claude Connector over SSE| CloudRun
-            
-            subgraph MCP Server Container
-                CloudRun -->|JSON-RPC 2.0 / SSE Endpoint| MCPServer[MCP Server: Node.js / index.mjs]
-                MCPServer -->|Tool: ask_claude_sonnet| LLMBridge[LLM Request Handler]
-                MCPServer -->|Tool: generate_a2ui_component| A2UIGen[A2UI Schema Generator]
-            end
+    subgraph GCP["Google Cloud Infrastructure"]
+        subgraph BYO["BYO MCP Connector Layer"]
+            CloudRun["Cloud Run Service
+            (claude-mcp-sonnet)"]
         end
 
-        subgraph Vertex AI Managed Services
-            LLMBridge -->|2. rawPredict / streamRawPredict via IAM| VertexAI[Vertex AI Model API: publishers/anthropic/models/claude-sonnet-5]
-            A2UIGen -->|2. Generates A2UI Component JSON| VertexAI
+        subgraph Vertex["Vertex AI Managed API"]
+            VertexAI["Anthropic Claude Sonnet
+            (publishers/anthropic/models/claude-sonnet-5)"]
         end
     end
 
+    GEBox -->|1. Invoke BYO MCP Connector over SSE| CloudRun
+    CloudRun -->|2. rawPredict / streamRawPredict via IAM| VertexAI
     VertexAI -->|3. Streaming SSE Completion & Usage Metadata| CloudRun
-    CloudRun -->|4. Text Completion + Verification Badge| GE
-    CloudRun -->|4. Search / Coding / Agent Output| NoCode
+    CloudRun -->|4. Response + Model Verification Badge| GEBox
 ```
 
 ---
