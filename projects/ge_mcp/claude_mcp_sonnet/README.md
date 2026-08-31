@@ -1,4 +1,4 @@
-# Claude Sonnet MCP Server for Gemini Enterprise & Google Agent Platform
+# Claude Sonnet MCP Server for Gemini Enterprise
 
 > **DISCLAIMER:** This project is provided solely as an illustrative sample and proof-of-concept for educational and demonstration purposes. This is **NOT** an official Google product or officially supported Google software. It is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, pursuant to the Apache License 2.0.
 
@@ -8,7 +8,9 @@
 
 This project wraps the Vertex AI **Anthropic Claude Sonnet 3.5/5** model endpoint into a production-ready **MCP Server running on Google Cloud Run**.
 
-By containerizing and deploying the Claude model endpoint as an SSE-compatible MCP server on Cloud Run, we can easily register it as a **Bring-Your-Own (BYO) MCP Connector** inside **Gemini Enterprise**. This allows Gemini Enterprise users and agents on the **Google Agent Platform (ADK / Agent Engine)** to seamlessly invoke Claude Sonnet for multi-model reasoning, long-context analysis, and specialized completions directly within their enterprise workflows—all governed by Google Cloud IAM and security policies.
+By containerizing and deploying the Claude model endpoint as an SSE-compatible MCP server on Cloud Run, we can easily register it as a **Bring-Your-Own (BYO) MCP Connector** inside **Gemini Enterprise**. 
+
+This directly enables Gemini Enterprise users to access Claude models right from Gemini Enterprise as a native connector—opening up powerful new possibilities for enterprise users to leverage Claude for search, complex coding, deep analysis, and incorporating Claude models directly into no-code enterprise agent workflows, all governed by Google Cloud IAM and security policies.
 
 ---
 
@@ -16,15 +18,15 @@ By containerizing and deploying the Claude model endpoint as an SSE-compatible M
 
 ```mermaid
 flowchart TD
-    subgraph Enterprise Clients
-        GE[Gemini Enterprise Web UI]
-        ADK[ADK Python Agents / Agent Engine]
+    subgraph Enterprise End-Users & Workflows
+        GE[Gemini Enterprise Web UI / Search & Chat]
+        NoCode[No-Code Enterprise Agents & Extensions]
     end
 
     subgraph Google Cloud Infrastructure
         subgraph BYO MCP Connector Layer
-            GE -->|1. Invokes Tool over SSE| CloudRun[Google Cloud Run Service: claude-mcp-sonnet]
-            ADK -->|1. Invokes Tool over SSE| CloudRun
+            GE -->|1. Invoke Claude Connector over SSE| CloudRun[Google Cloud Run Service: claude-mcp-sonnet]
+            NoCode -->|1. Invoke Claude Connector over SSE| CloudRun
             
             subgraph MCP Server Container
                 CloudRun -->|JSON-RPC 2.0 / SSE Endpoint| MCPServer[MCP Server: Node.js / index.mjs]
@@ -41,7 +43,7 @@ flowchart TD
 
     VertexAI -->|3. Streaming SSE Completion & Usage Metadata| CloudRun
     CloudRun -->|4. Text Completion + Verification Badge| GE
-    CloudRun -->|4. Interactive A2UI Component / Response| ADK
+    CloudRun -->|4. Search / Coding / Agent Output| NoCode
 ```
 
 ---
@@ -49,12 +51,13 @@ flowchart TD
 ## 💡 Key Highlights & Architecture
 
 * **BYO MCP Connector for Gemini Enterprise**: By hosting the Anthropic Claude Vertex AI model endpoint inside an MCP server on Cloud Run, you can register it as a custom **Bring-Your-Own (BYO) MCP Connector** in the Gemini Enterprise Admin Console.
-* **Fully Managed & Serverless on Google Cloud**: The Anthropic Claude models on Google Cloud offer fully managed and serverless models as APIs. To use a Claude model on the Agent Platform, requests are sent directly to the Agent Platform API endpoint. Because Anthropic Claude models use a managed API on Vertex AI, **there is no need to provision or manage underlying infrastructure**.
-* **Incremental SSE Response Streaming**: You can stream your Claude responses to reduce end-user latency perception. A streamed response uses Server-Sent Events (SSE) to incrementally stream completion chunks back to the client or UI in real time.
+* **Direct Access to Claude Models**: Unlocks Anthropic Claude 3.5/5 Sonnet for Gemini Enterprise users for multi-turn search, code generation, technical analysis, and building no-code agents.
+* **Fully Managed & Serverless on Google Cloud**: The Anthropic Claude models on Google Cloud offer fully managed and serverless models as APIs. Because Anthropic Claude models use a managed API on Vertex AI, **there is no need to provision or manage underlying infrastructure**.
+* **Incremental SSE Response Streaming**: You can stream your Claude responses to reduce end-user latency perception. A streamed response uses Server-Sent Events (SSE) to incrementally stream completion chunks back to Gemini Enterprise in real time.
 * **Pay-As-You-Go & Provisioned Throughput**: You pay for Claude models as you use them (pay-as-you-go), or you pay a fixed fee when using provisioned throughput. For pay-as-you-go pricing, see the Anthropic Claude models on the Google Cloud pricing page.
 * **Read-Only Non-Disruptive Tool Annotations**: Tools are pre-configured with `readOnlyHint: true` and `destructiveHint: false` so Gemini Enterprise executes queries seamlessly without triggering user confirmation prompts.
 * **Model Provider Verification Badging**: Every response automatically includes an audit metadata badge verifying the model ID, publisher, token usage, and completion stop reason.
-* **Agent-to-User-Interface (A2UI) Generation (Secondary Capability)**: Includes specialized tools to generate structured A2UI JSON components (`a2ui.Card`, `a2ui.DataTable`, `a2ui.Form`, `a2ui.Modal`) for rendering rich interactive widgets in ADK and Agent-to-Agent (A2A) interfaces.
+* **Agent-to-User-Interface (A2UI) Generation (Secondary Capability)**: Includes specialized tools to generate structured A2UI JSON components (`a2ui.Card`, `a2ui.DataTable`, `a2ui.Form`, `a2ui.Modal`) for rendering rich interactive widgets.
 
 ---
 
@@ -64,7 +67,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **`ask_claude_sonnet`** | **Core LLM Bridge** | Sends prompts and system instructions to Claude Sonnet on Vertex AI and returns text completions with provider verification badges. |
 | **`generate_a2ui_component`** | **UI Generation** | Uses Claude Sonnet to generate valid A2UI JSON component specifications for rich UI rendering in frontends. |
-| **`get_a2ui_integration_guide`** | **Documentation** | Returns integration guides, component schemas, and best practices for A2UI with ADK and A2A interfaces. |
+| **`get_a2ui_integration_guide`** | **Documentation** | Returns integration guides, component schemas, and best practices for A2UI components. |
 
 ---
 
@@ -80,43 +83,15 @@ Because the Claude model endpoint is wrapped as an MCP server running on Cloud R
    * **SSE Endpoint URL**: `https://claude-mcp-sonnet-726122012742.us-central1.run.app/mcp`
    * **Authentication**: Google Cloud IAM / Service Account ADC.
 
-Once registered, users can invoke Claude directly in Gemini Enterprise chat:
-> *"Use Claude Sonnet to analyze this contract and give me a second opinion."*
-
----
-
-## 🐍 ADK Python Integration Example
-
-To attach this MCP server to an ADK agent (`app/agent.py`) using `google-adk`:
-
-```python
-from google.adk.agents import Agent
-from google.adk.tools.mcp_tool import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
-
-# Connect to deployed Claude Sonnet MCP Server
-claude_mcp_tools = McpToolset(
-    connection_params=SseConnectionParams(
-        url="https://claude-mcp-sonnet-726122012742.us-central1.run.app/mcp"
-    )
-)
-
-agent = Agent(
-    name="multi_model_agent",
-    model="gemini-3.7-flash",
-    instruction="""
-    You are an intelligent multi-model assistant. 
-    Use the `ask_claude_sonnet` tool to consult Claude 3.5/5 Sonnet on Vertex AI for complex analytical reasoning.
-    """,
-    tools=[claude_mcp_tools],
-)
-```
+Once registered, Gemini Enterprise users can access Claude for search, coding, and reasoning directly:
+> *"Use Claude Sonnet to refactor this Python script and optimize performance."*  
+> *"Have Claude Sonnet summarize this technical specification."*
 
 ---
 
 ## 🎨 Secondary Feature: A2UI (Agent-to-User-Interface)
 
-In addition to model queries, the server includes tools to generate **A2UI specifications**. A2UI allows agents to return structured UI components instead of plain markdown tables.
+In addition to model queries, the server includes tools to generate **A2UI specifications**. A2UI allows agents and assistants to return structured UI components instead of plain text or markdown tables.
 
 ### Example A2UI Output (`generate_a2ui_component`):
 
