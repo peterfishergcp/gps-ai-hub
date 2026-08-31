@@ -57,7 +57,7 @@ async function callClaudeVertex({
 
   if (systemPrompt) {
     payload.system = systemPrompt;
-  }
+  console.error(`[MODEL CALL] Invoking Model: '${MODEL_ID}' via Endpoint: ${endpointUrl}`);
 
   const response = await fetch(endpointUrl, {
     method: "POST",
@@ -70,10 +70,14 @@ async function callClaudeVertex({
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[MODEL ERROR] Vertex AI API Error (${response.status}): ${errorText}`);
     throw new Error(`Vertex AI Claude API Error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
+  const targetModel = data.model || MODEL_ID;
+  console.error(`[MODEL SUCCESS] Response received from Model: '${targetModel}' | Input Tokens: ${data.usage?.input_tokens} | Output Tokens: ${data.usage?.output_tokens}`);
+
   const textContent = data.content
     ?.filter((c) => c.type === "text")
     .map((c) => c.text)
@@ -83,8 +87,8 @@ async function callClaudeVertex({
 
   const verificationBadge = `\n\n---
   [Model Provider Verification]
-  • Model ID: ${data.model || MODEL_ID}
-  • Publisher: Anthropic (Vertex AI)
+  • Model ID: ${targetModel}
+  • Publisher: Anthropic (Agent Platform Model Garden)
   • Stop Reason: ${data.stop_reason || "end_turn"}
   • Input Tokens: ${data.usage?.input_tokens || "N/A"} | Output Tokens: ${data.usage?.output_tokens || "N/A"}`;
 
