@@ -12,13 +12,15 @@ By exposing Claude Sonnet as a standardized, production-ready MCP service over S
 
 ---
 
-## Key Capabilities
+## 💡 Key Highlights & Architecture
 
-1. **Enterprise Claude Connection for Gemini Enterprise**: Connects Gemini Enterprise applications directly to Anthropic Claude models (`publishers/anthropic/models/claude-sonnet-5:rawPredict`) on Vertex AI using IAM authentication.
-2. **Read-Only Non-Disruptive Tool Annotations**: Tools are pre-configured with `readOnlyHint: true` and `destructiveHint: false` so Gemini Enterprise executes queries seamlessly without triggering confirmation prompts.
-3. **Model Provider Verification Badging**: Every response automatically includes a audit metadata badge verifying the model ID, publisher, token usage, and completion stop reason.
-4. **Agent-to-User-Interface (A2UI) Generation (Secondary Capability)**: Includes specialized tools to generate structured A2UI JSON components (`a2ui.Card`, `a2ui.DataTable`, `a2ui.Form`, `a2ui.Modal`) for rendering rich interactive widgets in ADK and Agent-to-Agent (A2A) interfaces.
-5. **Production Cloud Run Ready**: Built-in HTTP SSE transport, session management, CORS support, and `/health` monitoring endpoints.
+* **Fully Managed & Serverless on Google Cloud**: The Anthropic Claude models on Google Cloud offer fully managed and serverless models as APIs. To use a Claude model on the Agent Platform, requests are sent directly to the Agent Platform API endpoint. Because Anthropic Claude models use a managed API on Vertex AI, **there is no need to provision or manage underlying infrastructure**.
+* **Incremental SSE Response Streaming**: You can stream your Claude responses to reduce end-user latency perception. A streamed response uses Server-Sent Events (SSE) to incrementally stream completion chunks back to the client or UI in real time.
+* **Pay-As-You-Go & Provisioned Throughput**: You pay for Claude models as you use them (pay-as-you-go), or you pay a fixed fee when using provisioned throughput. For pay-as-you-go pricing, see the Anthropic Claude models on the Google Cloud pricing page.
+* **Seamless Gemini Enterprise Connection**: Enables Gemini Enterprise to invoke Anthropic Claude models (`publishers/anthropic/models/claude-sonnet-5:rawPredict`) on Vertex AI using IAM authentication.
+* **Read-Only Non-Disruptive Tool Annotations**: Tools are pre-configured with `readOnlyHint: true` and `destructiveHint: false` so Gemini Enterprise executes queries seamlessly without triggering user confirmation prompts.
+* **Model Provider Verification Badging**: Every response automatically includes an audit metadata badge verifying the model ID, publisher, token usage, and completion stop reason.
+* **Agent-to-User-Interface (A2UI) Generation (Secondary Capability)**: Includes specialized tools to generate structured A2UI JSON components (`a2ui.Card`, `a2ui.DataTable`, `a2ui.Form`, `a2ui.Modal`) for rendering rich interactive widgets in ADK and Agent-to-Agent (A2A) interfaces.
 
 ---
 
