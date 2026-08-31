@@ -75,21 +75,38 @@ flowchart LR
 
 ---
 
-## 🔌 Registering as a BYO MCP Connector in Gemini Enterprise
+## 🚀 Quick Start (3-Step Deployment)
 
-Because the Claude model endpoint is wrapped as an MCP server running on Cloud Run, registering it as a **BYO MCP Connector** in **Gemini Enterprise** takes just a few clicks:
+Deploying your own Claude Sonnet MCP Server to Cloud Run and connecting it to Gemini Enterprise takes less than 2 minutes:
 
-1. Deploy the MCP server container to Cloud Run (or use the deployed SSE endpoint).
-2. Open **Gemini Enterprise Admin Console** > **Connectors & Tools** > **Add Custom / BYO MCP Connector**.
-3. Select **Remote MCP Server (SSE Transport)**.
-4. Enter the connector configuration:
+### 1️⃣ Step 1: Clone & Run Interactive Deployer
+
+Clone the repository and execute `./deploy.sh`:
+
+```bash
+git clone https://github.com/peterfishergcp/gps-ai-hub.git
+cd gps-ai-hub/projects/ge_mcp/claude_mcp_sonnet
+./deploy.sh
+```
+*The script will prompt for your GCP Project ID, automatically enable required APIs (`run`, `cloudbuild`, `aiplatform`), build the container image, and print your unique SSE Endpoint URL.*
+
+---
+
+### 2️⃣ Step 2: Register BYO MCP Connector in Gemini Enterprise
+
+1. Open **Gemini Enterprise Admin Console** > **Connectors & Tools** > **Add Custom / BYO MCP Connector**.
+2. Select **Remote MCP Server (SSE Transport)**.
+3. Configure the connector:
    * **Connector Name**: `claude-sonnet-model-garden`
-   * **SSE Endpoint URL**: `https://claude-mcp-sonnet-726122012742.us-central1.run.app/mcp`
-   * **Authentication**: Google Cloud IAM / Service Account ADC.
+   * **SSE Endpoint URL**: *(Paste the Cloud Run URL printed by `./deploy.sh` ending in `/mcp`)*
+   * **Authentication**: OAuth 2.0 / IAM (Identity Pass-Through).
 
-Once registered, Gemini Enterprise users can access Claude for search, coding, and reasoning directly:
-> *"Use Claude Sonnet to refactor this Python script and optimize performance."*  
-> *"Have Claude Sonnet summarize this technical specification."*
+---
+
+### 3️⃣ Step 3: Test in Gemini Enterprise
+
+Ask Gemini Enterprise chat:
+> *"Use Claude Sonnet to analyze this contract and summarize key risk points."*
 
 ---
 
@@ -116,9 +133,7 @@ In addition to model queries, the server includes tools to generate **A2UI speci
 
 ---
 
-## ☁️ Environment & Deployment
-
-### Environment Variables
+## ☁️ Environment Variables & Deployment Reference
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
@@ -127,7 +142,7 @@ In addition to model queries, the server includes tools to generate **A2UI speci
 | `MODEL_ID` | Anthropic model ID in Model Garden | `claude-sonnet-5` |
 | `PORT` | Container HTTP listening port | `8080` |
 
-### Deploy to Cloud Run
+### Manual Deploy Command
 
 ```bash
 gcloud run deploy claude-mcp-sonnet \
@@ -135,5 +150,5 @@ gcloud run deploy claude-mcp-sonnet \
   --region us-central1 \
   --allow-unauthenticated \
   --port 8080 \
-  --project ai-hub-459714
+  --project <YOUR_PROJECT_ID>
 ```
