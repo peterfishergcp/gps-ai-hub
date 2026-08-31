@@ -45,9 +45,10 @@ flowchart LR
 ```
 
 ### 🔒 Why IAM Authentication Matters in this Architecture:
-* **Zero API Key Leakage**: Authentication uses Google Cloud Service Accounts and Application Default Credentials (ADC), eliminating stored or static API keys.
-* **Enterprise Security & Audit Logging**: All requests routed to `rawPredict` / `streamRawPredict` are authorized via IAM roles (`roles/aiplatform.user`), ensuring full Cloud Logging compliance and audit tracking.
-* **VPC Service Control Perimeter**: Requests remain inside your enterprise's Google Cloud security boundary.
+* **End-User Identity Pass-Through**: When Gemini Enterprise invokes the BYO MCP Connector, the end-user's Bearer authentication token is passed directly through the MCP request header to the model endpoint.
+* **Granular Role-Based Access Control (RBAC)**: Because the caller's identity is passed through, **the end-user or calling identity must have active Vertex AI IAM permissions (`roles/aiplatform.user`)** on the target Google Cloud project to execute the model API call.
+* **Zero Static API Key Leakage**: Eliminates static API keys completely in favor of OAuth 2.0 / IAM short-lived tokens, with automatic fallback to the Cloud Run Service Account Application Default Credentials (ADC) for backend background tasks.
+* **Auditing & Enterprise Security Perimeter**: All requests are logged in Cloud Audit Logs with the end-user's verified GCP identity, fully governed under your enterprise VPC Service Controls.
 
 ---
 
