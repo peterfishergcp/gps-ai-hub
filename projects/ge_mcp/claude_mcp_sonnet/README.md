@@ -6,7 +6,7 @@
 
 ## 🎯 Primary Purpose
 
-This project wraps the Vertex AI **Anthropic Claude Sonnet 3.5/5** model endpoint into a production-ready **MCP Server running on Google Cloud Run**.
+This project wraps the **Anthropic Claude Sonnet 3.5/5** model endpoint from the **Gemini Enterprise Agent Platform Model Garden** into a production-ready **MCP Server running on Google Cloud Run**.
 
 By containerizing and deploying the Claude model endpoint as an SSE-compatible MCP server on Cloud Run, we can easily register it as a **Bring-Your-Own (BYO) MCP Connector** inside **Gemini Enterprise**. 
 
@@ -32,15 +32,15 @@ flowchart LR
             (claude-mcp-sonnet)"]
         end
 
-        subgraph Vertex["Vertex AI Managed API"]
-            VertexAI["Anthropic Claude Sonnet
+        subgraph ModelGarden["Agent Platform Model Garden"]
+            ClaudeModel["Anthropic Claude Sonnet
             (publishers/anthropic/models/claude-sonnet-5)"]
         end
     end
 
     GEBox -->|1. Invoke BYO MCP Connector over SSE| CloudRun
-    CloudRun -->|2. rawPredict / streamRawPredict via IAM| VertexAI
-    VertexAI -->|3. Streaming SSE Completion & Usage Metadata| CloudRun
+    CloudRun -->|2. rawPredict / streamRawPredict via IAM| ClaudeModel
+    ClaudeModel -->|3. Streaming SSE Completion & Usage Metadata| CloudRun
     CloudRun -->|4. Response + Model Verification Badge| GEBox
 ```
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ## 💡 Key Highlights & Architecture
 
-* **BYO MCP Connector for Gemini Enterprise**: By hosting the Anthropic Claude Vertex AI model endpoint inside an MCP server on Cloud Run, you can register it as a custom **Bring-Your-Own (BYO) MCP Connector** in the Gemini Enterprise Admin Console.
+* **BYO MCP Connector for Gemini Enterprise**: By hosting the Anthropic Claude Model Garden endpoint inside an MCP server on Cloud Run, you can register it as a custom **Bring-Your-Own (BYO) MCP Connector** in the Gemini Enterprise Admin Console.
 * **Direct Access to Claude Models**: Unlocks Anthropic Claude 3.5/5 Sonnet for Gemini Enterprise users for multi-turn search, code generation, technical analysis, and building no-code agents.
-* **Fully Managed & Serverless on Google Cloud**: The Anthropic Claude models on Google Cloud offer fully managed and serverless models as APIs. Because Anthropic Claude models use a managed API on Vertex AI, **there is no need to provision or manage underlying infrastructure**.
+* **Fully Managed & Serverless on Google Cloud**: The Anthropic Claude models in the Agent Platform Model Garden offer fully managed and serverless models as APIs. To use a Claude model on the Agent Platform, requests are sent directly to the Agent Platform API endpoint. Because Anthropic Claude models use a managed API, **there is no need to provision or manage underlying infrastructure**.
 * **Incremental SSE Response Streaming**: You can stream your Claude responses to reduce end-user latency perception. A streamed response uses Server-Sent Events (SSE) to incrementally stream completion chunks back to Gemini Enterprise in real time.
 * **Pay-As-You-Go & Provisioned Throughput**: You pay for Claude models as you use them (pay-as-you-go), or you pay a fixed fee when using provisioned throughput. For pay-as-you-go pricing, see the Anthropic Claude models on the Google Cloud pricing page.
 * **Read-Only Non-Disruptive Tool Annotations**: Tools are pre-configured with `readOnlyHint: true` and `destructiveHint: false` so Gemini Enterprise executes queries seamlessly without triggering user confirmation prompts.
@@ -63,7 +63,7 @@ flowchart LR
 
 | Tool Name | Primary Purpose | Description |
 | :--- | :--- | :--- |
-| **`ask_claude_sonnet`** | **Core LLM Bridge** | Sends prompts and system instructions to Claude Sonnet on Vertex AI and returns text completions with provider verification badges. |
+| **`ask_claude_sonnet`** | **Core LLM Bridge** | Sends prompts and system instructions to Claude Sonnet in Model Garden and returns text completions with provider verification badges. |
 | **`generate_a2ui_component`** | **UI Generation** | Uses Claude Sonnet to generate valid A2UI JSON component specifications for rich UI rendering in frontends. |
 | **`get_a2ui_integration_guide`** | **Documentation** | Returns integration guides, component schemas, and best practices for A2UI components. |
 
@@ -77,7 +77,7 @@ Because the Claude model endpoint is wrapped as an MCP server running on Cloud R
 2. Open **Gemini Enterprise Admin Console** > **Connectors & Tools** > **Add Custom / BYO MCP Connector**.
 3. Select **Remote MCP Server (SSE Transport)**.
 4. Enter the connector configuration:
-   * **Connector Name**: `claude-sonnet-vertex`
+   * **Connector Name**: `claude-sonnet-model-garden`
    * **SSE Endpoint URL**: `https://claude-mcp-sonnet-726122012742.us-central1.run.app/mcp`
    * **Authentication**: Google Cloud IAM / Service Account ADC.
 
@@ -116,9 +116,9 @@ In addition to model queries, the server includes tools to generate **A2UI speci
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `PROJECT_ID` | GCP Project ID hosting Vertex AI | `ai-hub-459714` |
-| `LOCATION_ID` | Vertex AI Location | `global` |
-| `MODEL_ID` | Anthropic model ID on Vertex AI | `claude-sonnet-5` |
+| `PROJECT_ID` | GCP Project ID hosting Model Garden API | `ai-hub-459714` |
+| `LOCATION_ID` | Model Garden Location | `global` |
+| `MODEL_ID` | Anthropic model ID in Model Garden | `claude-sonnet-5` |
 | `PORT` | Container HTTP listening port | `8080` |
 
 ### Deploy to Cloud Run
