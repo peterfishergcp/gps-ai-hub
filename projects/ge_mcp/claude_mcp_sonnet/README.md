@@ -96,10 +96,19 @@ cd gps-ai-hub/projects/ge_mcp/claude_mcp_sonnet
 
 1. Open **Gemini Enterprise Admin Console** > **Connectors & Tools** > **Add Custom / BYO MCP Connector**.
 2. Select **Remote MCP Server (SSE Transport)**.
-3. Configure the connector:
-   * **Connector Name**: `claude-sonnet-5-model-garden`
-   * **SSE Endpoint URL**: *(Paste the Cloud Run URL printed by `./deploy.sh` ending in `/mcp`)*
-   * **Authentication**: OAuth 2.0 / IAM (Identity Pass-Through).
+3. Fill in the exact connector configuration fields:
+
+| Field Name | Recommended Value |
+| :--- | :--- |
+| **MCP Server URL** | `https://<YOUR_CLOUD_RUN_URL>/mcp` |
+| **Authorization URL** | `https://accounts.google.com/o/oauth2/v2/auth` |
+| **Authorization URL Parameters** | `&access_type=offline&prompt=consent` |
+| **Token URL** | `https://oauth2.googleapis.com/token` |
+| **Client ID** | *(Your Google OAuth 2.0 Web Application Client ID)* |
+| **Client Secret** | *(Your Google OAuth 2.0 Web Application Client Secret)* |
+| **Scopes** | `https://www.googleapis.com/auth/cloud-platform openid email` |
+| **Enable PKCE Support** | ✅ Enabled *(Recommended)* |
+| **Use HTTP Basic Authentication** | ❌ Disabled *(Unchecked)* |
 
 ---
 
