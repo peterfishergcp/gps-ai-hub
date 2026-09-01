@@ -107,8 +107,8 @@ cd gps-ai-hub/projects/ge_mcp/claude_mcp_sonnet
 | **Client ID** | *(Your Google OAuth 2.0 Web Application Client ID)* |
 | **Client Secret** | *(Your Google OAuth 2.0 Web Application Client Secret)* |
 | **Scopes** | `https://www.googleapis.com/auth/cloud-platform openid email` |
-| **Enable PKCE Support** | ✅ Enabled *(Recommended)* |
-| **Use HTTP Basic Authentication** | ❌ Disabled *(Unchecked)* |
+| **Enable PKCE Support** | ❌ Unchecked *(Disabled)* |
+| **Use HTTP Basic Authentication** | ✅ Checked *(Enabled)* |
 
 ---
 
