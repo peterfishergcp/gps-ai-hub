@@ -16,7 +16,7 @@ import { createServer } from "http";
 import { GoogleAuth } from "google-auth-library";
 
 const PORT = process.env.PORT || 8080;
-const PROJECT_ID = process.env.PROJECT_ID || "ai-hub-459714";
+const PROJECT_ID = process.env.PROJECT_ID;
 const LOCATION_ID = process.env.LOCATION_ID || "global";
 const MODEL_ID = process.env.MODEL_ID || "claude-sonnet-5";
 
