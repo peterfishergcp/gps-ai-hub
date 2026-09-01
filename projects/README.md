@@ -1,6 +1,6 @@
 # Google Cloud GPS AI Hub
 
-Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repository houses enterprise reference architectures, production-grade Model Context Protocol (MCP) connectors, and technical demonstrations for **Gemini Enterprise** and **Google GenAI / Vertex AI SDKs**.
+Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repository houses enterprise reference architectures, production-grade Model Context Protocol (MCP) connectors, and technical demonstrations for **Gemini Enterprise**.
 
 > **Acknowledgements & Attribution**: MCP connectors are based on original work and reference architecture by **Upasana Pati** ([upasana1105/UP_Demos/byomcp](https://github.com/upasana1105/UP_Demos/tree/main/byomcp)).
 
@@ -8,23 +8,18 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ---
 
-## 💡 Repository Projects Overview
+## 🔌 Gemini Enterprise MCP Connectors (`/ge_mcp`)
 
-This repository is organized into two main demonstration suites:
+Enterprise-grade Model Context Protocol (MCP) servers running on Google Cloud Run that bridge enterprise systems and specialized models directly into **Gemini Enterprise**.
 
-1. **[Gemini Enterprise MCP Connectors (`/ge_mcp`)](#1-gemini-enterprise-mcp-connectors-ge_mcp)**
-2. **[Gemini Thinking Mode & Zero Memory Retention Demos (`/gemini_thinking_mode_demo`)](#2-gemini-thinking-mode--zero-memory-retention-demos-gemini_thinking_mode_demo)**
+### 🌟 Featured Connectors:
 
----
-
-## 1. 🔌 Gemini Enterprise MCP Connectors (`/ge_mcp`)
-
-Enterprise-grade Model Context Protocol (MCP) servers that bridge Microsoft Graph API and corporate enterprise systems directly into **Gemini Enterprise**.
-
-### Featured Connectors:
+- 🧠 **[Claude Sonnet 5 Model Garden MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/claude_mcp_sonnet)**:
+  - Bring-Your-Own (BYO) MCP Connector wrapping Anthropic Claude Sonnet 5 (`publishers/anthropic/models/claude-sonnet-5`) from the Agent Platform Model Garden into Cloud Run.
+  - Enables Gemini Enterprise users to access Claude Sonnet 5 for search, deep coding, 1M token context analysis, and no-code agent workflows with Google IAM token pass-through.
 
 - 📁 **[Customize SharePoint MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize-sharepoint-mcp-server)**:
-  - Autonomous SharePoint document management, site navigation, and deep-link citation rendering.
+  - Autonomous SharePoint document management, site navigation, and deep-link citation rendering via Microsoft Graph.
   - Page-level citations (`#page=N`), multi-format text extraction (`.docx`, `.pptx`, `.xlsx`), and 12 read/write actions protected by Gemini Enterprise Action Approval dialogs.
 
 - ✉️ **[Microsoft Outlook MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/customize_outlook_mcp)**:
@@ -36,28 +31,9 @@ Enterprise-grade Model Context Protocol (MCP) servers that bridge Microsoft Grap
 
 ---
 
-## 2. 🧠 Gemini Thinking Mode & Zero Memory Retention Demos (`/gemini_thinking_mode_demo`)
-
-Technical demonstrations and empirical payload dissections showcasing **Gemini Thinking Mode** control and **Zero Data Retention / Zero Memory** behavior using the Google GenAI SDK (`google-genai`).
-
-### Featured Demos:
-
-- 💬 **[Interactions API Zero Memory (`demo_interactions_api_zero_memory.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_interactions_api_zero_memory.py)**:
-  - Demonstrates that omitting `previous_interaction_id` on the recommended `client.interactions.create()` API ensures follow-up turns execute completely unlinked with **ZERO memory** of previous turns.
-
-- 🔍 **[Payload Dissection & Empirical Proof (`demo_prove_no_thoughts.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_prove_no_thoughts.py)**:
-  - Empirically dissects API response candidate parts to prove that `include_thoughts=False` completely omits human-readable thought process text (`part.thought == None`) from payloads.
-
-- 🔄 **[Thought Signature Preservation (`demo_thought_signature_comparison.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_thought_signature_comparison.py)**:
-  - Demonstrates passing thought signatures across sessions to preserve reasoning state vs inaccessible state when signatures are omitted.
-
-- ⚡ **[Gemini 3 Thinking Levels (`demo_thinking_levels.py`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/gemini_thinking_mode_demo/demo_thinking_levels.py)**:
-  - Demonstrates configuring `MINIMAL`, `LOW`, `MEDIUM`, and `HIGH` thinking levels on Gemini 3 models (`gemini-3.5-flash`, `gemini-3-flash-preview`).
-
----
-
 ## 🔒 Security & Governance
 
-- **Delegated OAuth 2.0 & Application Auth**: MCP connectors support user Bearer token delegation and Client Credentials fallback via Microsoft Entra ID.
+- **Delegated OAuth 2.0 & Identity Pass-Through**: MCP connectors support user Bearer token delegation directly to target endpoints with granular RBAC.
+- **Zero Static Secrets**: Eliminates static API keys in favor of short-lived OAuth 2.0 / IAM tokens.
 - **Enterprise Consent Dialogs**: All data modification actions trigger native Gemini Enterprise action approval dialogs.
-- **Zero Data Retention Controls**: Demonstrates stateless execution options ensuring no customer data or thoughts persist on Google Cloud servers.
+- **Cloud Audit Logging**: All model and tool invocations are tracked and auditable under enterprise Google Cloud boundaries.
