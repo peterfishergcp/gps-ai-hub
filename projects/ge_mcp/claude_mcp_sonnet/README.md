@@ -146,7 +146,7 @@ In addition to model queries, the server includes tools to generate **A2UI speci
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `PROJECT_ID` | GCP Project ID hosting Model Garden API | `ai-hub-459714` |
+| `PROJECT_ID` | GCP Project ID hosting Model Garden API | `<YOUR_PROJECT_ID>` |
 | `LOCATION_ID` | Model Garden Location | `global` |
 | `MODEL_ID` | Anthropic model ID in Model Garden | `claude-sonnet-5` |
 | `PORT` | Container HTTP listening port | `8080` |
