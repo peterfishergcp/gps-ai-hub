@@ -116,13 +116,21 @@ skills/
 terraform/
 *.pdf
 
-# Allow tracking in projects folder
-!projects/
-
-# Scratchpad files
-scratchpad.md
-scratchpad.txt
-scratchpad.*
-*.scratch
-scratch/
-.scratchpad/
+# ==========================================
+# Projects folder exclusions
+# ==========================================
+projects/claude-a2ui-adk-agent/
+projects/cms-multiagent-demo/
+projects/gemini-enterprise-usage-analytics-sanitized/
+projects/gemini_thinking_mode_demo/
+projects/medicaid-fraud-adk/
+projects/ge_mcp/bigquery-managed-mcp-server/
+projects/ge_mcp/bigquery-mcp-server/
+projects/ge_mcp/box-mcp-server/
+projects/ge_mcp/citation_mcp_server.py
+projects/ge_mcp/customize-sharepoint_mcp_w_sdp/
+projects/ge_mcp/databricks-mcp-bridge/
+projects/ge_mcp/jira-mcp-server/
+projects/ge_mcp/salesforce-mcp/
+projects/ge_mcp/skills/
+projects/ge_mcp/snowflake-mcp-server/
