@@ -166,5 +166,9 @@ gcloud run deploy claude-mcp-sonnet \
 
 ## 📸 Gemini Enterprise & Claude Sonnet 5 Verification
 
+### 1️⃣ Gemini Enterprise Web UI Response Verification
 ![Gemini Enterprise Claude Sonnet 5 Response](images/gemini_enterprise_claude_response.png)
+
+### 2️⃣ Google Cloud Logging Audit Trail (`claude-sonnet-5`)
+![Google Cloud Logging Audit Trail Verification](images/gcp_cloud_logging_verification.png)
 
