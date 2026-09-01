@@ -161,3 +161,10 @@ gcloud run deploy claude-mcp-sonnet \
   --port 8080 \
   --project <YOUR_PROJECT_ID>
 ```
+
+---
+
+## 📸 Gemini Enterprise & Claude Sonnet 5 Verification
+
+![Gemini Enterprise Claude Sonnet 5 Response](images/gemini_enterprise_claude_response.png)
+
