@@ -9,9 +9,18 @@ echo "🚀 Claude MCP Server - Interactive Deployer for Cloud Run"
 echo "=================================================================="
 
 # 1. Detect or Prompt for GCP Project ID
-DEFAULT_PROJECT=$(gcloud config get-value project 2>/dev/null || echo "ai-hub-459714")
-read -p "Enter GCP Project ID [default: ${DEFAULT_PROJECT}]: " INPUT_PROJECT
-PROJECT_ID="${INPUT_PROJECT:-$DEFAULT_PROJECT}"
+DEFAULT_PROJECT=$(gcloud config get-value project 2>/dev/null || echo "")
+if [ -n "$DEFAULT_PROJECT" ]; then
+  read -p "Enter GCP Project ID [default: ${DEFAULT_PROJECT}]: " INPUT_PROJECT
+  PROJECT_ID="${INPUT_PROJECT:-$DEFAULT_PROJECT}"
+else
+  read -p "Enter GCP Project ID: " PROJECT_ID
+fi
+
+if [ -z "$PROJECT_ID" ]; then
+  echo "❌ Error: GCP Project ID is required."
+  exit 1
+fi
 
 # 2. Detect or Prompt for GCP Region
 read -p "Enter GCP Region [default: us-central1]: " INPUT_REGION
