@@ -115,7 +115,7 @@ cd gps-ai-hub/projects/ge_mcp/claude_mcp_sonnet
 ### 3️⃣ Step 3: Test in Gemini Enterprise
 
 Ask Gemini Enterprise chat:
-> *"Use Claude Sonnet to analyze this contract and summarize key risk points."*
+> *"Ask Claude about MCP, use the Claude Sonnet MCP connector to help explain what makes MCP so great for enterprises"*
 
 ---
 
