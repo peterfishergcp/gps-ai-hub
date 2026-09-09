@@ -1,0 +1,17 @@
+{
+  "name": "sharepoint-mcp-server-purview-sdp",
+  "version": "1.0.0",
+  "description": "SharePoint MCP Server with Purview Sensitivity Label Extraction and Google SDP Policy Triggering",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "axios": "^1.13.5",
+    "dotenv": "^17.3.1",
+    "mammoth": "^1.12.0",
+    "xlsx": "^0.18.5"
+  }
+}
