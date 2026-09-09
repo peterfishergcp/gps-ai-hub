@@ -128,7 +128,6 @@ projects/ge_mcp/bigquery-managed-mcp-server/
 projects/ge_mcp/bigquery-mcp-server/
 projects/ge_mcp/box-mcp-server/
 projects/ge_mcp/citation_mcp_server.py
-projects/ge_mcp/customize-sharepoint_mcp_w_sdp/
 projects/ge_mcp/databricks-mcp-bridge/
 projects/ge_mcp/jira-mcp-server/
 projects/ge_mcp/salesforce-mcp/
