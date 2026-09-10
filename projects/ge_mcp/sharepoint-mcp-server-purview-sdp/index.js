@@ -37,8 +37,205 @@ const keepAliveAgent = new https.Agent({
 });
 axios.defaults.httpsAgent = keepAliveAgent;
 
-// Known Microsoft Purview Sensitivity Label GUID for CUSTOM_CEPF_LABEL (defined in Google Cloud SDP Policy purview_cepf)
-const KNOWN_PURVIEW_GUID = process.env.PURVIEW_LABEL_GUID || "27c86af4-afb5-4c50-9816-2f0e144288d0";
+axios.defaults.httpsAgent = keepAliveAgent;
+
+// --- Dynamic SDP Content Policy & Purview Label Synchronizer ---
+// Cache for resolved policy metadata and sensitivity label GUIDs
+let cachedPolicyState = {
+    policyName: process.env.SDP_CONTENT_POLICY || null,
+    connectorId: process.env.MCP_CONNECTOR_ID || null,
+    engineId: process.env.GE_ENGINE_ID || null,
+    projectId: process.env.GCP_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "ai-hub-459714",
+    location: process.env.GE_LOCATION || "us",
+    guidToInfoTypeMap: new Map(), // Lowercase GUID -> { infoTypeName, displayName, returnVerdict, regexPatterns }
+    regexRules: [],               // [{ name, regex, returnVerdict }]
+    lastFetched: 0,
+    ttlMs: 5 * 60 * 1000 // Refresh every 5 minutes
+};
+
+/**
+ * Gets a Google Cloud OAuth2 Access Token using Compute Engine metadata or ADC
+ */
+async function getGcpAccessToken() {
+    // 1. Try Cloud Run / Compute Engine metadata server
+    try {
+        const metaRes = await axios.get(
+            "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+            {
+                headers: { "Metadata-Flavor": "Google" },
+                timeout: 1500
+            }
+        );
+        if (metaRes.data && metaRes.data.access_token) {
+            return metaRes.data.access_token;
+        }
+    } catch (e) {
+        // Not running on GCP or local environment
+    }
+
+    // 2. Check environment variable override
+    if (process.env.GCP_ACCESS_TOKEN) {
+        return process.env.GCP_ACCESS_TOKEN;
+    }
+
+    return null;
+}
+
+/**
+ * Dynamically resolves the SDP Content Policy associated with the Discovery Engine connector
+ */
+async function resolveConnectorSdpPolicy(gcpToken) {
+    if (!gcpToken) return null;
+
+    const projectId = cachedPolicyState.projectId;
+    const location = cachedPolicyState.location;
+    const authHeaders = {
+        Authorization: `Bearer ${gcpToken}`,
+        "X-Goog-User-Project": projectId
+    };
+
+    // If specific policy is already explicitly set, prioritize it
+    if (process.env.SDP_CONTENT_POLICY) {
+        return process.env.SDP_CONTENT_POLICY;
+    }
+
+    try {
+        // 1. Query Discovery Engine dataStores in collection to find custom MCP dataStore
+        const endpoint = `https://${location}-discoveryengine.googleapis.com/v1alpha/projects/${projectId}/locations/${location}/collections/default_collection/dataStores`;
+        const res = await axios.get(endpoint, { headers: authHeaders, timeout: 5000 });
+        const dataStores = res.data.dataStores || [];
+
+        // Find dataStore matching sharepoint / mcp with sensitiveDataProtectionPolicy
+        const mcpStore = dataStores.find(ds => 
+            ds.dataProtectionPolicy && 
+            ds.dataProtectionPolicy.sensitiveDataProtectionPolicy && 
+            ds.dataProtectionPolicy.sensitiveDataProtectionPolicy.policy &&
+            (ds.name.includes("mcp") || ds.name.includes("sharepoint"))
+        );
+
+        if (mcpStore) {
+            const policyName = mcpStore.dataProtectionPolicy.sensitiveDataProtectionPolicy.policy;
+            console.error(`[SDP RESOLVER] Dynamically discovered SDP Content Policy from dataStore "${mcpStore.name}": ${policyName}`);
+            return policyName;
+        }
+    } catch (err) {
+        console.error("[SDP RESOLVER] Failed to resolve connector dataStore from Discovery Engine API:", err.message);
+    }
+
+    return null;
+}
+
+/**
+ * Fetches the SDP Content Policy definition and extracts all Purview GUIDs and regex patterns
+ */
+async function refreshSdpContentPolicy(force = false) {
+    const now = Date.now();
+    if (!force && (now - cachedPolicyState.lastFetched < cachedPolicyState.ttlMs) && cachedPolicyState.guidToInfoTypeMap.size > 0) {
+        return cachedPolicyState;
+    }
+
+    const gcpToken = await getGcpAccessToken();
+    if (!gcpToken) {
+        console.error("[SDP RESOLVER] No GCP access token available. Operating in standalone fallback mode.");
+        return cachedPolicyState;
+    }
+
+    // Resolve policy resource path if not already determined
+    let policyResourceName = cachedPolicyState.policyName;
+    if (!policyResourceName) {
+        policyResourceName = await resolveConnectorSdpPolicy(gcpToken);
+        if (policyResourceName) cachedPolicyState.policyName = policyResourceName;
+    }
+
+    if (!policyResourceName) {
+        console.error("[SDP RESOLVER] No SDP Content Policy configured or discovered.");
+        return cachedPolicyState;
+    }
+
+    // Normalize policy URL path (using official Cloud DLP / SDP API hostname)
+    const url = policyResourceName.startsWith("http") 
+        ? policyResourceName 
+        : `https://dlp.googleapis.com/v2/${policyResourceName}`;
+
+    try {
+        console.error(`[SDP RESOLVER] Fetching active SDP Content Policy definition from: ${url}`);
+        const res = await axios.get(url, {
+            headers: {
+                Authorization: `Bearer ${gcpToken}`,
+                "X-Goog-User-Project": cachedPolicyState.projectId
+            },
+            timeout: 5000
+        });
+
+        const policyData = res.data;
+        const newGuidMap = new Map();
+        const newRegexRules = [];
+
+        // Build verdict map from rules
+        const infoTypeVerdicts = new Map();
+        if (Array.isArray(policyData.rules)) {
+            for (const rule of policyData.rules) {
+                const verdict = rule.action && rule.action.returnVerdict ? rule.action.returnVerdict : "BLOCK";
+                if (Array.isArray(rule.conditions)) {
+                    for (const cond of rule.conditions) {
+                        const names = (cond.infoTypeCondition && cond.infoTypeCondition.infoTypes && cond.infoTypeCondition.infoTypes.infoTypeNames) || [];
+                        for (const name of names) {
+                            infoTypeVerdicts.set(name, verdict);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Parse customInfoTypes in inspectConfig
+        if (policyData.inspectConfig && Array.isArray(policyData.inspectConfig.customInfoTypes)) {
+            for (const customInfo of policyData.inspectConfig.customInfoTypes) {
+                const infoName = customInfo.infoType ? customInfo.infoType.name : "CUSTOM_SENSITIVITY_LABEL";
+                const verdict = infoTypeVerdicts.get(infoName) || "BLOCK";
+
+                // Case 1: Sensitivity Label GUID (Purview file label)
+                if (customInfo.fileLabelInfoType && customInfo.fileLabelInfoType.sensitivityLabel && customInfo.fileLabelInfoType.sensitivityLabel.guid) {
+                    const rawGuid = customInfo.fileLabelInfoType.sensitivityLabel.guid.toLowerCase().trim();
+                    newGuidMap.set(rawGuid, {
+                        guid: rawGuid,
+                        infoTypeName: infoName,
+                        displayName: infoName.replace(/_/g, ' '),
+                        returnVerdict: verdict
+                    });
+                    console.error(`[SDP RESOLVER] Loaded Purview Sensitivity Label: GUID "${rawGuid}" -> InfoType "${infoName}" (Verdict: ${verdict})`);
+                }
+
+                // Case 2: Regex patterns (e.g. Source Selection FAR clauses)
+                if (customInfo.regex && customInfo.regex.pattern) {
+                    try {
+                        const compiled = new RegExp(customInfo.regex.pattern.replace(/^\(\?i\)/, ''), 'i');
+                        newRegexRules.push({
+                            name: infoName,
+                            regex: compiled,
+                            returnVerdict: verdict,
+                            pattern: customInfo.regex.pattern
+                        });
+                        console.error(`[SDP RESOLVER] Loaded Regex Content Rule: InfoType "${infoName}" -> Pattern "${customInfo.regex.pattern}"`);
+                    } catch (regexErr) {
+                        console.error(`[SDP RESOLVER] Warning: Could not compile regex pattern "${customInfo.regex.pattern}":`, regexErr.message);
+                    }
+                }
+            }
+        }
+
+        cachedPolicyState.guidToInfoTypeMap = newGuidMap;
+        cachedPolicyState.regexRules = newRegexRules;
+        cachedPolicyState.lastFetched = now;
+        console.error(`[SDP RESOLVER] Policy refresh complete. Active Purview GUIDs: ${newGuidMap.size}, Regex rules: ${newRegexRules.length}`);
+    } catch (err) {
+        console.error("[SDP RESOLVER] Error fetching SDP Content Policy details:", err.message);
+    }
+
+    return cachedPolicyState;
+}
+
+// Initial asynchronous fetch of policy on server startup
+refreshSdpContentPolicy(true).catch(e => console.error("[SDP RESOLVER] Initial policy load warning:", e.message));
 
 // Helper to retrieve Microsoft Graph authorization headers using OAuth 2.0
 async function getGraphHeaders(req) {
@@ -95,7 +292,7 @@ async function getGraphHeaders(req) {
 
 /**
  * Extracts Purview Sensitivity Label metadata from Microsoft Graph item payload
- * Supports Graph beta sensitivityLabel facet, list item fields, compliance tags, and OOXML properties.
+ * Dynamically resolves against all GUIDs registered in the active Google Cloud SDP Content Policy.
  */
 function extractSensitivityLabelInfo(itemData, bufferData = null) {
     let labelId = null;
@@ -120,36 +317,63 @@ function extractSensitivityLabelInfo(itemData, bufferData = null) {
     if (bufferData && Buffer.isBuffer(bufferData)) {
         try {
             const bufStr = bufferData.toString('utf-8', 0, Math.min(bufferData.length, 500000));
-            // Match MSIP_Label_<GUID> or sensitivity label GUID patterns
-            const msipMatch = bufStr.match(/MSIP_Label_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-            if (msipMatch && msipMatch[1]) {
-                labelId = msipMatch[1].toLowerCase();
-                if (!labelName) {
-                    labelName = (labelId.toLowerCase() === KNOWN_PURVIEW_GUID.toLowerCase()) ? "CUSTOM_CEPF_LABEL" : "Purview Sensitivity Label";
+            
+            // First check if buffer matches any of our dynamically registered SDP policy GUIDs
+            for (const [knownGuid, meta] of cachedPolicyState.guidToInfoTypeMap.entries()) {
+                if (bufStr.toLowerCase().includes(knownGuid)) {
+                    labelId = knownGuid;
+                    labelName = meta.infoTypeName;
+                    break;
                 }
-            } else if (bufStr.includes(KNOWN_PURVIEW_GUID)) {
-                labelId = KNOWN_PURVIEW_GUID;
-                if (!labelName) labelName = "CUSTOM_CEPF_LABEL";
+            }
+
+            // Fallback match standard MSIP_Label_<GUID> pattern
+            if (!labelId) {
+                const msipMatch = bufStr.match(/MSIP_Label_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+                if (msipMatch && msipMatch[1]) {
+                    labelId = msipMatch[1].toLowerCase();
+                }
             }
         } catch (e) {
             console.error("[PURVIEW EXTRACTION LOG] Buffer inspection error:", e.message);
         }
     }
 
-    // 4. Fallback check for filename/metadata patterns (e.g. Cymbal_QuantumLedger or Policy 2321)
-    const itemName = itemData && itemData.name ? itemData.name.toLowerCase() : "";
-    if (!labelId && (itemName.includes("quantumledger") || itemName.includes("policy 2321") || itemName.includes("cepf"))) {
-        console.error(`[PURVIEW MATCH] Item "${itemData.name}" matches protected enterprise dataset. Associating Purview GUID ${KNOWN_PURVIEW_GUID}`);
-        labelId = KNOWN_PURVIEW_GUID;
-        labelName = "CUSTOM_CEPF_LABEL";
+    // 4. Check dynamic regex rules against item name
+    const itemName = itemData && itemData.name ? itemData.name : "";
+    if (!labelId) {
+        for (const rule of cachedPolicyState.regexRules) {
+            if (rule.regex && rule.regex.test(itemName)) {
+                console.error(`[SDP REGEX MATCH] Item name "${itemName}" matched SDP regex rule: "${rule.name}"`);
+                labelName = rule.name;
+                break;
+            }
+        }
     }
 
     if (labelId) {
+        const normalizedId = labelId.toLowerCase().trim();
+        const sdpMatch = cachedPolicyState.guidToInfoTypeMap.get(normalizedId);
+
+        const finalInfoType = sdpMatch ? sdpMatch.infoTypeName : (labelName || "SENSITIVITY_LABEL");
+        const finalDisplayName = labelName || (sdpMatch ? sdpMatch.displayName : "Purview Sensitivity Label");
+
         return {
-            guid: labelId,
-            displayName: labelName || (labelId.toLowerCase() === KNOWN_PURVIEW_GUID.toLowerCase() ? "CUSTOM_CEPF_LABEL" : "Sensitivity Label"),
+            guid: normalizedId,
+            displayName: finalDisplayName,
             protectionEnabled: protectionEnabled || true,
-            infoTypeName: (labelId.toLowerCase() === KNOWN_PURVIEW_GUID.toLowerCase()) ? "CUSTOM_CEPF_LABEL" : labelName
+            infoTypeName: finalInfoType,
+            returnVerdict: sdpMatch ? sdpMatch.returnVerdict : "BLOCK"
+        };
+    }
+
+    if (labelName) {
+        return {
+            guid: null,
+            displayName: labelName,
+            protectionEnabled: true,
+            infoTypeName: labelName,
+            returnVerdict: "BLOCK"
         };
     }
 
@@ -643,11 +867,12 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
                             extractedText = `[Error extracting document text: ${extractionErr.message}]`;
                         }
                         
-                        // If document has Purview sensitivity label or matches CEPF classification,
+                        // If document has Purview sensitivity label or matches dynamic SDP policy,
                         // prepend the sensitivity classification banner into the content so SDP text scanning triggers as well
                         let finalContent = extractedText || "No readable text content could be extracted from this document.";
-                        if (labelInfo && labelInfo.guid.toLowerCase() === KNOWN_PURVIEW_GUID.toLowerCase()) {
-                            finalContent = `[CLASSIFICATION: RESTRICTED / PURVIEW SENSITIVITY LABEL: ${labelInfo.displayName} (GUID: ${labelInfo.guid}) - SOURCE SELECTION INFORMATION - SEE FAR 2.101 AND 3.104]
+                        if (labelInfo && (labelInfo.guid || labelInfo.infoTypeName)) {
+                            const guidStr = labelInfo.guid ? ` (GUID: ${labelInfo.guid})` : '';
+                            finalContent = `[CLASSIFICATION: RESTRICTED / PURVIEW SENSITIVITY LABEL: ${labelInfo.displayName}${guidStr} - ACTION VERDICT: ${labelInfo.returnVerdict || 'BLOCK'} - SOURCE SELECTION INFORMATION - SEE FAR 2.101 AND 3.104]
 
 ` + finalContent;
                         }
@@ -871,14 +1096,22 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
         return;
     }
     if (url.pathname === "/health" || url.pathname === "/") {
+        // Trigger a background refresh if needed
+        refreshSdpContentPolicy().catch(() => {});
+
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify({ 
             status: "healthy",
             service: "sharepoint-mcp-server-purview-sdp",
-            version: "1.0.0",
-            sdpContentPolicy: "projects/YOUR_PROJECT_ID/locations/us/contentPolicies/YOUR_CONTENT_POLICY",
-            purviewLabelGuid: KNOWN_PURVIEW_GUID,
+            version: "1.1.0",
+            sdpContentPolicy: cachedPolicyState.policyName || "auto-discovering",
+            dynamicSdpSync: {
+                activePurviewGuids: Array.from(cachedPolicyState.guidToInfoTypeMap.keys()),
+                activeRegexRules: cachedPolicyState.regexRules.map(r => r.name),
+                totalLabelsTracked: cachedPolicyState.guidToInfoTypeMap.size,
+                lastPolicySync: cachedPolicyState.lastFetched ? new Date(cachedPolicyState.lastFetched).toISOString() : null
+            },
             timestamp: new Date().toISOString()
         }));
         return;
