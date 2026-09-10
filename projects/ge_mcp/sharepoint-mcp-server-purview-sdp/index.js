@@ -724,8 +724,12 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
                         }));
                         resultObj = { sites: simplified };
                     } else if (name === "query_document_libraries_lookup" || name === "list_document_libraries") {
-                        const siteId = args.siteId || args.SiteId || Object.values(args)[0];
-                        const response = await axios.get(`https://graph.microsoft.com/v1.0/sites/${encodeURIComponent(siteId)}/drives`, { headers });
+                        const rawSiteId = args.siteId || args.SiteId || Object.values(args)[0];
+                        let endpoint = "https://graph.microsoft.com/v1.0/sites/root/drives";
+                        if (rawSiteId && typeof rawSiteId === 'string' && rawSiteId.trim()) {
+                            endpoint = `https://graph.microsoft.com/v1.0/sites/${encodeURIComponent(rawSiteId.trim())}/drives`;
+                        }
+                        const response = await axios.get(endpoint, { headers });
                         const simplified = (response.data.value || []).map(drive => ({
                             id: drive.id,
                             name: drive.name,
