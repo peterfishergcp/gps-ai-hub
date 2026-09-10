@@ -10,6 +10,10 @@ Built specifically to empower AI agents with seamless access to your corporate k
 
 ## 🌟 Core Enterprise Capabilities
 
+- **Dynamic SDP Content Policy & Microsoft Purview Synchronization**:
+  - Automatically queries Google Cloud Discovery Engine to discover the assigned Sensitive Data Protection (SDP) Content Policy.
+  - Dynamically fetches all registered Microsoft Purview Sensitivity Label GUIDs and custom regex patterns directly from the Cloud DLP API at runtime—**eliminating hardcoded GUIDs entirely**.
+  - Automatically refreshes policy definitions on a 5-minute cache TTL.
 - **Autonomous Navigation**: AI agents can navigate your SharePoint team sites, document libraries, and nested folders using natural, human-readable names without requiring end users to know complex system IDs or GUIDs.
 - **Multi-Format Intelligence**: Supports reading, extracting, and summarizing content across diverse enterprise document formats including Word documents (`.docx`), PowerPoint presentations (`.pptx`), Excel spreadsheets (`.xlsx`), and plain text files.
 - **Mandatory Page-Level Citation Links (`#page=N` & `#section=HeadingName`)**:
@@ -23,6 +27,7 @@ Built specifically to empower AI agents with seamless access to your corporate k
 - **Dual-Layer Authentication Support**:
   - **Delegated OAuth 2.0**: Passes user Bearer tokens directly to Microsoft Graph when available.
   - **Application Client Credentials**: Seamless fallback using Entra ID (Azure AD) Client ID, Secret, and Tenant ID.
+- **Architecture Reference**: See [`ARCHITECTURE.md`](ARCHITECTURE.md) for deep technical specifications, data flow diagrams, and BigQuery audit log schemas.
 
 ---
 
