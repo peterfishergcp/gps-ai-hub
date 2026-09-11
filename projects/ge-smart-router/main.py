@@ -147,9 +147,9 @@ def demo_launchpad(request: Request):
         authorized = instances  # show all instances in demo preview
 
     return templates.TemplateResponse(
-        "launchpad.html",
-        {
-            "request": request,
+        request=request,
+        name="launchpad.html",
+        context={
             "user_email": email,
             "instances": authorized
         }
