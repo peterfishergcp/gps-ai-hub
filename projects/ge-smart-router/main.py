@@ -119,6 +119,43 @@ def logout():
     response.delete_cookie(key="ge_user_email")
     return response
 
+@app.get("/switch")
+@app.get("/select")
+@app.get("/demo")
+def demo_switch_account(request: Request):
+    """
+    Clears the session cookie and returns directly to the identity selector page,
+    making it easy to demo multiple personas without using Incognito mode.
+    """
+    response = templates.TemplateResponse(
+        request=request,
+        name="unauthorized.html",
+        context={"message": "Select or enter an identity to evaluate routing rules:"}
+    )
+    response.delete_cookie(key="ge_user_email")
+    return response
+
+@app.get("/launchpad", response_class=HTMLResponse)
+def demo_launchpad(request: Request):
+    """
+    Direct endpoint to preview the Gemini Enterprise Multi-App Launchpad.
+    """
+    email = extract_user_email(request) or "admin@example.com"
+    instances = load_policy()
+    authorized = [i for i in instances if is_user_authorized_for_instance(email, i)]
+    if not authorized:
+        authorized = instances  # show all instances in demo preview
+
+    return templates.TemplateResponse(
+        "launchpad.html",
+        {
+            "request": request,
+            "user_email": email,
+            "instances": authorized
+        }
+    )
+
+
 @app.get("/api/me")
 def get_current_user_profile(request: Request):
     """Returns the authenticated identity and evaluation breakdown for all instances."""

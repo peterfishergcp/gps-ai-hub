@@ -121,8 +121,11 @@
                 <span class="sparkle-icon">✨</span>
                 <h1>Gemini Enterprise Portal</h1>
             </div>
-            <div class="user-badge">
-                Signed in as: <strong>{{ user_email }}</strong>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="user-badge">
+                    Signed in as: <strong>{{ user_email }}</strong>
+                </div>
+                <a href="/logout" style="text-decoration: none; font-size: 13px; font-weight: 500; color: #5f6368; background: #ffffff; border: 1px solid #dadce0; padding: 6px 14px; border-radius: 20px; transition: all 0.2s;">⇋ Switch Persona</a>
             </div>
         </div>
 

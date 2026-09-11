@@ -41,6 +41,60 @@
             color: #5f6368;
             margin: 0 0 28px 0;
         }
+        .account-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            box-sizing: border-box;
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            text-decoration: none;
+            color: #202124;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .account-btn:hover {
+            background-color: #f8f9fa;
+            border-color: #1a73e8;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.15);
+        }
+        .account-info {
+            text-align: left;
+        }
+        .account-email {
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+        }
+        .account-badge {
+            font-size: 12px;
+            color: #1a73e8;
+            margin-top: 2px;
+        }
+        .arrow {
+            color: #5f6368;
+            font-size: 18px;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #80868b;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #dadce0;
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
         .custom-form {
             display: flex;
             gap: 8px;
@@ -84,7 +138,42 @@
     <div class="card">
         <div class="logo">✨</div>
         <h1>Gemini Enterprise Smart Router</h1>
-        <p class="subtitle">Enter your enterprise email to evaluate your routing destination:</p>
+        <p class="subtitle">Select or enter an identity to evaluate routing rules:</p>
+
+        <!-- Pre-configured demo accounts -->
+        <a href="/login?email=user@example.com" class="account-btn">
+            <div class="account-info">
+                <div class="account-email">user@example.com</div>
+                <div class="account-badge">⚡ Auto-Redirect → Instance 1 (Operations & General Hub)</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <a href="/login?email=admin@example.com" class="account-btn" style="border-color: #1a73e8; background-color: #f8fbff;">
+            <div class="account-info">
+                <div class="account-email">admin@example.com</div>
+                <div class="account-badge" style="color: #1557b0; font-weight: 500;">✨ Multi-App Access → Opens Enterprise Launchpad</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <a href="/login?email=exec-admin@example.com" class="account-btn">
+            <div class="account-info">
+                <div class="account-email">exec-admin@example.com</div>
+                <div class="account-badge">⚡ Auto-Redirect → Instance 2 (Restricted Exec & Finance)</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <a href="/login?email=unauthorized-contractor@partner.com" class="account-btn" style="border-color: #fad2cf; background-color: #fffbfa;">
+            <div class="account-info">
+                <div class="account-email">unauthorized-contractor@partner.com</div>
+                <div class="account-badge" style="color: #c5221f;">⛔ Denied → Triggers 403 Forbidden Access Denied</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <div class="divider">or test any custom email</div>
 
         <form action="/login" method="GET" class="custom-form">
             <input type="email" name="email" class="custom-input" placeholder="user@example.com" required>
