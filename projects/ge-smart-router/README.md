@@ -130,24 +130,42 @@ curl -i -H "X-Goog-Authenticated-User-Email: accounts.google.com:user@example.co
 
 ---
 
-## 📦 Deployment
+## 📦 Deployment Options
 
-### Method A: Deploy to Cloud Run via CLI (`deploy.sh`)
+### Method A: Deploy to Cloud Run with Google Workspace OAuth 2.0 SSO
 
-Ensure you are authenticated with `gcloud` and set your target project:
-```bash
-gcloud config set project YOUR_PROJECT_ID
-./deploy.sh
-```
+You can deploy the router directly to Cloud Run and enable real Google Workspace Single Sign-On (password + 2FA):
 
-Or pass environment variables explicitly:
-```bash
-PROJECT_ID="your-project-id" REGION="us-central1" ./deploy.sh
-```
+1. **Create an OAuth 2.0 Web Client ID**:
+   - In the Google Cloud Console, navigate to **APIs & Services > Credentials**.
+   - Click **Create Credentials > OAuth client ID**.
+   - Select Application type: **Web application**.
+   - Add Authorized redirect URI:
+     ```
+     https://<YOUR-CLOUD-RUN-SERVICE-URL>/auth/callback
+     ```
+   - Copy the generated **Client ID** and **Client Secret**.
 
-### Method B: Deploy Infrastructure via Terraform
+2. **Deploy using `deploy.sh`**:
+   ```bash
+   PROJECT_ID="your-project-id" \
+   REGION="us-central1" \
+   GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com" \
+   GOOGLE_CLIENT_SECRET="your-client-secret" \
+   REQUIRE_REAL_AUTH="true" \
+   ./deploy.sh
+   ```
 
-The `terraform/` directory provisions the complete infrastructure:
+3. **Routing & Authentication Flow**:
+   - Unauthenticated visitors hitting the root URL are prompted to **Sign in with Google Workspace**.
+   - Users authenticate with their corporate Google Workspace credentials.
+   - The router verifies the signed Google ID Token directly against Google's public tokeninfo endpoint, establishes a tamper-proof HMAC-SHA256 session cookie, and routes the user according to `policy.yaml`.
+
+---
+
+### Method B: Deploy Infrastructure via Terraform (Cloud Load Balancer + IAP)
+
+For enterprise production deployments behind a custom domain (e.g. `gemini.example.com`), use the Terraform code in `terraform/`:
 - Cloud Run service
 - Serverless Network Endpoint Group (NEG)
 - Global External Application Load Balancer
@@ -159,7 +177,7 @@ The `terraform/` directory provisions the complete infrastructure:
    cd terraform
    cp terraform.tfvars.example terraform.tfvars
    ```
-2. Configure `terraform.tfvars` with your `project_id` and custom `domain_name`.
+2. Configure `terraform.tfvars` with your `project_id`, `domain_name`, and IAP credentials.
 3. Initialize and apply:
    ```bash
    terraform init
@@ -170,7 +188,10 @@ The `terraform/` directory provisions the complete infrastructure:
 
 ## 🔒 Security & Governance
 
-- **Strict Identity Verification**: When behind Cloud Load Balancer, the router reads the cryptographically signed `X-Goog-Authenticated-User-Email` header injected by Google IAP.
+- **Dual-Mode Enterprise Authentication**:
+  - **IAP Mode**: When deployed behind Cloud Load Balancer with IAP, verifies the cryptographically signed `X-Goog-Authenticated-User-Email` header.
+  - **Direct OAuth Mode**: Exchanges and validates official Google OpenID Connect ID tokens server-side with Google authorization endpoints.
+- **HMAC Session Protection**: Session cookies are signed using HMAC-SHA256 with timestamp verification to prevent replay attacks and cookie tampering.
 - **Deny Always Wins**: If a user is present in both an allowed domain/group and an explicit `blocked_users` list, the blocklist takes precedence.
-- **Zero Hardcoded Secrets**: Does not require or store static API keys or service account tokens; operates using native IAM and Cloud Run execution identities.
+- **Zero Hardcoded Secrets**: Operates strictly via environment variables, Secret Manager, or native IAM execution roles.
 - **Audit Logging**: All routing choices and blocked access attempts are logged with user identity, target CID, and timestamp for Cloud Logging and SIEM export.
