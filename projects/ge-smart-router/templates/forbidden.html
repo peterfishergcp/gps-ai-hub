@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden - Access Denied</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            max-width: 560px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+            border-top: 6px solid #d93025;
+        }
+        .icon {
+            font-size: 54px;
+            color: #d93025;
+            margin-bottom: 16px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #d93025;
+            margin: 0 0 12px 0;
+        }
+        p {
+            font-size: 15px;
+            color: #5f6368;
+            line-height: 1.6;
+            margin: 8px 0;
+        }
+        .details-box {
+            background: #f1f3f4;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+        .details-box div {
+            margin-bottom: 6px;
+        }
+        .details-box div:last-child {
+            margin-bottom: 0;
+        }
+        .label {
+            font-weight: 500;
+            color: #3c4043;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1a73e8;
+            color: #ffffff;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            margin-top: 16px;
+        }
+        .btn:hover {
+            background-color: #1557b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">⛔</div>
+        <h1>Access Denied (403 Forbidden)</h1>
+        <p>{{ message }}</p>
+
+        <div class="details-box">
+            <div><span class="label">Authenticated User:</span> {{ user_email }}</div>
+            {% if instance_name %}
+            <div><span class="label">Target Instance:</span> {{ instance_name }}</div>
+            {% endif %}
+            {% if instance_id %}
+            <div><span class="label">Instance ID:</span> <code>{{ instance_id }}</code></div>
+            {% endif %}
+            <div><span class="label">Enforcement Engine:</span> Identity-Aware Proxy & Group Router</div>
+        </div>
+
+        <p style="font-size: 13px; color: #80868b;">If you require access to this workspace, please contact your organization administrator.</p>
+        <a href="/" class="btn">Return to Portal</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Gemini Enterprise Smart Router - Policy Configuration
+# Defines instances, allowed/blocked users, groups, and domains.
+
+default_action: deny
+
+instances:
+  - id: "instance-general-hub"
+    name: "Gemini Enterprise - Operations & General Workspace"
+    description: "Standard enterprise search and assistance workspace for all staff."
+    target_url: "https://vertexaisearch.cloud.google.com/home/cid/YOUR_INSTANCE_1_CID?hl=en_US"
+    allowed_users:
+      - "user@example.com"
+    allowed_groups:
+      - "general-staff@example.com"
+    allowed_domains:
+      - "example.com"
+    blocked_users: []
+
+  - id: "instance-restricted-hub"
+    name: "Gemini Enterprise - Restricted Executive & Finance Workspace"
+    description: "Restricted workspace for executive leadership and sensitive financial data."
+    target_url: "https://vertexaisearch.cloud.google.com/home/cid/YOUR_INSTANCE_2_CID?hl=en_US"
+    allowed_users:
+      - "exec-admin@example.com"
+      - "finance-lead@example.com"
+    allowed_groups:
+      - "exec-council@example.com"
+      - "finance-team@example.com"
+    allowed_domains: []
+    blocked_users:
+      - "user@example.com"

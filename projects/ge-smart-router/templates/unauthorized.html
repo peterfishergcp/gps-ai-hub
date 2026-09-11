@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Gemini Enterprise Smart Router</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 24px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            max-width: 520px;
+            width: 100%;
+            padding: 36px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 500;
+            margin: 0 0 8px 0;
+            color: #202124;
+        }
+        p.subtitle {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 0 0 28px 0;
+        }
+        .custom-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .custom-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .custom-input:focus {
+            border-color: #1a73e8;
+        }
+        .submit-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 18px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #1557b0;
+        }
+        .info-box {
+            background-color: #e8f0fe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #1967d2;
+            text-align: left;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">✨</div>
+        <h1>Gemini Enterprise Smart Router</h1>
+        <p class="subtitle">Enter your enterprise email to evaluate your routing destination:</p>
+
+        <form action="/login" method="GET" class="custom-form">
+            <input type="email" name="email" class="custom-input" placeholder="user@example.com" required>
+            <button type="submit" class="submit-btn">Continue</button>
+        </form>
+
+        <div class="info-box">
+            💡 <strong>Architecture Note:</strong> When accessed behind a <strong>Google Cloud Application Load Balancer with Identity-Aware Proxy (IAP)</strong>, this screen is bypassed automatically. IAP authenticates the user via Google Workspace / Cloud Identity SSO and the router seamlessly forwards to the authorized instance.
+        </div>
+    </div>
+</body>
+</html>

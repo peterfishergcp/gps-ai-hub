@@ -1,0 +1,9 @@
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+terraform/
+README.md

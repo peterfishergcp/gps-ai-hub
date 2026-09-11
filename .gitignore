@@ -112,8 +112,10 @@ my-gemini-cli-project/
 next26/
 originalds/
 rag/
-skills/
-terraform/
+/terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
 *.pdf
 
 # ==========================================

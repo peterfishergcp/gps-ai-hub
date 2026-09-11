@@ -8,6 +8,14 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ---
 
+## 🌐 Gemini Enterprise Smart Router (`/ge-smart-router`)
+
+- 🔀 **[Gemini Enterprise Smart Group Router](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge-smart-router)**:
+  - Identity-aware routing dispatcher for multi-instance Gemini Enterprise deployments under a single unified DNS domain.
+  - Couples Google Cloud External Application Load Balancer and Identity-Aware Proxy (IAP) to dynamically route users to their assigned Gemini Enterprise application based on Cloud Identity / Workspace group membership.
+
+---
+
 ## 🔌 Gemini Enterprise MCP Connectors (`/ge_mcp`)
 
 Enterprise-grade Model Context Protocol (MCP) servers running on Google Cloud Run that bridge enterprise systems and specialized models directly into **Gemini Enterprise**.
