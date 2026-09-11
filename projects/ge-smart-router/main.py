@@ -1,7 +1,14 @@
+import hashlib
+import hmac
+import json
 import logging
 import os
 import re
+import secrets
+import time
 from typing import List, Optional
+import urllib.parse
+import urllib.request
 import yaml
 
 from fastapi import FastAPI, Request, HTTPException, status
@@ -25,6 +32,38 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "t
 
 CONFIG_PATH = os.getenv("POLICY_CONFIG_PATH", os.path.join(os.path.dirname(__file__), "policy.yaml"))
 DEV_MODE = os.getenv("DEV_MODE", "false").lower() in ("true", "1", "yes")
+REQUIRE_REAL_AUTH = os.getenv("REQUIRE_REAL_AUTH", "false").lower() in ("true", "1", "yes")
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+SESSION_SECRET = os.getenv("SESSION_SECRET", "ge-smart-router-secure-key-2026").encode()
+
+def sign_session_email(email: str) -> str:
+    ts = str(int(time.time()))
+    data = f"{email}:{ts}".encode()
+    sig = hmac.new(SESSION_SECRET, data, hashlib.sha256).hexdigest()
+    return f"{email}:{ts}:{sig}"
+
+def verify_session_email(cookie_val: Optional[str], max_age: int = 86400) -> Optional[str]:
+    if not cookie_val:
+        return None
+    parts = cookie_val.split(":")
+    if len(parts) != 3:
+        if DEV_MODE and "@" in cookie_val:
+            return cookie_val.strip().lower()
+        return None
+    email, ts_str, sig = parts
+    try:
+        ts = int(ts_str)
+    except ValueError:
+        return None
+    if time.time() - ts > max_age:
+        return None
+    expected_sig = hmac.new(SESSION_SECRET, f"{email}:{ts_str}".encode(), hashlib.sha256).hexdigest()
+    if hmac.compare_digest(sig, expected_sig):
+        return email.strip().lower()
+    return None
+
 
 class InstanceConfig(BaseModel):
     id: str
@@ -48,7 +87,7 @@ def extract_user_email(request: Request) -> Optional[str]:
     """
     Extracts authenticated user identity with fallback priority:
     1. Cloud IAP header ('X-Goog-Authenticated-User-Email') when behind Cloud Load Balancer.
-    2. Session cookie ('ge_user_email') for direct browser testing.
+    2. Signed session cookie ('ge_user_email') from Google OAuth.
     3. Dev query parameters or headers when running in development mode.
     """
     # 1. Check Identity-Aware Proxy (IAP) header first
@@ -57,13 +96,14 @@ def extract_user_email(request: Request) -> Optional[str]:
         # IAP prefixes email with 'accounts.google.com:'
         return re.sub(r"^[^:]+:", "", iap_email_header).strip().lower()
 
-    # 2. Check session cookie
-    cookie_email = request.cookies.get("ge_user_email")
-    if cookie_email:
-        return cookie_email.strip().lower()
+    # 2. Check signed session cookie
+    cookie_val = request.cookies.get("ge_user_email")
+    verified_email = verify_session_email(cookie_val)
+    if verified_email:
+        return verified_email
 
     # 3. Check query parameters or dev headers (testing fallback)
-    if DEV_MODE:
+    if not REQUIRE_REAL_AUTH and DEV_MODE:
         dev_email = (
             request.query_params.get("dev_user")
             or request.query_params.get("email")
@@ -107,9 +147,12 @@ def health_check():
 @app.get("/login")
 def login(email: str = "user@example.com", target: str = "/"):
     """Session login helper for direct browser access."""
+    if REQUIRE_REAL_AUTH:
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
     email_clean = email.strip().lower()
+    signed_val = sign_session_email(email_clean)
     response = RedirectResponse(url=target, status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="ge_user_email", value=email_clean, max_age=86400, httponly=True, samesite="lax")
+    response.set_cookie(key="ge_user_email", value=signed_val, max_age=86400, httponly=True, samesite="lax")
     return response
 
 @app.get("/logout")
@@ -117,6 +160,109 @@ def logout():
     """Clears local session cookie."""
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     response.delete_cookie(key="ge_user_email")
+    return response
+
+@app.get("/auth/login")
+def auth_login(request: Request, target: str = "/"):
+    """Initiates official Google Workspace OAuth 2.0 flow."""
+    if not GOOGLE_CLIENT_ID:
+        return templates.TemplateResponse(
+            request=request,
+            name="unauthorized.html",
+            context={
+                "message": "Google OAuth is not yet configured with client credentials. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET or use IAP.",
+                "oauth_configured": False,
+                "require_real_auth": REQUIRE_REAL_AUTH
+            },
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
+    state = secrets.token_urlsafe(16)
+    forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+    forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    if forwarded_host:
+        callback_url = f"{forwarded_proto}://{forwarded_host}/auth/callback"
+    else:
+        callback_url = str(request.base_url).rstrip("/") + "/auth/callback"
+
+    auth_params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": callback_url,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "prompt": "select_account",
+        "access_type": "online",
+    }
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(auth_params)}"
+    response = RedirectResponse(url=auth_url, status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="oauth_state", value=state, max_age=600, httponly=True, samesite="lax")
+    response.set_cookie(key="oauth_target", value=target, max_age=600, httponly=True, samesite="lax")
+    return response
+
+@app.get("/auth/callback")
+def auth_callback(request: Request, code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
+    """Handles Google OAuth callback, verifies identity token with Google, and establishes secure session."""
+    if error:
+        logger.error(f"Google OAuth authorization error: {error}")
+        return HTMLResponse(f"<h3>Google Authentication Error: {error}</h3><p><a href='/'>Return to Home</a></p>", status_code=400)
+
+    saved_state = request.cookies.get("oauth_state")
+    target = request.cookies.get("oauth_target") or "/"
+
+    if not code or not state or state != saved_state:
+        logger.error("OAuth state mismatch or missing code.")
+        raise HTTPException(status_code=400, detail="Invalid OAuth state or missing code.")
+
+    forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+    forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    if forwarded_host:
+        callback_url = f"{forwarded_proto}://{forwarded_host}/auth/callback"
+    else:
+        callback_url = str(request.base_url).rstrip("/") + "/auth/callback"
+
+    token_url = "https://oauth2.googleapis.com/token"
+    token_data = urllib.parse.urlencode({
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": callback_url,
+        "grant_type": "authorization_code"
+    }).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(token_url, data=token_data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            token_res = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        logger.error(f"Failed to exchange OAuth code for tokens: {e}")
+        raise HTTPException(status_code=500, detail="Failed to complete Google authentication token exchange.")
+
+    id_token = token_res.get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=500, detail="No id_token returned by Google.")
+
+    try:
+        verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+        with urllib.request.urlopen(verify_url, timeout=10) as resp:
+            id_info = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        logger.error(f"Failed to verify Google ID token: {e}")
+        raise HTTPException(status_code=500, detail="Failed to verify Google identity token.")
+
+    email = id_info.get("email")
+    email_verified = id_info.get("email_verified") in (True, "true")
+
+    if not email or not email_verified:
+        raise HTTPException(status_code=400, detail="Google account email not verified.")
+
+    logger.info(f"Verified Google Workspace identity: {email}")
+
+    signed_cookie = sign_session_email(email)
+    response = RedirectResponse(url=target, status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="ge_user_email", value=signed_cookie, max_age=86400, httponly=True, samesite="lax")
+    response.delete_cookie(key="oauth_state")
+    response.delete_cookie(key="oauth_target")
     return response
 
 @app.get("/switch")

@@ -110,6 +110,22 @@ def test_direct_launchpad_endpoint():
     assert response.status_code == 200
     assert "Gemini Enterprise Portal" in response.text
 
+def test_auth_login_redirect():
+    """
+    When GOOGLE_CLIENT_ID is set, /auth/login initiates official Google OAuth.
+    """
+    import main
+    orig_client_id = main.GOOGLE_CLIENT_ID
+    main.GOOGLE_CLIENT_ID = "mock-client-id.apps.googleusercontent.com"
+    try:
+        response = client.get("/auth/login")
+        assert response.status_code == 302
+        assert "accounts.google.com/o/oauth2/v2/auth" in response.headers["location"]
+        assert "client_id=mock-client-id.apps.googleusercontent.com" in response.headers["location"]
+        assert "prompt=select_account" in response.headers["location"]
+    finally:
+        main.GOOGLE_CLIENT_ID = orig_client_id
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_") and callable(v)]
     print(f"Running {len(tests)} tests...")
