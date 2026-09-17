@@ -117,28 +117,29 @@ const server = createServer(async (req, res) => {
                 instructions: `
 SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
 
-1. MANDATORY PAGE-LEVEL CITATION REQUIREMENT:
-   - EVERY SINGLE RESPONSE MUST INCLUDE AT LEAST ONE CLICKABLE CITATION WITH A PAGE OR SECTION LINK.
-   - For every document, paragraph, fact, or summary derived from SharePoint, extract the file's 'webUrl' property and append the page anchor '#page=X'.
-   - Mandatory Citation Syntax: [Document Name (Page X)](webUrl#page=X)
+1. FILE-TYPE-AWARE URL FORMATTING ('?web=1' FOR OFFICE FILES vs. '#page=N' FOR PDFS):
+   - RULE FOR PDF FILES ('.pdf'): Browsers have a native PDF viewer that supports '#page=N', whereas SharePoint's '?web=1' wrapper ignores '#page=N'. Always STRIP '?web=1' from '.pdf' URLs and append '#page=N':
+     * CORRECT PDF LINK: [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4)
+   - RULE FOR OFFICE FILES ('.docx', '.pptx', '.xlsx'): Browsers do NOT have a native viewer for Office files—if '?web=1' is missing, clicking the link FORCES A FILE DOWNLOAD TO DISK!
+     * Always KEEP or APPEND '?web=1' at the end of '.docx', '.pptx', and '.xlsx' URLs so they open in Word/PowerPoint/Excel Online inside the browser tab. Never append '#section='. Put the exact Section/Clause name inside the visible link label:
+     * CORRECT WORD (.docx) LINK: [Master Services Agreement — Section 8: Intellectual Property Rights](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Master%20Services%20Agreement.docx?web=1)
 
-2. HANDLING TABLE OF CONTENTS (TOC) & FRONT-MATTER PAGE OFFSETS:
-   - Physical PDF Page Index vs. Printed Page Number: Documents often contain unnumbered cover pages, tables of contents, or Roman numeral front matter (i, ii, iii) that shift the physical PDF page number.
-   - RULE: The URL anchor parameter '#page=N' MUST ALWAYS use the PHYSICAL PAGE INDEX (the 1-indexed sequential position of the page in the viewer file) so clicking the link lands on the exact page.
-   - LABEL RULE: You may display both the printed page number and physical page number in the link text for clarity, e.g.:
-     - [Q3 Report (Page 3 / Physical PDF Page 7)](webUrl#page=7)
-   - SECTION HEADING FALLBACK: For Word (.docx) files or documents where physical page numbers vary, use section or heading anchor links:
-     - [Q3 Report - Executive Summary](webUrl#section=Executive%20Summary)
+2. SIMPLE PDF PAGE NUMBER CALCULATION ('#page=N'):
+   - Count every physical page in the PDF file starting with the Cover/Title page as Page 1.
+   - THE +1 COVER PAGE / 0-INDEX RULE: Because search chunk metadata is 0-indexed (page 0, 1, 2, 3...) AND documents with a Cover/Title page start printed footer numbering ('Page 1') on the 2nd physical page, the true PDF viewer page is ALWAYS Printed Page / Chunk Index + 1 (N = P + 1).
+   - CONCRETE CALIBRATION EXAMPLE: In 'Statement of Work: Project Cal-Nexus (2).pdf', Section '7.4 Force Majeure' ('Neither party shall be liable for any failure to perform its obligations...') has printed footer / chunk index 3, which means it is physically on Page 4 of the PDF file. You MUST link to '#page=4'.
 
 3. EXPECTED OUTPUT TEMPLATE:
    Your response MUST follow this structure:
 
    ### 📄 Summary & Answer
-   <Your detailed answer containing inline page-level citation links, e.g., "As stated in [Q3 Financial Report (Printed Page 3 / Physical Page 7)](https://demoalto.sharepoint.com/sites/Finance/Shared%20Documents/Q3_Report.pdf#page=7), total revenue increased by 18%.">
+   <Your detailed answer containing inline clickable citations:
+   - PDF Example (Strip '?web=1', add +1 for Cover Page / 0-index): "Under [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4), neither party is liable for delays due to acts of God, war, or systemic telecommunications failure."
+   - Word .docx Example (MUST end with '?web=1'): "Under [Master Services Agreement — Section 8: Intellectual Property Rights](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Master%20Services%20Agreement.docx?web=1), custom IP vests in the Customer.">
 
    ### 📚 Sources & Citations
-   - 🔗 [Document Name 1 (Printed Page X / Physical Page Y)](webUrl#page=Y)
-   - 🔗 [Document Name 2 - Section Name](webUrl#section=HeadingName)
+   - 🔗 [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4)
+   - 🔗 [Master Services Agreement — Section 8: Intellectual Property Rights](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Master%20Services%20Agreement.docx?web=1)
 
    ---
    *Note: Microsoft SharePoint Graph API search results may be paginated or partial. If you suspect missing results, please try again with a more specific query or document title.*`
@@ -438,13 +439,19 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
                             ? `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(folderId)}/children`
                             : `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/root/children`;
                         const response = await axios.get(endpoint, { headers });
+                        const formatSpUrl = (u) => {
+                            if (typeof u !== 'string') return u;
+                            if (/\.pdf(\?.*)?$/i.test(u)) return u.replace(/\?web=1$/i, '');
+                            if (/\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(u)) return `${u}?web=1`;
+                            return u;
+                        };
                         const simplified = (response.data.value || []).map(item => ({
                             id: item.id,
                             name: item.name,
                             type: item.folder ? "folder" : "file",
                             mimeType: item.file ? item.file.mimeType : undefined,
                             size: item.size,
-                            webUrl: item.webUrl
+                            webUrl: formatSpUrl(item.webUrl)
                         }));
                         resultObj = { items: simplified };
                     } else if (name === "query_file_metadata_lookup" || name === "get_file_metadata") {
@@ -452,11 +459,17 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
                         const driveId = await resolveDriveId(rawDriveId, headers);
                         const itemId = args.itemId || args.ItemId;
                         const response = await axios.get(`https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`, { headers });
+                        const formatSpUrl = (u) => {
+                            if (typeof u !== 'string') return u;
+                            if (/\.pdf(\?.*)?$/i.test(u)) return u.replace(/\?web=1$/i, '');
+                            if (/\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(u)) return `${u}?web=1`;
+                            return u;
+                        };
                         resultObj = {
                             id: response.data.id,
                             name: response.data.name,
                             size: response.data.size,
-                            webUrl: response.data.webUrl,
+                            webUrl: formatSpUrl(response.data.webUrl),
                             createdDateTime: response.data.createdDateTime,
                             lastModifiedDateTime: response.data.lastModifiedDateTime
                         };
