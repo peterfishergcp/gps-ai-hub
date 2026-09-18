@@ -16,6 +16,20 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ---
 
+## 🎯 Gemini Enterprise Skills (`/ge_skills`)
+
+Domain-specific **Gemini Enterprise Skills (`SKILL.md`)** and companion connectors that enforce deterministic workflows, citation fidelity, false-positive filtering, and PII redaction.
+
+- 🏥 **[Medicaid Fraud Auditor Skill & BigQuery BYO MCP (`ge_medicaid_skill`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_skills/ge_medicaid_skill)**:
+  - Program Integrity & Fraud Detection skill (`medicaid-fraud-auditor`) paired with a read-only BigQuery MCP Server on Cloud Run.
+  - Evaluates 5 Core Medicaid Fraud Rules (Credential Recycling, Address Clustering, Identity Mismatches, Sequential Batches, Pregnant Member Duplicates), filters out single-household false positives, and deterministically hashes/masks PII. Includes complete BigQuery table & view SQL schemas (`DDL`) with zero exposed data.
+
+- 📄 **[Microsoft 365 SharePoint & Outlook Federated Quality Skills (`ge_m365_connector_skill`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_skills/ge_m365_connector_skill)**:
+  - Zero-infrastructure quality enhancer skills for the **Standard SharePoint Federated Connector**, **Outlook Connector**, and custom Graph MCP servers (`m365_combined_skill`, `sharepoint_federated_skill`, `outlook_connector_skill`).
+  - Enforces file-type-aware URL formatting (`.pdf#page=N` physical page calculation vs. `.docx?web=1` Word Online browser viewing without file downloads) and strict Outlook temporal search & thread aggregation.
+
+---
+
 ## 🔌 Gemini Enterprise MCP Connectors (`/ge_mcp`)
 
 Enterprise-grade Model Context Protocol (MCP) servers running on Google Cloud Run that bridge enterprise systems and specialized models directly into **Gemini Enterprise**.
