@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 760" width="100%" height="100%" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="gcpCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="msftCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4c1d95" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="purviewCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#78350f" stop-opacity="0.40"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85"/>
+    </linearGradient>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c084fc"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34d399"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f87171"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1360" height="760" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- Header Banner -->
+  <text x="680" y="46" text-anchor="middle" fill="#f8fafc" font-size="24" font-weight="700">
+    Gemini Enterprise  ↔  Microsoft Work IQ MCP  ↔  Purview Sensitivity Label &amp; Encryption
+  </text>
+  <text x="680" y="74" text-anchor="middle" fill="#94a3b8" font-size="14">
+    Reference Architecture: Zero-Infrastructure BYO MCP Integration with Real-Time Purview Policy Enforcement
+  </text>
+
+  <!-- ==================== COLUMN 1: GEMINI ENTERPRISE (GOOGLE CLOUD) ==================== -->
+  <rect x="30" y="100" width="380" height="620" rx="14" fill="url(#gcpCard)" stroke="#3b82f6" stroke-width="2"/>
+  <text x="220" y="132" text-anchor="middle" fill="#60a5fa" font-size="17" font-weight="700">
+    1. Google Cloud &amp; Gemini Enterprise
+  </text>
+  <text x="220" y="152" text-anchor="middle" fill="#93c5fd" font-size="12">
+    Federated Identity &amp; Agentic MCP Client
+  </text>
+
+  <!-- User Box -->
+  <rect x="55" y="175" width="330" height="80" rx="10" fill="#1e293b" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="220" y="202" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="700">👤 Enterprise User</text>
+  <text x="220" y="222" text-anchor="middle" fill="#cbd5e1" font-size="12">Signed-In Microsoft 365 Identity</text>
+  <text x="220" y="240" text-anchor="middle" fill="#94a3b8" font-size="11">M365 Copilot &amp; Purview Information Protection Licensed</text>
+
+  <!-- WIF Box -->
+  <rect x="55" y="280" width="330" height="105" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="220" y="305" text-anchor="middle" fill="#60a5fa" font-size="14" font-weight="700">🔐 Workforce Identity Federation (WIF)</text>
+  <text x="220" y="325" text-anchor="middle" fill="#e2e8f0" font-size="12">OpenID Connect (OIDC v2.0) SSO Provider</text>
+  <text x="220" y="343" text-anchor="middle" fill="#e2e8f0" font-size="12">Federates Microsoft Entra ID User &amp; Group Claims</text>
+  <text x="220" y="363" text-anchor="middle" fill="#94a3b8" font-size="11">Maps Enterprise Identity to Google Cloud Principal</text>
+
+  <!-- Gemini Enterprise Chat + BYO MCP Box -->
+  <rect x="55" y="410" width="330" height="280" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="220" y="438" text-anchor="middle" fill="#60a5fa" font-size="15" font-weight="700">✨ Gemini Enterprise BYO MCP Connector</text>
+  <text x="220" y="460" text-anchor="middle" fill="#e2e8f0" font-size="12">Endpoint: https://workiq.svc.cloud.microsoft/mcp</text>
+  <text x="220" y="480" text-anchor="middle" fill="#cbd5e1" font-size="11.5">Authentication: OAuth 2.0 Authorization Code (3LO)</text>
+  <text x="220" y="498" text-anchor="middle" fill="#cbd5e1" font-size="11.5">Delegates Signed-In User Context to Work IQ MCP</text>
+
+  <rect x="75" y="516" width="290" height="154" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="220" y="538" text-anchor="middle" fill="#38bdf8" font-size="12.5" font-weight="700">Discovered MCP Actions (HITL Governance)</text>
+  <text x="90" y="560" fill="#e2e8f0" font-size="11.5">• Ask (Semantic Q&amp;A &amp; Purview Summarization)</text>
+  <text x="90" y="580" fill="#e2e8f0" font-size="11.5">• Fetch &amp; Fetch Blob (Graph Metadata &amp; Labels)</text>
+  <text x="90" y="600" fill="#e2e8f0" font-size="11.5">• List Agents (M365 Copilot &amp; Custom Agents)</text>
+  <text x="90" y="620" fill="#94a3b8" font-size="11">• Search Paths, Get Schema, Call Function</text>
+  <text x="90" y="640" fill="#94a3b8" font-size="11">• Do Action, Create / Update / Delete Entity</text>
+
+  <!-- ==================== COLUMN 2: WORK IQ MCP SERVER ==================== -->
+  <rect x="465" y="100" width="380" height="620" rx="14" fill="url(#msftCard)" stroke="#a855f7" stroke-width="2"/>
+  <text x="655" y="132" text-anchor="middle" fill="#c084fc" font-size="17" font-weight="700">
+    2. Microsoft Work IQ MCP Server
+  </text>
+  <text x="655" y="152" text-anchor="middle" fill="#d8b4fe" font-size="12">
+    Managed First-Party MCP &amp; M365 Copilot Orchestration
+  </text>
+
+  <!-- Work IQ Endpoint Box -->
+  <rect x="490" y="175" width="330" height="125" rx="10" fill="#1e293b" stroke="#c084fc" stroke-width="1.5"/>
+  <text x="655" y="202" text-anchor="middle" fill="#c084fc" font-size="14.5" font-weight="700">⚡ Work IQ MCP Server (Zero-Infra SaaS)</text>
+  <text x="655" y="222" text-anchor="middle" fill="#f8fafc" font-size="12">https://workiq.svc.cloud.microsoft/mcp</text>
+  <text x="655" y="242" text-anchor="middle" fill="#cbd5e1" font-size="11.5">First-Party Microsoft Managed MCP Endpoint</text>
+  <text x="655" y="260" text-anchor="middle" fill="#cbd5e1" font-size="11.5">No Custom Middleware or Proxy Infrastructure</text>
+  <text x="655" y="280" text-anchor="middle" fill="#94a3b8" font-size="11">Transport: Streamable HTTP JSON-RPC 2.0 + SSE</text>
+
+  <!-- M365 Copilot Agent Box -->
+  <rect x="490" y="325" width="330" height="145" rx="10" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="655" y="352" text-anchor="middle" fill="#e9d5ff" font-size="14.5" font-weight="700">🤖 M365 Copilot Orchestrator</text>
+  <text x="655" y="372" text-anchor="middle" fill="#38bdf8" font-size="12.5" font-weight="600">Microsoft Copilot (Business Chat Engine)</text>
+  <text x="655" y="395" text-anchor="middle" fill="#cbd5e1" font-size="11.5">• Searches SharePoint, OneDrive, Outlook &amp; Teams</text>
+  <text x="655" y="415" text-anchor="middle" fill="#cbd5e1" font-size="11.5">• Strictly Enforces Signed-In User Permissions</text>
+  <text x="655" y="435" text-anchor="middle" fill="#cbd5e1" font-size="11.5">• Invokes Purview Co-Authoring for Decryption</text>
+  <text x="655" y="455" text-anchor="middle" fill="#94a3b8" font-size="11">Grounded Responses with Source Citations</text>
+
+  <!-- OBO Grants Box -->
+  <rect x="490" y="495" width="330" height="195" rx="10" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="655" y="522" text-anchor="middle" fill="#c084fc" font-size="14" font-weight="700">🔑 Downstream On-Behalf-Of (OBO) Flow</text>
+  <text x="508" y="546" fill="#e2e8f0" font-size="11.5">1. Microsoft Graph API</text>
+  <text x="522" y="564" fill="#94a3b8" font-size="11">Reads Files, Sites, Mail &amp; Sensitivity Label Metadata</text>
+  <text x="508" y="588" fill="#e2e8f0" font-size="11.5">2. Azure Rights Management (RMS / AIP)</text>
+  <text x="522" y="606" fill="#94a3b8" font-size="11">Requests User-Scoped XrML Decryption Use Licenses</text>
+  <text x="508" y="630" fill="#e2e8f0" font-size="11.5">3. Microsoft Information Protection (MIP Sync)</text>
+  <text x="522" y="648" fill="#94a3b8" font-size="11">Evaluates Active Purview Label Policy Rules</text>
+  <text x="508" y="672" fill="#e2e8f0" font-size="11.5">4. SharePoint Online Content &amp; Semantic Index</text>
+
+  <!-- ==================== COLUMN 3: MICROSOFT PURVIEW & SHAREPOINT ==================== -->
+  <rect x="900" y="100" width="430" height="620" rx="14" fill="url(#purviewCard)" stroke="#f59e0b" stroke-width="2"/>
+  <text x="1115" y="132" text-anchor="middle" fill="#fbbf24" font-size="17" font-weight="700">
+    3. Microsoft Purview &amp; SharePoint Online
+  </text>
+  <text x="1115" y="152" text-anchor="middle" fill="#fde68a" font-size="12">
+    Sensitivity Label Governance &amp; AES-256 Encryption Enforcement
+  </text>
+
+  <!-- Purview + AADRM Engine Box -->
+  <rect x="925" y="175" width="380" height="125" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="1115" y="202" text-anchor="middle" fill="#fbbf24" font-size="14.5" font-weight="700">🛡️ Microsoft Purview Information Protection</text>
+  <text x="1115" y="222" text-anchor="middle" fill="#e2e8f0" font-size="11.5">AES-256 Content Encryption (OLE2 Compound Container)</text>
+  <text x="1115" y="240" text-anchor="middle" fill="#cbd5e1" font-size="11.5">Co-Authoring for Sensitivity Labels Enabled</text>
+  <text x="1115" y="260" text-anchor="middle" fill="#38bdf8" font-size="11.5" font-weight="600">Real-Time Cryptographic Policy Evaluation:</text>
+  <text x="1115" y="278" text-anchor="middle" fill="#94a3b8" font-size="11">Does the signed-in user hold VIEW + EXTRACT usage rights?</text>
+
+  <!-- ALLOWED DOCUMENT BOX (GREEN) -->
+  <rect x="925" y="325" width="380" height="175" rx="10" fill="#064e3b" fill-opacity="0.45" stroke="#10b981" stroke-width="2"/>
+  <text x="1115" y="350" text-anchor="middle" fill="#34d399" font-size="14.5" font-weight="700">✅ SCENARIO A: PURVIEW ALLOWED &amp; DECRYPTED</text>
+  <text x="1115" y="372" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="600">📄 Authorized Confidential Document (.docx)</text>
+  <text x="945" y="394" fill="#a7f3d0" font-size="11.5">• Sensitivity Label: Confidential (AES-256 Encrypted)</text>
+  <text x="945" y="413" fill="#a7f3d0" font-size="11.5">• Protection State: protectionEnabled = true</text>
+  <text x="945" y="432" fill="#a7f3d0" font-size="11.5">• User Policy Rights: VIEW + EXTRACT Granted</text>
+  <text x="945" y="454" fill="#ffffff" font-size="11.5" font-weight="700">➔ Outcome: Purview grants Use License; Work IQ decrypts</text>
+  <text x="960" y="472" fill="#ffffff" font-size="11.5" font-weight="700">&amp; returns grounded summary to Gemini Enterprise</text>
+
+  <!-- BLOCKED DOCUMENT BOX (RED) -->
+  <rect x="925" y="520" width="380" height="175" rx="10" fill="#7f1d1d" fill-opacity="0.45" stroke="#ef4444" stroke-width="2"/>
+  <text x="1115" y="545" text-anchor="middle" fill="#f87171" font-size="14.5" font-weight="700">🚫 SCENARIO B: PURVIEW NATIVELY BLOCKED</text>
+  <text x="1115" y="567" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="600">📄 Restricted SOC Security Document (.docx)</text>
+  <text x="945" y="589" fill="#fecaca" font-size="11.5">• Sensitivity Label: Restricted - Block Extraction</text>
+  <text x="945" y="608" fill="#fecaca" font-size="11.5">• Protection State: protectionEnabled = true</text>
+  <text x="945" y="627" fill="#fecaca" font-size="11.5">• User Policy Rights: VIEW &amp; EXTRACT Denied (0 Rights)</text>
+  <text x="945" y="649" fill="#ffffff" font-size="11.5" font-weight="700">➔ Outcome: Purview denies Use License; Work IQ natively</text>
+  <text x="960" y="667" fill="#ffffff" font-size="11.5" font-weight="700">blocks document content from returning in Gemini Enterprise</text>
+
+  <!-- ==================== CONNECTING ARROWS ==================== -->
+  <!-- GE to Work IQ MCP -->
+  <line x1="385" y1="455" x2="485" y2="240" stroke="#60a5fa" stroke-width="2.5" marker-end="url(#arrowBlue)"/>
+  <text x="435" y="320" text-anchor="middle" fill="#93c5fd" font-size="11" font-weight="600">POST /mcp</text>
+  <text x="435" y="334" text-anchor="middle" fill="#93c5fd" font-size="10">3LO User Token</text>
+
+  <!-- Work IQ to Purview -->
+  <line x1="820" y1="385" x2="920" y2="245" stroke="#c084fc" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
+  <text x="870" y="295" text-anchor="middle" fill="#e9d5ff" font-size="11" font-weight="600">OBO Check</text>
+
+  <!-- Purview Allow Return Arrow -->
+  <path d="M 925 415 L 845 415 L 385 550" fill="none" stroke="#34d399" stroke-width="2.5" stroke-dasharray="6,3" marker-end="url(#arrowGreen)"/>
+
+  <!-- Purview Block Return Arrow -->
+  <path d="M 925 610 L 845 610 L 385 635" fill="none" stroke="#f87171" stroke-width="2.5" stroke-dasharray="5,5" marker-end="url(#arrowRed)"/>
+</svg>
