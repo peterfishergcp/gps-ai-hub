@@ -18,11 +18,7 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ## 🎯 Gemini Enterprise Skills (`/ge_skills`)
 
-Domain-specific **Gemini Enterprise Skills (`SKILL.md`)** and companion connectors that enforce deterministic workflows, citation fidelity, false-positive filtering, and PII redaction.
-
-- 🏥 **[Medicaid Fraud Auditor Skill & BigQuery BYO MCP (`ge_medicaid_skill`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_skills/ge_medicaid_skill)**:
-  - Program Integrity & Fraud Detection skill (`medicaid-fraud-auditor`) paired with a read-only BigQuery MCP Server on Cloud Run.
-  - Evaluates 5 Core Medicaid Fraud Rules (Credential Recycling, Address Clustering, Identity Mismatches, Sequential Batches, Pregnant Member Duplicates), filters out single-household false positives, and deterministically hashes/masks PII. Includes complete BigQuery table & view SQL schemas (`DDL`) with zero exposed data.
+Domain-specific **Gemini Enterprise Skills (`SKILL.md`)** and companion connectors that enforce deterministic workflows, citation fidelity, and URL formatting.
 
 - 📄 **[Microsoft 365 SharePoint & Outlook Federated Quality Skills (`ge_m365_connector_skill`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_skills/ge_m365_connector_skill)**:
   - Zero-infrastructure quality enhancer skills for the **Standard SharePoint Federated Connector**, **Outlook Connector**, and custom Graph MCP servers (`m365_combined_skill`, `sharepoint_federated_skill`, `outlook_connector_skill`).
@@ -32,9 +28,13 @@ Domain-specific **Gemini Enterprise Skills (`SKILL.md`)** and companion connecto
 
 ## 🔌 Gemini Enterprise MCP Connectors (`/ge_mcp`)
 
-Enterprise-grade Model Context Protocol (MCP) servers running on Google Cloud Run that bridge enterprise systems and specialized models directly into **Gemini Enterprise**.
+Enterprise-grade Model Context Protocol (MCP) servers and integrations that bridge enterprise systems and specialized models directly into **Gemini Enterprise**.
 
 ### 🌟 Featured Connectors:
+
+- 🛡️ **[Microsoft Work IQ MCP + Purview Sensitivity Label & AES-256 Encryption Enforcement](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/WorkIQ%20MCP%20Purview)**:
+  - Zero-infrastructure BYO MCP integration connecting Gemini Enterprise (with Workforce Identity Federation) directly to Microsoft's managed **Work IQ MCP Server (`https://workiq.svc.cloud.microsoft/mcp`)**.
+  - Demonstrates real-time **Microsoft Purview Sensitivity Label & AES-256 Rights Management (RMS) Encryption** enforcement—decrypting and summarizing authorized confidential documents while natively blocking restricted documents based on the signed-in user's identity.
 
 - 🧠 **[Claude Sonnet 5 Model Garden MCP Server](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge_mcp/claude_mcp_sonnet)**:
   - Bring-Your-Own (BYO) MCP Connector wrapping Anthropic Claude Sonnet 5 (`publishers/anthropic/models/claude-sonnet-5`) from the Agent Platform Model Garden into Cloud Run.
