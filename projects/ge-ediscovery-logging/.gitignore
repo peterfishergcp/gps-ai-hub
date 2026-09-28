@@ -1,0 +1,10 @@
+# Never commit private keys, JWKS files, or environment credentials
+.env
+.archiver_private_key.pem
+archiver_jwks.json
+*.pem
+*.key
+*.jsonl
+.tmp*
+__pycache__/
+*.pyc

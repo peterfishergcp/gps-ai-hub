@@ -8,6 +8,15 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ---
 
+## 🔎 Gemini Enterprise eDiscovery & BigQuery Forensic Logging (`/ge-ediscovery-logging`)
+
+- 🗄️ **[Gemini Enterprise Server-Side eDiscovery Capture, Cloud Storage Archival & BigQuery Forensic Reporting](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge-ediscovery-logging)**:
+  - Zero-browser-plugin, 100% server-side eDiscovery and compliance pipeline for **Gemini Enterprise** deployments backed by **Workforce Identity Federation (WIF)**.
+  - Captures full untruncated user prompts, model responses, internal model reasoning (`thought_text`), user-uploaded attachments (`USER_PROVIDED`), and AI-generated images/artifacts (`AI_GENERATED`) with `SHA-256` & `CRC32C` chain-of-custody verification into **Cloud Storage** and **BigQuery**.
+  - Includes pre-built BigQuery analytical views and table-valued functions for **File Chain-of-Custody Auditing (`v_ediscovery_file_audit`)**, **Automated Jailbreak / Prompt Injection / Exfiltration Detection (`v_jailbreak_and_security_detections`)**, and **Parameterized User Forensic Reports (`fn_user_forensic_report`)**.
+
+---
+
 ## 🌐 Gemini Enterprise Smart Router (`/ge-smart-router`)
 
 - 🔀 **[Gemini Enterprise Smart Group Router](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge-smart-router)**:

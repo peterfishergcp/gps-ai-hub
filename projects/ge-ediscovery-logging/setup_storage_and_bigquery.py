@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""
+Provisions the Cloud Storage archive bucket, BigQuery dataset, structured
+reporting table (conversation_turns), Cloud Logging -> BigQuery sink, and
+pre-built BigQuery analytical views & functions for Gemini Enterprise eDiscovery:
+  - v_ediscovery_file_audit
+  - v_jailbreak_and_security_detections
+  - fn_user_forensic_report(target_user STRING)
+
+Usage:
+  export GCP_PROJECT_ID="<YOUR_GCP_PROJECT_ID>"
+  python3 setup_storage_and_bigquery.py
+"""
+
+import json
+import os
+import subprocess
+import sys
+
+PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "").strip()
+GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", f"{PROJECT_ID}-ge-ediscovery" if PROJECT_ID else "").strip()
+GCS_BUCKET = f"gs://{GCS_BUCKET_NAME}" if not GCS_BUCKET_NAME.startswith("gs://") else GCS_BUCKET_NAME
+BQ_DATASET = os.environ.get("BQ_DATASET", "ge_ediscovery").strip()
+BQ_TABLE = os.environ.get("BQ_TABLE", "conversation_turns").strip()
+SINK_NAME = os.environ.get("LOGGING_SINK_NAME", "ge-ediscovery-bq-sink").strip()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCHEMA_PATH = os.path.join(BASE_DIR, "conversation_turns_schema.json")
+
+
+def ensure_gcs_bucket() -> None:
+    print(f"[1/5] Ensuring Cloud Storage bucket {GCS_BUCKET}...")
+    check = subprocess.run(
+        ["gcloud", "storage", "buckets", "describe", GCS_BUCKET, f"--project={PROJECT_ID}"],
+        capture_output=True,
+        text=True,
+    )
+    if check.returncode != 0:
+        print(f"      Creating bucket {GCS_BUCKET} in US with uniform bucket-level access...")
+        subprocess.run(
+            [
+                "gcloud", "storage", "buckets", "create", GCS_BUCKET,
+                f"--project={PROJECT_ID}",
+                "--location=US",
+                "--uniform-bucket-level-access",
+            ],
+            check=True,
+        )
+    else:
+        print(f"      Bucket {GCS_BUCKET} already exists.")
+
+    print("      Enabling object versioning on bucket...")
+    subprocess.run(
+        ["gcloud", "storage", "buckets", "update", GCS_BUCKET, "--versioning", f"--project={PROJECT_ID}"],
+        check=True,
+    )
+
+
+def ensure_bq_dataset_and_table() -> None:
+    print(f"[2/5] Ensuring BigQuery dataset {PROJECT_ID}:{BQ_DATASET}...")
+    ds_check = subprocess.run(
+        ["bq", f"--project_id={PROJECT_ID}", "show", f"{PROJECT_ID}:{BQ_DATASET}"],
+        capture_output=True,
+        text=True,
+    )
+    if ds_check.returncode != 0:
+        subprocess.run(
+            [
+                "bq", "--location=US", "mk", "--dataset",
+                "--description=Gemini Enterprise eDiscovery Archive and Reporting Dataset",
+                f"{PROJECT_ID}:{BQ_DATASET}",
+            ],
+            check=True,
+        )
+    else:
+        print(f"      Dataset {PROJECT_ID}:{BQ_DATASET} already exists.")
+
+    table_ref = f"{PROJECT_ID}:{BQ_DATASET}.{BQ_TABLE}"
+    print(f"[3/5] Ensuring BigQuery table {table_ref}...")
+    tbl_check = subprocess.run(
+        ["bq", f"--project_id={PROJECT_ID}", "show", table_ref],
+        capture_output=True,
+        text=True,
+    )
+    if tbl_check.returncode != 0:
+        subprocess.run(
+            [
+                "bq", f"--project_id={PROJECT_ID}", "mk", "--table",
+                "--description=Enriched Gemini Enterprise conversation turns with GCS links to uploaded and AI-generated files",
+                table_ref,
+                SCHEMA_PATH,
+            ],
+            check=True,
+        )
+    else:
+        subprocess.run(
+            ["bq", f"--project_id={PROJECT_ID}", "update", table_ref, SCHEMA_PATH],
+            check=True,
+        )
+        print(f"      Updated schema on existing table {table_ref}.")
+
+
+def ensure_logging_sink() -> None:
+    print(f"[4/5] Ensuring Cloud Logging sink '{SINK_NAME}' -> BigQuery dataset '{BQ_DATASET}'...")
+    destination = f"bigquery.googleapis.com/projects/{PROJECT_ID}/datasets/{BQ_DATASET}"
+    log_filter = f'logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity"'
+
+    sink_check = subprocess.run(
+        ["gcloud", "logging", "sinks", "describe", SINK_NAME, f"--project={PROJECT_ID}", "--format=json"],
+        capture_output=True,
+        text=True,
+    )
+    if sink_check.returncode != 0:
+        subprocess.run(
+            [
+                "gcloud", "logging", "sinks", "create", SINK_NAME,
+                destination,
+                f"--log-filter={log_filter}",
+                "--use-partitioned-tables",
+                f"--project={PROJECT_ID}",
+            ],
+            check=True,
+        )
+    else:
+        subprocess.run(
+            [
+                "gcloud", "logging", "sinks", "update", SINK_NAME,
+                destination,
+                f"--log-filter={log_filter}",
+                f"--project={PROJECT_ID}",
+            ],
+            check=True,
+        )
+
+    sink_info = json.loads(
+        subprocess.check_output(
+            ["gcloud", "logging", "sinks", "describe", SINK_NAME, f"--project={PROJECT_ID}", "--format=json"]
+        ).decode()
+    )
+    writer_identity = sink_info["writerIdentity"]
+    print(f"      Sink writerIdentity: {writer_identity}")
+
+    ds_json = json.loads(
+        subprocess.check_output(
+            ["bq", f"--project_id={PROJECT_ID}", "show", "--format=prettyjson", f"{PROJECT_ID}:{BQ_DATASET}"]
+        ).decode()
+    )
+    sa_email = writer_identity.split(":", 1)[1] if ":" in writer_identity else writer_identity
+    access_list = ds_json.get("access", [])
+    if not any(a.get("userByEmail") == sa_email and a.get("role") == "WRITER" for a in access_list):
+        access_list.append({"role": "WRITER", "userByEmail": sa_email})
+        ds_json["access"] = access_list
+        tmp_ds_path = os.path.join(BASE_DIR, ".tmp_ds_access.json")
+        with open(tmp_ds_path, "w", encoding="utf-8") as f:
+            json.dump(ds_json, f)
+        subprocess.run(
+            ["bq", f"--project_id={PROJECT_ID}", "update", "--source", tmp_ds_path, f"{PROJECT_ID}:{BQ_DATASET}"],
+            check=True,
+        )
+        os.remove(tmp_ds_path)
+        print(f"      Granted WRITER (roles/bigquery.dataEditor) on {BQ_DATASET} to {sa_email}.")
+    else:
+        print(f"      {sa_email} already has WRITER access on {BQ_DATASET}.")
+
+
+def ensure_bq_views_and_functions() -> None:
+    print(f"[5/5] Creating BigQuery audit views & parameterized forensic table function in {PROJECT_ID}.{BQ_DATASET}...")
+    ddl = f"""
+    CREATE OR REPLACE VIEW `{PROJECT_ID}.{BQ_DATASET}.v_ediscovery_file_audit` AS
+    SELECT
+      t.event_timestamp,
+      t.engine_id,
+      t.session_id,
+      t.turn_index,
+      t.user_iam_principal,
+      t.session_display_name,
+      t.prompt_text,
+      t.response_text,
+      f.file_source,
+      f.file_id,
+      f.file_name,
+      f.mime_type,
+      f.byte_size,
+      f.sha256,
+      f.crc32c,
+      f.gcs_uri,
+      f.console_url,
+      t.session_transcript_gcs_uri,
+      t.session_transcript_console_url
+    FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}` AS t
+    LEFT JOIN UNNEST(t.files) AS f;
+
+    CREATE OR REPLACE VIEW `{PROJECT_ID}.{BQ_DATASET}.v_jailbreak_and_security_detections` AS
+    WITH analyzed AS (
+      SELECT
+        event_timestamp,
+        engine_id,
+        session_id,
+        turn_index,
+        user_iam_principal,
+        session_display_name,
+        prompt_text,
+        response_text,
+        thought_text,
+        files,
+        session_transcript_console_url,
+        REGEXP_CONTAINS(LOWER(IFNULL(prompt_text, "")), r"official directive|office of the ciso|ciso|executive order|authorized security test|override policy|system administrator") AS flag_authority_spoofing,
+        REGEXP_CONTAINS(LOWER(IFNULL(prompt_text, "")), r"ignore (all )?(previous|prior) instructions|do not call any other tools|system prompt|dan mode|jailbreak|bypass|without restriction") AS flag_instruction_override,
+        REGEXP_CONTAINS(LOWER(IFNULL(prompt_text, "") || " " || IFNULL(response_text, "")), r"encrypted instruction|decrypt_instruction|ciphertext|aesgcm|aes-256-gcm|payload_b64|base64\\.b64decode|run the decryption code") AS flag_encrypted_payload_or_code_exec,
+        REGEXP_CONTAINS(LOWER(IFNULL(prompt_text, "") || " " || IFNULL(response_text, "")), r"contacts an external address|external network callback|save it to my sharepoint|sensitivitylabel|purview|encrypted and restricted") AS flag_exfil_or_sensitivity_probe,
+        REGEXP_CONTAINS(LOWER(IFNULL(response_text, "") || " " || IFNULL(thought_text, "")), r"i cannot generate|i cannot fulfill|impersonate executive|initiate external network callbacks|ethical implications|cannot be read, summarized, or extracted|access denied") AS model_refused_or_blocked
+      FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}`
+    )
+    SELECT
+      event_timestamp,
+      CASE
+        WHEN flag_authority_spoofing AND model_refused_or_blocked THEN "CRITICAL"
+        WHEN flag_authority_spoofing OR flag_encrypted_payload_or_code_exec THEN "HIGH"
+        WHEN flag_instruction_override OR flag_exfil_or_sensitivity_probe OR model_refused_or_blocked THEN "MEDIUM"
+        ELSE "LOW"
+      END AS risk_severity,
+      ARRAY_TO_STRING([
+        IF(flag_authority_spoofing, "AUTHORITY_SPOOFING", NULL),
+        IF(flag_instruction_override, "INSTRUCTION_OR_TOOL_OVERRIDE", NULL),
+        IF(flag_encrypted_payload_or_code_exec, "OBFUSCATED_OR_ENCRYPTED_PAYLOAD", NULL),
+        IF(flag_exfil_or_sensitivity_probe, "EXFIL_OR_SENSITIVITY_LABEL_PROBE", NULL),
+        IF(model_refused_or_blocked, "MODEL_SAFETY_OR_DLP_REFUSAL", NULL)
+      ], ", ") AS matched_threat_signals,
+      model_refused_or_blocked,
+      user_iam_principal,
+      engine_id,
+      session_id,
+      turn_index,
+      session_display_name,
+      prompt_text,
+      response_text,
+      thought_text,
+      ARRAY_LENGTH(files) AS file_count,
+      files,
+      session_transcript_console_url
+    FROM analyzed;
+
+    CREATE OR REPLACE TABLE FUNCTION `{PROJECT_ID}.{BQ_DATASET}.fn_user_forensic_report`(target_user STRING) AS (
+      SELECT
+        d.event_timestamp,
+        d.user_iam_principal,
+        d.engine_id,
+        d.session_id,
+        d.turn_index,
+        d.session_display_name,
+        d.risk_severity,
+        d.matched_threat_signals,
+        d.model_refused_or_blocked,
+        d.prompt_text,
+        d.response_text,
+        d.thought_text,
+        d.file_count,
+        ARRAY(
+          SELECT AS STRUCT
+            f.file_source,
+            f.file_id,
+            f.file_name,
+            f.mime_type,
+            f.byte_size,
+            f.sha256,
+            f.console_url,
+            f.gcs_uri
+          FROM UNNEST(d.files) AS f
+        ) AS archived_files,
+        d.session_transcript_console_url
+      FROM `{PROJECT_ID}.{BQ_DATASET}.v_jailbreak_and_security_detections` AS d
+      WHERE
+        UPPER(TRIM(target_user)) IN ("ALL", "*", "")
+        OR LOWER(d.user_iam_principal) = LOWER(TRIM(target_user))
+        OR STRPOS(LOWER(d.user_iam_principal), LOWER(TRIM(target_user))) > 0
+    );
+    """
+    subprocess.run(
+        ["bq", f"--project_id={PROJECT_ID}", "query", "--use_legacy_sql=false", "--quiet", ddl],
+        check=True,
+    )
+    print("      Created v_ediscovery_file_audit, v_jailbreak_and_security_detections, and fn_user_forensic_report.")
+
+
+if __name__ == "__main__":
+    if not PROJECT_ID or PROJECT_ID.startswith("<"):
+        sys.exit("ERROR: Please set GCP_PROJECT_ID (e.g., export GCP_PROJECT_ID='your-project-id').")
+    ensure_gcs_bucket()
+    ensure_bq_dataset_and_table()
+    ensure_logging_sink()
+    ensure_bq_views_and_functions()
+    print("\nAll Cloud Storage, BigQuery, and Cloud Logging sink resources are ready!")
