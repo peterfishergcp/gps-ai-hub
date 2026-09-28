@@ -103,7 +103,10 @@ def ensure_bq_dataset_and_table() -> None:
 def ensure_logging_sink() -> None:
     print(f"[4/5] Ensuring Cloud Logging sink '{SINK_NAME}' -> BigQuery dataset '{BQ_DATASET}'...")
     destination = f"bigquery.googleapis.com/projects/{PROJECT_ID}/datasets/{BQ_DATASET}"
-    log_filter = f'logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity"'
+    log_filter = (
+        f'logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity" '
+        f'OR logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity"'
+    )
 
     sink_check = subprocess.run(
         ["gcloud", "logging", "sinks", "describe", SINK_NAME, f"--project={PROJECT_ID}", "--format=json"],

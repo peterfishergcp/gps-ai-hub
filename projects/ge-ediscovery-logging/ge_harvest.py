@@ -597,8 +597,337 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
             os.remove(tmp_path)
 
 
+def clean_notebooklm_streamed_reply(text: str) -> str:
+    """
+    Deduplicates cumulative streaming chunks in NotebookLM Enterprise's
+    GenerateFreeFormStreamed serviceTextReply field.
+    """
+    if not text or len(text) < 40:
+        return (text or "").strip()
+    prefix = text[:40]
+    last_idx = text.rfind(prefix)
+    if last_idx > 0:
+        text = text[last_idx:]
+    text = re.sub(r"(.{15,200}?)\1+$", r"\1", text.strip(), flags=re.DOTALL)
+    return text.strip()
+
+
+def get_token_for_principal(
+    principal: str,
+    project_id: str,
+    workforce_pool_id: str,
+) -> str:
+    """Returns a WIF STS token for federated principals or gcloud OAuth token fallback."""
+    if not principal:
+        return subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode().strip()
+    try:
+        return mint_sts_token(principal, project_id=project_id, workforce_pool_id=workforce_pool_id)
+    except Exception:
+        return subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode().strip()
+
+
+def harvest_notebooklm_enterprise(
+    project_id: str,
+    workforce_pool_id: str,
+    bucket_name: str,
+    hours: int = 720,
+    known_principals: set[str] | None = None,
+) -> list[dict]:
+    """
+    Harvests NotebookLM Enterprise activity and notebooks across global and us:
+      1. Reads discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity
+         for GenerateFreeFormStreamed (chat prompts & answers), CreateNotebook,
+         GetNotebook, and BatchCreateSources.
+      2. Calls v1alpha/projects/{project}/locations/{loc}/notebooks:listRecentlyViewed
+         using WIF STS tokens for each federated user.
+      3. Fetches full Notebook and Source metadata (title, wordCount, tokenCount),
+         archives notebook_archive.json to GCS, and returns structured rows for BigQuery.
+    """
+    print("\n======================================================================")
+    print("Harvesting NotebookLM Enterprise (Prompts, Responses & Sources)")
+    print("======================================================================")
+    cutoff = (
+        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    log_filter = (
+        f'logName="projects/{project_id}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity" '
+        f'AND timestamp>="{cutoff}"'
+    )
+    out = subprocess.check_output(
+        [
+            "gcloud", "logging", "read", log_filter,
+            f"--project={project_id}",
+            "--limit=500",
+            "--format=json",
+        ]
+    ).decode("utf-8")
+    entries = json.loads(out) if out.strip() else []
+    print(f"Found {len(entries)} log entries in notebooklm_enterprise_user_activity.")
+
+    notebooks: dict[str, dict] = {}
+    principals_to_probe: set[str] = set(known_principals or set())
+
+    for entry in reversed(entries):
+        jp = entry.get("jsonPayload", {})
+        meta = jp.get("logMetadata", {})
+        method = meta.get("methodName", "")
+        user_principal = jp.get("userIamPrincipal", "")
+        ts = entry.get("timestamp") or meta.get("timestamp")
+        insert_id = entry.get("insertId", "")
+
+        if user_principal:
+            principals_to_probe.add(user_principal)
+
+        nb_name = (
+            meta.get("name")
+            or jp.get("request", {}).get("name")
+            or jp.get("request", {}).get("parent")
+            or jp.get("response", {}).get("name")
+            or ""
+        )
+        if "/notebooks/" not in nb_name:
+            continue
+        nb_name = nb_name.split("/sources/")[0].split("/audioOverviews/")[0]
+        parts = nb_name.split("/")
+        loc = parts[parts.index("locations") + 1] if "locations" in parts else "global"
+        nb_id = parts[parts.index("notebooks") + 1]
+
+        nb_info = notebooks.setdefault(nb_id, {
+            "notebook_id": nb_id,
+            "notebook_name": nb_name,
+            "location": loc,
+            "user_iam_principal": user_principal,
+            "title": jp.get("response", {}).get("title", ""),
+            "chat_turns": [],
+            "logged_sources": {},
+            "latest_timestamp": ts,
+        })
+        if user_principal and not nb_info["user_iam_principal"]:
+            nb_info["user_iam_principal"] = user_principal
+        if jp.get("response", {}).get("title") and not nb_info["title"]:
+            nb_info["title"] = jp["response"]["title"]
+        if ts:
+            nb_info["latest_timestamp"] = ts
+
+        if method == "GenerateFreeFormStreamed":
+            user_query = jp.get("request", {}).get("userQuery", "")
+            raw_reply = jp.get("serviceTextReply", "")
+            clean_reply = clean_notebooklm_streamed_reply(raw_reply)
+            nb_info["chat_turns"].append({
+                "query_id": insert_id or f"nb-turn-{len(nb_info['chat_turns']) + 1}",
+                "user_principal": user_principal or nb_info["user_iam_principal"],
+                "prompt_text": user_query,
+                "response_text": clean_reply,
+                "timestamp": ts,
+            })
+        elif method == "BatchCreateSources":
+            for s in jp.get("response", {}).get("sources", []):
+                sid = s.get("sourceId", {}).get("id") or s.get("name", "").split("/")[-1]
+                if sid:
+                    nb_info["logged_sources"][sid] = {
+                        "source_id": sid,
+                        "title": s.get("title", f"source_{sid}"),
+                        "name": s.get("name", ""),
+                        "added_timestamp": ts,
+                    }
+            status_msg = jp.get("status", {}).get("message", "")
+            if status_msg and "url:" in status_msg:
+                nb_info["chat_turns"].append({
+                    "query_id": insert_id or "nb-src-error",
+                    "user_principal": user_principal or nb_info["user_iam_principal"],
+                    "prompt_text": f"[NotebookLM BatchCreateSources Failed Ingestion] {status_msg.splitlines()[0]}",
+                    "response_text": status_msg,
+                    "timestamp": ts,
+                })
+
+    for principal in sorted(principals_to_probe):
+        tok = get_token_for_principal(principal, project_id, workforce_pool_id)
+        for loc in ["global", "us"]:
+            prefix = f"{loc}-" if loc != "global" else ""
+            url = (
+                f"https://{prefix}discoveryengine.googleapis.com/v1alpha/"
+                f"projects/{project_id}/locations/{loc}/notebooks:listRecentlyViewed"
+            )
+            req = urllib.request.Request(
+                url,
+                headers={"Authorization": f"Bearer {tok}", "X-Goog-User-Project": project_id},
+            )
+            try:
+                resp = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode("utf-8"))
+                for nb in resp.get("notebooks", []):
+                    nb_id = nb.get("notebookId") or nb.get("name", "").split("/")[-1]
+                    if not nb_id:
+                        continue
+                    nb_info = notebooks.setdefault(nb_id, {
+                        "notebook_id": nb_id,
+                        "notebook_name": nb.get("name", f"projects/{project_id}/locations/{loc}/notebooks/{nb_id}"),
+                        "location": loc,
+                        "user_iam_principal": principal,
+                        "title": nb.get("title", ""),
+                        "chat_turns": [],
+                        "logged_sources": {},
+                        "latest_timestamp": nb.get("metadata", {}).get("lastViewed") or nb.get("metadata", {}).get("createTime"),
+                    })
+                    if nb.get("title") and not nb_info["title"]:
+                        nb_info["title"] = nb["title"]
+            except Exception:
+                continue
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    bq_rows: list[dict] = []
+
+    for nb_id, nb_info in notebooks.items():
+        loc = nb_info["location"]
+        nb_name = nb_info["notebook_name"]
+        principal = nb_info["user_iam_principal"] or "unknown"
+        tok = get_token_for_principal(principal, project_id, workforce_pool_id)
+        prefix = f"{loc}-" if loc != "global" else ""
+
+        nb_detail = {}
+        try:
+            nb_url = f"https://{prefix}discoveryengine.googleapis.com/v1alpha/{nb_name}"
+            req = urllib.request.Request(
+                nb_url,
+                headers={"Authorization": f"Bearer {tok}", "X-Goog-User-Project": project_id},
+            )
+            nb_detail = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode("utf-8"))
+        except Exception as e:
+            print(f"  [!] Could not GET notebook {nb_id} ({loc}): {e}")
+
+        title = nb_detail.get("title") or nb_info.get("title") or f"Untitled Notebook ({nb_id[:8]})"
+        create_time = nb_detail.get("metadata", {}).get("createTime") or nb_info.get("latest_timestamp") or now_iso
+
+        enriched_sources: list[dict] = []
+        raw_sources = nb_detail.get("sources", [])
+        seen_source_ids: set[str] = set()
+        for src in raw_sources:
+            sname = src.get("name", "")
+            sid = src.get("sourceId", {}).get("id") or sname.split("/")[-1]
+            seen_source_ids.add(sid)
+            s_detail = src
+            if sname:
+                try:
+                    s_url = f"https://{prefix}discoveryengine.googleapis.com/v1alpha/{sname}"
+                    s_req = urllib.request.Request(
+                        s_url,
+                        headers={"Authorization": f"Bearer {tok}", "X-Goog-User-Project": project_id},
+                    )
+                    s_detail = json.loads(urllib.request.urlopen(s_req, context=SSL_CTX).read().decode("utf-8"))
+                except Exception:
+                    pass
+            enriched_sources.append(s_detail)
+
+        for sid, lsrc in nb_info["logged_sources"].items():
+            if sid not in seen_source_ids:
+                enriched_sources.append({
+                    "sourceId": {"id": sid},
+                    "title": lsrc["title"],
+                    "name": lsrc["name"],
+                    "metadata": {"sourceAddedTimestamp": lsrc["added_timestamp"]},
+                })
+
+        archive_payload = {
+            "notebook_id": nb_id,
+            "notebook_name": nb_name,
+            "location": loc,
+            "user_iam_principal": principal,
+            "title": title,
+            "notebook_resource": nb_detail,
+            "enriched_sources": enriched_sources,
+            "chat_turns": nb_info["chat_turns"],
+            "harvested_at": now_iso,
+        }
+        archive_bytes = json.dumps(archive_payload, indent=2).encode("utf-8")
+        archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
+        archive_crc32c = compute_crc32c_base64(archive_bytes)
+        gcs_path = f"notebooks/{loc}/{nb_id}/notebook_archive.json"
+        archive_gcs_uri, archive_console_url = upload_bytes_to_gcs(
+            archive_bytes, gcs_path, project_id, bucket_name, "application/json"
+        )
+        print(
+            f"  [+] Archived NotebookLM '{title}' ({nb_id}, {loc}, User: {principal}, "
+            f"{len(enriched_sources)} sources, {len(nb_info['chat_turns'])} chat turns) -> {archive_gcs_uri}"
+        )
+
+        nb_files: list[dict] = []
+        source_titles: list[str] = []
+        for s in enriched_sources:
+            sid = s.get("sourceId", {}).get("id") or s.get("name", "").split("/")[-1] or "source"
+            stitle = s.get("title") or f"notebook_source_{sid}"
+            source_titles.append(stitle)
+            smeta = s.get("metadata", {})
+            words = int(smeta.get("wordCount") or 0)
+            tokens = int(smeta.get("tokenCount") or 0)
+            nb_files.append({
+                "file_id": sid,
+                "file_source": "NOTEBOOK_SOURCE",
+                "file_name": stitle,
+                "mime_type": f"application/x-notebooklm-source ({words} words, {tokens} tokens)",
+                "byte_size": words if words > 0 else len(archive_bytes),
+                "sha256": archive_sha256,
+                "crc32c": archive_crc32c,
+                "gcs_uri": archive_gcs_uri,
+                "console_url": archive_console_url,
+            })
+
+        engine_label = f"notebooklm-enterprise-{loc}"
+        display_label = f"[NotebookLM] {title}"
+        thought_summary = (
+            f"NotebookLM Enterprise grounded over {len(enriched_sources)} source(s): "
+            + (", ".join(source_titles) if source_titles else "No sources attached")
+        )
+
+        if nb_info["chat_turns"]:
+            for idx, ct in enumerate(nb_info["chat_turns"], start=1):
+                bq_rows.append({
+                    "session_id": nb_id,
+                    "turn_index": idx,
+                    "query_id": ct["query_id"],
+                    "assist_answer_id": ct["query_id"],
+                    "engine_id": engine_label,
+                    "location": loc,
+                    "user_iam_principal": ct["user_principal"] or principal,
+                    "session_display_name": display_label,
+                    "prompt_text": ct["prompt_text"],
+                    "response_text": ct["response_text"],
+                    "thought_text": thought_summary,
+                    "model_name": "notebooklm-enterprise",
+                    "session_transcript_gcs_uri": archive_gcs_uri,
+                    "session_transcript_console_url": archive_console_url,
+                    "files": nb_files if idx == 1 else [],
+                    "event_timestamp": ct["timestamp"] or create_time,
+                    "harvested_at": now_iso,
+                })
+        elif enriched_sources or title:
+            bq_rows.append({
+                "session_id": nb_id,
+                "turn_index": 1,
+                "query_id": f"nb-inventory-{nb_id[:8]}",
+                "assist_answer_id": f"nb-inventory-{nb_id[:8]}",
+                "engine_id": engine_label,
+                "location": loc,
+                "user_iam_principal": principal,
+                "session_display_name": display_label,
+                "prompt_text": f"[NotebookLM Notebook & Source Inventory] Title: {title}",
+                "response_text": (
+                    f"Notebook '{title}' ({nb_id}) contains {len(enriched_sources)} source(s): "
+                    + (", ".join(source_titles) if source_titles else "None")
+                ),
+                "thought_text": thought_summary,
+                "model_name": "notebooklm-enterprise",
+                "session_transcript_gcs_uri": archive_gcs_uri,
+                "session_transcript_console_url": archive_console_url,
+                "files": nb_files,
+                "event_timestamp": create_time,
+                "harvested_at": now_iso,
+            })
+
+    return bq_rows
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Harvest Gemini Enterprise sessions and files to GCS & BigQuery.")
+    parser = argparse.ArgumentParser(description="Harvest Gemini Enterprise sessions, NotebookLM notebooks, and files to GCS & BigQuery.")
     parser.add_argument("--project-id", default=PROJECT_ID, help="Google Cloud Project ID")
     parser.add_argument("--workforce-pool-id", default=WORKFORCE_POOL_ID, help="Workforce Identity Pool ID")
     parser.add_argument("--bucket-name", default="", help="Cloud Storage bucket name (default: <project_id>-ge-ediscovery)")
@@ -631,14 +960,29 @@ def main() -> None:
             if uprinc:
                 info["user_iam_principal"] = uprinc
 
-    print(f"Discovered {len(sessions)} session(s) to harvest.")
+    print(f"Discovered {len(sessions)} Gemini Enterprise session(s) to harvest.")
     all_rows: list[dict] = []
+    known_principals: set[str] = set()
     for sname, sinfo in sessions.items():
+        if sinfo.get("user_iam_principal"):
+            known_principals.add(sinfo["user_iam_principal"])
         try:
             rows = harvest_session(sinfo, args.project_id, args.workforce_pool_id, bucket_name)
             all_rows.extend(rows)
         except Exception as e:
             print(f"  [!] Error harvesting {sname}: {e}")
+
+    try:
+        nb_rows = harvest_notebooklm_enterprise(
+            args.project_id,
+            args.workforce_pool_id,
+            bucket_name,
+            hours=max(args.hours, 720),
+            known_principals=known_principals,
+        )
+        all_rows.extend(nb_rows)
+    except Exception as e:
+        print(f"  [!] Error harvesting NotebookLM Enterprise: {e}")
 
     load_rows_to_bigquery(all_rows, args.project_id)
 
