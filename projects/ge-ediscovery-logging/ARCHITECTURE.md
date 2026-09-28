@@ -77,6 +77,33 @@ Unlike standard Gemini Enterprise chat engines (`engines/*`), **NotebookLM Enter
    - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}`
    - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}/sources/{source_id}` (returning `title`, `metadata.wordCount`, `metadata.tokenCount`, `metadata.sourceAddedTimestamp`, and origin metadata for PDFs, Markdown/text, Google Drive docs, YouTube videos, web URLs, and Agentspace sources).
 
+### 1.5 Custom Agent Observability: No-Code Agents vs. ADK Agents
+Enabling `observabilityConfig` on a Gemini Enterprise **Engine** (`engines/{engine_id}`) only enables logging for the default core assistant (`core_assistant`). Each custom agent registered under `engines/{engine_id}/assistants/default_assistant/agents/{agent_id}` has its own independent `observabilityConfig` field:
+
+1. **Per-Agent `observabilityConfig` (`enable_ge_sensitive_logging.py`)**:
+   ```http
+   PATCH https://{location}-discoveryengine.googleapis.com/v1alpha/projects/<YOUR_GCP_PROJECT_ID>/locations/{location}/collections/default_collection/engines/{engine_id}/assistants/default_assistant/agents/{agent_id}?updateMask=observabilityConfig
+   Content-Type: application/json
+
+   {
+     "displayName": "<EXISTING_AGENT_DISPLAY_NAME>",
+     "description": "<EXISTING_AGENT_DESCRIPTION>",
+     "observabilityConfig": {
+       "observabilityEnabled": true,
+       "sensitiveLoggingEnabled": true
+     }
+   }
+   ```
+   - **No-Code Agents (`lowCodeAgentDefinition`)**:
+     - Emits outer user activity logs (`StreamAssist` with `response.agentInfo.spiffeId` and `request.query.parts[0].text`) to `discoveryengine.googleapis.com/gemini_enterprise_user_activity`.
+     - Emits full OpenTelemetry GenAI inference details to `discoveryengine.googleapis.com/gen_ai.client.inference.operation.details` (`resource.type="discoveryengine.googleapis.com/Agent"`), including full system instructions, tool declarations (`transfer_to_agent`, `docgen_agent`), `gen_ai.input.messages`, `gen_ai.output.messages`, and exact token counts (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.reasoning.output_tokens`).
+     - When a No-Code Agent delegates PDF creation to `docgen_agent`, Discovery Engine writes an `AddContextFile` entry against the **Session** (`sessions/{session_id}`) containing `fileId`, `fileName`, `mimeType`, and `byteCount` ~2ms before the `StreamAssist` entry. Both `ge_harvest.py` (which downloads the PDF binary via `:downloadFile` to GCS) and the real-time BigQuery view `v_realtime_agent_and_file_activity` correlate these two events by `session_id`.
+   - **ADK Agents (`adkAgentDefinition` -> Vertex AI Agent Engine `ReasoningEngine`)**:
+     - Enabling `observabilityConfig` on the Gemini Enterprise Agent registration captures the outer user prompt and final response returned to Gemini Enterprise in `gemini_enterprise_user_activity` and `GetSession`.
+     - To also capture **un-redacted internal LLM prompts, tool calls, and sub-agent steps** inside `aiplatform.googleapis.com/reasoning_engine_stdout` (`gen_ai.user.message` / `gen_ai.choice`), the Vertex AI `ReasoningEngine` deployment must set **both** environment variables in `deploymentSpec.env`:
+       - `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"`
+       - `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"` *(if omitted, internal ADK logs scrub message text to `{"content": "<elided>"}`)*.
+
 ---
 
 ## 2. Cloud Storage Archive Layout

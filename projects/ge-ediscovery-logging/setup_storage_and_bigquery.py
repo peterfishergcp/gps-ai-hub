@@ -290,7 +290,9 @@ def ensure_bq_views_and_functions() -> None:
       t.turn_index,
       CASE
         WHEN STARTS_WITH(t.prompt_text, '[NotebookLM Source Ingestion]') THEN 'SOURCE_INGESTION_AUDIT'
-        ELSE 'NOTEBOOK_CHAT_QUERY'
+        WHEN STARTS_WITH(t.prompt_text, '[NotebookLM BatchCreateSources Failed Ingestion]') THEN 'SOURCE_INGESTION_FAILED'
+        WHEN STARTS_WITH(t.prompt_text, '[NotebookLM Notebook & Source Inventory]') THEN 'NOTEBOOK_INVENTORY_SNAPSHOT'
+        ELSE 'NOTEBOOK_CHAT_PROMPT'
       END AS activity_type,
       t.prompt_text AS notebook_query_or_event,
       t.response_text AS notebook_grounded_response,
@@ -309,6 +311,165 @@ def ensure_bq_views_and_functions() -> None:
       t.session_transcript_console_url AS notebook_archive_console_url
     FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}` AS t
     WHERE STARTS_WITH(t.engine_id, 'notebooklm-enterprise-');
+
+    CREATE OR REPLACE VIEW `{PROJECT_ID}.{BQ_DATASET}.v_realtime_agent_and_file_activity` AS
+    WITH raw_events AS (
+      SELECT
+        timestamp,
+        insertId,
+        jsonPayload.useriamprincipal AS user_iam_principal,
+        jsonPayload.logmetadata.methodname AS method_name,
+        REGEXP_EXTRACT(
+          COALESCE(
+            jsonPayload.response.answer.name,
+            jsonPayload.response.session,
+            jsonPayload.request.name,
+            jsonPayload.logmetadata.name
+          ),
+          r"/engines/([^/]+)"
+        ) AS engine_id,
+        REGEXP_EXTRACT(
+          COALESCE(
+            jsonPayload.response.answer.name,
+            jsonPayload.response.session,
+            jsonPayload.request.name,
+            jsonPayload.logmetadata.name
+          ),
+          r"/sessions/([^/]+)"
+        ) AS session_id,
+        REGEXP_EXTRACT(
+          jsonPayload.response.answer.name,
+          r"/assistAnswers/([^/]+)"
+        ) AS assist_answer_id,
+        COALESCE(
+          jsonPayload.request.query.text,
+          jsonPayload.request.query.parts[SAFE_OFFSET(0)].text
+        ) AS user_prompt,
+        jsonPayload.servicetextreply AS service_text_reply,
+        COALESCE(
+          jsonPayload.response.agentinfo.displayname,
+          "core_assistant"
+        ) AS agent_display_name,
+        jsonPayload.response.agentinfo.spiffeid AS agent_spiffe_id,
+        jsonPayload.response.agentinfo.agent AS agent_resource_name,
+        jsonPayload.response.fileid AS file_id,
+        COALESCE(
+          jsonPayload.response.filename,
+          jsonPayload.request.filename
+        ) AS file_name,
+        jsonPayload.response.mimetype AS mime_type,
+        SAFE_CAST(jsonPayload.response.bytecount AS INT64) AS byte_count
+      FROM `{PROJECT_ID}.{BQ_DATASET}.discoveryengine_googleapis_com_gemini_enterprise_user_activity`
+    ),
+    stream_turns AS (
+      SELECT *
+      FROM raw_events
+      WHERE method_name = "StreamAssist"
+      QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY session_id, COALESCE(assist_answer_id, user_prompt)
+        ORDER BY LENGTH(IFNULL(service_text_reply, "")) DESC, timestamp DESC
+      ) = 1
+    ),
+    file_events AS (
+      SELECT
+        session_id,
+        ANY_VALUE(engine_id) AS engine_id,
+        file_id,
+        ANY_VALUE(file_name) AS file_name,
+        ANY_VALUE(mime_type) AS mime_type,
+        ANY_VALUE(byte_count) AS byte_count,
+        ANY_VALUE(method_name) AS file_method_name,
+        MIN(timestamp) AS file_timestamp
+      FROM raw_events
+      WHERE method_name IN ("AddContextFile", "UploadSessionFile")
+        AND file_id IS NOT NULL
+      GROUP BY session_id, file_id
+    ),
+    harvested_files AS (
+      SELECT
+        session_id,
+        file_id,
+        ANY_VALUE(file_source) AS file_source,
+        ANY_VALUE(sha256) AS sha256,
+        ANY_VALUE(gcs_uri) AS gcs_uri,
+        ANY_VALUE(console_url) AS console_url,
+        ANY_VALUE(session_transcript_console_url) AS session_transcript_console_url
+      FROM `{PROJECT_ID}.{BQ_DATASET}.v_ediscovery_file_audit`
+      WHERE file_id IS NOT NULL
+      GROUP BY session_id, file_id
+    )
+    SELECT
+      s.timestamp,
+      s.user_iam_principal,
+      COALESCE(s.engine_id, f.engine_id) AS engine_id,
+      s.session_id,
+      s.agent_display_name,
+      s.agent_spiffe_id,
+      s.user_prompt,
+      s.service_text_reply,
+      f.file_method_name,
+      COALESCE(
+        h.file_source,
+        CASE
+          WHEN f.file_method_name = "UploadSessionFile" THEN "USER_PROVIDED"
+          WHEN f.file_method_name = "AddContextFile" THEN "AI_GENERATED"
+          ELSE NULL
+        END
+      ) AS file_source,
+      f.file_id,
+      f.file_name,
+      f.mime_type,
+      f.byte_count,
+      h.sha256,
+      COALESCE(
+        h.gcs_uri,
+        IF(
+          f.file_id IS NOT NULL,
+          CONCAT(
+            "gs://{GCS_BUCKET_NAME}/files/",
+            COALESCE(s.engine_id, f.engine_id), "/",
+            s.session_id, "/",
+            IF(f.file_method_name = "UploadSessionFile", "USER_PROVIDED", "AI_GENERATED"), "/",
+            f.file_id, "_",
+            REGEXP_REPLACE(IFNULL(f.file_name, f.file_id), r"[^A-Za-z0-9._-]", "_")
+          ),
+          NULL
+        )
+      ) AS gcs_uri,
+      COALESCE(
+        h.console_url,
+        IF(
+          f.file_id IS NOT NULL,
+          CONCAT(
+            "https://storage.cloud.google.com/{GCS_BUCKET_NAME}/files/",
+            COALESCE(s.engine_id, f.engine_id), "/",
+            s.session_id, "/",
+            IF(f.file_method_name = "UploadSessionFile", "USER_PROVIDED", "AI_GENERATED"), "/",
+            f.file_id, "_",
+            REGEXP_REPLACE(IFNULL(f.file_name, f.file_id), r"[^A-Za-z0-9._-]", "_")
+          ),
+          NULL
+        )
+      ) AS console_url,
+      COALESCE(
+        h.session_transcript_console_url,
+        IF(
+          s.session_id IS NOT NULL AND COALESCE(s.engine_id, f.engine_id) IS NOT NULL,
+          CONCAT(
+            "https://storage.cloud.google.com/{GCS_BUCKET_NAME}/sessions/",
+            COALESCE(s.engine_id, f.engine_id), "/",
+            s.session_id, "/session_transcript.json"
+          ),
+          NULL
+        )
+      ) AS session_transcript_console_url
+    FROM stream_turns s
+    LEFT JOIN file_events f
+      ON s.session_id = f.session_id
+      AND ABS(TIMESTAMP_DIFF(s.timestamp, f.file_timestamp, SECOND)) <= 180
+    LEFT JOIN harvested_files h
+      ON s.session_id = h.session_id
+      AND f.file_id = h.file_id;
     """
     subprocess.run(
         ["bq", f"--project_id={PROJECT_ID}", "query", "--use_legacy_sql=false", "--quiet", ddl],
@@ -316,7 +477,7 @@ def ensure_bq_views_and_functions() -> None:
     )
     print(
         "      Created v_ediscovery_file_audit, v_jailbreak_and_security_detections, "
-        "fn_user_forensic_report, and v_notebooklm_forensic_audit."
+        "fn_user_forensic_report, v_notebooklm_forensic_audit, and v_realtime_agent_and_file_activity."
     )
 
 

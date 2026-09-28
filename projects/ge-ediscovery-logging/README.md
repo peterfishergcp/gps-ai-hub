@@ -70,12 +70,30 @@ flowchart LR
     F -->|"Load Structured Turns + SHA-256/CRC32C"| H
 ```
 
-1. **Engine-Level & Project-Level Sensitive Logging (`enable_ge_sensitive_logging.py`)**: Patches all Gemini Enterprise engines (`global`, `us`, `eu`) AND the Project-level NotebookLM Enterprise configuration (`v1alpha/projects/{project_id}` -> `customerProvidedConfig.notebooklmConfig.observabilityConfig`) to enable `observabilityEnabled=true` and `sensitiveLoggingEnabled=true`.
+1. **Engine-Level, Agent-Level & Project-Level Sensitive Logging (`enable_ge_sensitive_logging.py`)**:
+   - Patches all Gemini Enterprise engines (`global`, `us`, `eu`) to enable `observabilityEnabled=true` and `sensitiveLoggingEnabled=true`.
+   - Iterates through every custom Agent (`lowCodeAgentDefinition`, `adkAgentDefinition`, `a2aAgentDefinition`) under `engines/{engine_id}/assistants/default_assistant/agents` and patches `observabilityConfig` on each agent individually.
+   - Patches the Project-level NotebookLM Enterprise configuration (`v1alpha/projects/{project_id}` -> `customerProvidedConfig.notebooklmConfig.observabilityConfig`) across `global`, `us`, and `eu`.
 2. **Server-Side WIF Archiver OIDC Provider (`setup_ediscovery_archiver_provider.py`)**: Registers a dedicated OIDC provider (`ediscovery-archiver`) inside your existing Workforce Identity Pool backed by an offline RSA-2048 keypair and inline JWKS. This allows the compliance harvester to mint short-lived, per-user STS tokens (`google.subject = assertion.sub`) to satisfy both Gemini Enterprise session ownership and NotebookLM Enterprise private notebook ownership checks.
-3. **Immutable Cloud Storage + BigQuery Provisioning (`setup_storage_and_bigquery.py`)**: Creates a versioned, Uniform Bucket-Level Access (UBLA) GCS bucket, a BigQuery dataset (`ge_ediscovery`), the `conversation_turns` table, a real-time Cloud Logging sink capturing both `gemini_enterprise_user_activity` and `notebooklm_enterprise_user_activity`, and four ready-to-use BigQuery reporting views/functions (`v_ediscovery_file_audit`, `v_notebooklm_forensic_audit`, `v_jailbreak_and_security_detections`, and `fn_user_forensic_report`).
+3. **Immutable Cloud Storage + BigQuery Provisioning (`setup_storage_and_bigquery.py`)**: Creates a versioned, Uniform Bucket-Level Access (UBLA) GCS bucket, a BigQuery dataset (`ge_ediscovery`), the `conversation_turns` table, a real-time Cloud Logging sink capturing both `gemini_enterprise_user_activity` and `notebooklm_enterprise_user_activity`, and five ready-to-use BigQuery reporting views/functions (`v_ediscovery_file_audit`, `v_realtime_agent_and_file_activity`, `v_notebooklm_forensic_audit`, `v_jailbreak_and_security_detections`, and `fn_user_forensic_report`).
 4. **Automated Session, Binary & Notebook Harvester (`ge_harvest.py`)**:
-   - **Gemini Enterprise**: Queries Cloud Logging for `StreamAssist`, `UploadSessionFile`, and `AddContextFile` events, fetches full untruncated `GetSession?includeAnswerDetails=true` transcripts, downloads all `USER_PROVIDED` and `AI_GENERATED` files via `:downloadFile`, computes `SHA-256` and `CRC32C` digests, and archives to GCS + BigQuery.
+   - **Gemini Enterprise & Custom Agents**: Queries Cloud Logging for `StreamAssist`, `UploadSessionFile`, and `AddContextFile` events, fetches full untruncated `GetSession?includeAnswerDetails=true` transcripts (including internal agent reasoning and sub-agent handoffs like `docgen_agent`), downloads all `USER_PROVIDED` and `AI_GENERATED` files (such as generated PDFs and PNG images) via `:downloadFile`, computes `SHA-256` and `CRC32C` digests, and archives to GCS + BigQuery.
    - **NotebookLM Enterprise**: Queries `notebooklm_enterprise_user_activity` for `GenerateFreeFormStreamed`, `CreateNotebook`, `GetNotebook`, and `BatchCreateSources` events, mints WIF STS tokens to call `notebooks:listRecentlyViewed`, `notebooks.get`, and `notebooks.sources.get`, deduplicates streamed reply chunks (`clean_notebooklm_streamed_reply`), archives `notebook_archive.json` to `gs://<BUCKET>/notebooks/{location}/{notebook_id}/notebook_archive.json`, and loads structured turns and `NOTEBOOK_SOURCE` records into BigQuery.
+
+---
+
+## Gemini Enterprise, Custom Agents (No-Code & ADK) & NotebookLM Logging Matrix
+
+Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables logging for the default core assistant (`core_assistant`). Each custom **No-Code Agent** and **ADK Agent** has its own independent `observabilityConfig` resource (`enable_ge_sensitive_logging.py` automatically enables all of them):
+
+| Component / Agent Type | Required Settings (`Observability` + `Prompt/Sensitive Logging`) | Captures User Prompts & Final Output? | Captures Internal Thoughts & Tool / Sub-Agent Calls? | Captures Uploaded & Generated Files (PDFs, Docs, Images)? | Captures Exact Token Counts? | Primary Cloud Logging Stream(s) & BigQuery View(s) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Gemini Enterprise Core Assistant**<br>(`core_assistant`) | **Engine Level (`engines/{id}`):**<br>• `observabilityEnabled: true`<br>• `sensitiveLoggingEnabled: true` | **Yes** — Full user prompt (`query.text`) and model response (`serviceTextReply` + `GetSession`). | **Yes** — Deep Research plans, grounding citations, and `thought: true` reasoning steps via `GetSession`. | **Yes (Full Binary Files)** — User uploads (`UploadSessionFile`) and AI-generated images/docs (`AddContextFile`) downloaded via `:downloadFile` to GCS. | **No** in `StreamAssist`. | • **Log:** `gemini_enterprise_user_activity`<br>• **BQ Views:** `conversation_turns`, `v_ediscovery_file_audit`, `v_realtime_agent_and_file_activity` |
+| **2. No-Code Agent**<br>(Built in GE, `lowCodeAgentDefinition`) | **Per-Agent Level (`.../agents/{agentId}`):**<br>• UI Checkbox 1: *Enable OpenTelemetry traces/logs* (`observabilityEnabled: true`)<br>• UI Checkbox 2: *Enable logging of prompt inputs/outputs* (`sensitiveLoggingEnabled: true`) | **Yes** — Full user prompt (`query.parts[0].text`) and final agent output (`serviceTextReply` + `GetSession`). | **Yes** — Captures full system instructions, internal reasoning (`thought: true`), connector searches, and sub-agent handoffs (e.g., `transfer_to_agent` $\rightarrow$ `docgen_agent`). | **Yes (Full Binary Files)** — Generated PDFs and uploaded files are downloaded via `:downloadFile` into GCS and linked in `v_realtime_agent_and_file_activity`. | **Yes (Exact)** — Logs `input_tokens`, `output_tokens`, and `reasoning.output_tokens` in OpenTelemetry details. | • **Logs:** `gemini_enterprise_user_activity` + `gen_ai.client.inference.operation.details`<br>• **BQ Views:** `v_realtime_agent_and_file_activity`, `v_ediscovery_file_audit` |
+| **3. ADK Agent (Full Logging)**<br>(`adkAgentDefinition` $\rightarrow$ Vertex AI Agent Engine) | **Both Layers Enabled:**<br>1. **GE Agent (`.../agents/{id}`):** `observabilityEnabled: true` + `sensitiveLoggingEnabled: true`<br>2. **Vertex AI Reasoning Engine:**<br>• `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"`<br>• `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"` | **Yes** — Captures both the outer prompt/response in Gemini Enterprise **and** all inner LLM prompts/outputs inside the ADK container. | **Yes** — Captures every internal Python tool call, sub-agent step, and internal LLM prompt/response in un-redacted plaintext. | **Yes (Outer GE Session)** — Files attached to the GE session are captured via `:downloadFile`. | **Yes (Exact)** — Logged in Vertex AI Agent Engine OpenTelemetry events & Cloud Trace spans (`gen_ai.usage.*`). | • **Outer Log:** `gemini_enterprise_user_activity`<br>• **Inner Logs:** `aiplatform.googleapis.com/reasoning_engine_stdout`, `gen_ai.user.message`, `gen_ai.choice`<br>• **BQ Views:** `conversation_turns`, `v_realtime_agent_and_file_activity` |
+| **4. ADK Agent (Partial — Missing Env Var)**<br>(`adkAgentDefinition` without `CAPTURE_MESSAGE_CONTENT`) | **GE Agent On, but Vertex Reasoning Engine only has:**<br>• `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"`<br>*(Missing `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"`)* | **Outer Only** — GE still captures the user's prompt and final response, **but** inner ADK LLM logs show `{"content": "<elided>"}`. | **Structure Only** — You see trace spans and tool names in Cloud Trace, but internal prompt/tool payloads are `<elided>`. | **Yes (Outer GE Session)** — Outer session files still captured by GE. | **Yes** — Token counts and span latencies are still recorded on Cloud Trace spans. | • **Outer Log:** `gemini_enterprise_user_activity` (Full text)<br>• **Inner Log:** `reasoning_engine_stdout` (`<elided>`) |
+| **5. NotebookLM Enterprise** | **Project/Location Level (`locations/{loc}/observabilityConfig`):**<br>• `observabilityEnabled: true`<br>• `sensitiveLoggingEnabled: true` | **Yes** — `GenerateFreeFormStreamed` logs the full user prompt (`userQuery`) and full grounded markdown answer (`serviceTextReply`). | **Yes (Grounding Summary)** — Logs the grounded answer with `[1]`, `[2]` source citations and source inventory. | **Metadata & Inventory Only (No Binary PDF Download)** — Captures source `title`, `sourceId`, `wordCount`, `tokenCount`, Drive `documentId`, or web `url`. Does **not** expose raw uploaded PDF binaries or Audio Overview MP3s. | **Source Token Count Only** — Captures `tokenCount` per uploaded source document; does not log per-turn chat inference tokens. | • **Log:** `notebooklm_enterprise_user_activity`<br>• **BQ View:** `v_notebooklm_forensic_audit` (plus `gs://.../notebooks/.../notebook_archive.json`) |
+| **6. Live Voice / Bidirectional Audio** | Engine `observabilityConfig` | **No** — Does not run through `StreamAssist` text turns or store downloadable audio blobs in `:downloadFile`. | **No** | **No** — Raw voice/audio streams are not persisted in Discovery Engine sessions. | **No** | • **Log:** Connection-level Data Access audit logs only. |
 
 ---
 
@@ -84,7 +102,7 @@ flowchart LR
 | File | Purpose |
 | :--- | :--- |
 | [`.env.example`](./.env.example) | Template environment configuration (`GCP_PROJECT_ID`, `WORKFORCE_POOL_ID`, `GE_ENGINE_ID`, etc.) |
-| [`enable_ge_sensitive_logging.py`](./enable_ge_sensitive_logging.py) | Enables `observabilityEnabled` and `sensitiveLoggingEnabled` across all Gemini Enterprise engines |
+| [`enable_ge_sensitive_logging.py`](./enable_ge_sensitive_logging.py) | Enables `observabilityEnabled` and `sensitiveLoggingEnabled` across all Gemini Enterprise engines, all custom Agents (No-Code & ADK), and NotebookLM Enterprise locations |
 | [`setup_ediscovery_archiver_provider.py`](./setup_ediscovery_archiver_provider.py) | Generates an offline RSA-2048 keypair and configures the `ediscovery-archiver` OIDC provider in your Workforce Identity Pool |
 | [`setup_storage_and_bigquery.py`](./setup_storage_and_bigquery.py) | Provisions the GCS archive bucket, BigQuery dataset/table, real-time Cloud Logging sink, and forensic SQL views/functions |
 | [`conversation_turns_schema.json`](./conversation_turns_schema.json) | BigQuery table schema for `conversation_turns` including the nested `files` `RECORD REPEATED` array |
@@ -253,11 +271,36 @@ ORDER BY event_timestamp DESC, session_id, turn_index ASC;
 
 ---
 
-### 3. Real-Time Cloud Logging Activity Stream (`discoveryengine_googleapis_com_gemini_enterprise_user_activity`)
+### 3. Real-Time Agent & File Activity View (`v_realtime_agent_and_file_activity`)
 
-Queries the raw Cloud Logging partitioned sink table directly (populated in real time before `ge_harvest.py` runs).
+When a custom Agent (such as a No-Code Agent) delegates PDF creation to `docgen_agent`, Discovery Engine logs two separate events in `gemini_enterprise_user_activity`:
+- An `AddContextFile` row against the **Session** (`sessions/{id}`) containing `response.fileName`, `response.fileId`, `response.mimeType`, and `response.byteCount` (without `agentInfo.spiffeId`).
+- A `StreamAssist` row 2 milliseconds later containing `response.agentInfo.spiffeId`, `request.query.parts[0].text` (the prompt), and `serviceTextReply`.
 
-> **Schema Note**: Because the sink is created with `--use-partitioned-tables`, BigQuery names the payload struct column `jsonPayload` (rather than the legacy non-partitioned `jsonpayload_v1_geminienterpriseuseractivitylog`). Moreover, Discovery Engine logs `USER_PROVIDED` file uploads under `methodName = 'UploadSessionFile'` and `AI_GENERATED` files (such as generated images) under `methodName = 'AddContextFile'`.
+`v_realtime_agent_and_file_activity` automatically joins `StreamAssist` rows with `AddContextFile` / `UploadSessionFile` rows by `session_id`, normalizes both `query.text` (`core_assistant`) and `query.parts[0].text` (custom agents), and includes direct Cloud Storage links (`gcs_uri` and clickable `console_url`):
+
+```sql
+SELECT
+  timestamp,
+  user_iam_principal,
+  session_id,
+  agent_display_name,
+  agent_spiffe_id,
+  user_prompt,
+  service_text_reply,
+  file_source,
+  file_name,
+  mime_type,
+  byte_count,
+  gcs_uri,
+  console_url,
+  session_transcript_console_url
+FROM `<YOUR_GCP_PROJECT_ID>.ge_ediscovery.v_realtime_agent_and_file_activity`
+ORDER BY timestamp DESC
+LIMIT 50;
+```
+
+You can also query the underlying raw Cloud Logging partitioned sink table (`discoveryengine_googleapis_com_gemini_enterprise_user_activity`) directly:
 
 ```sql
 SELECT
@@ -266,7 +309,8 @@ SELECT
   jsonPayload.logmetadata.methodname AS method_name,
   COALESCE(
     jsonPayload.usertextquery,
-    jsonPayload.request.query.text
+    jsonPayload.request.query.text,
+    jsonPayload.request.query.parts[SAFE_OFFSET(0)].text
   ) AS user_text_query,
   jsonPayload.servicetextreply AS service_text_reply,
   jsonPayload.response.fileid AS file_id,

@@ -230,6 +230,7 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
                 "session_name": session_name,
                 "user_iam_principal": user_principal,
                 "uploaded_file_ids": set(),
+                "logged_file_names": {},
                 "turn_models": {},
                 "turn_timestamps": {},
                 "latest_timestamp": ts,
@@ -244,7 +245,8 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
 
         elif method in ("UploadSessionFile", "AddContextFile"):
             session_name = (
-                jp.get("request", {}).get("name")
+                jp.get("response", {}).get("session")
+                or jp.get("request", {}).get("name")
                 or jp.get("request", {}).get("parent")
                 or meta.get("name", "")
             )
@@ -253,16 +255,23 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
             file_id = jp.get("response", {}).get("fileId", "")
             if not file_id or severity == "ERROR" or status_code != 0:
                 continue
+            file_name_logged = (
+                jp.get("response", {}).get("fileName")
+                or jp.get("request", {}).get("fileName", "")
+            )
             info = sessions.setdefault(session_name, {
                 "session_name": session_name,
                 "user_iam_principal": user_principal,
                 "uploaded_file_ids": set(),
+                "logged_file_names": {},
                 "turn_models": {},
                 "turn_timestamps": {},
                 "latest_timestamp": ts,
             })
             if user_principal and not info["user_iam_principal"]:
                 info["user_iam_principal"] = user_principal
+            if file_name_logged:
+                info["logged_file_names"][file_id] = file_name_logged
             if method == "UploadSessionFile":
                 info["uploaded_file_ids"].add(file_id)
 
@@ -450,12 +459,14 @@ def harvest_session(
         answered_turns = turns_raw
 
     archived_files_by_id: dict[str, dict] = {}
+    logged_file_names: dict[str, str] = session_info.get("logged_file_names", {})
 
     for fid in sorted(uploaded_file_ids):
         try:
             raw_bytes, mime_type, cd_fname = download_session_file(session_name, fid, token, project_id)
             ext = guess_extension(mime_type, raw_bytes)
-            fname = sanitize_filename(cd_fname) if cd_fname else f"user_upload_{fid}{ext}"
+            raw_name = logged_file_names.get(fid) or cd_fname or f"user_upload_{fid}{ext}"
+            fname = sanitize_filename(raw_name)
             if not os.path.splitext(fname)[1]:
                 fname += ext
             gcs_path = f"files/{engine_id}/{session_id}/USER_PROVIDED/{fid}_{fname}"
@@ -477,6 +488,18 @@ def harvest_session(
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     bq_rows: list[dict] = []
+
+    session_labels = session_data.get("labels", [])
+    agent_label_model = ""
+    if session_labels:
+        disp_lbl = next((l.split(":", 1)[1] for l in session_labels if l.startswith("agent-display-name:")), "")
+        type_lbl = next((l for l in session_labels if l.startswith("agent:") and l.count(":") >= 2), "")
+        if disp_lbl and type_lbl:
+            agent_label_model = f"{disp_lbl} [{type_lbl}]"
+        elif disp_lbl:
+            agent_label_model = disp_lbl
+        elif type_lbl:
+            agent_label_model = type_lbl
 
     for idx, turn in enumerate(answered_turns, start=1):
         q = turn.get("query", {})
@@ -505,7 +528,13 @@ def harvest_session(
                     mime_type = rf.get("mime_type") or dl_mime
                     ext = guess_extension(mime_type, raw_bytes)
                     source_label = "USER_PROVIDED" if fid in uploaded_file_ids else "AI_GENERATED"
-                    fname = sanitize_filename(rf.get("file_name") or cd_fname or f"{source_label.lower()}_{fid}{ext}")
+                    raw_name = (
+                        rf.get("file_name")
+                        or logged_file_names.get(fid)
+                        or cd_fname
+                        or f"{source_label.lower()}_{fid}{ext}"
+                    )
+                    fname = sanitize_filename(raw_name)
                     if not os.path.splitext(fname)[1]:
                         fname += ext
                     gcs_path = f"files/{engine_id}/{session_id}/{source_label}/{fid}_{fname}"
@@ -537,7 +566,7 @@ def harvest_session(
             or session_start
             or now_iso
         )
-        model_name = session_info.get("turn_models", {}).get(assist_answer_id) or ""
+        model_name = session_info.get("turn_models", {}).get(assist_answer_id) or agent_label_model or ""
 
         bq_rows.append({
             "session_id": session_id,
