@@ -277,12 +277,47 @@ def ensure_bq_views_and_functions() -> None:
         OR LOWER(d.user_iam_principal) = LOWER(TRIM(target_user))
         OR STRPOS(LOWER(d.user_iam_principal), LOWER(TRIM(target_user))) > 0
     );
+
+    CREATE OR REPLACE VIEW `{PROJECT_ID}.{BQ_DATASET}.v_notebooklm_forensic_audit` AS
+    SELECT
+      t.event_timestamp,
+      REGEXP_EXTRACT(t.user_iam_principal, r'/subject/([^/]+)$') AS user_subject,
+      t.user_iam_principal,
+      t.location,
+      t.engine_id,
+      t.session_id AS notebook_id,
+      t.session_display_name AS notebook_title,
+      t.turn_index,
+      CASE
+        WHEN STARTS_WITH(t.prompt_text, '[NotebookLM Source Ingestion]') THEN 'SOURCE_INGESTION_AUDIT'
+        ELSE 'NOTEBOOK_CHAT_QUERY'
+      END AS activity_type,
+      t.prompt_text AS notebook_query_or_event,
+      t.response_text AS notebook_grounded_response,
+      t.thought_text AS notebook_forensic_metadata,
+      ARRAY_LENGTH(t.files) AS source_count,
+      ARRAY(
+        SELECT AS STRUCT
+          f.file_id AS source_id,
+          f.file_name AS source_title_and_origin,
+          f.mime_type AS source_type,
+          f.file_source,
+          f.console_url AS archive_console_url
+        FROM UNNEST(t.files) AS f
+      ) AS sources,
+      t.session_transcript_gcs_uri AS notebook_archive_gcs_uri,
+      t.session_transcript_console_url AS notebook_archive_console_url
+    FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}` AS t
+    WHERE STARTS_WITH(t.engine_id, 'notebooklm-enterprise-');
     """
     subprocess.run(
         ["bq", f"--project_id={PROJECT_ID}", "query", "--use_legacy_sql=false", "--quiet", ddl],
         check=True,
     )
-    print("      Created v_ediscovery_file_audit, v_jailbreak_and_security_detections, and fn_user_forensic_report.")
+    print(
+        "      Created v_ediscovery_file_audit, v_jailbreak_and_security_detections, "
+        "fn_user_forensic_report, and v_notebooklm_forensic_audit."
+    )
 
 
 if __name__ == "__main__":

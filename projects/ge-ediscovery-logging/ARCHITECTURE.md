@@ -47,6 +47,36 @@ Because Workforce Identity Pools map external assertions to Google Cloud federat
   X-Goog-User-Project: <YOUR_GCP_PROJECT_ID>
   ```
 
+### 1.4 NotebookLM Enterprise Observability & REST API Contracts
+Unlike standard Gemini Enterprise chat engines (`engines/*`), **NotebookLM Enterprise** is configured at the **Project level** and uses a dedicated Cloud Logging stream and `v1alpha` REST resource hierarchy:
+
+1. **Project-Level Sensitive Logging Configuration**:
+   `enable_ge_sensitive_logging.py` patches `projects/{project}/locations/{location}` (`global`, `us`, `eu`) with `updateMask=customerProvidedConfig.notebooklmConfig.observabilityConfig`:
+   ```http
+   PATCH https://{location}-discoveryengine.googleapis.com/v1alpha/projects/<YOUR_GCP_PROJECT_ID>
+   Content-Type: application/json
+
+   {
+     "customerProvidedConfig": {
+       "notebooklmConfig": {
+         "observabilityConfig": {
+           "observabilityEnabled": true,
+           "sensitiveLoggingEnabled": true
+         }
+       }
+     }
+   }
+   ```
+2. **Cloud Logging Stream (`discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity`)**:
+   - `NotebookService.GenerateFreeFormStreamed`: Captures `userIamPrincipal`, `request.name` (`projects/{num}/locations/{loc}/notebooks/{id}`), `request.userQuery` (the exact user prompt), and cumulative streamed chunks in `serviceTextReply` (which `ge_harvest.py` deduplicates and reassembles via `clean_notebooklm_streamed_reply()`).
+   - `NotebookService.CreateNotebook` / `GetNotebook`: Captures `response.name` and `response.title`.
+   - `SourceService.BatchCreateSources`: Captures `response.sources[]` (`name`, `sourceId.id`, `title`, `settings.status`) and `status.message` (which records attempted external `web_content.url` values when URL ingestion fails).
+3. **Per-User WIF STS Notebook & Source Discovery**:
+   Because private notebooks (`isShared: false`) are owned by the creating WIF user, `ge_harvest.py` mints a short-lived WIF STS token via `ediscovery-archiver` for each active user and calls:
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks:listRecentlyViewed`
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}`
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}/sources/{source_id}` (returning `title`, `metadata.wordCount`, `metadata.tokenCount`, `metadata.sourceAddedTimestamp`, and origin metadata for PDFs, Markdown/text, Google Drive docs, YouTube videos, web URLs, and Agentspace sources).
+
 ---
 
 ## 2. Cloud Storage Archive Layout
@@ -59,13 +89,17 @@ gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery/
 │   └── <ENGINE_ID>/
 │       └── <SESSION_ID>/
 │           └── session_transcript.json        # Full GetSession?includeAnswerDetails=true JSON
-└── files/
-    └── <ENGINE_ID>/
-        └── <SESSION_ID>/
-            ├── USER_PROVIDED/
-            │   └── <FILE_ID>_<SANITIZED_FILENAME>
-            └── AI_GENERATED/
-                └── <FILE_ID>_<SANITIZED_FILENAME>
+├── files/
+│   └── <ENGINE_ID>/
+│       └── <SESSION_ID>/
+│           ├── USER_PROVIDED/
+│           │   └── <FILE_ID>_<SANITIZED_FILENAME>
+│           └── AI_GENERATED/
+│               └── <FILE_ID>_<SANITIZED_FILENAME>
+└── notebooks/
+    └── <LOCATION>/
+        └── <NOTEBOOK_ID>/
+            └── notebook_archive.json          # Full Notebook metadata, enriched sources[], and prompt/response turns
 ```
 
 Each file record written into `conversation_turns.files` in BigQuery includes both **SHA-256** (hex) and **RFC 3720 CRC32C** (base64, matching Google Cloud Storage's native object checksum) to guarantee cryptographic chain-of-custody verification.
@@ -74,7 +108,7 @@ Each file record written into `conversation_turns.files` in BigQuery includes bo
 
 ## 3. Architectural Considerations, Edge Cases & Production Hardening
 
-When deploying this reference architecture into a regulated enterprise environment, review the following seven operational considerations and hardening recommendations:
+When deploying this reference architecture into a regulated enterprise environment, review the following operational considerations and hardening recommendations:
 
 ### 3.1 Race Condition: User Deletes Session or File Before Harvester Runs
 - **Scenario**: A user uploads a sensitive file or generates an image and immediately deletes the chat session in the Gemini Enterprise UI before `ge_harvest.py` runs.
@@ -117,3 +151,7 @@ When deploying this reference architecture into a regulated enterprise environme
 ### 3.7 Cloud Storage WORM Retention (SEC 17a-4 / FINRA Compliance)
 - **Scenario**: A regulatory audit requires proof that neither users nor administrators could alter or delete archived files in `gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery`.
 - **Mitigation**: Enable **Object Versioning** (configured automatically by `setup_storage_and_bigquery.py`) and attach a **locked Bucket Retention Policy** (`gcloud storage buckets update gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery --retention-period=... --lock`) for strict WORM (Write-Once-Read-Many) compliance.
+
+### 3.8 Bidirectional Live Voice / Audio (`bi-directional-audio`) Governance
+- **Scenario**: Unlike text/multimodal chat (`StreamAssist`) and NotebookLM Enterprise (`GenerateFreeFormStreamed`), real-time WebRTC/WebSocket **Bidirectional Live Voice** (`features.bi-directional-audio`) streams raw PCM audio frames directly to the model without persisting a downloadable `.wav` or text transcript inside `GetSession`.
+- **Mitigation**: For regulated user populations subject to strict 100% communication retention (e.g., SEC Rule 17a-4 / FINRA), disable the `bi-directional-audio` feature flag on the Gemini Enterprise engine (`features: {"bi-directional-audio": "FEATURE_STATE_OFF"}`) so all interactions are forced through auditable text/file `StreamAssist` turns and NotebookLM Enterprise logs.
