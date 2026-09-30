@@ -37,24 +37,26 @@ When a user authenticates to Gemini Enterprise or NotebookLM Enterprise via **Wo
 flowchart LR
     subgraph User["Gemini Enterprise & NotebookLM Enterprise (WIF User)"]
         A["GE Prompt + File Upload (:uploadFile)"]
-        B["GE StreamAssist (Text + AI Image Gen)"]
+        B["GE StreamAssist (Text + AI Image/PDF Gen)"]
         N["NotebookLM Prompt (GenerateFreeFormStreamed)\n& Source Upload (BatchCreateSources)"]
     end
 
-    subgraph Logging["Cloud Logging"]
+    subgraph Logging["Cloud Logging & Pub/Sub"]
         C["gemini_enterprise_user_activity"]
         NL["notebooklm_enterprise_user_activity"]
+        PS["Pub/Sub Topic & Authenticated Push\n(ge-ediscovery-events -> /pubsub)"]
     end
 
-    subgraph Harvester["Server-Side eDiscovery Harvester (ge_harvest.py)"]
-        D["1. Discover Active Sessions, File IDs & Notebooks"]
-        E["2. Mint Short-Lived Per-User WIF Token via STS\n(ediscovery-archiver OIDC Provider)"]
-        F["3. Fetch Full Session (GetSession), Binary Files (:downloadFile),\n& NotebookLM Notebooks/Sources (notebooks.get / sources.get)"]
+    subgraph Harvester["Real-Time Cloud Run Service (ge-ediscovery-harvester)"]
+        D["1. Receive Real-Time Event (<10s) or Sweep"]
+        KMS["2. Sign WIF JWT via Cloud KMS asymmetricSign\n(RSA_SIGN_PKCS1_2048_SHA256 — Zero Key on Disk)"]
+        E["3. Exchange JWT for Short-Lived WIF Token via STS\n(ediscovery-archiver OIDC Provider)"]
+        F["4. Fetch Full Session (GetSession), Binary Files (:downloadFile),\n& NotebookLM Notebooks/Sources (notebooks.get / sources.get)"]
     end
 
     subgraph Storage["Compliance Archive & Analytics"]
-        G[("Cloud Storage Bucket\n(Versioning + UBLA)\n• session_transcript.json\n• notebook_archive.json\n• USER_PROVIDED binaries\n• AI_GENERATED PNGs")]
-        H[("BigQuery Dataset (ge_ediscovery)\n• conversation_turns\n• v_ediscovery_file_audit\n• v_notebooklm_forensic_audit\n• v_jailbreak_and_security_detections\n• fn_user_forensic_report()")]
+        G[("Cloud Storage Bucket\n(Versioning + UBLA)\n• session_transcript.json\n• notebook_archive.json\n• USER_PROVIDED binaries\n• AI_GENERATED PDFs & PNGs")]
+        H[("BigQuery Dataset (ge_ediscovery)\n• conversation_turns\n• v_ediscovery_file_audit\n• v_realtime_agent_and_file_activity\n• v_notebooklm_forensic_audit\n• v_jailbreak_and_security_detections\n• fn_user_forensic_report()")]
     end
 
     A --> C
@@ -62,9 +64,11 @@ flowchart LR
     N --> NL
     C -->|"Real-Time Partitioned Sink"| H
     NL -->|"Real-Time Partitioned Sink"| H
-    C --> D
-    NL --> D
-    D --> E
+    C -->|"ge-ediscovery-pubsub-sink"| PS
+    NL -->|"ge-ediscovery-pubsub-sink"| PS
+    PS -->|"OIDC Push"| D
+    D --> KMS
+    KMS --> E
     E --> F
     F -->|"Archive Raw JSON + Binaries"| G
     F -->|"Load Structured Turns + SHA-256/CRC32C"| H
@@ -74,11 +78,12 @@ flowchart LR
    - Patches all Gemini Enterprise engines (`global`, `us`, `eu`) to enable `observabilityEnabled=true` and `sensitiveLoggingEnabled=true`.
    - Iterates through every custom Agent (`lowCodeAgentDefinition`, `adkAgentDefinition`, `a2aAgentDefinition`) under `engines/{engine_id}/assistants/default_assistant/agents` and patches `observabilityConfig` on each agent individually.
    - Patches the Project-level NotebookLM Enterprise configuration (`v1alpha/projects/{project_id}` -> `customerProvidedConfig.notebooklmConfig.observabilityConfig`) across `global`, `us`, and `eu`.
-2. **Server-Side WIF Archiver OIDC Provider (`setup_ediscovery_archiver_provider.py`)**: Registers a dedicated OIDC provider (`ediscovery-archiver`) inside your existing Workforce Identity Pool backed by an offline RSA-2048 keypair and inline JWKS. This allows the compliance harvester to mint short-lived, per-user STS tokens (`google.subject = assertion.sub`) to satisfy both Gemini Enterprise session ownership and NotebookLM Enterprise private notebook ownership checks.
+2. **Cloud KMS-Backed Server-Side WIF Archiver OIDC Provider (`setup_ediscovery_archiver_provider.py`)**: Provisions a **Google Cloud KMS Asymmetric Signing Key** (`ge-ediscovery-kr` / `ediscovery-archiver-jwt-key`, algorithm `RSA_SIGN_PKCS1_2048_SHA256`), extracts its public key into `archiver_jwks.json` (`kid: "archiver-kms-key-1"`), and registers the `ediscovery-archiver` OIDC provider inside your Workforce Identity Pool. **No private key ever exists on disk or inside a container**—the harvester calls Cloud KMS `:asymmetricSign` over IAM-authenticated HTTPS to mint short-lived, per-user WIF STS tokens (`google.subject = assertion.sub`).
 3. **Immutable Cloud Storage + BigQuery Provisioning (`setup_storage_and_bigquery.py`)**: Creates a versioned, Uniform Bucket-Level Access (UBLA) GCS bucket, a BigQuery dataset (`ge_ediscovery`), the `conversation_turns` table, a real-time Cloud Logging sink capturing both `gemini_enterprise_user_activity` and `notebooklm_enterprise_user_activity`, and five ready-to-use BigQuery reporting views/functions (`v_ediscovery_file_audit`, `v_realtime_agent_and_file_activity`, `v_notebooklm_forensic_audit`, `v_jailbreak_and_security_detections`, and `fn_user_forensic_report`).
-4. **Automated Session, Binary & Notebook Harvester (`ge_harvest.py`)**:
-   - **Gemini Enterprise & Custom Agents**: Queries Cloud Logging for `StreamAssist`, `UploadSessionFile`, and `AddContextFile` events, fetches full untruncated `GetSession?includeAnswerDetails=true` transcripts (including internal agent reasoning and sub-agent handoffs like `docgen_agent`), downloads all `USER_PROVIDED` and `AI_GENERATED` files (such as generated PDFs and PNG images) via `:downloadFile`, computes `SHA-256` and `CRC32C` digests, and archives to GCS + BigQuery.
-   - **NotebookLM Enterprise**: Queries `notebooklm_enterprise_user_activity` for `GenerateFreeFormStreamed`, `CreateNotebook`, `GetNotebook`, and `BatchCreateSources` events, mints WIF STS tokens to call `notebooks:listRecentlyViewed`, `notebooks.get`, and `notebooks.sources.get`, deduplicates streamed reply chunks (`clean_notebooklm_streamed_reply`), archives `notebook_archive.json` to `gs://<BUCKET>/notebooks/{location}/{notebook_id}/notebook_archive.json`, and loads structured turns and `NOTEBOOK_SOURCE` records into BigQuery.
+4. **Real-Time Event-Driven Cloud Run Harvester (`deploy_cloudrun_harvester.py`, `cloudrun_harvester_server.py`, `ge_harvest.py`)**:
+   - **Real-Time Event-Driven Mode (`<10s` latency)**: A Cloud Logging sink (`ge-ediscovery-pubsub-sink`) streams `StreamAssist`, `UploadSessionFile`, `AddContextFile`, `GenerateFreeFormStreamed`, `BatchCreateSources`, and `CreateNotebook` log entries to Pub/Sub (`ge-ediscovery-events`), which pushes each event via an OIDC-authenticated subscription (`ge-ediscovery-push-sub`) to the private Cloud Run service (`ge-ediscovery-harvester`, `--no-allow-unauthenticated`).
+   - **Gemini Enterprise & Custom Agents**: Mints a per-user WIF STS token via Cloud KMS `:asymmetricSign`, fetches full untruncated `GetSession?includeAnswerDetails=true` transcripts, downloads all `USER_PROVIDED` and `AI_GENERATED` files (such as generated PDFs and PNG images) via `:downloadFile`, computes `SHA-256` and `CRC32C` digests, and archives to GCS + BigQuery.
+   - **NotebookLM Enterprise**: Mints a per-user WIF STS token via Cloud KMS `:asymmetricSign` to call `notebooks.get` and `notebooks.sources.get`, deduplicates streamed reply chunks (`clean_notebooklm_streamed_reply`), archives `notebook_archive.json` to `gs://<BUCKET>/notebooks/{location}/{notebook_id}/notebook_archive.json`, and loads structured turns and `NOTEBOOK_SOURCE` records into BigQuery.
 
 ---
 
@@ -101,14 +106,17 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 
 | File | Purpose |
 | :--- | :--- |
-| [`.env.example`](./.env.example) | Template environment configuration (`GCP_PROJECT_ID`, `WORKFORCE_POOL_ID`, `GE_ENGINE_ID`, etc.) |
+| [`.env.example`](./.env.example) | Template environment configuration (`GCP_PROJECT_ID`, `WORKFORCE_POOL_ID`, `KMS_KEY`, `CLOUD_RUN_SERVICE`, etc.) |
 | [`enable_ge_sensitive_logging.py`](./enable_ge_sensitive_logging.py) | Enables `observabilityEnabled` and `sensitiveLoggingEnabled` across all Gemini Enterprise engines, all custom Agents (No-Code & ADK), and NotebookLM Enterprise locations |
-| [`setup_ediscovery_archiver_provider.py`](./setup_ediscovery_archiver_provider.py) | Generates an offline RSA-2048 keypair and configures the `ediscovery-archiver` OIDC provider in your Workforce Identity Pool |
+| [`setup_ediscovery_archiver_provider.py`](./setup_ediscovery_archiver_provider.py) | Provisions a Cloud KMS Asymmetric Signing Key (`ediscovery-archiver-jwt-key`, `RSA_SIGN_PKCS1_2048_SHA256`), extracts its public key into `archiver_jwks.json`, and configures the `ediscovery-archiver` OIDC provider in your Workforce Identity Pool |
 | [`setup_storage_and_bigquery.py`](./setup_storage_and_bigquery.py) | Provisions the GCS archive bucket, BigQuery dataset/table, real-time Cloud Logging sink, and forensic SQL views/functions |
 | [`conversation_turns_schema.json`](./conversation_turns_schema.json) | BigQuery table schema for `conversation_turns` including the nested `files` `RECORD REPEATED` array |
-| [`ge_harvest.py`](./ge_harvest.py) | Main eDiscovery harvester script (discovers sessions, mints STS tokens, archives files to GCS, loads BigQuery) |
+| [`ge_harvest.py`](./ge_harvest.py) | Main eDiscovery harvester (signs WIF JWTs via Cloud KMS `:asymmetricSign`, archives sessions/files/notebooks to GCS & BigQuery via pure REST APIs; supports both real-time `harvest_single_event` and batch sweeps) |
+| [`cloudrun_harvester_server.py`](./cloudrun_harvester_server.py) | Lightweight HTTP server for Cloud Run handling real-time Pub/Sub push events (`POST /pubsub`) and scheduled sweeps (`POST /sweep`) |
+| [`Dockerfile`](./Dockerfile) | Minimal non-root `python:3.12-slim` container image for `ge-ediscovery-harvester` |
+| [`deploy_cloudrun_harvester.py`](./deploy_cloudrun_harvester.py) | Deploys the `ge-ediscovery-harvester` Cloud Run service, least-privilege SA (`ge-ediscovery-harvester-sa`), Cloud Logging $\rightarrow$ Pub/Sub sink (`ge-ediscovery-pubsub-sink`), and OIDC push subscription |
 | [`test_ge_ediscovery_e2e.py`](./test_ge_ediscovery_e2e.py) | End-to-end verification suite (runs 7 automated compliance, security, and BigQuery checks) |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Deep-dive technical architecture, protocol specifications, edge cases, and production hardening guide |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Deep-dive technical architecture, protocol specifications, Cloud KMS + Cloud Run design, and production hardening guide |
 
 ---
 
@@ -117,7 +125,7 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 ### Prerequisites
 
 - **Google Cloud SDK (`gcloud` and `bq`)** installed and authenticated as an administrator on your target project.
-- **OpenSSL** (`openssl`) installed locally (used to sign RS256 JWT assertions without external Python crypto dependencies).
+- **OpenSSL** (`openssl`) installed locally (used during initial setup to extract the RSA modulus from the Cloud KMS public key PEM).
 - **Python 3.10+** (uses only the Python standard library—no `pip install` required).
 - An existing **Gemini Enterprise** engine configured with **Workforce Identity Federation**.
 
@@ -144,9 +152,9 @@ export TEST_WIF_USER_SUBJECT="user@example.com" # Used only for optional E2E tes
 
 ---
 
-### Step 2: Enable Gemini Enterprise Sensitive User Activity Logging
+### Step 2: Enable Gemini Enterprise, Custom Agent & NotebookLM Sensitive Logging
 
-Run `enable_ge_sensitive_logging.py` to enable `observabilityEnabled=true` and `sensitiveLoggingEnabled=true` on all Gemini Enterprise engines in your project:
+Run `enable_ge_sensitive_logging.py` to enable `observabilityEnabled=true` and `sensitiveLoggingEnabled=true` across all Gemini Enterprise engines, all custom Agents (No-Code & ADK), and all NotebookLM Enterprise locations in your project:
 
 ```bash
 python3 enable_ge_sensitive_logging.py --project-id "$GCP_PROJECT_ID"
@@ -154,17 +162,13 @@ python3 enable_ge_sensitive_logging.py --project-id "$GCP_PROJECT_ID"
 
 ---
 
-### Step 3: Configure the Server-Side `ediscovery-archiver` OIDC Provider
+### Step 3: Provision Cloud KMS Signing Key & Configure the `ediscovery-archiver` OIDC Provider
 
-Run `setup_ediscovery_archiver_provider.py` to generate a local RSA-2048 keypair (`.archiver_private_key.pem`, excluded via `.gitignore`) and register the `ediscovery-archiver` OIDC provider in your Workforce Identity Pool:
+Run `setup_ediscovery_archiver_provider.py` to create the Cloud KMS KeyRing (`ge-ediscovery-kr`) and Asymmetric Signing Key (`ediscovery-archiver-jwt-key`, `RSA_SIGN_PKCS1_2048_SHA256`), export its public key to `archiver_jwks.json`, and register the `ediscovery-archiver` OIDC provider in your Workforce Identity Pool:
 
 ```bash
-python3 setup_ediscovery_archiver_provider.py \
-  --project-id "$GCP_PROJECT_ID" \
-  --workforce-pool-id "$WORKFORCE_POOL_ID"
+python3 setup_ediscovery_archiver_provider.py
 ```
-
-> **Production Note**: For scheduled Cloud Run Jobs in production, store `.archiver_private_key.pem` in **Google Cloud Secret Manager** or sign JWTs directly via **Cloud KMS (`projects.locations.keyRings.cryptoKeys.cryptoKeyVersions.asymmetricSign`)** so the private key never leaves hardware security modules.
 
 ---
 
@@ -173,8 +177,8 @@ python3 setup_ediscovery_archiver_provider.py \
 Run `setup_storage_and_bigquery.py` to provision:
 - Cloud Storage bucket `gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery` (Uniform Bucket-Level Access + Object Versioning enabled)
 - BigQuery dataset `<YOUR_GCP_PROJECT_ID>.ge_ediscovery` and table `conversation_turns`
-- Real-time Cloud Logging -> BigQuery partitioned sink `ge-ediscovery-bq-sink`
-- BigQuery views `v_ediscovery_file_audit` and `v_jailbreak_and_security_detections`
+- Real-time Cloud Logging $\rightarrow$ BigQuery partitioned sink `ge-ediscovery-bq-sink`
+- BigQuery views `v_ediscovery_file_audit`, `v_realtime_agent_and_file_activity`, `v_notebooklm_forensic_audit`, and `v_jailbreak_and_security_detections`
 - BigQuery table-valued function `fn_user_forensic_report(target_user STRING)`
 
 ```bash
@@ -183,23 +187,21 @@ python3 setup_storage_and_bigquery.py --project-id "$GCP_PROJECT_ID"
 
 ---
 
-### Step 5: Run the eDiscovery Harvester (`ge_harvest.py`)
+### Step 5: Deploy the Real-Time Event-Driven Cloud Run Harvester (`<10s` Latency)
 
-Run `ge_harvest.py` on demand (or schedule via Cloud Run Jobs + Cloud Scheduler) to harvest all recent sessions and files into Cloud Storage and BigQuery:
+Run `deploy_cloudrun_harvester.py` to deploy the `ge-ediscovery-harvester` Cloud Run service (`--no-allow-unauthenticated`), grant `roles/cloudkms.signerVerifier` on `ediscovery-archiver-jwt-key` to `ge-ediscovery-harvester-sa`, and wire up the real-time Cloud Logging $\rightarrow$ Pub/Sub push pipeline (`ge-ediscovery-pubsub-sink` $\rightarrow$ `ge-ediscovery-events` $\rightarrow$ `ge-ediscovery-push-sub`):
+
+```bash
+python3 deploy_cloudrun_harvester.py
+```
+
+You can also run `ge_harvest.py` directly from the CLI at any time for an on-demand historical sweep:
 
 ```bash
 python3 ge_harvest.py \
   --project-id "$GCP_PROJECT_ID" \
   --workforce-pool-id "$WORKFORCE_POOL_ID" \
   --hours 168
-```
-
-You can also target a specific session explicitly:
-```bash
-python3 ge_harvest.py \
-  --project-id "$GCP_PROJECT_ID" \
-  --workforce-pool-id "$WORKFORCE_POOL_ID" \
-  --extra-session "projects/<PROJECT_NUMBER>/locations/us/collections/default_collection/engines/<ENGINE_ID>/sessions/<SESSION_ID>=user@example.com"
 ```
 
 ---

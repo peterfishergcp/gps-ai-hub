@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
-ge_harvest.py — Gemini Enterprise Server-Side eDiscovery Harvester
+ge_harvest.py — Gemini Enterprise & NotebookLM Enterprise Server-Side eDiscovery Harvester
 
 Discovers Gemini Enterprise user sessions and file uploads from Cloud Logging
-(discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity), mints
+(discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity and
+discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity), mints
 per-user Workforce Identity Federation STS tokens via the 'ediscovery-archiver'
-OIDC provider, fetches full untruncated session transcripts
+OIDC provider signed by Google Cloud KMS (asymmetricSign RSA_SIGN_PKCS1_2048_SHA256
+— zero private keys on disk), fetches full untruncated session transcripts
 (GetSession?includeAnswerDetails=true), downloads all USER_PROVIDED and
 AI_GENERATED files via the :downloadFile endpoint, archives transcripts and
 binaries to Cloud Storage, and loads structured reporting rows into BigQuery.
+
+Supports both:
+  - Real-time event-driven execution on Cloud Run (via harvest_single_event)
+  - Batch CLI / sweep execution (python3 ge_harvest.py --hours=168)
 """
 
 import argparse
@@ -32,7 +38,13 @@ PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "")
 WORKFORCE_POOL_ID = os.environ.get("WORKFORCE_POOL_ID", "")
 PROVIDER_ID = os.environ.get("ARCHIVER_PROVIDER_ID", "ediscovery-archiver")
 CLIENT_ID = os.environ.get("ARCHIVER_CLIENT_ID", "ediscovery-archiver")
-KEY_ID = os.environ.get("ARCHIVER_KEY_ID", "archiver-key-1")
+
+KMS_LOCATION = os.environ.get("KMS_LOCATION", "us-central1")
+KMS_KEYRING = os.environ.get("KMS_KEYRING", "ge-ediscovery-kr")
+KMS_KEY = os.environ.get("KMS_KEY", "ediscovery-archiver-jwt-key")
+KMS_KEY_VERSION = os.environ.get("KMS_KEY_VERSION", "1")
+KMS_KEY_ID = os.environ.get("KMS_KEY_ID", "archiver-kms-key-1")
+LOCAL_KEY_ID = os.environ.get("ARCHIVER_KEY_ID", "archiver-key-1")
 
 BQ_DATASET = os.environ.get("BQ_DATASET", "ge_ediscovery")
 BQ_TABLE = os.environ.get("BQ_TABLE", "conversation_turns")
@@ -49,7 +61,8 @@ SSL_CTX = (
     else ssl.create_default_context()
 )
 
-_STS_TOKEN_CACHE: dict[str, str] = {}
+_STS_TOKEN_CACHE: dict[str, tuple[str, float]] = {}
+_GCP_TOKEN_CACHE: dict[str, tuple[str, float]] = {}
 
 
 def get_bucket_name(project_id: str) -> str:
@@ -62,6 +75,34 @@ def get_issuer_uri(project_id: str) -> str:
 
 def b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def get_gcp_access_token() -> str:
+    """
+    Obtains a Google Cloud OAuth2 access token for the Harvester's own identity:
+      1. Checks the Cloud Run / GCE Metadata Server first (zero subprocess overhead).
+      2. Falls back to `gcloud auth print-access-token` when running locally.
+    """
+    now = time.time()
+    cached = _GCP_TOKEN_CACHE.get("default")
+    if cached and cached[1] > now + 60:
+        return cached[0]
+
+    meta_url = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
+    req = urllib.request.Request(meta_url, headers={"Metadata-Flavor": "Google"})
+    try:
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            token = data["access_token"]
+            expires_in = float(data.get("expires_in", 300))
+            _GCP_TOKEN_CACHE["default"] = (token, now + expires_in)
+            return token
+    except Exception:
+        pass
+
+    token = subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode("utf-8").strip()
+    _GCP_TOKEN_CACHE["default"] = (token, now + 300)
+    return token
 
 
 def compute_crc32c_base64(data: bytes) -> str:
@@ -113,28 +154,52 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", base)
 
 
-def mint_sts_token(
-    subject: str,
-    project_id: str | None = None,
-    workforce_pool_id: str | None = None,
-) -> str:
-    """Mints an OAuth2 access token for the given WIF subject via STS token exchange."""
-    proj = project_id or PROJECT_ID
-    pool = workforce_pool_id or WORKFORCE_POOL_ID
-    cache_key = f"{proj}:{pool}:{subject}"
-    if cache_key in _STS_TOKEN_CACHE:
-        return _STS_TOKEN_CACHE[cache_key]
+def sign_jwt_with_kms(signing_input: str, project_id: str) -> bytes:
+    """
+    Signs an ASCII JWT signing_input (header.payload) using Google Cloud KMS
+    asymmetricSign REST API (RSA_SIGN_PKCS1_2048_SHA256).
+    Never exposes or stores a private key on disk or in memory.
+    """
+    digest_bytes = hashlib.sha256(signing_input.encode("ascii")).digest()
+    digest_b64 = base64.b64encode(digest_bytes).decode("ascii")
+    kms_url = (
+        f"https://cloudkms.googleapis.com/v1/projects/{project_id}"
+        f"/locations/{KMS_LOCATION}/keyRings/{KMS_KEYRING}"
+        f"/cryptoKeys/{KMS_KEY}/cryptoKeyVersions/{KMS_KEY_VERSION}:asymmetricSign"
+    )
+    gcp_token = get_gcp_access_token()
+    body = json.dumps({"digest": {"sha256": digest_b64}}).encode("utf-8")
+    req = urllib.request.Request(
+        kms_url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {gcp_token}",
+            "Content-Type": "application/json",
+            "X-Goog-User-Project": project_id,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, context=SSL_CTX) as resp:
+        resp_data = json.loads(resp.read().decode("utf-8"))
+        return base64.b64decode(resp_data["signature"])
 
-    if not os.path.exists(PRIVATE_KEY_PATH):
-        raise FileNotFoundError(
-            f"Archiver private key not found at {PRIVATE_KEY_PATH}. "
-            "Run setup_ediscovery_archiver_provider.py first."
-        )
 
+def mint_sts_token(subject: str, project_id: str, workforce_pool_id: str) -> str:
+    """
+    Mints an OAuth2 access token for the given WIF subject via STS token exchange.
+    Uses Google Cloud KMS asymmetricSign by default (falls back to local key only if KMS is disabled).
+    """
     now = int(time.time())
-    header = {"alg": "RS256", "typ": "JWT", "kid": KEY_ID}
+    cached = _STS_TOKEN_CACHE.get(subject)
+    if cached and cached[1] > now + 60:
+        return cached[0]
+
+    use_local = os.environ.get("USE_LOCAL_ARCHIVER_KEY", "").lower() in ("1", "true", "yes")
+    kid = LOCAL_KEY_ID if use_local else KMS_KEY_ID
+
+    header = {"alg": "RS256", "typ": "JWT", "kid": kid}
     payload = {
-        "iss": get_issuer_uri(proj),
+        "iss": get_issuer_uri(project_id),
         "sub": subject,
         "aud": CLIENT_ID,
         "iat": now - 60,
@@ -144,22 +209,31 @@ def mint_sts_token(
         f"{b64url_encode(json.dumps(header).encode('utf-8'))}."
         f"{b64url_encode(json.dumps(payload).encode('utf-8'))}"
     )
-    sig = subprocess.run(
-        ["openssl", "dgst", "-sha256", "-sign", PRIVATE_KEY_PATH],
-        input=signing_input.encode("ascii"),
-        capture_output=True,
-        check=True,
-    ).stdout
+
+    if not use_local:
+        sig = sign_jwt_with_kms(signing_input, project_id)
+    else:
+        if not os.path.exists(PRIVATE_KEY_PATH):
+            raise FileNotFoundError(
+                f"Local archiver private key not found at {PRIVATE_KEY_PATH} and Cloud KMS signing disabled."
+            )
+        sig = subprocess.run(
+            ["openssl", "dgst", "-sha256", "-sign", PRIVATE_KEY_PATH],
+            input=signing_input.encode("ascii"),
+            capture_output=True,
+            check=True,
+        ).stdout
+
     jwt_token = f"{signing_input}.{b64url_encode(sig)}"
 
     sts_body = urllib.parse.urlencode({
         "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-        "audience": f"//iam.googleapis.com/locations/global/workforcePools/{pool}/providers/{PROVIDER_ID}",
+        "audience": f"//iam.googleapis.com/locations/global/workforcePools/{workforce_pool_id}/providers/{PROVIDER_ID}",
         "scope": "https://www.googleapis.com/auth/cloud-platform",
         "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
         "subject_token": jwt_token,
         "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
-        "options": json.dumps({"userProject": proj}),
+        "options": json.dumps({"userProject": project_id}),
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -169,23 +243,42 @@ def mint_sts_token(
         method="POST",
     )
     with urllib.request.urlopen(req, context=SSL_CTX) as resp:
-        token = json.loads(resp.read().decode("utf-8"))["access_token"]
-        _STS_TOKEN_CACHE[cache_key] = token
+        data = json.loads(resp.read().decode("utf-8"))
+        token = data["access_token"]
+        expires_in = float(data.get("expires_in", 3600))
+        _STS_TOKEN_CACHE[subject] = (token, now + expires_in)
         return token
 
 
-def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, dict]:
+def read_cloud_logging_entries(project_id: str, log_filter: str, page_size: int = 500) -> list[dict]:
+    """Reads log entries directly via the Cloud Logging REST API (entries:list)."""
+    gcp_token = get_gcp_access_token()
+    url = "https://logging.googleapis.com/v2/entries:list"
+    body = json.dumps({
+        "resourceNames": [f"projects/{project_id}"],
+        "filter": log_filter,
+        "orderBy": "timestamp desc",
+        "pageSize": page_size,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {gcp_token}",
+            "Content-Type": "application/json",
+            "X-Goog-User-Project": project_id,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, context=SSL_CTX) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        return data.get("entries", [])
+
+
+def discover_from_cloud_logging(project_id: str, hours: int = 72, extra_filter: str = "") -> dict[str, dict]:
     """
     Reads discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity logs
-    and returns a mapping of session_resource_name -> metadata dict:
-      {
-        "session_name": "projects/.../sessions/...",
-        "user_iam_principal": "...",
-        "uploaded_file_ids": set([...]),
-        "turn_models": {assist_answer_id: model_name},
-        "turn_timestamps": {assist_answer_id: timestamp_str},
-        "latest_timestamp": timestamp_str,
-      }
+    and returns a mapping of session_resource_name -> metadata dict.
     """
     cutoff = (
         datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
@@ -198,15 +291,9 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
         f'OR jsonPayload.logMetadata.methodName="UploadSessionFile" '
         f'OR jsonPayload.logMetadata.methodName="AddContextFile")'
     )
-    out = subprocess.check_output(
-        [
-            "gcloud", "logging", "read", log_filter,
-            f"--project={project_id}",
-            "--limit=500",
-            "--format=json",
-        ]
-    ).decode("utf-8")
-    entries = json.loads(out) if out.strip() else []
+    if extra_filter:
+        log_filter += f" AND ({extra_filter})"
+    entries = read_cloud_logging_entries(project_id, log_filter, page_size=500)
 
     sessions: dict[str, dict] = {}
     for entry in entries:
@@ -225,6 +312,11 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
             session_name = ans_name.split("/assistAnswers/")[0]
             answer_id = ans_name.split("/assistAnswers/")[1] if "/assistAnswers/" in ans_name else ""
             model_name = jp.get("response", {}).get("modelInfo", {}).get("model", "")
+            agent_disp = jp.get("response", {}).get("agentInfo", {}).get("displayName", "")
+            if agent_disp and model_name:
+                model_name = f"{agent_disp} ({model_name})"
+            elif agent_disp:
+                model_name = agent_disp
 
             info = sessions.setdefault(session_name, {
                 "session_name": session_name,
@@ -247,18 +339,14 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
             session_name = (
                 jp.get("response", {}).get("session")
                 or jp.get("request", {}).get("name")
-                or jp.get("request", {}).get("parent")
                 or meta.get("name", "")
             )
             if "/sessions/" not in session_name:
                 continue
             file_id = jp.get("response", {}).get("fileId", "")
+            file_name = jp.get("response", {}).get("fileName") or jp.get("request", {}).get("fileName") or ""
             if not file_id or severity == "ERROR" or status_code != 0:
                 continue
-            file_name_logged = (
-                jp.get("response", {}).get("fileName")
-                or jp.get("request", {}).get("fileName", "")
-            )
             info = sessions.setdefault(session_name, {
                 "session_name": session_name,
                 "user_iam_principal": user_principal,
@@ -270,8 +358,8 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72) -> dict[str, d
             })
             if user_principal and not info["user_iam_principal"]:
                 info["user_iam_principal"] = user_principal
-            if file_name_logged:
-                info["logged_file_names"][file_id] = file_name_logged
+            if file_name:
+                info["logged_file_names"][file_id] = file_name
             if method == "UploadSessionFile":
                 info["uploaded_file_ids"].add(file_id)
 
@@ -287,8 +375,7 @@ def parse_session_resource(session_name: str) -> tuple[str, str, str]:
     return loc, engine_id, session_id
 
 
-def fetch_session_details(session_name: str, token: str, project_id: str | None = None) -> dict:
-    proj = project_id or PROJECT_ID
+def fetch_session_details(session_name: str, token: str, project_id: str) -> dict:
     loc, _, _ = parse_session_resource(session_name)
     prefix = f"{loc}-" if loc != "global" else ""
     url = f"https://{prefix}discoveryengine.googleapis.com/v1alpha/{session_name}?includeAnswerDetails=true"
@@ -296,24 +383,18 @@ def fetch_session_details(session_name: str, token: str, project_id: str | None 
         url,
         headers={
             "Authorization": f"Bearer {token}",
-            "X-Goog-User-Project": proj,
+            "X-Goog-User-Project": project_id,
         },
     )
     with urllib.request.urlopen(req, context=SSL_CTX) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
-def download_session_file(
-    session_name: str,
-    file_id: str,
-    token: str,
-    project_id: str | None = None,
-) -> tuple[bytes, str, str]:
+def download_session_file(session_name: str, file_id: str, token: str, project_id: str) -> tuple[bytes, str, str]:
     """
     Downloads a binary file from Discovery Engine using the :downloadFile endpoint.
     Returns (raw_bytes, mime_type, filename).
     """
-    proj = project_id or PROJECT_ID
     loc, _, _ = parse_session_resource(session_name)
     prefix = f"{loc}-" if loc != "global" else ""
     url = f"https://{prefix}discoveryengine.googleapis.com/v1/{session_name}:downloadFile?file_id={file_id}&alt=media"
@@ -321,7 +402,7 @@ def download_session_file(
         url,
         headers={
             "Authorization": f"Bearer {token}",
-            "X-Goog-User-Project": proj,
+            "X-Goog-User-Project": project_id,
         },
     )
     with urllib.request.urlopen(req, context=SSL_CTX) as resp:
@@ -337,29 +418,28 @@ def download_session_file(
 def upload_bytes_to_gcs(
     data: bytes,
     gcs_object_path: str,
-    project_id: str,
     bucket_name: str,
+    project_id: str,
     content_type: str = "application/octet-stream",
 ) -> tuple[str, str]:
-    """Uploads bytes to gs://{bucket_name}/{gcs_object_path} and returns (gcs_uri, console_url)."""
+    """Uploads bytes to gs://{bucket_name}/{gcs_object_path} via the GCS JSON API and returns (gcs_uri, console_url)."""
     gcs_uri = f"gs://{bucket_name}/{gcs_object_path}"
     console_url = f"https://storage.cloud.google.com/{bucket_name}/{urllib.parse.quote(gcs_object_path, safe='/')}"
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(data)
-        tmp_path = tmp.name
-    try:
-        subprocess.run(
-            [
-                "gcloud", "storage", "cp", tmp_path, gcs_uri,
-                f"--content-type={content_type}",
-                f"--project={project_id}",
-                "--quiet",
-            ],
-            check=True,
-        )
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+    gcp_token = get_gcp_access_token()
+    encoded_name = urllib.parse.quote(gcs_object_path, safe="")
+    upload_url = f"https://storage.googleapis.com/upload/storage/v1/b/{bucket_name}/o?uploadType=media&name={encoded_name}"
+    req = urllib.request.Request(
+        upload_url,
+        data=data,
+        headers={
+            "Authorization": f"Bearer {gcp_token}",
+            "Content-Type": content_type,
+            "X-Goog-User-Project": project_id,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, context=SSL_CTX) as resp:
+        resp.read()
     return gcs_uri, console_url
 
 
@@ -421,7 +501,7 @@ def harvest_session(
 ) -> list[dict]:
     """
     Harvests a single session:
-      1. Mints STS token for the owning user_iam_principal (or falls back to gcloud token for Workspace users).
+      1. Mints STS token for the owning user_iam_principal (or uses GCP token for Workspace users).
       2. Calls GetSession?includeAnswerDetails=true.
       3. Archives the raw session JSON transcript to GCS.
       4. Downloads all USER_PROVIDED and AI_GENERATED files via :downloadFile and archives them to GCS.
@@ -435,7 +515,7 @@ def harvest_session(
     try:
         token = mint_sts_token(user_principal, project_id, workforce_pool_id)
     except Exception:
-        token = subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode().strip()
+        token = get_gcp_access_token()
 
     session_data = fetch_session_details(session_name, token, project_id)
     display_name = session_data.get("displayName", "")
@@ -444,7 +524,7 @@ def harvest_session(
     transcript_bytes = json.dumps(session_data, indent=2).encode("utf-8")
     transcript_obj_path = f"sessions/{engine_id}/{session_id}/session_transcript.json"
     transcript_gcs_uri, transcript_console_url = upload_bytes_to_gcs(
-        transcript_bytes, transcript_obj_path, project_id, bucket_name, "application/json"
+        transcript_bytes, transcript_obj_path, bucket_name, project_id, "application/json"
     )
     print(f"  [+] Archived full session transcript -> {transcript_gcs_uri}")
 
@@ -470,7 +550,7 @@ def harvest_session(
             if not os.path.splitext(fname)[1]:
                 fname += ext
             gcs_path = f"files/{engine_id}/{session_id}/USER_PROVIDED/{fid}_{fname}"
-            gcs_uri, console_url = upload_bytes_to_gcs(raw_bytes, gcs_path, project_id, bucket_name, mime_type)
+            gcs_uri, console_url = upload_bytes_to_gcs(raw_bytes, gcs_path, bucket_name, project_id, mime_type)
             archived_files_by_id[fid] = {
                 "file_id": fid,
                 "file_source": "USER_PROVIDED",
@@ -538,9 +618,7 @@ def harvest_session(
                     if not os.path.splitext(fname)[1]:
                         fname += ext
                     gcs_path = f"files/{engine_id}/{session_id}/{source_label}/{fid}_{fname}"
-                    gcs_uri, console_url = upload_bytes_to_gcs(
-                        raw_bytes, gcs_path, project_id, bucket_name, mime_type
-                    )
+                    gcs_uri, console_url = upload_bytes_to_gcs(raw_bytes, gcs_path, bucket_name, project_id, mime_type)
                     archived_files_by_id[fid] = {
                         "file_id": fid,
                         "file_source": source_label,
@@ -592,38 +670,111 @@ def harvest_session(
 
 
 def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
+    """
+    Idempotently replaces rows for the harvested session_ids in BigQuery using the
+    BigQuery REST API (parameterized DML DELETE followed by a multipart JSONL Load Job).
+    """
     if not rows:
         print("No rows to load into BigQuery.")
         return
 
-    session_ids = sorted({r["session_id"] for r in rows})
-    quoted_ids = ", ".join(f"'{re.sub(r'[^A-Za-z0-9_-]', '', sid)}'" for sid in session_ids)
-    delete_sql = f"DELETE FROM `{project_id}.{BQ_DATASET}.{BQ_TABLE}` WHERE session_id IN ({quoted_ids})"
-    subprocess.run(
-        ["bq", f"--project_id={project_id}", "query", "--use_legacy_sql=false", "--quiet", delete_sql],
-        check=True,
+    gcp_token = get_gcp_access_token()
+    session_ids = sorted({str(r["session_id"]) for r in rows if re.fullmatch(r"[A-Za-z0-9_-]{1,128}", str(r.get("session_id", "")))})
+    if not session_ids:
+        return
+
+    # 1. Parameterized DML DELETE via BigQuery REST API (jobs.query)
+    delete_url = f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries"
+    delete_payload = {
+        "query": f"DELETE FROM `{project_id}.{BQ_DATASET}.{BQ_TABLE}` WHERE session_id IN UNNEST(@session_ids)",
+        "useLegacySql": False,
+        "parameterMode": "NAMED",
+        "queryParameters": [
+            {
+                "name": "session_ids",
+                "parameterType": {"type": "ARRAY", "arrayType": {"type": "STRING"}},
+                "parameterValue": {"arrayValues": [{"value": sid} for sid in session_ids]},
+            }
+        ],
+    }
+    del_req = urllib.request.Request(
+        delete_url,
+        data=json.dumps(delete_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {gcp_token}",
+            "Content-Type": "application/json",
+            "X-Goog-User-Project": project_id,
+        },
+        method="POST",
     )
+    with urllib.request.urlopen(del_req, context=SSL_CTX) as resp:
+        del_resp = json.loads(resp.read().decode("utf-8"))
+        job_id = del_resp.get("jobReference", {}).get("jobId")
+        job_loc = del_resp.get("jobReference", {}).get("location", "US")
+        while not del_resp.get("jobComplete", False) and job_id:
+            time.sleep(0.5)
+            poll_req = urllib.request.Request(
+                f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries/{job_id}?location={job_loc}",
+                headers={"Authorization": f"Bearer {gcp_token}", "X-Goog-User-Project": project_id},
+            )
+            with urllib.request.urlopen(poll_req, context=SSL_CTX) as p_resp:
+                del_resp = json.loads(p_resp.read().decode("utf-8"))
 
-    with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False, encoding="utf-8") as tmp:
-        for r in rows:
-            tmp.write(json.dumps(r) + "\n")
-        tmp_path = tmp.name
+    # 2. Multipart Load Job via BigQuery REST API
+    boundary = "===============ge_ediscovery_bq_load_boundary=="
+    job_config = {
+        "configuration": {
+            "load": {
+                "destinationTable": {
+                    "projectId": project_id,
+                    "datasetId": BQ_DATASET,
+                    "tableId": BQ_TABLE,
+                },
+                "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                "writeDisposition": "WRITE_APPEND",
+            }
+        }
+    }
+    jsonl_bytes = "".join(json.dumps(r) + "\n" for r in rows).encode("utf-8")
+    multipart_body = (
+        f"--{boundary}\r\n"
+        "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+        f"{json.dumps(job_config)}\r\n"
+        f"--{boundary}\r\n"
+        "Content-Type: application/octet-stream\r\n\r\n"
+    ).encode("utf-8") + jsonl_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
 
-    try:
-        table_ref = f"{project_id}:{BQ_DATASET}.{BQ_TABLE}"
-        subprocess.run(
-            [
-                "bq", f"--project_id={project_id}", "load",
-                "--source_format=NEWLINE_DELIMITED_JSON",
-                table_ref,
-                tmp_path,
-            ],
-            check=True,
+    upload_url = f"https://bigquery.googleapis.com/upload/bigquery/v2/projects/{project_id}/jobs?uploadType=multipart"
+    load_req = urllib.request.Request(
+        upload_url,
+        data=multipart_body,
+        headers={
+            "Authorization": f"Bearer {gcp_token}",
+            "Content-Type": f"multipart/related; boundary={boundary}",
+            "X-Goog-User-Project": project_id,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(load_req, context=SSL_CTX) as resp:
+        job_data = json.loads(resp.read().decode("utf-8"))
+
+    job_id = job_data.get("jobReference", {}).get("jobId")
+    job_loc = job_data.get("jobReference", {}).get("location", "US")
+    while job_data.get("status", {}).get("state") != "DONE" and job_id:
+        time.sleep(0.5)
+        poll_req = urllib.request.Request(
+            f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/jobs/{job_id}?location={job_loc}",
+            headers={"Authorization": f"Bearer {gcp_token}", "X-Goog-User-Project": project_id},
         )
-        print(f"\n[+] Successfully loaded {len(rows)} turn row(s) across {len(session_ids)} session(s) into {table_ref}!")
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        with urllib.request.urlopen(poll_req, context=SSL_CTX) as p_resp:
+            job_data = json.loads(p_resp.read().decode("utf-8"))
+
+    err_result = job_data.get("status", {}).get("errorResult")
+    if err_result:
+        raise RuntimeError(f"BigQuery load job failed: {err_result}")
+
+    table_ref = f"{project_id}:{BQ_DATASET}.{BQ_TABLE}"
+    print(f"\n[+] Successfully loaded {len(rows)} turn row(s) across {len(session_ids)} session(s) into {table_ref}!")
 
 
 def clean_notebooklm_streamed_reply(text: str) -> str:
@@ -641,18 +792,14 @@ def clean_notebooklm_streamed_reply(text: str) -> str:
     return text.strip()
 
 
-def get_token_for_principal(
-    principal: str,
-    project_id: str,
-    workforce_pool_id: str,
-) -> str:
-    """Returns a WIF STS token for federated principals or gcloud OAuth token fallback."""
+def get_token_for_principal(principal: str, project_id: str, workforce_pool_id: str) -> str:
+    """Returns a WIF STS token for WIF principals or GCP access token for Workspace admins."""
     if not principal:
-        return subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode().strip()
+        return get_gcp_access_token()
     try:
-        return mint_sts_token(principal, project_id=project_id, workforce_pool_id=workforce_pool_id)
+        return mint_sts_token(principal, project_id, workforce_pool_id)
     except Exception:
-        return subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode().strip()
+        return get_gcp_access_token()
 
 
 def harvest_notebooklm_enterprise(
@@ -661,16 +808,10 @@ def harvest_notebooklm_enterprise(
     bucket_name: str,
     hours: int = 720,
     known_principals: set[str] | None = None,
+    target_notebook_id: str | None = None,
 ) -> list[dict]:
     """
-    Harvests NotebookLM Enterprise activity and notebooks across global and us:
-      1. Reads discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity
-         for GenerateFreeFormStreamed (chat prompts & answers), CreateNotebook,
-         GetNotebook, and BatchCreateSources.
-      2. Calls v1alpha/projects/{project}/locations/{loc}/notebooks:listRecentlyViewed
-         using WIF STS tokens for each federated user.
-      3. Fetches full Notebook and Source metadata (title, wordCount, tokenCount),
-         archives notebook_archive.json to GCS, and returns structured rows for BigQuery.
+    Harvests NotebookLM Enterprise activity and notebooks across global, us, and eu.
     """
     print("\n======================================================================")
     print("Harvesting NotebookLM Enterprise (Prompts, Responses & Sources)")
@@ -683,15 +824,7 @@ def harvest_notebooklm_enterprise(
         f'logName="projects/{project_id}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity" '
         f'AND timestamp>="{cutoff}"'
     )
-    out = subprocess.check_output(
-        [
-            "gcloud", "logging", "read", log_filter,
-            f"--project={project_id}",
-            "--limit=500",
-            "--format=json",
-        ]
-    ).decode("utf-8")
-    entries = json.loads(out) if out.strip() else []
+    entries = read_cloud_logging_entries(project_id, log_filter, page_size=500)
     print(f"Found {len(entries)} log entries in notebooklm_enterprise_user_activity.")
 
     notebooks: dict[str, dict] = {}
@@ -705,7 +838,7 @@ def harvest_notebooklm_enterprise(
         ts = entry.get("timestamp") or meta.get("timestamp")
         insert_id = entry.get("insertId", "")
 
-        if user_principal:
+        if user_principal and not target_notebook_id:
             principals_to_probe.add(user_principal)
 
         nb_name = (
@@ -721,6 +854,8 @@ def harvest_notebooklm_enterprise(
         parts = nb_name.split("/")
         loc = parts[parts.index("locations") + 1] if "locations" in parts else "global"
         nb_id = parts[parts.index("notebooks") + 1]
+        if target_notebook_id and nb_id != target_notebook_id:
+            continue
 
         nb_info = notebooks.setdefault(nb_id, {
             "notebook_id": nb_id,
@@ -771,6 +906,8 @@ def harvest_notebooklm_enterprise(
                 })
 
     for principal in sorted(principals_to_probe):
+        if target_notebook_id:
+            break
         tok = get_token_for_principal(principal, project_id, workforce_pool_id)
         for loc in ["global", "us"]:
             prefix = f"{loc}-" if loc != "global" else ""
@@ -809,7 +946,7 @@ def harvest_notebooklm_enterprise(
     for nb_id, nb_info in notebooks.items():
         loc = nb_info["location"]
         nb_name = nb_info["notebook_name"]
-        principal = nb_info["user_iam_principal"] or "unknown"
+        principal = nb_info["user_iam_principal"]
         tok = get_token_for_principal(principal, project_id, workforce_pool_id)
         prefix = f"{loc}-" if loc != "global" else ""
 
@@ -872,7 +1009,7 @@ def harvest_notebooklm_enterprise(
         archive_crc32c = compute_crc32c_base64(archive_bytes)
         gcs_path = f"notebooks/{loc}/{nb_id}/notebook_archive.json"
         archive_gcs_uri, archive_console_url = upload_bytes_to_gcs(
-            archive_bytes, gcs_path, project_id, bucket_name, "application/json"
+            archive_bytes, gcs_path, bucket_name, project_id, "application/json"
         )
         print(
             f"  [+] Archived NotebookLM '{title}' ({nb_id}, {loc}, User: {principal}, "
@@ -955,6 +1092,105 @@ def harvest_notebooklm_enterprise(
     return bq_rows
 
 
+def harvest_single_event(log_entry: dict) -> dict:
+    """
+    Real-time event handler invoked by the Cloud Run Pub/Sub push endpoint.
+    Inspects a single Cloud Logging entry and immediately harvests the affected
+    Gemini Enterprise session or NotebookLM Enterprise notebook to GCS and BigQuery.
+    """
+    project_id = PROJECT_ID
+    workforce_pool_id = WORKFORCE_POOL_ID
+    bucket_name = get_bucket_name(project_id)
+
+    log_name = log_entry.get("logName", "")
+    jp = log_entry.get("jsonPayload", {})
+    meta = jp.get("logMetadata", {})
+    method = meta.get("methodName", "")
+    user_principal = jp.get("userIamPrincipal", "")
+
+    if "gemini_enterprise_user_activity" in log_name:
+        session_name = ""
+        if method == "StreamAssist":
+            ans_name = jp.get("response", {}).get("answer", {}).get("name", "")
+            if "/sessions/" in ans_name:
+                session_name = ans_name.split("/assistAnswers/")[0]
+        elif method in ("UploadSessionFile", "AddContextFile"):
+            session_name = (
+                jp.get("response", {}).get("session")
+                or jp.get("request", {}).get("name")
+                or meta.get("name", "")
+            )
+            if not jp.get("response", {}).get("fileId"):
+                return {"status": "skipped", "reason": "UploadSessionFile initiation entry without fileId"}
+
+        if "/sessions/" not in session_name:
+            return {"status": "skipped", "reason": f"No session resource name found in {method}"}
+
+        _, _, session_id = parse_session_resource(session_name)
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id):
+            raise ValueError("Invalid session_id format")
+
+        sessions = discover_from_cloud_logging(project_id, hours=72, extra_filter=f'"{session_id}"')
+        sinfo = sessions.get(session_name) or {
+            "session_name": session_name,
+            "user_iam_principal": user_principal,
+            "uploaded_file_ids": set(),
+            "logged_file_names": {},
+            "turn_models": {},
+            "turn_timestamps": {},
+            "latest_timestamp": log_entry.get("timestamp") or meta.get("timestamp"),
+        }
+        if user_principal and not sinfo.get("user_iam_principal"):
+            sinfo["user_iam_principal"] = user_principal
+
+        rows = harvest_session(sinfo, project_id, workforce_pool_id, bucket_name)
+        load_rows_to_bigquery(rows, project_id)
+        return {
+            "status": "harvested",
+            "type": "gemini_enterprise_session",
+            "session_id": session_id,
+            "turns_loaded": len(rows),
+        }
+
+    elif "notebooklm_enterprise_user_activity" in log_name:
+        if method not in ("GenerateFreeFormStreamed", "BatchCreateSources", "CreateNotebook"):
+            return {"status": "skipped", "reason": f"Ignored NotebookLM method {method}"}
+
+        nb_name = (
+            meta.get("name")
+            or jp.get("request", {}).get("name")
+            or jp.get("request", {}).get("parent")
+            or jp.get("response", {}).get("name")
+            or ""
+        )
+        if "/notebooks/" not in nb_name:
+            return {"status": "skipped", "reason": "No notebook resource name in log entry"}
+
+        nb_name = nb_name.split("/sources/")[0].split("/audioOverviews/")[0]
+        parts = nb_name.split("/")
+        nb_id = parts[parts.index("notebooks") + 1]
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", nb_id):
+            raise ValueError("Invalid notebook_id format")
+
+        rows = harvest_notebooklm_enterprise(
+            project_id=project_id,
+            workforce_pool_id=workforce_pool_id,
+            bucket_name=bucket_name,
+            hours=720,
+            known_principals={user_principal} if user_principal else None,
+            target_notebook_id=nb_id,
+        )
+        load_rows_to_bigquery(rows, project_id)
+        return {
+            "status": "harvested",
+            "type": "notebooklm_notebook",
+            "notebook_id": nb_id,
+            "rows_loaded": len(rows),
+        }
+
+    return {"status": "skipped", "reason": f"Unhandled logName: {log_name}"}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Harvest Gemini Enterprise sessions, NotebookLM notebooks, and files to GCS & BigQuery.")
     parser.add_argument("--project-id", default=PROJECT_ID, help="Google Cloud Project ID")
@@ -1003,9 +1239,9 @@ def main() -> None:
 
     try:
         nb_rows = harvest_notebooklm_enterprise(
-            args.project_id,
-            args.workforce_pool_id,
-            bucket_name,
+            project_id=args.project_id,
+            workforce_pool_id=args.workforce_pool_id,
+            bucket_name=bucket_name,
             hours=max(args.hours, 720),
             known_principals=known_principals,
         )

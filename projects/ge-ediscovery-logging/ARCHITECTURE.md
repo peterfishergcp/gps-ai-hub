@@ -24,10 +24,14 @@ Discovery Engine compares the OAuth 2.0 Bearer token's identity against the sess
 }
 ```
 
-### 1.2 Server-Side WIF STS Token Exchange (`ediscovery-archiver`)
+### 1.2 Server-Side WIF STS Token Exchange Backed by Google Cloud KMS (`ediscovery-archiver`)
 Because Workforce Identity Pools map external assertions to Google Cloud federated principals based on the pool-level subject (`google.subject`), any OIDC provider within the **same** Workforce Identity Pool (`locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>`) that maps `google.subject = assertion.sub` produces the **exact same federated principal** (`principal://iam.googleapis.com/locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>/subject/<USER_SUBJECT>`).
 
-`setup_ediscovery_archiver_provider.py` provisions a dedicated OIDC provider (`ediscovery-archiver`) with an offline RSA-2048 public key (`jwksJson`) so `ge_harvest.py` can perform an RFC 8693 OAuth 2.0 Token Exchange against `https://sts.googleapis.com/v1/token` for each session owner discovered in Cloud Logging.
+`setup_ediscovery_archiver_provider.py` provisions:
+1. A **Google Cloud KMS Asymmetric Signing Key** (`projects/<YOUR_GCP_PROJECT_ID>/locations/us-central1/keyRings/ge-ediscovery-kr/cryptoKeys/ediscovery-archiver-jwt-key`, algorithm `RSA_SIGN_PKCS1_2048_SHA256`).
+2. An offline JWKS (`archiver_jwks.json`, `kid: "archiver-kms-key-1"`) extracted from the Cloud KMS public key and registered on the `ediscovery-archiver` OIDC provider.
+
+At runtime, `ge_harvest.py` computes the SHA-256 digest of the JWT signing input (`header.payload`), calls `projects.locations.keyRings.cryptoKeys.cryptoKeyVersions.asymmetricSign` via IAM-authenticated HTTPS, and performs an RFC 8693 OAuth 2.0 Token Exchange against `https://sts.googleapis.com/v1/token` for each session owner discovered in Cloud Logging. **No private key ever exists on disk or inside the Cloud Run container.**
 
 ### 1.3 Session File Upload (`:uploadFile`) and Download (`:downloadFile`) Endpoints
 - **Upload (`USER_PROVIDED`)**:
@@ -137,25 +141,24 @@ Each file record written into `conversation_turns.files` in BigQuery includes bo
 
 When deploying this reference architecture into a regulated enterprise environment, review the following operational considerations and hardening recommendations:
 
-### 3.1 Race Condition: User Deletes Session or File Before Harvester Runs
-- **Scenario**: A user uploads a sensitive file or generates an image and immediately deletes the chat session in the Gemini Enterprise UI before `ge_harvest.py` runs.
-- **Impact**:
-  - The **Cloud Logging sink (`discoveryengine_googleapis_com_gemini_enterprise_user_activity`)** is real-time and immutable—the user's text prompt, the model's text reply, and the `UploadSessionFile` / `AddContextFile` metadata (`fileId`, `fileName`, `mimeType`) are permanently captured even if the user deletes the session 1 second later.
-  - However, the **raw binary bytes** of the file and the internal `thought_text` are fetched by `ge_harvest.py` via `GetSession` and `:downloadFile`. If the session is deleted before `ge_harvest.py` runs, `:downloadFile` returns `HTTP 404`.
-- **Mitigation**: Instead of running `ge_harvest.py` on a daily/hourly batch schedule, trigger it in **near-real-time (< 5 seconds)** by routing the Cloud Logging sink to **Cloud Pub/Sub -> Cloud Run** whenever `methodName IN ("StreamAssist", "UploadSessionFile", "AddContextFile")` appears.
+### 3.1 Real-Time Event-Driven Cloud Run Pipeline (`<10s` Latency)
+- **Scenario**: A user uploads a sensitive file or generates a PDF/image and immediately deletes the chat session in the Gemini Enterprise UI.
+- **Architecture (`deploy_cloudrun_harvester.py` + `cloudrun_harvester_server.py`)**:
+  - **Cloud Logging Sink (`ge-ediscovery-pubsub-sink`)** routes matching `StreamAssist`, `UploadSessionFile`, `AddContextFile`, `GenerateFreeFormStreamed`, `BatchCreateSources`, and `CreateNotebook` log entries in real time to **Cloud Pub/Sub (`ge-ediscovery-events`)**. *(Note: `GetNotebook` is intentionally excluded from the Pub/Sub sink filter to prevent recursive harvesting loops).*
+  - **Authenticated Pub/Sub Push (`ge-ediscovery-push-sub`)** pushes each log entry with an OIDC Bearer token (`ge-ediscovery-harvester-sa@<YOUR_GCP_PROJECT_ID>.iam.gserviceaccount.com`) to `POST https://ge-ediscovery-harvester-...run.app/pubsub`.
+  - **Targeted Single-Session Harvest (`harvest_single_event`)**: Instead of scanning all historical logs, the Cloud Run service extracts the exact `session_id` or `notebook_id` from the Pub/Sub event, signs a WIF JWT via Cloud KMS `:asymmetricSign`, downloads the session transcript and binary files via `:downloadFile` to GCS, and runs a parameterized BigQuery `DELETE` + multipart `LOAD` job in **~6–10 seconds**.
 
 ### 3.2 Identity Scope: Workforce Identity (`WIF`) vs. Google Workspace / Cloud Identity Users
 - **Scenario**: An engine uses **Google Workspace / Cloud Identity** (`user:alice@corp.com`) instead of Workforce Identity Federation (`principal://iam.googleapis.com/locations/global/workforcePools/...`).
 - **Impact**: The `ediscovery-archiver` custom OIDC provider can only mint STS tokens for subjects inside its Workforce Identity Pool (`<YOUR_WORKFORCE_POOL_ID>`). It cannot impersonate native Google Workspace accounts.
 - **Mitigation**: Keep all compliance-regulated Gemini Enterprise engines bound to Workforce Identity Federation, or use Google Workspace Domain-Wide Delegation (DWD) if Workspace users must be harvested.
 
-### 3.3 Security & Key Custody of `.archiver_private_key.pem`
-- **Scenario**: The `ediscovery-archiver` OIDC provider trusts any JWT signed by `.archiver_private_key.pem` to impersonate any Workforce Pool user subject.
-- **Impact**: Anyone with read access to `.archiver_private_key.pem` can mint a WIF token for any user in that pool.
-- **Mitigation**:
-  1. Never store `.archiver_private_key.pem` on a developer workstation or in source control (enforced via `.gitignore`).
-  2. In production, store the key inside **Cloud KMS** (`asymmetricSign` API) or **Secret Manager** accessible only to a dedicated, locked-down Cloud Run Job service account.
-  3. Apply an **IAM Attribute Condition** on the `ediscovery-archiver` OIDC provider or restrict its IAM bindings so tokens minted by `ediscovery-archiver` only have Discovery Engine session read permissions—not access to unrelated GCP resources.
+### 3.3 Hardware-Backed Key Custody via Google Cloud KMS (`asymmetricSign`)
+- **Scenario**: The `ediscovery-archiver` OIDC provider trusts JWTs signed by its registered RSA keypair to mint WIF tokens for Workforce Pool subjects.
+- **Mitigation Implemented**:
+  1. `setup_ediscovery_archiver_provider.py` provisions an asymmetric signing key (`ediscovery-archiver-jwt-key`, `RSA_SIGN_PKCS1_2048_SHA256`) inside **Google Cloud KMS** (`ge-ediscovery-kr`).
+  2. The private key material never leaves Google Cloud KMS hardware/software modules and is never written to disk or packaged into the Cloud Run container image (`.gcloudignore` also explicitly blocks `*.pem`).
+  3. Only the dedicated `ge-ediscovery-harvester-sa` service account holds `roles/cloudkms.signerVerifier` on `ediscovery-archiver-jwt-key`, and every `asymmetricSign` call is recorded in Cloud Audit Logs.
 
 ### 3.4 Third-Party / Federated Connector Citations (SharePoint, Jira, Outlook, WorkIQ MCP)
 - **Scenario**: A user asks Gemini Enterprise a question grounded in a federated connector (e.g., SharePoint Online, Outlook, or a custom MCP server) rather than uploading a local file via the `+` button.
