@@ -157,4 +157,24 @@ Run `./deploy.sh` to build and deploy `least-privilege-sharepoint-mcp-server` to
 chmod +x deploy.sh
 ./deploy.sh
 ```
-After deployment finishes, copy your Cloud Run service URL and append `/mcp` when registering a Custom MCP Connector in Gemini Enterprise (`https://least-privilege-sharepoint-mcp-server-<PROJECT_NUMBER>.us-central1.run.app/mcp`).
+
+---
+
+## 🔗 Step 6: Register as a Custom (BYO) MCP Connector in Gemini Enterprise
+
+In the Google Cloud Console (**Gemini Enterprise** → **Data Stores / Connectors** → **Create Data Store** → **Custom MCP Server**), configure the following fields using your deployed Cloud Run base URL (`https://least-privilege-sharepoint-mcp-server-<PROJECT_NUMBER>.<REGION>.run.app`):
+
+| Gemini Enterprise Field | Value |
+| :--- | :--- |
+| **MCP Server URL (Endpoint)** | `https://least-privilege-sharepoint-mcp-server-<PROJECT_NUMBER>.<REGION>.run.app/mcp` |
+| **Authentication Type** | **OAuth 2.0** |
+| **Authorization URL** | `https://least-privilege-sharepoint-mcp-server-<PROJECT_NUMBER>.<REGION>.run.app/auth` |
+| **Token URL** | `https://least-privilege-sharepoint-mcp-server-<PROJECT_NUMBER>.<REGION>.run.app/token` |
+| **Client ID** | `<YOUR_MS_GRAPH_CLIENT_ID>` (or any non-empty identifier) |
+| **Client Secret** | `<YOUR_MS_GRAPH_CLIENT_SECRET>` (or any non-empty secret) |
+| **Scopes** | `https://graph.microsoft.com/.default` (optional) |
+
+### How Gemini Enterprise Authentication & Transport Work
+- **Built-in `/auth` and `/token` OAuth Helper Endpoints**: Satisfy Gemini Enterprise's OAuth 2.0 connector registration handshake and return a server-managed placeholder token (`mock`). When Gemini Enterprise invokes `/mcp`, the server automatically swaps the placeholder token for a live Microsoft Entra ID **`Sites.Selected` Client Credentials** token (`grant_type=client_credentials`) cached in memory.
+- **Transport & Header Normalization**: Automatically normalizes `Accept: application/json, text/event-stream` across both `req.headers` and `req.rawHeaders` (for `@hono/node-server` and `python-httpx` compatibility), returns JSON responses (`enableJsonResponse: true`), and strips accidental trailing spaces (`%20`) or slashes from request URLs.
+
