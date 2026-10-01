@@ -300,7 +300,8 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72, extra_filter: 
         jp = entry.get("jsonPayload", {})
         meta = jp.get("logMetadata", {})
         method = meta.get("methodName", "")
-        user_principal = jp.get("userIamPrincipal", "")
+        raw_principal = jp.get("userIamPrincipal", "")
+        user_principal = "" if raw_principal == "<elided>" else raw_principal
         ts = entry.get("timestamp") or meta.get("timestamp")
         severity = entry.get("severity", "INFO")
         status_code = jp.get("status", {}).get("code", 0)
@@ -493,6 +494,13 @@ def extract_turn_content(turn: dict) -> tuple[str, str, list[dict], str]:
     )
 
 
+FALLBACK_PRINCIPALS = [
+    p.strip()
+    for p in os.environ.get("FALLBACK_PRINCIPALS", "").split(",")
+    if p.strip()
+]
+
+
 def harvest_session(
     session_info: dict,
     project_id: str,
@@ -501,23 +509,54 @@ def harvest_session(
 ) -> list[dict]:
     """
     Harvests a single session:
-      1. Mints STS token for the owning user_iam_principal (or uses GCP token for Workspace users).
+      1. Mints STS token for the owning user_iam_principal (or probes FALLBACK_PRINCIPALS if <elided>).
       2. Calls GetSession?includeAnswerDetails=true.
       3. Archives the raw session JSON transcript to GCS.
       4. Downloads all USER_PROVIDED and AI_GENERATED files via :downloadFile and archives them to GCS.
       5. Returns the BigQuery rows for conversation_turns.
     """
     session_name = session_info["session_name"]
-    user_principal = session_info["user_iam_principal"]
+    raw_principal = session_info.get("user_iam_principal") or ""
+    user_principal = "" if raw_principal == "<elided>" else raw_principal
     loc, engine_id, session_id = parse_session_resource(session_name)
 
-    print(f"\n=== Harvesting Session {session_id} (Engine: {engine_id}, User: {user_principal}) ===")
-    try:
-        token = mint_sts_token(user_principal, project_id, workforce_pool_id)
-    except Exception:
-        token = get_gcp_access_token()
+    print(f"\n=== Harvesting Session {session_id} (Engine: {engine_id}, User: {user_principal or '<elided/probing>'}) ===")
 
-    session_data = fetch_session_details(session_name, token, project_id)
+    candidates: list[str] = []
+    if user_principal:
+        candidates.append(user_principal)
+    for fp in FALLBACK_PRINCIPALS:
+        if fp not in candidates:
+            candidates.append(fp)
+
+    session_data = None
+    token = ""
+    resolved_principal = user_principal
+    last_err = None
+
+    for candidate in candidates:
+        try:
+            try:
+                cand_token = mint_sts_token(candidate, project_id, workforce_pool_id)
+            except Exception:
+                cand_token = get_gcp_access_token()
+            session_data = fetch_session_details(session_name, cand_token, project_id)
+            token = cand_token
+            resolved_principal = candidate
+            if candidate != user_principal:
+                print(f"  [*] Resolved elided/unowned session {session_id} owner -> {resolved_principal}")
+            break
+        except urllib.error.HTTPError as e:
+            last_err = e
+            if e.code in (403, 404):
+                continue
+            raise
+
+    if session_data is None:
+        print(f"  [!] Skipping session {session_id}: could not resolve owner ({last_err})")
+        return []
+
+    user_principal = resolved_principal
     display_name = session_data.get("displayName", "")
     session_start = session_data.get("startTime", "")
 
@@ -834,7 +873,8 @@ def harvest_notebooklm_enterprise(
         jp = entry.get("jsonPayload", {})
         meta = jp.get("logMetadata", {})
         method = meta.get("methodName", "")
-        user_principal = jp.get("userIamPrincipal", "")
+        raw_principal = jp.get("userIamPrincipal", "")
+        user_principal = "" if raw_principal == "<elided>" else raw_principal
         ts = entry.get("timestamp") or meta.get("timestamp")
         insert_id = entry.get("insertId", "")
 
@@ -1106,7 +1146,8 @@ def harvest_single_event(log_entry: dict) -> dict:
     jp = log_entry.get("jsonPayload", {})
     meta = jp.get("logMetadata", {})
     method = meta.get("methodName", "")
-    user_principal = jp.get("userIamPrincipal", "")
+    raw_principal = jp.get("userIamPrincipal", "")
+    user_principal = "" if raw_principal == "<elided>" else raw_principal
 
     if "gemini_enterprise_user_activity" in log_name:
         session_name = ""
