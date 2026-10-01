@@ -4,6 +4,8 @@ Provisions the Cloud Storage archive bucket, BigQuery dataset, structured
 reporting table (conversation_turns), Cloud Logging -> BigQuery sink, and
 pre-built BigQuery analytical views & functions for Gemini Enterprise eDiscovery:
   - v_ediscovery_file_audit
+  - v_realtime_agent_and_file_activity
+  - v_notebooklm_forensic_audit
   - v_jailbreak_and_security_detections
   - fn_user_forensic_report(target_user STRING)
 
