@@ -185,3 +185,11 @@ When deploying this reference architecture into a regulated enterprise environme
 ### 3.8 Bidirectional Live Voice / Audio (`bi-directional-audio`) Governance
 - **Scenario**: Unlike text/multimodal chat (`StreamAssist`) and NotebookLM Enterprise (`GenerateFreeFormStreamed`), real-time WebRTC/WebSocket **Bidirectional Live Voice** (`features.bi-directional-audio`) streams raw PCM audio frames directly to the model without persisting a downloadable `.wav` or text transcript inside `GetSession`.
 - **Mitigation**: For regulated user populations subject to strict 100% communication retention (e.g., SEC Rule 17a-4 / FINRA), disable the `bi-directional-audio` feature flag on the Gemini Enterprise engine (`features: {"bi-directional-audio": "FEATURE_STATE_OFF"}`) so all interactions are forced through auditable text/file `StreamAssist` turns and NotebookLM Enterprise logs.
+
+### 3.9 Handling `<elided>` User Principals (Engines Created Before `sensitiveLoggingEnabled: true`)
+- **Scenario**: A new Gemini Enterprise engine is created with `observabilityEnabled: true` while `sensitiveLoggingEnabled` is initially `false`. Any `StreamAssist` turn executed before `sensitiveLoggingEnabled` is enabled emits `"userIamPrincipal": "<elided>"` and `"serviceTextReply": "<elided>"` in Cloud Logging.
+- **Mitigation Implemented in `ge_harvest.py`**:
+  1. Even when Cloud Logging records `"<elided>"`, Discovery Engine's `GetSession?includeAnswerDetails=true` endpoint still retains the full unredacted conversation turns under the owning user's Workforce Identity subject.
+  2. `ge_harvest.py` automatically strips `"<elided>"` and probes candidate principals (`FALLBACK_PRINCIPALS` / recent non-elided principals) against `GetSession` to resolve the real session owner and harvest the complete unredacted session.
+  3. If a session remains permanently unowned or deleted (`HTTP 403` / `404` across all candidate principals), `harvest_session()` logs a warning and returns `200 OK` so the Pub/Sub push subscription (`ge-ediscovery-push-sub`) acknowledges the message instead of entering a `500` retry loop.
+
