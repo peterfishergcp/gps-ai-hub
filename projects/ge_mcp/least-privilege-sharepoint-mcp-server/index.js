@@ -210,11 +210,20 @@ let cachedAppToken = null;
 let tokenExpirationTime = 0;
 
 async function getAccessToken(authHeader) {
-  // 1. If a valid Bearer token is passed in the HTTP Authorization header, use it
-  //    (still restricted by the server-side ALLOWED_SHAREPOINT_SITES allowlist!)
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  // 1. If a real delegated Microsoft Graph JWT Bearer token (3 dot-separated base64 segments)
+  //    is passed in the HTTP Authorization header, use it (still restricted by ALLOWED_SHAREPOINT_SITES).
+  //    If Gemini Enterprise passes the server's own OAuth placeholder token ("mock" or "server_managed..."),
+  //    fall through to the Entra ID Sites.Selected Client Credentials flow below.
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
     const token = authHeader.substring(7).trim();
-    if (token && token !== 'null' && token !== 'undefined') {
+    if (
+      token &&
+      token !== 'null' &&
+      token !== 'undefined' &&
+      !token.includes('mock') &&
+      !token.includes('server_managed') &&
+      token.split('.').length === 3
+    ) {
       return token;
     }
   }
@@ -1455,6 +1464,7 @@ const httpServer = http.createServer(async (req, res) => {
         access_token: 'server_managed_sites_selected_credentials',
         token_type: 'Bearer',
         expires_in: 3600,
+        refresh_token: 'server_managed_refresh_token',
       })
     );
     return;
@@ -1463,10 +1473,24 @@ const httpServer = http.createServer(async (req, res) => {
   // MCP Endpoint (/mcp or /)
   if (reqUrl.pathname === '/mcp' || reqUrl.pathname === '/') {
     try {
+      // Normalize Accept header so Cloud Run / Gemini Enterprise requests without text/event-stream succeed
+      const reqProxy = new Proxy(req, {
+        get(target, prop, receiver) {
+          if (prop === 'headers') {
+            return {
+              ...target.headers,
+              accept: 'application/json, text/event-stream',
+            };
+          }
+          return Reflect.get(target, prop, receiver);
+        },
+      });
+
       const authHeader = req.headers['authorization'];
       const mcpServer = createMcpServer(authHeader);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined, // Stateless HTTP transport for Cloud Run scalability
+        enableJsonResponse: true,
       });
 
       res.on('close', () => {
@@ -1475,7 +1499,7 @@ const httpServer = http.createServer(async (req, res) => {
       });
 
       await mcpServer.connect(transport);
-      await transport.handleRequest(req, res);
+      await transport.handleRequest(reqProxy, res);
     } catch (err) {
       console.error('Error handling MCP HTTP request:', err.message);
       if (!res.headersSent) {
