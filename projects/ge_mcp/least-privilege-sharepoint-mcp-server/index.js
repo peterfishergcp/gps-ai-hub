@@ -731,10 +731,8 @@ function createMcpServer(authHeader) {
   // Define strictly read-only tools
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const readOnlyAnnotations = {
-      readOnlyHint: true,
       destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+      readOnlyHint: true,
     };
 
     return {
@@ -742,11 +740,8 @@ function createMcpServer(authHeader) {
         {
           name: 'query_sharepoint_sites_lookup',
           description:
-            'List or filter the specific SharePoint sites that this MCP server is authorized to access under Microsoft Entra ID Least-Privilege (Sites.Selected). Call this first to discover available allowed sites and their siteIds.',
-          annotations: {
-            title: 'List Allowed SharePoint Sites',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to list or filter the specific SharePoint sites that this MCP server is authorized to access under Microsoft Entra ID Least-Privilege (Sites.Selected).',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
@@ -761,18 +756,15 @@ function createMcpServer(authHeader) {
         {
           name: 'query_document_libraries_lookup',
           description:
-            'List all document libraries (drives) inside a specific allowed SharePoint site. Accepts a siteId, site URL, or natural site name from the allowed sites list.',
-          annotations: {
-            title: 'List Site Document Libraries',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to list all document libraries (drives) inside a specific allowed SharePoint site.',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
               siteId: {
                 type: 'string',
                 description:
-                  'The allowed SharePoint site ID, site URL (e.g., "https://your-tenant.sharepoint.com/sites/Finance"), or natural site name (e.g., "Finance"). Defaults to the primary allowed site if omitted.',
+                  'Optional allowed SharePoint site ID, site URL, or natural site name. Defaults to the primary allowed site if omitted.',
               },
             },
           },
@@ -780,28 +772,25 @@ function createMcpServer(authHeader) {
         {
           name: 'query_library_items_lookup',
           description:
-            'List all files and folders within a specific document library (drive) or subfolder of an allowed SharePoint site.',
-          annotations: {
-            title: 'List Document Library Items',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to list all files and folders within a document library (drive) or subfolder of an allowed SharePoint site. Call this with no arguments or driveId="Documents" to list all files in SharePoint.',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
               siteId: {
                 type: 'string',
                 description:
-                  'Optional allowed SharePoint site ID, URL, or site name (e.g., "Finance"). Helps disambiguate when multiple sites are configured.',
+                  'Optional allowed SharePoint site ID, URL, or site name. Defaults to the primary allowed site if omitted.',
               },
               driveId: {
                 type: 'string',
                 description:
-                  'The document library ID (driveId) or natural library name (e.g., "Documents" or "Shared Documents"). Defaults to the site\'s primary Documents library if omitted.',
+                  'Optional document library ID (driveId) or natural library name (e.g., "Documents"). Defaults to the site\'s primary Documents library if omitted.',
               },
               folderId: {
                 type: 'string',
                 description:
-                  'Optional folder item ID or natural folder path (e.g., "Quarterly Reports" or "Reports/2026") to list items from. Defaults to the root of the library.',
+                  'Optional folder item ID or natural folder name/path to list items from. Defaults to the root of the library.',
               },
             },
           },
@@ -809,22 +798,20 @@ function createMcpServer(authHeader) {
         {
           name: 'query_search_files_lookup',
           description:
-            'Search for files and folders by keyword across a specific allowed SharePoint site (or across all allowed SharePoint sites if siteId is omitted) using Sites.Selected-compatible drive traversal.',
-          annotations: {
-            title: 'Search Files in Allowed SharePoint Sites',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to search for files and folders by keyword across the allowed SharePoint sites.',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
               query: {
                 type: 'string',
-                description: 'The search keyword, filename, or phrase to search for (e.g., "Q1 Budget", "Master Services Agreement", "Architecture").',
+                description:
+                  'Optional search keyword, filename, or phrase to search for (or "*" to list all files).',
               },
               siteId: {
                 type: 'string',
                 description:
-                  'Optional allowed SharePoint site ID, URL, or natural site name to restrict the search to a single site. If omitted, searches across all allowed SharePoint sites.',
+                  'Optional allowed SharePoint site ID, URL, or natural site name to restrict the search to a single site.',
               },
               driveId: {
                 type: 'string',
@@ -832,17 +819,13 @@ function createMcpServer(authHeader) {
                   'Optional specific document library ID or name (e.g., "Documents") to search within.',
               },
             },
-            required: ['query'],
           },
         },
         {
           name: 'query_file_metadata_lookup',
           description:
-            'Retrieve detailed metadata (size, author, last modified date, webUrl, MIME type) for a specific file in an allowed SharePoint site.',
-          annotations: {
-            title: 'Get SharePoint File Metadata',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to retrieve detailed metadata (size, author, last modified date, webUrl, MIME type) for a specific file in an allowed SharePoint site.',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
@@ -852,24 +835,20 @@ function createMcpServer(authHeader) {
               },
               driveId: {
                 type: 'string',
-                description: 'The document library ID or natural name (e.g., "Documents").',
+                description: 'Optional document library ID or natural name (e.g., "Documents").',
               },
               itemId: {
                 type: 'string',
-                description: 'The file item ID or exact filename (e.g., "Annual_Report.docx").',
+                description: 'The file item ID or filename (e.g., "Annual_Report.docx").',
               },
             },
-            required: ['itemId'],
           },
         },
         {
           name: 'query_file_content_lookup',
           description:
-            'Read and extract text content from a file in an allowed SharePoint site. Supports Word (.docx), Excel (.xlsx), plain text (.txt, .md, .csv, .json), and PDF (.pdf) files.',
-          annotations: {
-            title: 'Read SharePoint File Content',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to read and extract text content from a file in an allowed SharePoint site. Supports Word (.docx), Excel (.xlsx), plain text (.txt, .md, .csv, .json), and PDF (.pdf) files.',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
@@ -879,24 +858,20 @@ function createMcpServer(authHeader) {
               },
               driveId: {
                 type: 'string',
-                description: 'The document library ID or natural name (e.g., "Documents").',
+                description: 'Optional document library ID or natural name (e.g., "Documents").',
               },
               itemId: {
                 type: 'string',
-                description: 'The file item ID or exact filename (e.g., "Employee_Handbook.docx").',
+                description: 'The file item ID or filename (e.g., "Employee_Handbook.docx").',
               },
             },
-            required: ['itemId'],
           },
         },
         {
           name: 'query_file_download_url_lookup',
           description:
-            'Get a temporary pre-authenticated download URL (@microsoft.graph.downloadUrl) and web viewer URL for a file in an allowed SharePoint site.',
-          annotations: {
-            title: 'Get File Download URL',
-            ...readOnlyAnnotations,
-          },
+            'Read-only lookup to get a temporary pre-authenticated download URL and web viewer URL for a file in an allowed SharePoint site.',
+          annotations: readOnlyAnnotations,
           inputSchema: {
             type: 'object',
             properties: {
@@ -906,14 +881,13 @@ function createMcpServer(authHeader) {
               },
               driveId: {
                 type: 'string',
-                description: 'The document library ID or natural name (e.g., "Documents").',
+                description: 'Optional document library ID or natural name (e.g., "Documents").',
               },
               itemId: {
                 type: 'string',
-                description: 'The file item ID or exact filename.',
+                description: 'The file item ID or filename.',
               },
             },
-            required: ['itemId'],
           },
         },
       ],
@@ -923,16 +897,23 @@ function createMcpServer(authHeader) {
   // Handle Tool Execution
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args = {} } = request.params;
+    console.error(`[MCP TOOL] Received CallToolRequest: ${name} | args=${JSON.stringify(args)}`);
 
     try {
       const graph = await getGraphClient(authHeader);
+
+      const siteArg = args.siteId || args.SiteId || '';
+      const driveArg = args.driveId || args.DriveId || '';
+      const folderArg = args.folderId || args.FolderId || '';
+      const itemArg = args.itemId || args.ItemId || '';
+      const queryArg = args.query || args.Query || args.search || '';
 
       switch (name) {
         // --------------------------------------------------------------------
         // 1. LIST / FILTER ALLOWED SHAREPOINT SITES (Sites.Selected Compatible)
         // --------------------------------------------------------------------
         case 'query_sharepoint_sites_lookup': {
-          const rawQuery = validateSafeString(args.query || '', 'query', 200);
+          const rawQuery = validateSafeString(queryArg, 'query', 200);
           const allowedSites = await resolveAllowedSites(graph);
 
           let filtered = allowedSites;
@@ -992,7 +973,7 @@ function createMcpServer(authHeader) {
         // 2. LIST DOCUMENT LIBRARIES IN AN ALLOWED SITE
         // --------------------------------------------------------------------
         case 'query_document_libraries_lookup': {
-          const allowedSite = await resolveAllowedSite(graph, args.siteId);
+          const allowedSite = await resolveAllowedSite(graph, siteArg);
           const drives = await listDrivesForAllowedSite(graph, allowedSite);
 
           return {
@@ -1020,8 +1001,8 @@ function createMcpServer(authHeader) {
         // 3. LIST ITEMS IN AN ALLOWED SITE'S DOCUMENT LIBRARY / FOLDER
         // --------------------------------------------------------------------
         case 'query_library_items_lookup': {
-          const { driveId, site } = await resolveAllowedDrive(graph, args.driveId, args.siteId);
-          const folderItemId = await resolveFolderItemId(graph, driveId, args.folderId);
+          const { driveId, site } = await resolveAllowedDrive(graph, driveArg, siteArg);
+          const folderItemId = await resolveFolderItemId(graph, driveId, folderArg);
 
           const endpoint =
             folderItemId === 'root'
@@ -1072,14 +1053,11 @@ function createMcpServer(authHeader) {
         //    (Uses Sites.Selected-native drive traversal so it never fails with 500 spException)
         // --------------------------------------------------------------------
         case 'query_search_files_lookup': {
-          const safeQuery = sanitizeSearchQuery(args.query);
-          if (!safeQuery) {
-            throw new Error("A non-empty search 'query' parameter is required.");
-          }
+          const safeQuery = sanitizeSearchQuery(queryArg || '*') || '*';
 
           const targetDrives = [];
-          if (args.driveId || args.siteId) {
-            const { driveId, site, drive } = await resolveAllowedDrive(graph, args.driveId, args.siteId);
+          if (driveArg || siteArg) {
+            const { driveId, site, drive } = await resolveAllowedDrive(graph, driveArg, siteArg);
             targetDrives.push({ driveId, site, driveName: drive?.name || 'Documents' });
           } else {
             const allowedSites = await resolveAllowedSites(graph);
@@ -1155,8 +1133,8 @@ function createMcpServer(authHeader) {
         // 5. GET FILE METADATA (Strictly within Allowed Sites)
         // --------------------------------------------------------------------
         case 'query_file_metadata_lookup': {
-          const { driveId, site } = await resolveAllowedDrive(graph, args.driveId, args.siteId);
-          const itemId = await resolveFileItemId(graph, driveId, args.itemId);
+          const { driveId, site } = await resolveAllowedDrive(graph, driveArg, siteArg);
+          const itemId = await resolveFileItemId(graph, driveId, itemArg);
 
           const response = await graph.get(
             `/drives/${encodeSafeGraphSegment(driveId, 'driveId')}/items/${encodeSafeGraphSegment(itemId, 'itemId')}`
@@ -1185,8 +1163,8 @@ function createMcpServer(authHeader) {
         // 6. READ FILE CONTENT (Strictly within Allowed Sites + Size Guard)
         // --------------------------------------------------------------------
         case 'query_file_content_lookup': {
-          const { driveId, site } = await resolveAllowedDrive(graph, args.driveId, args.siteId);
-          const itemId = await resolveFileItemId(graph, driveId, args.itemId);
+          const { driveId, site } = await resolveAllowedDrive(graph, driveArg, siteArg);
+          const itemId = await resolveFileItemId(graph, driveId, itemArg);
 
           const metaRes = await graph.get(
             `/drives/${encodeSafeGraphSegment(driveId, 'driveId')}/items/${encodeSafeGraphSegment(itemId, 'itemId')}`,
@@ -1317,8 +1295,8 @@ function createMcpServer(authHeader) {
         // 7. GET FILE DOWNLOAD URL (Strictly within Allowed Sites)
         // --------------------------------------------------------------------
         case 'query_file_download_url_lookup': {
-          const { driveId, site } = await resolveAllowedDrive(graph, args.driveId, args.siteId);
-          const itemId = await resolveFileItemId(graph, driveId, args.itemId);
+          const { driveId, site } = await resolveAllowedDrive(graph, driveArg, siteArg);
+          const itemId = await resolveFileItemId(graph, driveId, itemArg);
 
           const response = await graph.get(
             `/drives/${encodeSafeGraphSegment(driveId, 'driveId')}/items/${encodeSafeGraphSegment(itemId, 'itemId')}`
@@ -1389,7 +1367,10 @@ function setSecurityHeaders(req, res) {
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, mcp-session-id');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Accept, Mcp-Session-Id, Mcp-Protocol-Version, mcp-session-id'
+  );
 }
 
 const httpServer = http.createServer(async (req, res) => {
@@ -1417,9 +1398,13 @@ const httpServer = http.createServer(async (req, res) => {
   }
 
   const reqUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  const cleanPathname =
+    decodeURIComponent(reqUrl.pathname)
+      .trim()
+      .replace(/\/+$/, '') || '/';
 
   // Health check endpoint
-  if (req.method === 'GET' && reqUrl.pathname === '/healthz') {
+  if (req.method === 'GET' && cleanPathname === '/healthz') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
@@ -1431,19 +1416,20 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
-  // Dummy OAuth helper endpoints for Gemini Enterprise UI registration compatibility
-  if (reqUrl.pathname === '/auth') {
-    const redirectUri = reqUrl.searchParams.get('redirect_uri') || '';
+  // OAuth 2.0 helper endpoints for Gemini Enterprise UI registration compatibility
+  if (cleanPathname === '/auth') {
+    const redirectUri = (reqUrl.searchParams.get('redirect_uri') || '').trim();
     const state = reqUrl.searchParams.get('state') || '';
-    // Strictly validate redirect_uri against trusted HTTPS Google Cloud console / Vertex AI origins
     try {
       const parsedRedirect = new URL(redirectUri);
       if (
         parsedRedirect.protocol === 'https:' &&
-        (parsedRedirect.hostname.endsWith('.google.com') || parsedRedirect.hostname.endsWith('.googleusercontent.com'))
+        (parsedRedirect.hostname.endsWith('.google.com') ||
+          parsedRedirect.hostname.endsWith('.google') ||
+          parsedRedirect.hostname.endsWith('.googleusercontent.com'))
       ) {
         const redirectTarget = new URL(parsedRedirect.toString());
-        redirectTarget.searchParams.set('code', crypto.randomBytes(16).toString('hex'));
+        redirectTarget.searchParams.set('code', 'mock');
         if (state) redirectTarget.searchParams.set('state', state);
         res.writeHead(302, { Location: redirectTarget.toString() });
         res.end();
@@ -1457,23 +1443,36 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
-  if (reqUrl.pathname === '/token') {
+  if (cleanPathname === '/token') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        access_token: 'server_managed_sites_selected_credentials',
+        access_token: 'mock',
         token_type: 'Bearer',
         expires_in: 3600,
-        refresh_token: 'server_managed_refresh_token',
+        refresh_token: 'mock_refresh',
       })
     );
     return;
   }
 
   // MCP Endpoint (/mcp or /)
-  if (reqUrl.pathname === '/mcp' || reqUrl.pathname === '/') {
+  if (cleanPathname === '/mcp' || cleanPathname === '/' || cleanPathname.startsWith('/mcp')) {
     try {
-      // Normalize Accept header so Cloud Run / Gemini Enterprise requests without text/event-stream succeed
+      // Normalize Accept header in both req.headers and req.rawHeaders
+      // (@hono/node-server inside @modelcontextprotocol/sdk constructs Web Request from req.rawHeaders)
+      req.headers['accept'] = 'application/json, text/event-stream';
+      if (Array.isArray(req.rawHeaders)) {
+        const filteredRaw = [];
+        for (let i = 0; i < req.rawHeaders.length; i += 2) {
+          if (String(req.rawHeaders[i]).toLowerCase() !== 'accept') {
+            filteredRaw.push(req.rawHeaders[i], req.rawHeaders[i + 1]);
+          }
+        }
+        filteredRaw.push('Accept', 'application/json, text/event-stream');
+        req.rawHeaders = filteredRaw;
+      }
+
       const reqProxy = new Proxy(req, {
         get(target, prop, receiver) {
           if (prop === 'headers') {
@@ -1481,6 +1480,9 @@ const httpServer = http.createServer(async (req, res) => {
               ...target.headers,
               accept: 'application/json, text/event-stream',
             };
+          }
+          if (prop === 'rawHeaders') {
+            return target.rawHeaders;
           }
           return Reflect.get(target, prop, receiver);
         },
