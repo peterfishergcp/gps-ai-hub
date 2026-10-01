@@ -1,0 +1,15 @@
+# Ignore local environment and credential files
+.env
+.env.*
+!.env.example
+*.env
+*.key
+*.pem
+*credential*.json
+*credentials*.json
+*service_account*.json
+
+# Dependencies and logs
+node_modules/
+*.log
+.DS_Store
