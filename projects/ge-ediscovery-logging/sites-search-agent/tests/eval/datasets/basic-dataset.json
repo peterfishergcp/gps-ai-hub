@@ -1,0 +1,18 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "capabilities_overview",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "Hello, what can you help me with?"}]
+      }
+    },
+    {
+      "eval_case_id": "quantum_computing_pdf_summary",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "create a PDF summary for me of Quantum Computing"}]
+      }
+    }
+  ]
+}

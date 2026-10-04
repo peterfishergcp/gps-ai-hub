@@ -116,6 +116,7 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 | [`Dockerfile`](./Dockerfile) | Minimal non-root `python:3.12-slim` container image for `ge-ediscovery-harvester` |
 | [`deploy_cloudrun_harvester.py`](./deploy_cloudrun_harvester.py) | Deploys the `ge-ediscovery-harvester` Cloud Run service, least-privilege SA (`ge-ediscovery-harvester-sa`), Cloud Logging $\rightarrow$ Pub/Sub sink (`ge-ediscovery-pubsub-sink`), and OIDC push subscription |
 | [`test_ge_ediscovery_e2e.py`](./test_ge_ediscovery_e2e.py) | End-to-end verification suite (runs 7 automated compliance, security, and BigQuery checks) |
+| [`sites-search-agent/`](./sites-search-agent/) | Example ADK Agent (`sites_search_agent`) built with `agents-cli` and `fpdf2` that searches Google Sites and generates binary 1–2 page PDF summary artifacts (`AI_GENERATED`) captured by `ge_harvest.py` |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Deep-dive technical architecture, protocol specifications, Cloud KMS + Cloud Run design, and production hardening guide |
 
 ---
