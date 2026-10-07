@@ -40,6 +40,8 @@ PROVIDER_ID = os.environ.get("ARCHIVER_PROVIDER_ID", "ediscovery-archiver").stri
 
 PUBSUB_TOPIC = "ge-ediscovery-events"
 PUBSUB_SUB = "ge-ediscovery-push-sub"
+PUBSUB_DLQ_TOPIC = "ge-ediscovery-dlq"
+PUBSUB_DLQ_SUB = "ge-ediscovery-dlq-hold"
 LOGGING_SINK = "ge-ediscovery-pubsub-sink"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -168,13 +170,35 @@ def main() -> None:
         f"--project={PROJECT_ID}",
     ], check=False)
 
-    print(f"\n=== [4/6] Creating Pub/Sub Topic '{PUBSUB_TOPIC}' ===")
-    topic_desc = run_cmd(
-        ["gcloud", "pubsub", "topics", "describe", PUBSUB_TOPIC, f"--project={PROJECT_ID}"],
+    print(f"\n=== [4/6] Creating Pub/Sub Topic '{PUBSUB_TOPIC}' & Dead-Letter Queue '{PUBSUB_DLQ_TOPIC}' ===")
+    for tname in (PUBSUB_TOPIC, PUBSUB_DLQ_TOPIC):
+        topic_desc = run_cmd(
+            ["gcloud", "pubsub", "topics", "describe", tname, f"--project={PROJECT_ID}"],
+            check=False,
+        )
+        if topic_desc.returncode != 0:
+            run_cmd(["gcloud", "pubsub", "topics", "create", tname, f"--project={PROJECT_ID}"])
+
+    dlq_sub_desc = run_cmd(
+        ["gcloud", "pubsub", "subscriptions", "describe", PUBSUB_DLQ_SUB, f"--project={PROJECT_ID}"],
         check=False,
     )
-    if topic_desc.returncode != 0:
-        run_cmd(["gcloud", "pubsub", "topics", "create", PUBSUB_TOPIC, f"--project={PROJECT_ID}"])
+    if dlq_sub_desc.returncode != 0:
+        run_cmd([
+            "gcloud", "pubsub", "subscriptions", "create", PUBSUB_DLQ_SUB,
+            f"--topic={PUBSUB_DLQ_TOPIC}",
+            "--ack-deadline=60",
+            "--message-retention-duration=7d",
+            "--expiration-period=never",
+            f"--project={PROJECT_ID}",
+        ])
+
+    run_cmd([
+        "gcloud", "pubsub", "topics", "add-iam-policy-binding", PUBSUB_DLQ_TOPIC,
+        f"--member=serviceAccount:{pubsub_agent}",
+        "--role=roles/pubsub.publisher",
+        f"--project={PROJECT_ID}",
+    ])
 
     print(f"\n=== [5/6] Configuring Cloud Logging -> Pub/Sub Sink '{LOGGING_SINK}' ===")
     sink_filter = (
@@ -230,6 +254,8 @@ def main() -> None:
             f"--push-endpoint={push_endpoint}",
             f"--push-auth-service-account={sa_email}",
             "--ack-deadline=120",
+            f"--dead-letter-topic={PUBSUB_DLQ_TOPIC}",
+            "--max-delivery-attempts=10",
             f"--project={PROJECT_ID}",
         ])
     else:
@@ -241,14 +267,24 @@ def main() -> None:
             "--ack-deadline=120",
             "--min-retry-delay=10s",
             "--max-retry-delay=600s",
+            f"--dead-letter-topic={PUBSUB_DLQ_TOPIC}",
+            "--max-delivery-attempts=10",
             f"--project={PROJECT_ID}",
         ])
+
+    run_cmd([
+        "gcloud", "pubsub", "subscriptions", "add-iam-policy-binding", PUBSUB_SUB,
+        f"--member=serviceAccount:{pubsub_agent}",
+        "--role=roles/pubsub.subscriber",
+        f"--project={PROJECT_ID}",
+    ])
 
     print("\n======================================================================")
     print("Real-Time Event-Driven GE eDiscovery Pipeline is LIVE!")
     print(f"  Cloud KMS Key        : projects/{PROJECT_ID}/locations/{KMS_LOCATION}/keyRings/{KMS_KEYRING}/cryptoKeys/{KMS_KEY}")
     print(f"  Cloud Run Service    : {service_url}")
     print(f"  Pub/Sub Push Endpoint: {push_endpoint}")
+    print(f"  Dead-Letter Queue    : {PUBSUB_DLQ_TOPIC} (hold sub: {PUBSUB_DLQ_SUB})")
     print(f"  Logging Sink         : {LOGGING_SINK} -> {PUBSUB_TOPIC}")
     print("======================================================================")
 

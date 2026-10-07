@@ -6,5 +6,6 @@ archiver_jwks.json
 *.key
 *.jsonl
 .tmp*
+iam-policy-*.backup.json
 __pycache__/
 *.pyc

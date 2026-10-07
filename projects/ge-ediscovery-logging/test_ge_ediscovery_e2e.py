@@ -303,6 +303,42 @@ def check_7_bigquery_reporting_table(project_id: str, bucket_name: str) -> None:
     print(f"  PASS: Query returned {len(rows)} turn row(s) with verified SHA-256 & CRC32C file metadata.")
 
 
+def check_8_no_delete_custom_role_and_delete_blocked(
+    project_id: str,
+    workforce_pool_id: str,
+    session_name: str,
+    user_subject: str,
+    location: str,
+) -> None:
+    print(f"\n[Check 8/8] Verifying 'geUserNoDelete' custom role & chat deletion prevention (HTTP 403 on DeleteSession)...")
+    admin_token = get_gcp_access_token()
+    role_url = f"https://iam.googleapis.com/v1/projects/{project_id}/roles/geUserNoDelete"
+    req_role = urllib.request.Request(
+        role_url,
+        headers={"Authorization": f"Bearer {admin_token}", "X-Goog-User-Project": project_id},
+    )
+    with urllib.request.urlopen(req_role, context=SSL_CTX) as resp:
+        role_data = json.loads(resp.read().decode("utf-8"))
+    perms = set(role_data.get("includedPermissions", []))
+    for forbidden in ("discoveryengine.sessions.delete", "discoveryengine.sessions.removeContextFile"):
+        assert forbidden not in perms, f"Custom role still contains forbidden permission: {forbidden}"
+
+    sts_token = mint_sts_token(user_subject, project_id, workforce_pool_id)
+    host = "discoveryengine.googleapis.com" if location == "global" else f"{location}-discoveryengine.googleapis.com"
+    del_url = f"https://{host}/v1alpha/{session_name}"
+    req_del = urllib.request.Request(
+        del_url,
+        headers={"Authorization": f"Bearer {sts_token}", "X-Goog-User-Project": project_id},
+        method="DELETE",
+    )
+    try:
+        urllib.request.urlopen(req_del, context=SSL_CTX)
+        raise AssertionError("Expected HTTP 403 when WIF user attempts DeleteSession, but request succeeded!")
+    except urllib.error.HTTPError as e:
+        assert e.code == 403, f"Expected HTTP 403 on DeleteSession, got HTTP {e.code}"
+        print(f"  PASS: Custom role 'geUserNoDelete' active ({len(perms)} permissions) and WIF user DeleteSession blocked with HTTP 403.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run E2E verification for Gemini Enterprise eDiscovery pipeline.")
     parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", ""), help="Google Cloud Project ID")
@@ -351,9 +387,16 @@ def main() -> None:
     check_5_gcs_archive_objects(args.project_id, bucket_name, user_file_id)
     check_6_logging_sink(args.project_id)
     check_7_bigquery_reporting_table(args.project_id, bucket_name)
+    check_8_no_delete_custom_role_and_delete_blocked(
+        args.project_id,
+        args.workforce_pool_id,
+        session_name,
+        args.user_subject,
+        args.location,
+    )
 
     print("\n======================================================================")
-    print("ALL 7 END-TO-END GE EDISCOVERY VERIFICATION CHECKS PASSED SUCCESSFULLY!")
+    print("ALL 8 END-TO-END GE EDISCOVERY VERIFICATION CHECKS PASSED SUCCESSFULLY!")
     print("======================================================================")
 
 

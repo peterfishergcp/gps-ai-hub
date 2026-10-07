@@ -114,8 +114,12 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 | [`ge_harvest.py`](./ge_harvest.py) | Main eDiscovery harvester (signs WIF JWTs via Cloud KMS `:asymmetricSign`, archives sessions/files/notebooks to GCS & BigQuery via pure REST APIs; supports both real-time `harvest_single_event` and batch sweeps) |
 | [`cloudrun_harvester_server.py`](./cloudrun_harvester_server.py) | Lightweight HTTP server for Cloud Run handling real-time Pub/Sub push events (`POST /pubsub`) and scheduled sweeps (`POST /sweep`) |
 | [`Dockerfile`](./Dockerfile) | Minimal non-root `python:3.12-slim` container image for `ge-ediscovery-harvester` |
-| [`deploy_cloudrun_harvester.py`](./deploy_cloudrun_harvester.py) | Deploys the `ge-ediscovery-harvester` Cloud Run service, least-privilege SA (`ge-ediscovery-harvester-sa`), Cloud Logging $\rightarrow$ Pub/Sub sink (`ge-ediscovery-pubsub-sink`), and OIDC push subscription |
-| [`test_ge_ediscovery_e2e.py`](./test_ge_ediscovery_e2e.py) | End-to-end verification suite (runs 7 automated compliance, security, and BigQuery checks) |
+| [`deploy_cloudrun_harvester.py`](./deploy_cloudrun_harvester.py) | Deploys the `ge-ediscovery-harvester` Cloud Run service, least-privilege SA (`ge-ediscovery-harvester-sa`), Cloud Logging $\rightarrow$ Pub/Sub sink (`ge-ediscovery-pubsub-sink`), OIDC push subscription, and dead-letter queue (`ge-ediscovery-dlq` / `ge-ediscovery-dlq-hold`) |
+| [`setup_no_delete_role.py`](./setup_no_delete_role.py) | Provisions the `projects/<PROJECT_ID>/roles/geUserNoDelete` custom IAM role (`roles/discoveryengine.user` minus `discoveryengine.sessions.delete` and `discoveryengine.sessions.removeContextFile`) and safely swaps a target principal with automatic IAM backup & `--rollback` |
+| [`scripts/swap-user-role.py` / `scripts/swap-user-role.sh`](./scripts/swap-user-role.sh) | CLI wrapper to dry-run, `--apply`, or `--rollback` the `geUserNoDelete` role swap for a Workforce Identity Pool or group principal |
+| [`scripts/verify.sh`](./scripts/verify.sh) | Read-only end-to-end health check (engines, sinks, Cloud Run harvester, dead-letter queue, `geUserNoDelete` role bindings, and latest BigQuery turns) |
+| [`scripts/replay-dlq.sh`](./scripts/replay-dlq.sh) | Inspects (`--peek`) or republishes (`--replay`) dead-lettered events from `ge-ediscovery-dlq-hold` back to `ge-ediscovery-events` |
+| [`test_ge_ediscovery_e2e.py`](./test_ge_ediscovery_e2e.py) | End-to-end verification suite (runs 8 automated compliance, security, `DeleteSession -> HTTP 403`, and BigQuery checks) |
 | [`sites-search-agent/`](./sites-search-agent/) | Example ADK Agent (`sites_search_agent`) built with `agents-cli` and `fpdf2` that searches Google Sites and generates binary 1–2 page PDF summary artifacts (`AI_GENERATED`) captured by `ge_harvest.py` |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Deep-dive technical architecture, protocol specifications, Cloud KMS + Cloud Run design, and production hardening guide |
 
@@ -190,7 +194,7 @@ python3 setup_storage_and_bigquery.py --project-id "$GCP_PROJECT_ID"
 
 ### Step 5: Deploy the Real-Time Event-Driven Cloud Run Harvester (`<10s` Latency)
 
-Run `deploy_cloudrun_harvester.py` to deploy the `ge-ediscovery-harvester` Cloud Run service (`--no-allow-unauthenticated`), grant `roles/cloudkms.signerVerifier` on `ediscovery-archiver-jwt-key` to `ge-ediscovery-harvester-sa`, and wire up the real-time Cloud Logging $\rightarrow$ Pub/Sub push pipeline (`ge-ediscovery-pubsub-sink` $\rightarrow$ `ge-ediscovery-events` $\rightarrow$ `ge-ediscovery-push-sub`):
+Run `deploy_cloudrun_harvester.py` to deploy the `ge-ediscovery-harvester` Cloud Run service (`--no-allow-unauthenticated`), grant `roles/cloudkms.signerVerifier` on `ediscovery-archiver-jwt-key` to `ge-ediscovery-harvester-sa`, and wire up the real-time Cloud Logging $\rightarrow$ Pub/Sub push pipeline (`ge-ediscovery-pubsub-sink` $\rightarrow$ `ge-ediscovery-events` $\rightarrow$ `ge-ediscovery-push-sub` with dead-letter topic `ge-ediscovery-dlq` and hold subscription `ge-ediscovery-dlq-hold`):
 
 ```bash
 python3 deploy_cloudrun_harvester.py
@@ -207,9 +211,36 @@ python3 ge_harvest.py \
 
 ---
 
-### Step 6: Run the 7-Check End-to-End Verification Suite
+### Step 6: Swap the Gemini Enterprise User Role (Prevent Chat & File Deletion)
 
-To verify the entire pipeline end-to-end (including creating a synthetic multi-turn session, uploading a `USER_PROVIDED` document, generating an `AI_GENERATED` PNG image, verifying the `403` admin ownership barrier, harvesting to GCS, and querying BigQuery):
+Because file bytes (`:downloadFile`) and $>64\text{ KiB}$ untruncated turns (`GetSession`) reside in the user's Discovery Engine session until harvested, a user with the standard `roles/discoveryengine.user` role could delete a chat seconds after creating it.
+
+`scripts/swap-user-role.sh` (backed by `setup_no_delete_role.py`) creates a custom role `projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete` containing all permissions from `roles/discoveryengine.user` **minus** `discoveryengine.sessions.delete` and `discoveryengine.sessions.removeContextFile`, additively binds it to your Workforce Identity Pool principal, backs up your project IAM policy, and removes `roles/discoveryengine.user` **only** from that single principal (leaving all other members of `roles/discoveryengine.user` untouched):
+
+```bash
+# 1. Dry run (creates/updates geUserNoDelete, grants it additively, and checks bindings):
+scripts/swap-user-role.sh "$GCP_PROJECT_ID" "principalSet://iam.googleapis.com/locations/global/workforcePools/${WORKFORCE_POOL_ID}/*"
+
+# 2. Apply (saves IAM backup and removes roles/discoveryengine.user from this principal):
+scripts/swap-user-role.sh "$GCP_PROJECT_ID" "principalSet://iam.googleapis.com/locations/global/workforcePools/${WORKFORCE_POOL_ID}/*" --apply
+
+# Optional: Restore standard roles/discoveryengine.user (re-enables chat deletion):
+# scripts/swap-user-role.sh "$GCP_PROJECT_ID" "principalSet://iam.googleapis.com/locations/global/workforcePools/${WORKFORCE_POOL_ID}/*" --rollback
+```
+
+It takes ~1–2 minutes for IAM changes to propagate. Afterward, users can chat, upload files, and run agents normally in the Gemini Enterprise UI, but attempting to delete a chat returns `HTTP 403 PERMISSION_DENIED`.
+
+---
+
+### Step 7: Verify Deployment Health & Run the 8-Check E2E Verification Suite
+
+Run the read-only health check script to verify engines, sinks, Cloud Run harvester, dead-letter queue, `geUserNoDelete` permissions/bindings, and recent BigQuery turns:
+
+```bash
+scripts/verify.sh "$GCP_PROJECT_ID"
+```
+
+To run the full 8-check automated E2E verification suite (including creating a synthetic multi-turn session, uploading a `USER_PROVIDED` document, generating an `AI_GENERATED` image, verifying the `403` admin ownership barrier, harvesting to GCS & BigQuery, and verifying that `DeleteSession` is blocked with `HTTP 403` for the WIF user):
 
 ```bash
 python3 test_ge_ediscovery_e2e.py \
