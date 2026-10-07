@@ -116,8 +116,10 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 | [`Dockerfile`](./Dockerfile) | Minimal non-root `python:3.12-slim` container image for `ge-ediscovery-harvester` |
 | [`deploy_cloudrun_harvester.py`](./deploy_cloudrun_harvester.py) | Deploys the `ge-ediscovery-harvester` Cloud Run service, least-privilege SA (`ge-ediscovery-harvester-sa`), Cloud Logging $\rightarrow$ Pub/Sub sink (`ge-ediscovery-pubsub-sink`), OIDC push subscription, and dead-letter queue (`ge-ediscovery-dlq` / `ge-ediscovery-dlq-hold`) |
 | [`setup_no_delete_role.py`](./setup_no_delete_role.py) | Provisions the `projects/<PROJECT_ID>/roles/geUserNoDelete` custom IAM role (`roles/discoveryengine.user` minus `discoveryengine.sessions.delete` and `discoveryengine.sessions.removeContextFile`) and safely swaps a target principal with automatic IAM backup & `--rollback` |
-| [`scripts/swap-user-role.py` / `scripts/swap-user-role.sh`](./scripts/swap-user-role.sh) | CLI wrapper to dry-run, `--apply`, or `--rollback` the `geUserNoDelete` role swap for a Workforce Identity Pool or group principal |
-| [`scripts/verify.sh`](./scripts/verify.sh) | Read-only end-to-end health check (engines, sinks, Cloud Run harvester, dead-letter queue, `geUserNoDelete` role bindings, and latest BigQuery turns) |
+| [`sync_no_delete_role.py`](./sync_no_delete_role.py) | Compares `roles/discoveryengine.user` against `geUserNoDelete` to detect and sync newly added Google permissions while blocking any explicit or heuristic session/conversation delete permissions |
+| [`scripts/swap-user-role.sh`](./scripts/swap-user-role.sh) | CLI wrapper to dry-run, `--apply`, or `--rollback` the `geUserNoDelete` role swap for a Workforce Identity Pool or group principal |
+| [`scripts/sync-custom-role.sh`](./scripts/sync-custom-role.sh) | CLI wrapper to check (`--json` or human report) and synchronize (`--apply`) new permissions from `roles/discoveryengine.user` into `geUserNoDelete` |
+| [`scripts/verify.sh`](./scripts/verify.sh) | Read-only end-to-end health check (engines, sinks, Cloud Run harvester, dead-letter queue, `geUserNoDelete` drift & bindings, and latest BigQuery turns) |
 | [`scripts/replay-dlq.sh`](./scripts/replay-dlq.sh) | Inspects (`--peek`) or republishes (`--replay`) dead-lettered events from `ge-ediscovery-dlq-hold` back to `ge-ediscovery-events` |
 | [`test_ge_ediscovery_e2e.py`](./test_ge_ediscovery_e2e.py) | End-to-end verification suite (runs 8 automated compliance, security, `DeleteSession -> HTTP 403`, and BigQuery checks) |
 | [`sites-search-agent/`](./sites-search-agent/) | Example ADK Agent (`sites_search_agent`) built with `agents-cli` and `fpdf2` that searches Google Sites and generates binary 1–2 page PDF summary artifacts (`AI_GENERATED`) captured by `ge_harvest.py` |
@@ -211,7 +213,7 @@ python3 ge_harvest.py \
 
 ---
 
-### Step 6: Swap the Gemini Enterprise User Role (Prevent Chat & File Deletion)
+### Step 6: Swap the Gemini Enterprise User Role & Keep Permissions in Sync
 
 Because file bytes (`:downloadFile`) and $>64\text{ KiB}$ untruncated turns (`GetSession`) reside in the user's Discovery Engine session until harvested, a user with the standard `roles/discoveryengine.user` role could delete a chat seconds after creating it.
 
@@ -226,6 +228,16 @@ scripts/swap-user-role.sh "$GCP_PROJECT_ID" "principalSet://iam.googleapis.com/l
 
 # Optional: Restore standard roles/discoveryengine.user (re-enables chat deletion):
 # scripts/swap-user-role.sh "$GCP_PROJECT_ID" "principalSet://iam.googleapis.com/locations/global/workforcePools/${WORKFORCE_POOL_ID}/*" --rollback
+```
+
+Whenever Google adds new permissions to the predefined `roles/discoveryengine.user` role over time, run `scripts/sync-custom-role.sh` (backed by `sync_no_delete_role.py`) to compare `roles/discoveryengine.user` against `geUserNoDelete` and safely patch in any new permissions while enforcing a two-layer Delete-Guard (blocking both the explicit denylist and any future `discoveryengine.(sessions|conversations|assistAnswers|turns).*(delete|remove|purge)` permissions):
+
+```bash
+# Check for permission drift between roles/discoveryengine.user and geUserNoDelete:
+scripts/sync-custom-role.sh "$GCP_PROJECT_ID"
+
+# Apply any newly added safe permissions to geUserNoDelete:
+scripts/sync-custom-role.sh "$GCP_PROJECT_ID" --apply
 ```
 
 It takes ~1–2 minutes for IAM changes to propagate. Afterward, users can chat, upload files, and run agents normally in the Gemini Enterprise UI, but attempting to delete a chat returns `HTTP 403 PERMISSION_DENIED`.

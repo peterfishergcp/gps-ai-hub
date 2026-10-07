@@ -52,7 +52,7 @@ else
   PY_CMD=(python3)
 fi
 
-"${PY_CMD[@]}" - "$P" <<'PYEOF'
+"${PY_CMD[@]}" - "$P" "$ROOT_DIR" <<'PYEOF'
 import json
 import os
 import ssl
@@ -62,6 +62,7 @@ import urllib.error
 import urllib.request
 
 project_id = sys.argv[1]
+sys.path.insert(0, sys.argv[2])
 region = os.environ.get("CLOUD_RUN_REGION", "us-central1")
 service_name = os.environ.get("CLOUD_RUN_SERVICE", "ge-ediscovery-harvester")
 custom_role_id = os.environ.get("CUSTOM_ROLE_ID", "geUserNoDelete")
@@ -176,15 +177,24 @@ except urllib.error.HTTPError as e:
 
 print("== custom role & IAM bindings")
 try:
-    rdesc = api("GET", f"https://iam.googleapis.com/v1/{custom_role_full}")
-    perms = set(rdesc.get("includedPermissions", []))
-    bad = [x for x in ("discoveryengine.sessions.delete", "discoveryengine.sessions.removeContextFile") if x in perms]
-    if bad:
-        fail(f"role {custom_role_id} still has {', '.join(bad)}")
+    import sync_no_delete_role
+    drift = sync_no_delete_role.analyze_role_drift(project_id, custom_role_id, token, set())
+    if drift["forbidden_delete_present_in_custom"]:
+        fail(f"role {custom_role_id} still has {', '.join(drift['forbidden_delete_present_in_custom'])}")
+    elif drift["permissions_to_add"]:
+        warn(
+            f"{custom_role_id} is missing {len(drift['permissions_to_add'])} new permission(s) from roles/discoveryengine.user: "
+            f"{', '.join(drift['permissions_to_add'])} (run: scripts/sync-custom-role.sh {project_id} --apply)"
+        )
     else:
-        ok(f"{custom_role_id}: {len(perms)} permissions, no delete permissions (sessions.delete & sessions.removeContextFile removed)")
+        ok(
+            f"{custom_role_id}: {drift['custom_role_current_count']} permissions, "
+            f"in sync with roles/discoveryengine.user, no delete permissions"
+        )
 except urllib.error.HTTPError as e:
     fail(f"custom role {custom_role_full} missing (HTTP {e.code})")
+except Exception as e:
+    fail(f"custom role drift check failed: {e}")
 
 try:
     pol = api("POST", f"https://cloudresourcemanager.googleapis.com/v1/projects/{project_id}:getIamPolicy", {"options": {"requestedPolicyVersion": 3}})
