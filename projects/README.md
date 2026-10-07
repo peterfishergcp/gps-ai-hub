@@ -8,6 +8,15 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ---
 
+## 🔍 Output AI Verification Loop (`/Output AI Verification Loop`)
+
+- 🛡️ **[Output Engineering & Dual-Model Adversarial Verification Skill (`output-engineer`)](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/Output%20AI%20Verification%20Loop)**:
+  - Portable **Jetski / Antigravity Skill (`SKILL.md`)** and **5-Tab Interactive HTML Review Canvas** engineered for Customer Engineers (CEs), Solutions Architects, and Field Specialists to audit AI-generated security questionnaire responses, RFPs, and architecture proposals in under 3 minutes.
+  - Deconstructs technical drafts into **4 Verifiable Output Modalities**: (1) **ASD-STE100 Controlled Technical English** ($\le 20$w procedural / $\le 25$w descriptive sentence caps with a deterministic `check_ste100.py` validator), (2) **Declarative Mermaid.js Topology & Sequence Diagrams**, (3) **Interactive HTML Review Canvas (`review_canvas_template.html`)**, and (4) **Timestamped Explainer Storyboards with Browser Voice Narration**.
+  - Includes a **Dual-Model Challenger-Defender Benchmark** comparing **Gemini Pro (`gemini-3.1-pro-high`)** and **Claude Opus (`opus-5.5-high`)** side-by-side on an enterprise security architecture audit.
+
+---
+
 ## 🔎 Gemini Enterprise eDiscovery & BigQuery Forensic Logging (`/ge-ediscovery-logging`)
 
 - 🗄️ **[Gemini Enterprise Server-Side eDiscovery Capture, Cloud Storage Archival & BigQuery Forensic Reporting](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/ge-ediscovery-logging)**:

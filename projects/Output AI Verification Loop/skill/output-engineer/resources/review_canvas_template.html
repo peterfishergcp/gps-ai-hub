@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Output Engineering Review Canvas — Enterprise Security Architecture Audit</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Fallback variables when opened outside Jetski/Antigravity in a standard browser */
+    html:not(.dark):not(.light) {
+      --background: #0f172a;
+      --foreground: #f8fafc;
+      --card: #1e293b;
+      --content: #0f172a;
+      --sidebar: #1e293b;
+      --border: #334155;
+      --muted-foreground: #94a3b8;
+      --primary: #38bdf8;
+      --primary-foreground: #0f172a;
+      --secondary: #334155;
+      --secondary-foreground: #f8fafc;
+      --accent: #1e293b;
+    }
+    .tab-btn {
+      transition: all 0.15s ease;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active {
+      border-bottom-color: #38bdf8;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    .filter-pill.active {
+      background-color: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-5 md:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Top Header Banner -->
+    <header class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400">
+          <span>Output Engineering Review Canvas</span>
+          <span>•</span>
+          <span>Public Sector Agency Security Review</span>
+          <span>•</span>
+          <span>Dual-Model Audit: Gemini 3.1 Pro + Claude Opus 5.5</span>
+        </div>
+        <h1 class="text-xl md:text-2xl font-bold text-[var(--foreground)]">
+          Gemini Enterprise Security Architecture &amp; QA Verification Loop
+        </h1>
+        <p class="text-sm text-[var(--muted-foreground)]">
+          Deconstructed into 4 Verifiable Modalities: Atomic Claim Audit, ASD-STE100 Controlled Text, Declarative Diagrams &amp; Narrated Storyboard
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="px-3 py-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+          20 Contradictions Caught (8 New via Challenger Loop)
+        </span>
+        <span class="px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+          STE100 Rewrite: 141/141 Sentences Compliant
+        </span>
+      </div>
+    </header>
+
+    <!-- Executive Scorecard Row -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-[var(--muted-foreground)] uppercase">V1 Logical Consistency</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-rose-500/15 text-rose-400">Send-Blocker</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-2xl font-bold text-rose-400">4.5 / 10</span>
+          <span class="text-xs text-[var(--muted-foreground)]">(Email: 3.0 · QA v1: 6.0)</span>
+        </div>
+        <p class="mt-1.5 text-xs text-[var(--muted-foreground)]">
+          Initial draft inverts SDP/Model Armor order between §2 and §13; claims upload SSN masking when uploads actually hard-block.
+        </p>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-[var(--muted-foreground)] uppercase">Atomic Claim Audit (43)</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-400">Ground-Truth Verified</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-3">
+          <span class="text-lg font-bold text-rose-400">20 False</span>
+          <span class="text-lg font-bold text-amber-400">16 Nuance</span>
+          <span class="text-lg font-bold text-emerald-400">7 True</span>
+        </div>
+        <p class="mt-1.5 text-xs text-[var(--muted-foreground)]">
+          Includes 5 primary engineering review findings + 8 additional contradictions uncovered by Claude Opus across the draft package.
+        </p>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-[var(--muted-foreground)] uppercase">ASD-STE100 Readability</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">2.5 → 10.0</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-2xl font-bold text-emerald-400">100%</span>
+          <span class="text-xs text-[var(--muted-foreground)]">vs. 22% in V1 Draft</span>
+        </div>
+        <p class="mt-1.5 text-xs text-[var(--muted-foreground)]">
+          V1 QA summaries averaged 39.9 words/sentence (max 79). Controlled rewrite averages 11.5 words (0 over limit).
+        </p>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-[var(--muted-foreground)] uppercase">Dual-Model Synergy</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-500/15 text-sky-400">Benchmark</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-lg font-bold text-sky-400">Pro + Opus</span>
+          <span class="text-xs text-[var(--muted-foreground)]">Challenger Loop</span>
+        </div>
+        <p class="mt-1.5 text-xs text-[var(--muted-foreground)]">
+          Gemini Pro synthesized in ~90s; Claude Opus ran deep formal verification &amp; caught 8 hidden cross-section contradictions.
+        </p>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex flex-wrap gap-1 border-b border-[var(--border)]">
+      <button onclick="switchTab('claims')" id="tab-claims" class="tab-btn active px-4 py-2.5 text-sm">
+        1. Claim &amp; Red-Flag Inspector (14)
+      </button>
+      <button onclick="switchTab('models')" id="tab-models" class="tab-btn px-4 py-2.5 text-sm">
+        2. Dual-Model Benchmark (Gemini Pro vs. Opus)
+      </button>
+      <button onclick="switchTab('ste100')" id="tab-ste100" class="tab-btn px-4 py-2.5 text-sm">
+        3. Modality 1: ASD-STE100 Rewrite
+      </button>
+      <button onclick="switchTab('diagrams')" id="tab-diagrams" class="tab-btn px-4 py-2.5 text-sm">
+        4. Modality 2: Architecture &amp; Sequence Diagrams
+      </button>
+      <button onclick="switchTab('video')" id="tab-video" class="tab-btn px-4 py-2.5 text-sm">
+        5. Modality 4: Explainer Storyboard &amp; Audio
+      </button>
+    </nav>
+
+    <!-- TAB 1: CLAIM & RED-FLAG INSPECTOR -->
+    <section id="panel-claims" class="space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase text-[var(--muted-foreground)] mr-1">Filter:</span>
+          <button onclick="filterClaims('ALL')" id="filter-ALL" class="filter-pill active px-3 py-1 rounded-lg border border-[var(--border)] text-xs font-medium">All High-Impact Claims (14)</button>
+          <button onclick="filterClaims('NEW_OPUS')" id="filter-NEW_OPUS" class="filter-pill px-3 py-1 rounded-lg border border-[var(--border)] text-xs font-medium">Caught by Challenger Loop (8)</button>
+          <button onclick="filterClaims('CORE_ENG')" id="filter-CORE_ENG" class="filter-pill px-3 py-1 rounded-lg border border-[var(--border)] text-xs font-medium">Core Engineering Fixes (5)</button>
+          <button onclick="filterClaims('NUANCE')" id="filter-NUANCE" class="filter-pill px-3 py-1 rounded-lg border border-[var(--border)] text-xs font-medium">Nuance / Quota Gotchas</button>
+        </div>
+        <div class="relative">
+          <input id="claim-search" oninput="renderClaims()" type="text" placeholder="Search claims, APIs, infoTypes..." class="w-full md:w-64 px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs text-[var(--foreground)] focus:outline-none focus:border-sky-400">
+        </div>
+      </div>
+
+      <div id="claims-container" class="space-y-3"></div>
+    </section>
+
+    <!-- TAB 2: DUAL-MODEL BENCHMARK -->
+    <section id="panel-models" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Gemini Pro Card -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <div>
+              <span class="text-xs font-semibold uppercase text-sky-400">Model A • Context Synthesizer</span>
+              <h3 class="text-lg font-bold">Gemini Pro (`gemini-3.1-pro-high`)</h3>
+            </div>
+            <span class="px-2.5 py-1 rounded bg-sky-500/15 text-sky-400 text-xs font-semibold">~90s Turnaround</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <p class="text-[var(--muted-foreground)]">
+              <strong class="text-[var(--foreground)]">Strengths Observed:</strong> Rapid multi-document synthesis; cleanly extracted all 5 core engineering discrepancies (`OQ-1`, `OQ-3(e)`, `OQ-5`, `OQ-10` caps &amp; quotas); produced natural, easy-to-read ASD-STE100 prose and clean high-level Mermaid diagrams.
+            </p>
+            <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1.5 text-xs">
+              <div class="font-semibold text-sky-400">Gemini Pro Self-Assigned Scores vs. Behavior:</div>
+              <div>• <strong>Generous Scoring Bias:</strong> Scored V1 Logical Consistency at <strong>90/100</strong> and Grounding at <strong>95/100</strong>, treating the 13-point email as mostly accurate outside the 5 flagged OQ items.</div>
+              <div>• <strong>Missed Cross-Section Contradictions:</strong> Repeated the 13-point email's Workers' Comp claim that SDP "masks the social security numbers" on uploaded files rather than noticing that `CheckFileContent` rejects the whole file on a block verdict.</div>
+              <div>• <strong>Best Role in Loop:</strong> Fast first-pass ingestion, customer-friendly executive drafting, and multimodal storyboard generation.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Claude Opus Card -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <div>
+              <span class="text-xs font-semibold uppercase text-purple-400">Model B • Adversarial Challenger</span>
+              <h3 class="text-lg font-bold">Claude Opus (`opus-5.5-high`)</h3>
+            </div>
+            <span class="px-2.5 py-1 rounded bg-purple-500/15 text-purple-400 text-xs font-semibold">43 Claims Audited</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <p class="text-[var(--muted-foreground)]">
+              <strong class="text-[var(--foreground)]">Strengths Observed:</strong> Surgical adversarial cross-examination; did not stop at the 5 known findings—independently audited the 13-point email against the OQ draft, configuration defaults, and official SDP `infoType` documentation.
+            </p>
+            <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1.5 text-xs">
+              <div class="font-semibold text-purple-400">Claude Opus Forensic Breakthroughs:</div>
+              <div>• <strong>Strict Quantitative Audit:</strong> Measured V1 sentence lengths (avg 39.9w, 78% violation rate) and verified <strong>141/141 sentences</strong> in its own STE100 output (0 violations).</div>
+              <div>• <strong>Caught 8 New Contradictions:</strong> Identified that the 13-pt email contradicts itself (§2 vs §13), uses fake SDP `infoType` names (`STATE_DRIVERS_LICENSE_NUMBER`), conflates CMEK rotation with destruction, and left a contradiction in v2 `OQ-8`.</div>
+              <div>• <strong>Best Role in Loop:</strong> Adversarial red-team gatekeeper and strict ASD-STE100 constraint enforcer.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparative Matrix Table -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+        <div class="p-4 border-b border-[var(--border)]">
+          <h3 class="text-base font-bold">Head-to-Head Benchmark Matrix (Public Sector Security Review)</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] uppercase">
+                <th class="p-3 font-semibold">Evaluation Metric</th>
+                <th class="p-3 font-semibold text-sky-400">Gemini Pro (`gemini-3.1-pro-high`)</th>
+                <th class="p-3 font-semibold text-purple-400">Claude Opus (`opus-5.5-high`)</th>
+                <th class="p-3 font-semibold text-emerald-400">Winner / Production Recommendation</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)]">
+              <tr>
+                <td class="p-3 font-medium">Execution Latency</td>
+                <td class="p-3"><strong>~92 seconds</strong> (140 lines)</td>
+                <td class="p-3">~11 minutes (535 lines + live doc/config verification)</td>
+                <td class="p-3 text-sky-400 font-medium">Gemini Pro for speed; Opus for deep pre-CISO sign-off</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-medium">Core Engineering Findings</td>
+                <td class="p-3">Caught 5 / 5</td>
+                <td class="p-3">Caught 5 / 5 + verified quota &amp; flag dependencies</td>
+                <td class="p-3 text-emerald-400 font-medium">Tie on known findings</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-medium">Unprompted Bug Discovery (13-Pt Email &amp; v2)</td>
+                <td class="p-3">0 additional contradictions flagged beyond OQ v1/v2 diff</td>
+                <td class="p-3"><strong>8 new contradictions</strong> (fake SDP infoTypes, CMEK rotation myth, `OQ-8` v2 conflict, `render_images_in_ui_directly` flag)</td>
+                <td class="p-3 text-purple-400 font-medium">Claude Opus (essential Challenger gate)</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-medium">ASD-STE100 Compliance</td>
+                <td class="p-3">100% sentences ≤ 25w (paragraph format, ~11w avg)</td>
+                <td class="p-3">100% sentences ≤ 20w (P) / ≤ 25w (D) with explicit `[P]/[D]` &amp; word-count tags (141 sentences)</td>
+                <td class="p-3 text-purple-400 font-medium">Claude Opus for auditability; Gemini Pro for prose flow</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-medium">Mermaid Diagram Depth</td>
+                <td class="p-3">Clean executive overview (11 nodes, 9 sequence steps)</td>
+                <td class="p-3">Forensic architecture spec with inline RED FLAG edges &amp; `alt`/`par` blocks</td>
+                <td class="p-3 text-emerald-400 font-medium">Use Gemini Pro for slides; Opus for security engineering review</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ASD-STE100 CONTROLLED REWRITE -->
+    <section id="panel-ste100" class="hidden space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h3 class="text-base font-bold">Modality 1: ASD-STE100 Controlled Technical Writing (~80% Pragmatic Rules)</h3>
+          <p class="text-xs text-[var(--muted-foreground)]">
+            Every Descriptive sentence (D) is ≤ 25 words. Every Procedural instruction (P) is ≤ 20 words and starts with an imperative verb. Zero hedging or filler.
+          </p>
+        </div>
+        <button onclick="copySTE100()" id="copy-ste-btn" class="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs font-semibold hover:bg-sky-500/30">
+          Copy All STE100 Rewrites
+        </button>
+      </div>
+
+      <div id="ste100-container" class="space-y-4"></div>
+    </section>
+
+    <!-- TAB 4: DECLARATIVE DIAGRAMS -->
+    <section id="panel-diagrams" class="hidden space-y-6">
+      <!-- Visual Architecture Map -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[var(--border)] pb-3">
+          <div>
+            <span class="text-xs font-semibold uppercase text-sky-400">Diagram 1 • Topology &amp; Trust Boundaries</span>
+            <h3 class="text-base font-bold">Zone 1 / Zone 2 / Zone 3 Data Flow &amp; Red-Flag Boundary Crossings</h3>
+          </div>
+          <button onclick="copyMermaid(1)" id="copy-m1-btn" class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs font-medium hover:border-sky-400">
+            Copy Mermaid Flowchart Code
+          </button>
+        </div>
+
+        <!-- Interactive Visual Zone Diagram -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
+          <!-- Zone 1 -->
+          <div class="rounded-xl border-2 border-sky-500/40 bg-sky-500/5 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sky-400 uppercase">Zone 1: Customer GCP Org &amp; Browser</span>
+              <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">Customer-Owned</span>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)] space-y-1">
+              <div class="font-semibold">1. Workforce Identity Federation (WIF)</div>
+              <div class="text-[var(--muted-foreground)]">Entra ID / Okta SAML/OIDC login. OAuth token used for 1:1 federated connector ACLs.</div>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-emerald-500/40 space-y-1">
+              <div class="font-semibold text-emerald-400">2. Web UI (`ucs_widget` Client Renderer)</div>
+              <div class="text-[var(--muted-foreground)]">Blocks external `![alt](https://...)` images in the browser (`isImageUrlAllowedForRendering`). Rewrites links via `google.com/url?q=`.</div>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)] space-y-1">
+              <div class="font-semibold">3. Cloud KMS (CMEK) &amp; Cloud Logging</div>
+              <div class="text-[var(--muted-foreground)]">Must be in `us` multi-region. Audit logs capture admin instructions (no `StreamAssist` model hash).</div>
+            </div>
+          </div>
+
+          <!-- Zone 2 -->
+          <div class="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/5 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-emerald-400 uppercase">Zone 2: Single-Tenant Google Project</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">VPC-SC + CMEK</span>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)] space-y-1">
+              <div class="font-semibold">4. `UploadSessionFile` Parallel Fibers</div>
+              <div class="text-[var(--muted-foreground)]">Runs `SanitizeFileContent` (≤4 MB MA) AND `ApplyContentPolicy` (≤50 MB PDF SDP) concurrently. <strong>Rejects whole file on SSN match (no mask-and-continue).</strong></div>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-amber-500/40 space-y-1">
+              <div class="font-semibold text-amber-400">5. `CheckQuery` &amp; Query Rewriter</div>
+              <div class="text-[var(--muted-foreground)]">Raw prompt screened before planner. <strong>Gap:</strong> Rewritten federated query to ServiceNow is NOT re-screened.</div>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-amber-500/40 space-y-1">
+              <div class="font-semibold text-amber-400">6. Post-Tool Gate (`after_tool_callback`)</div>
+              <div class="text-[var(--muted-foreground)]">SDP + Model Armor screen retrieved snippets (`userPromptTemplate` required; <strong>fails open on RPC error</strong>).</div>
+            </div>
+          </div>
+
+          <!-- Zone 3 -->
+          <div class="rounded-xl border-2 border-purple-500/40 bg-purple-500/5 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-purple-400 uppercase">Zone 3: Multi-Tenant Model Serving</span>
+              <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">Stateless ZDR</span>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-rose-500/40 space-y-1">
+              <div class="font-semibold text-rose-400">7. Exact ALTS Payload Crossing Zone 2 → 3</div>
+              <div class="text-[var(--muted-foreground)]">
+                • Prompt + inline session file parts + `function_response` snippets<br>
+                • <strong>`user_email` &amp; `user_full_name`</strong> inside `system_instruction`<br>
+                • <strong>`user_cpi`</strong> inside `tenant_stream_id` extension<br>
+                • <em>Excluded:</em> WIF tokens, IAM groups, `Session` ID
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)] space-y-1">
+              <div class="font-semibold">8. Stateless Inference &amp; `CheckResponse`</div>
+              <div class="text-[var(--muted-foreground)]">Processed in RAM under ZDR. Output passes `SanitizeModelResponse` in Zone 2 before streaming to `ucs_widget` (note: backend C++ `MarkdownSanitizer` is OFF by default).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sequence Gate Breakdown -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[var(--border)] pb-3">
+          <div>
+            <span class="text-xs font-semibold uppercase text-sky-400">Diagram 2 • Chronological Gate Execution</span>
+            <h3 class="text-base font-bold">`StreamAssist` &amp; `UploadSessionFile` Execution Order (Corrected vs. V1)</h3>
+          </div>
+          <button onclick="copyMermaid(2)" id="copy-m2-btn" class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs font-medium hover:border-sky-400">
+            Copy Mermaid Sequence Code
+          </button>
+        </div>
+        <pre id="mermaid-seq-preview" class="p-4 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs font-mono overflow-x-auto text-[var(--foreground)]"></pre>
+      </div>
+    </section>
+
+    <!-- TAB 5: EXPLAINER VIDEO WALKTHROUGH & AUDIO -->
+    <section id="panel-video" class="hidden space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-[var(--border)] pb-4">
+          <div>
+            <span class="text-xs font-semibold uppercase text-sky-400">Modality 4 • Narrated Visual Walkthrough (00:00 – 02:00)</span>
+            <h3 class="text-lg font-bold">"What Really Happens to a Workers' Comp Claim File in Gemini Enterprise"</h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="prevScene()" class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs font-medium hover:border-sky-400">◀ Prev Scene</button>
+            <button onclick="toggleNarration()" id="play-narration-btn" class="px-4 py-1.5 rounded-lg bg-sky-500 text-slate-950 text-xs font-bold hover:bg-sky-400">▶ Speak Scene Narration</button>
+            <button onclick="nextScene()" class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs font-medium hover:border-sky-400">Next Scene ▶</button>
+          </div>
+        </div>
+
+        <!-- Scene Selector Pills -->
+        <div id="scene-pills" class="grid grid-cols-1 sm:grid-cols-5 gap-2"></div>
+
+        <!-- Active Scene Stage -->
+        <div id="active-scene-box" class="rounded-xl bg-[var(--background)] border border-[var(--border)] p-5 space-y-4"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const CLAIMS_DATA = [
+      {
+        id: "OQ-3(e)-1",
+        group: "CORE_ENG",
+        status: "CONTRADICTED",
+        source: "Email §3 & OQ-3(e) v1",
+        v1Claim: "End-user identity attributes (such as user email) NEVER travel inside GenerateContentRequest to Zone 3 model serving.",
+        reality: "user_email IS injected into system_instruction for the Connector Query Rewrite sub-agent and root agent instructions, and user_full_name + user_email are injected into Agent Builder email sign-off templates.",
+        fix: "Explicitly disclose in QA-03 and Email §3 that while raw WIF/SAML/OIDC tokens and IAM group lists are excluded, user_email and user_full_name travel in system_instruction."
+      },
+      {
+        id: "OQ-3(e)-2",
+        group: "CORE_ENG",
+        status: "CONTRADICTED",
+        source: "OQ-3(e) v1",
+        v1Claim: "Internal RPC metadata carries only opaque stream correlation identifiers (tenant_stream_id).",
+        reality: "tenant_stream_id is NOT opaque—it embeds the project number and the caller's Cloud Principal ID (gcp_<project_number>.cpi_<user_cpi>.class_unknown) for abuse detection and per-caller attribution.",
+        fix: "Disclose that cloud_principal_id (user_cpi) travels in the request extension for abuse detection and attribution."
+      },
+      {
+        id: "OQ-5",
+        group: "CORE_ENG",
+        status: "CONTRADICTED",
+        source: "OQ-5 v1 & Email §11",
+        v1Claim: "Chat Markdown image stripping is deterministically enforced server-side by C++ MarkdownSanitizer::SanitizeAssistAnswer (and Email §11 claims VPC-SC blocks exfiltration).",
+        reality: "EnableMarkdownSanitizer__enable_in_backend is FALSE by default for StreamAssist chat. Image blocking is enforced client-side in the Gemini Enterprise Web UI (ucs_widget), gated on render_images_in_ui_directly=false.",
+        fix: "Attribute chat image blocking to ucs_widget client rendering; warn that custom API callers outside ucs_widget must block <img> tags in their own UI; remove VPC-SC as a browser render exfil control."
+      },
+      {
+        id: "OQ-10-CAPS",
+        group: "CORE_ENG",
+        status: "CONTRADICTED",
+        source: "OQ-10 v1",
+        v1Claim: "Cites only the outer 20 tool calls per turn cap (tool_turn_limit = 20).",
+        reality: "Production enforces 3 layers: (1) 5 calls/turn to the MCP Python sandbox (mcp_code_executor_max_calls_per_turn = 5), (2) 8 root-agent thinking rounds (root_agent_max_thinking_rounds = 8), and (3) 20 outer compositional tool turns. None of these cap mutating actions across a whole session.",
+        fix: "Document all 3 per-turn caps (5 / 8 / 20) and state clearly that HITL (1 confirmation card/turn) is the control for mutating actions."
+      },
+      {
+        id: "OQ-10-QUOTA",
+        group: "CORE_ENG",
+        status: "CONTRADICTED",
+        source: "OQ-10 v1",
+        v1Claim: "Lists '300 API requests/minute/project' as the Assistant API rate quota.",
+        reality: "300 RPM is the Search quota (SearchRequestsPerMinutePerProjectPerRegion). Assistant quota (AssistRequestsPerMinutePerProjectPerRegion) is 600/min/project/region and 1,800/min/org/region, plus 100 Assistant read and 100 Assistant write RPM.",
+        fix: "Replace 300 RPM with the Assistant-specific quotas (600/min/project/region, 1,800/min/org/region, 100 read/write RPM)."
+      },
+      {
+        id: "EMAIL-13-UPLOAD",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "13-Point Email §2 vs §13 (Workers' Comp Walkthrough)",
+        v1Claim: "Email §2 says Model Armor runs before SDP; §13 inverts this (SDP before MA) and claims SDP masks SSNs with [SSN-MASKED] on an uploaded claim PDF and continues to inference.",
+        reality: "1) Inside a Model Armor template, SDP runs FIRST. 2) On UploadSessionFile (CheckFileContent), Model Armor (<=4 MB) and SDP (<=50 MB PDF) run in PARALLEL fibers. 3) If an uploaded file hits a blocked infoType (SSN), CheckFileContent REJECTS the whole file—there is no inline mask-and-continue path for session file uploads.",
+        fix: "Issue an errata for Email §2 and §13: clarify parallel file upload fibers and state that SSN-bearing files are blocked unless pre-redacted or configured for inspect-only."
+      },
+      {
+        id: "EMAIL-3-FILES",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "13-Point Email §3 vs OQ-8",
+        v1Claim: "Email §3 states: 'Elements NEVER transmitted to Zone 3: Raw uploaded files, binaries, images, or source PDF blobs.'",
+        reality: "Directly contradicts OQ-8 in the same package, which verifies that the current user turn in GenerateContentRequest.contents[] contains 'any inline uploaded file parts' alongside the user prompt.",
+        fix: "Reconcile Email §3 with OQ-8: inline session files that pass Zone 2 screening are passed as multimodal/file parts in GenerateContentRequest to Zone 3 under ZDR."
+      },
+      {
+        id: "EMAIL-5-INFOTYPES",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "13-Point Email §5 (Built-In SDP Detectors)",
+        v1Claim: "Claims STATE_DRIVERS_LICENSE_NUMBER and US_INDIVIDUAL_TAX_IDENTIFIER (ITIN) are built-in SDP infoType names.",
+        reality: "Verified against official SDP Built-in InfoTypes documentation: neither identifier exists. The real built-in SDP infoType names are US_DRIVERS_LICENSE_NUMBER and US_INDIVIDUAL_TAXPAYER_IDENTIFICATION_NUMBER.",
+        fix: "Correct the infoType identifiers in Email §5 before customer engineers attempt to paste them into an SDP InspectTemplate."
+      },
+      {
+        id: "EMAIL-7-8-CMEK",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "13-Point Email §7 & §8 (CMEK Rotation & Kill Switch)",
+        v1Claim: "§7 claims CMEK 'key rotation or deletion' makes backup snapshots undecryptable; §8 claims 'disabling or destroying' a key makes data 'permanently unrecoverable'.",
+        reality: "In Cloud KMS, key rotation creates a new primary version for new writes while prior key versions remain ENABLED for decryption. Furthermore, disabling a key version is reversible; only destroying the key version makes data permanently unrecoverable.",
+        fix: "Change 'key rotation or deletion' to 'key version destruction' and distinguish reversible key disablement from permanent destruction."
+      },
+      {
+        id: "EMAIL-9-DRZ",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "13-Point Email §9 vs OQ-7 (Data Residency Regions)",
+        v1Claim: "Email §9 instructs the customer to configure resource locations to single US regions ('e.g., us-central1, us-east4, us-west1').",
+        reality: "In Gemini Enterprise (Discovery Engine), Data Residency (DRZ), CMEK, and Access Transparency are supported strictly at the 'us' and 'eu' multi-region level (not single regions like us-central1), and require disabling Grounding with Google Search.",
+        fix: "Specify the 'us' multi-region location in Email §9 and include the requirement to disable Grounding with Google Search."
+      },
+      {
+        id: "EMAIL-12-LOGS",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "13-Point Email §12 vs OQ-8 (Audit Log Fields)",
+        v1Claim: "Email §12 claims Cloud Audit Logs capture 'model ID/version, token metrics, policy evaluation results'.",
+        reality: "Contradicts OQ-8, which confirms that gemini_enterprise_user_activity audit log entries for StreamAssist do NOT include a model name/version field (only internal telemetry traces log the model family).",
+        fix: "Remove 'model ID/version' from Email §12's audit log field list so it aligns with OQ-8."
+      },
+      {
+        id: "V2-OQ8-CONFLICT",
+        group: "NEW_OPUS",
+        status: "CONTRADICTED",
+        source: "Version 2 Doc: OQ-8 vs OQ-3(e)",
+        v1Claim: "Even in Version 2, OQ-8 still states that system_instruction 'Holds only the trusted agent instructions (PLANNER_PROMPT_TEMPLATE and admin-configured agent instructions).'",
+        reality: "Directly conflicts with Version 2's updated OQ-3(e), which discloses that user_email and user_full_name are injected into system_instruction.",
+        fix: "Update OQ-8 in Version 2 so it cross-references OQ-3(e)'s disclosure of user_email / user_full_name in system_instruction."
+      },
+      {
+        id: "OQ-1-FAILOPEN",
+        group: "NUANCE",
+        status: "NUANCE_REQUIRED",
+        source: "Email §2/§4 vs OQ-1 & OQ-4(a)",
+        v1Claim: "Email §2 & §4 claim SDP and Model Armor are 'fail-closed by default' before any text reaches inference.",
+        reality: "1) Prompt/response gates fail closed only when failure_mode=FAIL_CLOSED is configured on the template. 2) Connector snippet screening (_sanitize_search_snippets) explicitly FAILS OPEN on RPC transport errors. 3) Rewritten federated queries (OQ-4a) are not re-screened.",
+        fix: "Instruct the customer to explicitly set failure_mode=FAIL_CLOSED, configure userPromptTemplate, and isolate sensitive federated connectors one-per-App (CF-6)."
+      },
+      {
+        id: "OQ-7-MA-QUOTA",
+        group: "NUANCE",
+        status: "NUANCE_REQUIRED",
+        source: "OQ-7 & OQ-1 (Bundled Model Armor Quota)",
+        v1Claim: "Model Armor is bundled with Gemini Enterprise Standard 'up to the Assistant query quota' (160 queries/user/day).",
+        reality: "GovernancePlugin._sanitize_search_snippets invokes SanitizeUserPrompt once per retrieved snippet—so a single Assistant query that retrieves 10 connector snippets triggers 10+ Model Armor calls.",
+        fix: "Confirm whether defense-in-depth snippet sanitization calls count against the customer's bundled 160/day Model Armor quota."
+      }
+    ];
+
+    const STE100_DATA = [
+      {
+        title: "OQ-1: What does Model Armor screen, and in what order do SDP and Model Armor run?",
+        v1Stats: "V1 Summary: 3 sentences • Avg 38.3 words/sentence (Max 54 words — VIOLATION)",
+        steStats: "STE100 Rewrite: 12 sentences • Avg 13.0 words/sentence (Max 18 words — 100% PASS)",
+        v1Text: "When integrated directly with a Gemini Enterprise App via Assistant settings (userPromptTemplate and responseTemplate), Model Armor is documented to screen incoming user prompts before LLM processing, directly uploaded session files/images (up to 4 MB for PDF, DOCX, PPTX, XLSX, TXT, CSV, PNG, JPEG), and final model responses before delivery to the user. To inspect and block sensitive data (infoTypes such as SSNs) across retrieved enterprise data connectors and federated search results (as well as file uploads up to 50 MB for PDFs and 30 MB for Office files), customers configure Sensitive Data Protection (SDP) Content Policies (dlp.googleapis.com) on the Gemini Enterprise App, or route external tool calls through Model Armor + Agent Gateway.",
+        lines: [
+          { type: "D", words: 17, text: "Model Armor screens the user prompt, uploaded session files up to 4 MB, and the final response." },
+          { type: "D", words: 17, text: "SDP screens retrieved connector content and uploaded files up to 50 MB PDF or 30 MB Office." },
+          { type: "D", words: 14, text: "In production, Model Armor also screens retrieved snippets when the admin configures a userPromptTemplate." },
+          { type: "D", words: 9, text: "The snippet screen fails open on RPC transport errors." },
+          { type: "D", words: 15, text: "The prompt screen and the response screen fail closed only when the admin sets failure_mode=FAIL_CLOSED." },
+          { type: "D", words: 18, text: "Inside one Model Armor template, SDP runs first and the PI/JB, Malicious URI, and RAI filters run second." },
+          { type: "D", words: 16, text: "For a file upload, Model Armor and SDP run at the same time in parallel fibers." },
+          { type: "D", words: 9, text: "A block verdict from either service stops the file." },
+          { type: "D", words: 9, text: "The Assistant does not mask the file and continue." },
+          { type: "P", words: 7, text: "Set failure_mode=FAIL_CLOSED on each Model Armor template." },
+          { type: "P", words: 10, text: "Set INSPECT_AND_BLOCK for US_SOCIAL_SECURITY_NUMBER in Model Armor and in SDP." },
+          { type: "P", words: 7, text: "Configure a userPromptTemplate to activate snippet screening." }
+        ]
+      },
+      {
+        title: "OQ-4(a): Does Model Armor run before rewritten queries go to federated backends?",
+        v1Stats: "V1 Summary: 3 sentences • Avg 37.0 words/sentence (Max 52 words — VIOLATION)",
+        steStats: "STE100 Rewrite: 8 sentences • Avg 10.6 words/sentence (Max 19 words — 100% PASS)",
+        v1Text: "Model Armor screens the user's incoming prompt at the entry of the StreamAssist request—before the Assistant's query-rewriter or planner runs. If the user's current prompt contains a blocked infoType (such as an SSN) or a prompt injection attack, the request is terminated immediately and no rewritten query is ever generated or dispatched to any federated backend. However, if the current prompt is benign and the Assistant's query-rewriter constructs a federated search query using sensitive context that entered the session in an earlier turn, Model Armor does not currently re-scan the outgoing rewritten search query parameter.",
+        lines: [
+          { type: "D", words: 6, text: "Yes for the current user prompt." },
+          { type: "D", words: 5, text: "No for a rewritten query." },
+          { type: "D", words: 13, text: "GovernorModule::CheckQuery screens the raw prompt before the planner or the query rewriter runs." },
+          { type: "D", words: 19, text: "If Model Armor blocks the prompt, the Assistant stops the turn and sends no query to a federated connector." },
+          { type: "D", words: 11, text: "The query rewriter can use sensitive text from an earlier turn." },
+          { type: "D", words: 8, text: "Model Armor does not screen this rewritten query." },
+          { type: "P", words: 11, text: "Block SSNs at the prompt gate and at the retrieval gate." },
+          { type: "P", words: 8, text: "Connect one federated source to each App (CF-6)." }
+        ]
+      },
+      {
+        title: "OQ-3(e): What identity or session fields travel with the request to model serving?",
+        v1Stats: "V1 Summary: 2 sentences • Avg 48.0 words/sentence (Max 55 words — VIOLATION & FACTUALLY FALSE)",
+        steStats: "STE100 Rewrite: 10 sentences • Avg 11.8 words/sentence (Max 17 words — 100% PASS)",
+        v1Text: "End-user identity attributes (such as user email, Workforce Identity Federation SAML/OIDC assertions, IAM principal, or group memberships) and raw Discovery Engine Session resource names do not travel inside the GenerateContentRequest payload to Vertex AI Gemini model serving (aiplatform.googleapis.com).",
+        lines: [
+          { type: "D", words: 12, text: "The model-serving RPC uses a Google service identity, not the user identity." },
+          { type: "D", words: 15, text: "WIF tokens, IAM group lists, and Session resource names do not go to model serving." },
+          { type: "D", words: 11, text: "The Assistant enforces per-user ACLs at retrieval, before the model call." },
+          { type: "D", words: 8, text: "Three user identifiers do go to model serving." },
+          { type: "D", words: 17, text: "First, the Assistant writes user_email into the system_instruction of the query rewrite agent and the root agent." },
+          { type: "D", words: 9, text: "Second, Agent Builder email instructions contain user_full_name and user_email." },
+          { type: "D", words: 10, text: "Third, the tenant_stream_id extension contains the project number and user_cpi." },
+          { type: "D", words: 10, text: "Vertex AI uses user_cpi for abuse detection and per-caller attribution." },
+          { type: "D", words: 12, text: "No gate screens system_instruction, so user_email reaches model serving in all cases." },
+          { type: "P", words: 9, text: "Disclose user_email, user_full_name, and user_cpi in the QA-03 response." }
+        ]
+      },
+      {
+        title: "OQ-5: Does the web UI render external Markdown images or link previews?",
+        v1Stats: "V1 Summary: 2 sentences • Avg 42.5 words/sentence (FACTUALLY FALSE ON BACKEND FLAG)",
+        steStats: "STE100 Rewrite: 9 sentences • Avg 11.7 words/sentence (Max 19 words — 100% PASS)",
+        v1Text: "Confirmed — deterministically prevented server-side by C++ MarkdownSanitizer::SanitizeAssistAnswer stripping untrusted ![alt](url) images to \"IMG\" and rewriting external links through Google's redirector.",
+        lines: [
+          { type: "D", words: 10, text: "The web UI (ucs_widget) does not render external Markdown images." },
+          { type: "D", words: 19, text: "The web UI shows a blocked image as plain text, and the browser does not fetch the image URL." },
+          { type: "D", words: 14, text: "The web UI allows only data:image base64 URIs and hosts on a per-project allowlist." },
+          { type: "D", words: 6, text: "This allowlist is empty by default." },
+          { type: "D", words: 12, text: "The web UI escapes raw HTML and sends external links through https://www.google.com/url?q=...." },
+          { type: "D", words: 8, text: "The web UI does not show link previews." },
+          { type: "D", words: 13, text: "The backend C++ MarkdownSanitizer is off by default for chat (enable_in_backend = false)." },
+          { type: "D", words: 13, text: "Thus, a custom client of the StreamAssist API receives image Markdown without sanitization." },
+          { type: "P", words: 8, text: "Disable Markdown image rendering in each custom client." }
+        ]
+      },
+      {
+        title: "OQ-10 & OQ-7: Mutating Action Confirmation, Tool Caps, Quotas & Standard Edition",
+        v1Stats: "V1 Summary: Avg 39.2 words/sentence (Missed 5/8 caps & confused 300 Search vs 600 Assist RPM)",
+        steStats: "STE100 Rewrite: 11 sentences • Avg 12.6 words/sentence (Max 18 words — 100% PASS)",
+        v1Text: "Yes, every mutating action requires confirmation, with a 20 tool-turn limit and 300 API requests/minute/project. Standard edition includes all controls.",
+        lines: [
+          { type: "D", words: 17, text: "Each mutating action needs user confirmation on a card, and the Assistant shows one card per turn." },
+          { type: "D", words: 14, text: "The Assistant treats an MCP tool as mutating unless the tool declares readOnlyHint: true." },
+          { type: "D", words: 18, text: "Three caps limit tool calls in one turn: 5 code-executor calls, 8 thinking rounds, and 20 tool turns." },
+          { type: "D", words: 10, text: "No cap limits mutating actions per session or per user." },
+          { type: "D", words: 12, text: "The Assist quota is 600 requests per minute per project per region." },
+          { type: "D", words: 11, text: "The organization Assist quota is 1,800 requests per minute per region." },
+          { type: "D", words: 11, text: "The 300 requests-per-minute quota applies to Search, not to the Assistant." },
+          { type: "D", words: 16, text: "Standard edition includes CMEK, VPC-SC, data residency, Access Transparency, Model Armor, SDP, WIF, and audit logs." },
+          { type: "D", words: 14, text: "CMEK, data residency, and Access Transparency work only in the us and eu multi-regions." },
+          { type: "P", words: 11, text: "Set readOnlyHint: false on every state-changing tool in custom MCP servers." },
+          { type: "P", words: 10, text: "Create the App in the us multi-region, not in global." }
+        ]
+      }
+    ];
+
+    const MERMAID_FLOW = `flowchart LR
+  subgraph Z1["Zone 1: Customer GCP Org and Endpoints (Customer-Owned)"]
+    U["Agency Claims Specialist"]
+    UI["Browser: ucs_widget renderer (client-side image block)"]
+    IDP["Entra ID / Okta IdP"]
+    KMS["Cloud KMS (Customer CMEK key)"]
+    MAT["Model Armor templates (userPromptTemplate, responseTemplate)"]
+    LOG["Cloud Logging: gemini_enterprise_user_activity"]
+  end
+
+  subgraph Z2["Zone 2: Single-Tenant Google-Managed Tenant Project (VPC-SC, CMEK)"]
+    SA["StreamAssistHandler + GovernorModule (CheckQuery, CheckFileContent, CheckResponse)"]
+    DOL["Dolphin Assistant (root agent, query rewrite agent)"]
+    SESS["Session storage (UploadSessionFile blobs)"]
+    GP["GovernancePlugin.after_tool_callback"]
+    MA["Model Armor (modelarmor.googleapis.com)"]
+    SDP["SDP Content Policy (dlp.googleapis.com)"]
+  end
+
+  subgraph EXT["Federated SaaS Sources (outside Zone 2)"]
+    FS["ServiceNow / Jira / SharePoint"]
+  end
+
+  subgraph Z3["Zone 3: Stateless Multi-Tenant Model Serving (ZDR)"]
+    VX["Vertex AI Gemini (aiplatform.googleapis.com)"]
+  end
+
+  IDP -.->|"SAML / OIDC federation (WIF)"| U
+  U --> UI
+  UI -->|"TLS 1.3 (WIF session)"| SA
+  SA -->|"UploadSessionFile blob"| SESS
+  KMS -.->|"CMEK key wrap"| SESS
+  SA -->|"Parallel fiber 1: SanitizeFileContent (max 4 MB)"| MA
+  SA -->|"Parallel fiber 2: ApplyContentPolicy (10 MB inline, 50 MB PDF)"| SDP
+  SA -->|"CheckQuery: SanitizeUserPrompt (fail-closed only if FAIL_CLOSED)"| MA
+  MAT -.->|"Template config"| MA
+  SA -->|"Prompt passed"| DOL
+  DOL -->|"RED FLAG: rewritten query NOT screened"| FS
+  FS -->|"retrieval_results (user OAuth ACL)"| GP
+  GP -->|"data_protection_after_tool_callback"| SDP
+  GP -->|"RED FLAG: snippet screen FAILS OPEN on RPC error"| MA
+  DOL ==>|"ALTS: system_instruction + user_email + user_full_name, file parts, tenant_stream_id with user_cpi"| VX
+  VX -->|"Candidate answer (no persistence)"| DOL
+  DOL --> SA
+  SA -->|"CheckResponse: SanitizeModelResponse"| MA
+  SA -->|"RED FLAG: raw Markdown, backend sanitizer OFF (enable_in_backend=false)"| UI
+  SA -.->|"Audit entry (no model field)"| LOG`;
+
+    const MERMAID_SEQ = `sequenceDiagram
+  autonumber
+  actor U as Agency Specialist
+  participant UI as ucs_widget (Browser)
+  participant SA as StreamAssistHandler / GovernorModule
+  participant MA as Model Armor
+  participant SDP as SDP Content Policy
+  participant D as Dolphin Assistant
+  participant FS as Federated Connector
+  participant VX as Vertex AI Gemini (Zone 3)
+
+  Note over U,SA: Phase A - UploadSessionFile (Parallel Fibers)
+  U->>SA: UploadSessionFile (claim PDF)
+  par Model Armor file scan
+    SA->>MA: SanitizeFileContent (max 4 MB)
+    MA-->>SA: Verdict
+  and SDP file scan
+    SA->>SDP: ApplyContentPolicy (10 MB inline, 50 MB PDF via GCS)
+    SDP-->>SA: Verdict
+  end
+  alt Either verdict is BLOCK (for example SSN)
+    SA-->>U: Reject whole file (no mask-and-continue path)
+  else Both verdicts pass
+    SA->>SA: Attach file to session (no search index)
+  end
+
+  Note over U,VX: Phase B - StreamAssist Turn
+  U->>SA: StreamAssist (query)
+  SA->>MA: CheckQuery -> SanitizeUserPrompt (raw query)
+  alt Match and INSPECT_AND_BLOCK
+    SA-->>U: SKIPPED / CUSTOMER_POLICY_VIOLATION (no connector call)
+  else Prompt passes
+    SA->>D: Hand control to Dolphin
+    D->>D: Query rewrite agent (system_instruction contains user_email)
+    D->>FS: Rewritten query (NOT screened in prod)
+    FS-->>D: retrieval_results (1:1 user OAuth ACL)
+    D->>SDP: data_protection_after_tool_callback
+    D->>MA: _sanitize_search_snippets (fails open on RPC transport error)
+    D->>VX: GenerateContentRequest over ALTS (system_instruction + user_email, file parts, user_cpi)
+    VX-->>D: Candidate answer (stateless RAM under ZDR)
+    D-->>SA: AssistAnswer
+    SA->>MA: CheckResponse -> SanitizeModelResponse (responseTemplate)
+    SA-->>UI: Raw Markdown (backend MarkdownSanitizer OFF by default)
+    UI->>UI: isImageUrlAllowedForRendering (blocks external <img>, rewrites links)
+    UI-->>U: Rendered answer
+  end`;
+
+    const SCENES = [
+      {
+        time: "00:00 – 00:20",
+        title: "Scene 1: WIF Sign-In & Ephemeral Upload into Zone 2",
+        cue: "Three zone panels fade in (Zone 1 Agency Org, Zone 2 Single-Tenant Google Project, Zone 3 Stateless Model Serving). A claims specialist authenticates via Microsoft Entra ID / WIF. A PDF labeled 'Claim File' lands inside Zone 2 ephemeral storage locked with the agency's Cloud KMS key (in the 'us' multi-region).",
+        narration: "An agency claims specialist signs in through the identity provider. She uploads a workers' comp claim file to Gemini Enterprise. The file lands in Zone 2, a single-tenant Google project, under the customer encryption key.",
+        check: "Verify that the file stays in Zone 2 ephemeral session storage under customer CMEK ('us' multi-region) and never enters a shared search index."
+      },
+      {
+        time: "00:20 – 00:45",
+        title: "Scene 2: Parallel File Screening & The Whole-File SSN Block",
+        cue: "The uploaded PDF splits into two parallel fiber beams hitting Model Armor (4 MB limit) and SDP Content Policy (50 MB PDF limit) simultaneously. An unredacted SSN flashes red. A 'FILE REJECTED' stamp blocks the upload—correcting the v1 draft's claim that uploads mask SSNs and continue.",
+        narration: "Model Armor and Sensitive Data Protection scan the file at the same time. If either scan finds a blocked item, such as a Social Security number, the whole file stops. The system does not mask the number and continue. With Model Armor on, files above 4 megabytes also stop.",
+        check: "Verify that UploadSessionFile runs Model Armor and SDP in parallel fibers and blocks the entire file on an SSN match."
+      },
+      {
+        time: "00:45 – 01:10",
+        title: "Scene 3: Prompt Gate, Unscreened Query Rewrite & Snippet Screening",
+        cue: "The user's question passes CheckQuery (Model Armor). The query rewriter constructs a ServiceNow query (flagged with an amber 'Rewrite Not Screened' badge). Returned ServiceNow snippets pass SDP and Model Armor snippet screening (with a note that snippet screening fails open on RPC errors).",
+        narration: "Next, she asks a question. Model Armor screens her prompt before the Assistant plans any action. The Assistant then rewrites the query for ServiceNow, and no gate screens that rewrite. Returned snippets pass Sensitive Data Protection and Model Armor. The snippet check fails open if the Model Armor call has an error.",
+        check: "Verify that failure_mode=FAIL_CLOSED is set on the template and that single-federated-source-per-App (CF-6) mitigates rewritten query leakage."
+      },
+      {
+        time: "01:10 – 01:35",
+        title: "Scene 4: Exact Payload Crossing into Zone 3 Model Serving",
+        cue: "An ALTS-encrypted GenerateContentRequest envelope crosses into Zone 3. Inside the envelope: Prompt, inline file parts, function_response snippets, system_instruction (highlighting user_email), and tenant_stream_id (highlighting user_cpi). WIF tokens and Session IDs remain locked behind in Zone 2.",
+        narration: "Now the request crosses into Zone 3, the stateless model-serving layer. It carries the prompt, file content, and snippets. It also carries her email address in the system instruction. A request header carries her cloud principal ID for abuse detection. Her sign-in tokens and session ID stay behind in Zone 2.",
+        check: "Verify that QA-03 and Email §3 disclose user_email, user_full_name, and user_cpi instead of claiming 'zero user identifiers cross into Zone 3'."
+      },
+      {
+        time: "01:35 – 02:00",
+        title: "Scene 5: Outbound Response Gate, Browser Image Blocking & 24h Purge",
+        cue: "The candidate response passes CheckResponse (Model Armor) in Zone 2. Raw Markdown arrives at the ucs_widget browser UI, which degrades an external ![img](https://...) tag into plain text and routes links through google.com/url. Finally, the 24-hour timer expires and purges the Zone 2 session.",
+        narration: "Model Armor screens the answer before it leaves Google. Her browser, not the backend, blocks external images and routes links through a Google redirect. A custom app that calls the API must block images itself. When the retention period ends, Zone 2 deletes the session and the file.",
+        check: "Verify that ucs_widget enforces client-side image blocking (since backend C++ MarkdownSanitizer is false by default for chat)."
+      }
+    ];
+
+    let activeFilter = "ALL";
+    let activeScene = 0;
+
+    function switchTab(tab) {
+      ["claims", "models", "ste100", "diagrams", "video"].forEach(t => {
+        document.getElementById("panel-" + t).classList.toggle("hidden", t !== tab);
+        document.getElementById("tab-" + t).classList.toggle("active", t === tab);
+      });
+    }
+
+    function filterClaims(group) {
+      activeFilter = group;
+      ["ALL", "NEW_OPUS", "CORE_ENG", "NUANCE"].forEach(g => {
+        document.getElementById("filter-" + g).classList.toggle("active", g === group);
+      });
+      renderClaims();
+    }
+
+    function renderClaims() {
+      const q = (document.getElementById("claim-search").value || "").toLowerCase();
+      const container = document.getElementById("claims-container");
+      const filtered = CLAIMS_DATA.filter(c => {
+        const matchGroup = activeFilter === "ALL" || c.group === activeFilter;
+        const matchSearch = !q || (c.id + " " + c.source + " " + c.v1Claim + " " + c.reality + " " + c.fix).toLowerCase().includes(q);
+        return matchGroup && matchSearch;
+      });
+
+      container.innerHTML = filtered.map(c => {
+        const isContra = c.status === "CONTRADICTED";
+        const badgeClass = isContra
+          ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
+          : "bg-amber-500/15 text-amber-400 border-amber-500/30";
+        const groupBadge = c.group === "NEW_OPUS"
+          ? '<span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-xs font-semibold">Caught by Claude Opus Challenger</span>'
+          : c.group === "CORE_ENG"
+            ? '<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-xs font-semibold">Core Engineering Review Fix</span>'
+            : '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-xs font-semibold">Architectural Nuance</span>';
+
+        return `
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded border text-xs font-bold ${badgeClass}">${c.status}</span>
+                ${groupBadge}
+                <span class="text-xs font-mono text-[var(--muted-foreground)]">${c.id} • ${c.source}</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 rounded-lg bg-rose-500/5 border border-rose-500/20 space-y-1">
+                <div class="font-semibold text-rose-400 uppercase">V1 Draft Statement</div>
+                <div class="text-[var(--foreground)]">${c.v1Claim}</div>
+              </div>
+              <div class="p-3 rounded-lg bg-sky-500/5 border border-sky-500/20 space-y-1">
+                <div class="font-semibold text-sky-400 uppercase">Production Code &amp; Doc Reality</div>
+                <div class="text-[var(--foreground)]">${c.reality}</div>
+              </div>
+              <div class="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-1">
+                <div class="font-semibold text-emerald-400 uppercase">Required Fix Before Customer Delivery</div>
+                <div class="text-[var(--foreground)]">${c.fix}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderSTE100() {
+      const container = document.getElementById("ste100-container");
+      container.innerHTML = STE100_DATA.map(section => `
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-[var(--border)] pb-3">
+            <h4 class="text-sm font-bold text-[var(--foreground)]">${section.title}</h4>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-rose-500/15 text-rose-400">${section.v1Stats}</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-semibold">${section.steStats}</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+            <div class="p-3.5 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-2">
+              <div class="font-semibold text-rose-400 uppercase">Before: V1 Dense AI Prose (Hard to Audit)</div>
+              <p class="text-[var(--muted-foreground)] leading-relaxed">${section.v1Text}</p>
+            </div>
+            <div class="p-3.5 rounded-lg bg-[var(--background)] border border-emerald-500/30 space-y-2">
+              <div class="font-semibold text-emerald-400 uppercase">After: ASD-STE100 Controlled Rewrite (1 Claim / Line)</div>
+              <div class="space-y-1.5">
+                ${section.lines.map(l => `
+                  <div class="flex items-start gap-2">
+                    <span class="px-1.5 py-0.5 rounded font-mono text-xs font-bold ${l.type === 'P' ? 'bg-sky-500/20 text-sky-300' : 'bg-emerald-500/20 text-emerald-300'}">${l.type}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] font-mono text-xs text-[var(--muted-foreground)]">${l.words}w</span>
+                    <span class="text-[var(--foreground)]">${l.text}</span>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function copySTE100() {
+      const text = STE100_DATA.map(s => "### " + s.title + "\n" + s.lines.map(l => `- [${l.type}] (${l.words}w) ${l.text}`).join("\n")).join("\n\n");
+      navigator.clipboard.writeText(text);
+      const btn = document.getElementById("copy-ste-btn");
+      btn.textContent = "✓ Copied 100% Compliant STE100 Text";
+      setTimeout(() => { btn.textContent = "Copy All STE100 Rewrites"; }, 2000);
+    }
+
+    function copyMermaid(which) {
+      const code = which === 1 ? MERMAID_FLOW : MERMAID_SEQ;
+      navigator.clipboard.writeText(code);
+      const btn = document.getElementById(which === 1 ? "copy-m1-btn" : "copy-m2-btn");
+      const orig = btn.textContent;
+      btn.textContent = "✓ Copied Mermaid Code";
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    }
+
+    function renderScene() {
+      const pills = document.getElementById("scene-pills");
+      pills.innerHTML = SCENES.map((s, idx) => `
+        <button onclick="selectScene(${idx})" class="p-2.5 rounded-lg border text-left transition ${idx === activeScene ? 'bg-sky-500/20 border-sky-400 text-[var(--foreground)]' : 'bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)]'}">
+          <div class="text-xs font-mono text-sky-400">${s.time}</div>
+          <div class="text-xs font-semibold truncate mt-0.5">${s.title}</div>
+        </button>
+      `).join("");
+
+      const sc = SCENES[activeScene];
+      document.getElementById("active-scene-box").innerHTML = `
+        <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <div>
+            <span class="text-xs font-mono text-sky-400 font-semibold">${sc.time}</span>
+            <h4 class="text-base font-bold mt-0.5">${sc.title}</h4>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-sky-500/15 text-sky-400 text-xs font-semibold">Scene ${activeScene + 1} of ${SCENES.length}</span>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
+          <div class="p-4 rounded-lg bg-[var(--card)] border border-[var(--border)] space-y-1.5">
+            <div class="font-semibold text-sky-400 uppercase">1. Visual Animation Cue</div>
+            <p class="text-[var(--foreground)] leading-relaxed">${sc.cue}</p>
+          </div>
+          <div class="p-4 rounded-lg bg-[var(--card)] border border-emerald-500/30 space-y-1.5">
+            <div class="font-semibold text-emerald-400 uppercase">2. Spoken Narration (ASD-STE100)</div>
+            <p class="text-[var(--foreground)] leading-relaxed font-medium">"${sc.narration}"</p>
+          </div>
+          <div class="p-4 rounded-lg bg-[var(--card)] border border-amber-500/30 space-y-1.5">
+            <div class="font-semibold text-amber-400 uppercase">3. Reviewer Verification Gate</div>
+            <p class="text-[var(--foreground)] leading-relaxed">${sc.check}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectScene(idx) {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      activeScene = idx;
+      renderScene();
+    }
+
+    function nextScene() {
+      selectScene((activeScene + 1) % SCENES.length);
+    }
+
+    function prevScene() {
+      selectScene((activeScene - 1 + SCENES.length) % SCENES.length);
+    }
+
+    function toggleNarration() {
+      if (!("speechSynthesis" in window)) return;
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        document.getElementById("play-narration-btn").textContent = "▶ Speak Scene Narration";
+        return;
+      }
+      const utter = new SpeechSynthesisUtterance(SCENES[activeScene].narration);
+      utter.rate = 1.0;
+      utter.onend = () => {
+        document.getElementById("play-narration-btn").textContent = "▶ Speak Scene Narration";
+      };
+      document.getElementById("play-narration-btn").textContent = "⏹ Stop Audio";
+      window.speechSynthesis.speak(utter);
+    }
+
+    // Initialize views
+    renderClaims();
+    renderSTE100();
+    document.getElementById("mermaid-seq-preview").textContent = MERMAID_SEQ;
+    renderScene();
+  </script>
+</body>
+</html>
