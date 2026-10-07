@@ -193,17 +193,50 @@ When deploying this reference architecture into a regulated enterprise environme
   2. `ge_harvest.py` automatically strips `"<elided>"` and probes candidate principals (`FALLBACK_PRINCIPALS` / recent non-elided principals) against `GetSession` to resolve the real session owner and harvest the complete unredacted session.
   3. If a session remains permanently unowned or deleted (`HTTP 403` / `404` across all candidate principals), `harvest_session()` logs a warning and returns `200 OK` so the Pub/Sub push subscription (`ge-ediscovery-push-sub`) acknowledges the message instead of entering a `500` retry loop.
 
-### 3.10 Preventing Spoliation: Custom No-Delete Role (`geUserNoDelete`) & Dead-Letter Queue (`ge-ediscovery-dlq`)
-- **Scenario**: Even with a `<10s` event-driven Cloud Run harvester, raw file bytes (`:downloadFile`) and $>64\text{ KiB}$ untruncated conversation turns (`GetSession`) exist only inside the user's Discovery Engine session until harvested. A user granted the standard `roles/discoveryengine.user` predefined role could call `DeleteSession` or delete a chat in the Gemini Enterprise UI within 1–2 seconds of sending a prompt.
-- **Mitigation Implemented (`setup_no_delete_role.py`, `scripts/swap-user-role.sh`, `scripts/verify.sh`, `scripts/replay-dlq.sh`)**:
-  1. **Dynamic Custom Role (`projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete`)**: Queries `iam.googleapis.com/v1/roles/discoveryengine.user` and intersects its permissions with `permissions:queryTestablePermissions` for the project, removing **only**:
+### 3.10 Preventing Spoliation: Custom No-Delete Role (`geUserNoDelete`), Two-Layer Delete-Guard Sync & Dead-Letter Queue (`ge-ediscovery-dlq`)
+- **Scenario**: Even with a `<10s` event-driven Cloud Run harvester, raw file bytes (`:downloadFile`) and $>64\text{ KiB}$ untruncated conversation turns (`GetSession`) exist only inside the user's Discovery Engine session until harvested. A user granted the standard `roles/discoveryengine.user` predefined role could call `DeleteSession` or delete a chat in the Gemini Enterprise UI within 1–2 seconds of sending a prompt. Furthermore, because `roles/discoveryengine.user` is a Google-managed predefined role, Google periodically adds new permissions to it as new Gemini Enterprise and NotebookLM features launch.
+- **Mitigation Implemented (`setup_no_delete_role.py`, `sync_no_delete_role.py`, `scripts/swap-user-role.sh`, `scripts/sync-custom-role.sh`, `scripts/verify.sh`, `scripts/replay-dlq.sh`)**:
+
+```mermaid
+flowchart TD
+    subgraph Predefined["Google-Managed Predefined Role"]
+        P["roles/discoveryengine.user\n(Periodically updated by Google)"]
+        T["Project Testable Permissions\n(permissions:queryTestablePermissions)"]
+    end
+
+    subgraph Guard["Two-Layer Delete-Guard (sync_no_delete_role.py)"]
+        L1["Layer 1: Explicit Denylist\n• discoveryengine.sessions.delete\n• discoveryengine.sessions.removeContextFile\n• discoveryengine.conversations.delete"]
+        L2["Layer 2: Heuristic Regex Guard\nBlocks any new *.delete / *.remove* / *.purge*\non sessions, conversations, turns, files, or messages\n(unless --allow-heuristic-deletes is passed)"]
+    end
+
+    subgraph Custom["Project Custom Role & Non-Authoritative Swap"]
+        CR["projects/<PROJECT_ID>/roles/geUserNoDelete\n(All safe user permissions, 0 session/file delete perms)"]
+        SWAP["scripts/swap-user-role.sh\n1. Additively bind geUserNoDelete to WIF Pool\n2. Backup IAM Policy JSON\n3. Remove roles/discoveryengine.user ONLY from WIF Pool"]
+        RB["1-Command Rollback (--rollback)\nRestores roles/discoveryengine.user"]
+    end
+
+    P --> Guard
+    T --> Guard
+    L1 --> L2
+    L2 -->|"Safe Candidate Permissions\n(--apply to patch)"| CR
+    CR --> SWAP
+    SWAP -.->|"Reversible"| RB
+```
+
+  1. **Dynamic Custom Role (`projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete`)**: Queries `iam.googleapis.com/v1/roles/discoveryengine.user` and intersects its permissions with `permissions:queryTestablePermissions` for the project, removing:
      - `discoveryengine.sessions.delete`
      - `discoveryengine.sessions.removeContextFile`
-  2. **Non-Authoritative Single-Principal Role Swap**:
+  2. **Two-Layer Delete-Guard Drift Detection & Synchronization (`sync_no_delete_role.py` & `scripts/sync-custom-role.sh`)**:
+     - Compares the live `roles/discoveryengine.user` permission set against `projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete`.
+     - **Layer 1 (Explicit Denylist)**: Always blocks `discoveryengine.sessions.delete`, `discoveryengine.sessions.removeContextFile`, and `discoveryengine.conversations.delete`.
+     - **Layer 2 (Heuristic Regex Guard)**: Automatically flags and blocks any newly introduced permission matching `(delete|remove|purge|destroy|erase|expunge)` on `(session|conversation|converse|assist|turn|contextfile|file|message|chat|history)` so Google cannot inadvertently re-enable chat deletion under a new permission name.
+     - Safe new permissions are surfaced in dry-run mode (or `--check` CI mode in `scripts/verify.sh`) and patched into `geUserNoDelete` when invoked with `--apply`.
+  3. **Non-Authoritative Single-Principal Role Swap (`scripts/swap-user-role.sh`)**:
      - Never uses an authoritative role binding that would strip other members of `roles/discoveryengine.user`, and never deletes custom roles.
      - First additively grants `projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete` to the Workforce Identity Pool principal (`principalSet://iam.googleapis.com/locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>/*`).
      - Saves a timestamped JSON backup of the project IAM policy (`iam-policy-<PROJECT_ID>-<TIMESTAMP>.backup.json`) and removes `roles/discoveryengine.user` **only** from that target member (`--apply`), with 1-command restoration via `--rollback`.
      - Because `ge_harvest.py` only requires read permissions (`discoveryengine.sessions.get`, `discoveryengine.sessions.downloadFile`, `discoveryengine.notebooks.get`) when impersonating a WIF user via `mint_sts_token()`, removing the two delete permissions has zero impact on harvesting while blocking user-initiated session deletion with `HTTP 403 PERMISSION_DENIED`.
-  3. **Pub/Sub Dead-Letter Topic (`ge-ediscovery-dlq` + `ge-ediscovery-dlq-hold`)**:
+  4. **Pub/Sub Dead-Letter Topic (`ge-ediscovery-dlq` + `ge-ediscovery-dlq-hold`)**:
      - `ge-ediscovery-push-sub` routes any event that fails 10 delivery attempts to `ge-ediscovery-dlq` (retained for 7 days in `ge-ediscovery-dlq-hold`), where operators can inspect or replay messages via `scripts/replay-dlq.sh <PROJECT_ID> --peek|--replay`.
+
 
