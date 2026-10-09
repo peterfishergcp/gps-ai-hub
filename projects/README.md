@@ -8,9 +8,9 @@ Welcome to the **Google Cloud GPS AI Hub** repository (`gps-ai-hub`). This repos
 
 ---
 
-## 🍂 Gemini Weekly Updates (`/Gemini Weekly Updates`)
+## 🍂 Gemini Weekly Updates (`/Gemini_Weekly_Updates`)
 
-- 📬 **[Gemini Enterprise Weekly & Monthly Customer Executive Briefing Architecture](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/Gemini%20Weekly%20Updates)**:
+- 📬 **[Gemini Enterprise Weekly & Monthly Customer Executive Briefing Architecture](https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/Gemini_Weekly_Updates)**:
   - Reference architecture and seasonal HTML/Markdown template suite (showcased with an **October Autumn Harvest 🍂** aesthetic) enabling Customer Engineers (CEs), FSRs, and AI Specialists to generate high-touch executive updates for strategic accounts.
   - Pairs **Customer-Aware Relevance Filtering** (intersecting global Gemini Enterprise & Antigravity release notes with a customer's deployed connectors and compliance posture) with a **Mandatory CE Human-in-the-Loop (HITL) Review Gate** via Google Workspace Gmail Drafts (`users.drafts.create`), ensuring subtle connector permission changes (e.g., SharePoint `Sites.Selected` vs. `AllSites.Read`) and active support cases (`CS-xxxxx` / `FE-xxxxx`) are accurately surfaced.
 
