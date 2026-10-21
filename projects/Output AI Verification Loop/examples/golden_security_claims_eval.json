@@ -1,0 +1,116 @@
+{
+  "benchmark_id": "gps-public-sector-security-review-golden-v1",
+  "title": "Golden Evaluation Dataset: Public Sector Agency Security Architecture Review (13-Pt Email + 9 OQs)",
+  "ground_truth_v1_consistency_score": 4.5,
+  "ground_truth_v1_prose_avg_words": 39.9,
+  "target_ste100_max_descriptive_words": 25,
+  "target_ste100_max_procedural_words": 20,
+  "expected_true_positive_claims": [
+    {
+      "id": "OQ-3(e)-1",
+      "category": "IDENTITY_BOUNDARY",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
+      "description": "user_email and user_full_name travel inside system_instruction to Zone 3 model serving."
+    },
+    {
+      "id": "OQ-3(e)-2",
+      "category": "IDENTITY_BOUNDARY",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
+      "description": "tenant_stream_id embeds project number and caller Cloud Principal ID (user_cpi)."
+    },
+    {
+      "id": "OQ-5",
+      "category": "CLIENT_VS_BACKEND",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
+      "description": "Backend C++ MarkdownSanitizer is OFF by default for chat; ucs_widget enforces image blocking client-side."
+    },
+    {
+      "id": "OQ-10-CAPS",
+      "category": "QUOTA_AND_CAPS",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
+      "description": "Three per-turn tool caps exist (5 sandbox / 8 thinking rounds / 20 tool turns); HITL gates mutating actions."
+    },
+    {
+      "id": "OQ-10-QUOTA",
+      "category": "QUOTA_AND_CAPS",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus", "seat-gemini-flash"],
+      "description": "300 RPM is Search quota; Assistant quota is 600 RPM/project/region and 1,800 RPM/org/region."
+    },
+    {
+      "id": "EMAIL-13-UPLOAD",
+      "category": "EXECUTION_ORDER",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus"],
+      "description": "Email §2 vs §13 invert SDP/MA order; UploadSessionFile runs in parallel fibers and rejects SSN files outright (no inline [SSN-MASKED] path)."
+    },
+    {
+      "id": "EMAIL-3-FILES",
+      "category": "IDENTITY_BOUNDARY",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus"],
+      "description": "Email §3 claims uploaded files never cross into Zone 3, contradicting OQ-8 (inline file parts travel in GenerateContentRequest)."
+    },
+    {
+      "id": "EMAIL-5-INFOTYPES",
+      "category": "QUOTA_AND_CAPS",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus", "seat-gemini-flash"],
+      "description": "STATE_DRIVERS_LICENSE_NUMBER and US_INDIVIDUAL_TAX_IDENTIFIER do not exist in Cloud SDP."
+    },
+    {
+      "id": "EMAIL-7-8-CMEK",
+      "category": "ENTITLEMENT_AND_DRZ",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus", "seat-gemini-flash"],
+      "description": "Cloud KMS key rotation keeps prior versions enabled for decryption; only key version destruction is permanent."
+    },
+    {
+      "id": "EMAIL-9-DRZ",
+      "category": "ENTITLEMENT_AND_DRZ",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus", "seat-gemini-flash"],
+      "description": "Gemini Enterprise DRZ/CMEK/AxT require the 'us' or 'eu' multi-region (not single regions like us-central1)."
+    },
+    {
+      "id": "EMAIL-12-LOGS",
+      "category": "CLIENT_VS_BACKEND",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus"],
+      "description": "StreamAssist gemini_enterprise_user_activity audit logs do not include a model ID/version field."
+    },
+    {
+      "id": "V2-OQ8-CONFLICT",
+      "category": "IDENTITY_BOUNDARY",
+      "severity": "SEND_BLOCKER",
+      "caught_in_stage1_by": ["seat-claude-opus"],
+      "description": "Residual conflict in v2: OQ-8 still claims system_instruction holds only trusted instructions despite OQ-3(e) disclosing user_email."
+    },
+    {
+      "id": "OQ-1-FAILOPEN",
+      "category": "EXECUTION_ORDER",
+      "severity": "NUANCE",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
+      "description": "Prompt/response gates require explicit failure_mode=FAIL_CLOSED; connector snippet screening fails open on RPC error."
+    },
+    {
+      "id": "OQ-7-MA-QUOTA",
+      "category": "QUOTA_AND_CAPS",
+      "severity": "NUANCE",
+      "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
+      "description": "Snippet screening calls SanitizeUserPrompt once per retrieved snippet (1 query -> N Model Armor calls)."
+    }
+  ],
+  "expected_rejected_false_positives": [
+    {
+      "id": "TRAP-TLS-CIPHER",
+      "raised_by": "seat-gemini-flash",
+      "pattern_substring": "TLS_AES_256_GCM_SHA384",
+      "reason": "Google Front End negotiates TLS 1.3 cipher suites automatically; not a customer config requirement."
+    }
+  ]
+}

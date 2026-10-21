@@ -79,15 +79,19 @@ Assign each claim a verification status:
 
 ---
 
-## Phase 2: Dual-Model Adversarial Cross-Examination (Gemini Pro vs. Claude Opus)
+## Phase 2: Karpathy 3-Stage LLM Review Council (Independent Seats → Blind Peer Review → Chairman Synthesis)
 
-When the user requests a dual-model benchmark or adversarial review, run the draft through both **Gemini Pro** (`gemini-3.1-pro-high`) and **Claude Opus** (`opus-5.5-high`) using Jetski/Antigravity `swarm` workers (or Vertex AI Model Garden endpoints) in a **Challenger-Defender** pattern:
+When reviewing a technical draft, security questionnaire, or RFP response, execute the **3-Stage LLM Council** (via `scripts/council_runner.py` or Jetski `swarm` workers):
 
-| Evaluation Dimension | Gemini Pro Focus (`gemini-3.1-pro-high`) | Claude Opus Focus (`opus-5.5-high`) |
-| :--- | :--- | :--- |
-| **Primary Role** | **Context Synthesizer & Documentation Grounder** | **Adversarial Logic Challenger & STE100 Enforcer** |
-| **Audit Strength** | Rapid multi-document synthesis, quota/config cross-referencing, and clean architectural diagrams | Exposing internal contradictions between sections, catching over-broad security promises ("NEVER transmitted"), and enforcing strict sentence-length caps |
-| **Mandatory Deliverables** | • Top Architectural & Config Discrepancies<br>• Documentation & Code Citations<br>• Quota & Feature Verification Table | • Atomic Claim Ledger (`VERIFIED` / `NUANCE` / `CONTRADICTED`)<br>• Strict ASD-STE100 Rewrite (`<=20w` P / `<=25w` D)<br>• Missing Customer Edge Cases & Required Fixes |
+1. **Stage 1 — Independent Council Specialists (`stage1_collect_responses`):**
+   - **Seat 1 (`gemini-3.1-pro-high` — Context Synthesizer & Grounder):** Rapid multi-document and codebase synthesis, quota/config cross-referencing, and clean architectural diagrams.
+   - **Seat 2 (`opus-5.5-high` — Adversarial Logic & Security Challenger):** Cross-section contradiction hunting, implicit assumption detection, and strict ASD-STE100 enforcement.
+   - **Seat 3 (`gemini-3.1-flash-high` — Quota, InfoType & STE100 Verifier):** Fast verification of built-in SDP `infoType` identifiers, Cloud KMS rotation semantics, regional constraints, and sentence word-count caps.
+2. **Stage 2 — Anonymized Blind Peer Review & Borda Ranking (`stage2_collect_rankings`):**
+   - Strip model names into blind labels (`Response A`, `Response B`, `Response C`).
+   - Have each council model score the anonymized outputs on **Precision (1–10)**, **Recall (1–10)**, and **Actionability (1–10)**, flag any hallucinated false-positive nitpicks for removal, and compute **Borda Count** rankings plus per-claim consensus badges.
+3. **Stage 3 — Council Chairman Synthesis & Evaluation (`council_review.json` → `render_canvas.py` & `eval_council.py`):**
+   - The Council Chairman arbitrates disputed claims/scores, verifies 100% ASD-STE100 compliance via `scripts/check_ste100.py --check-word-tags --check-passive`, compiles the **6-Tab Interactive HTML Review Canvas** via `scripts/render_canvas.py`, and benchmarks accuracy against `examples/golden_security_claims_eval.json` via `scripts/eval_council.py`.
 
 ---
 
