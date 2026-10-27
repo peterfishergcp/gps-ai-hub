@@ -940,6 +940,41 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
     if os.path.exists(schema_path):
         with open(schema_path, "r", encoding="utf-8") as sf:
             schema_fields = json.load(sf)
+    if not schema_fields:
+        schema_fields = [
+            {"name": "session_id", "type": "STRING", "mode": "REQUIRED"},
+            {"name": "turn_index", "type": "INTEGER", "mode": "REQUIRED"},
+            {"name": "query_id", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "assist_answer_id", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "engine_id", "type": "STRING", "mode": "REQUIRED"},
+            {"name": "location", "type": "STRING", "mode": "REQUIRED"},
+            {"name": "user_iam_principal", "type": "STRING", "mode": "REQUIRED"},
+            {"name": "session_display_name", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "prompt_text", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "response_text", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "thought_text", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "model_name", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "session_transcript_gcs_uri", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "session_transcript_console_url", "type": "STRING", "mode": "NULLABLE"},
+            {
+                "name": "files",
+                "type": "RECORD",
+                "mode": "REPEATED",
+                "fields": [
+                    {"name": "file_id", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "file_source", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "file_name", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "mime_type", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "byte_size", "type": "INTEGER", "mode": "NULLABLE"},
+                    {"name": "sha256", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "crc32c", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "gcs_uri", "type": "STRING", "mode": "NULLABLE"},
+                    {"name": "console_url", "type": "STRING", "mode": "NULLABLE"},
+                ],
+            },
+            {"name": "event_timestamp", "type": "TIMESTAMP", "mode": "NULLABLE"},
+            {"name": "harvested_at", "type": "TIMESTAMP", "mode": "REQUIRED"},
+        ]
 
     try:
         # 1. Multipart Load Job into unique per-run staging table via BigQuery REST API
