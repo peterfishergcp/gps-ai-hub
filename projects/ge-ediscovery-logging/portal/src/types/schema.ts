@@ -85,6 +85,7 @@ export interface ProcessedLogRecord {
   citations: GroundedCitation[];
   search_queries: string[];
   raw_session_json?: string;
+  gcs_raw_conversation_uri?: string;
 
   // Legal Hold Metadata (Client/Overlay)
   is_held?: boolean;

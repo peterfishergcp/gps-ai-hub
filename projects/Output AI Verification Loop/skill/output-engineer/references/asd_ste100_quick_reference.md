@@ -24,7 +24,7 @@
 2. **Active Voice Only (Rule 3.6):**
    - Never hide the actor in passive voice—passive voice conceals which service enforces a security control!
    - *Bad (Passive — hides whether enforcement is client or backend):* *"Untrusted Markdown images are stripped before rendering."*
-   - *Good (Active — names the exact component):* *"The web UI (`ucs_widget`) blocks external Markdown images in the browser."*
+   - *Good (Active — names the exact component):* *"The Gemini Enterprise web UI blocks external Markdown images in the browser."*
 3. **Eliminate AI Filler & Throat-Clearing:**
    - Delete phrases such as:
      - *"It is important to note that..."*

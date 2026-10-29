@@ -30,6 +30,7 @@ import base64
 import html
 import json
 import os
+import re
 import ssl
 import time
 import urllib.error
@@ -45,10 +46,45 @@ MS_REFRESH_TOKEN = os.environ.get("MS_REFRESH_TOKEN", "")
 PURVIEW_FOLDER_NAME = os.environ.get("PURVIEW_EDISCOVERY_FOLDER", "Gemini Enterprise eDiscovery")
 PURVIEW_FALLBACK_UPN = os.environ.get("PURVIEW_FALLBACK_UPN", "")
 PURVIEW_TARGET_CUSTODIAN_UPN = os.environ.get("PURVIEW_TARGET_CUSTODIAN_UPN", "")
+PURVIEW_COMPLIANCE_JOURNAL_UPN = os.environ.get("PURVIEW_COMPLIANCE_JOURNAL_UPN", "")
 PURVIEW_MESSAGE_CLASS = os.environ.get(
     "PURVIEW_MESSAGE_CLASS",
     "IPM.Note.Google.GeminiEnterprise",
 )
+
+INLINE_ATTACHMENT_LIMIT_BYTES = 3 * 1024 * 1024  # 3 MiB inline Graph threshold
+GRAPH_UPLOAD_CHUNK_SIZE = 12 * 320 * 1024  # 3.75 MiB (exact multiple of 320 KiB per Graph spec)
+NOTEBOOK_ARCHIVE_JSON_RE = re.compile(r"/notebook_archive(?:_[0-9a-f]{16})?\.json$")
+
+
+def _is_fail_closed() -> bool:
+    return os.environ.get("PURVIEW_FAIL_CLOSED", "true").strip().lower() == "true"
+
+
+def _should_hide_folder() -> bool:
+    return os.environ.get("PURVIEW_HIDE_FOLDER", "true").strip().lower() == "true"
+
+
+def _max_attachment_bytes() -> int:
+    try:
+        mb = int(os.environ.get("PURVIEW_MAX_ATTACHMENT_MB", "150"))
+    except ValueError:
+        mb = 150
+    return max(4, min(mb, 150)) * 1024 * 1024
+
+
+def resolve_mailbox_target_upn(custodian_upn: str) -> str:
+    """
+    Returns the Exchange Online mailbox UPN where Track 1 compliance items are written.
+    When `PURVIEW_COMPLIANCE_JOURNAL_UPN` is configured (recommended for SEC 17a-4 / FOIA
+    anti-spoliation), items are written to that dedicated non-custodian compliance mailbox
+    under In-Place Hold / Preservation Lock so the end-user custodian cannot delete or tamper
+    with compliance copies before hold propagation (mitigates ED-5).
+    """
+    journal_upn = (os.environ.get("PURVIEW_COMPLIANCE_JOURNAL_UPN") or PURVIEW_COMPLIANCE_JOURNAL_UPN).strip()
+    if journal_upn:
+        return journal_upn
+    return custodian_upn
 
 SSL_CTX = (
     ssl.create_default_context(cafile="/etc/ssl/cert.pem")
@@ -299,22 +335,27 @@ def resolve_custodian_upn(user_iam_principal: str, graph_token: str = "") -> str
 
 
 def ensure_compliance_mail_folder(
-    custodian_upn: str,
+    mailbox_upn: str,
     graph_token: str,
     folder_name: str = PURVIEW_FOLDER_NAME,
 ) -> str:
     """
-    Ensures the dedicated `Gemini Enterprise eDiscovery` folder exists in the
-    custodian's Exchange Online mailbox and returns its Graph folder ID.
+    Ensures the dedicated `Gemini Enterprise eDiscovery` folder exists in the target
+    Exchange Online mailbox (hidden from standard Outlook folder navigation by default
+    via `PURVIEW_HIDE_FOLDER=true`) and returns its Graph folder ID.
     """
-    cache_key = f"{custodian_upn.lower()}::{folder_name}"
+    hide_folder = _should_hide_folder()
+    cache_key = f"{mailbox_upn.lower()}::{folder_name}::{hide_folder}"
     if cache_key in _FOLDER_ID_CACHE:
         return _FOLDER_ID_CACHE[cache_key]
 
-    encoded_upn = urllib.parse.quote(custodian_upn, safe="")
+    encoded_upn = urllib.parse.quote(mailbox_upn, safe="")
     escaped_name = folder_name.replace("'", "''")
     filter_q = urllib.parse.quote(f"displayName eq '{escaped_name}'")
-    list_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders?$filter={filter_q}&$select=id,displayName"
+    list_url = (
+        f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders"
+        f"?includeHiddenFolders=true&$filter={filter_q}&$select=id,displayName,isHidden"
+    )
 
     res = graph_api_request("GET", list_url, graph_token)
     folders = res.get("value", [])
@@ -328,7 +369,7 @@ def ensure_compliance_mail_folder(
         "POST",
         create_url,
         graph_token,
-        {"displayName": folder_name, "isHidden": False},
+        {"displayName": folder_name, "isHidden": hide_folder},
     )
     folder_id = created["id"]
     _FOLDER_ID_CACHE[cache_key] = folder_id
@@ -359,19 +400,40 @@ def check_turn_already_ingested(
     return None
 
 
-def build_legal_brief_html(turn_row: dict[str, Any]) -> str:
+def _should_include_thought_text(mailbox_upn: str, custodian_upn: str) -> bool:
+    """
+    Controls whether internal reasoning (`thought_text`) is rendered in the Exchange message body.
+    Defaults to True when archiving into a dedicated non-custodian compliance journal mailbox
+    (`PURVIEW_COMPLIANCE_JOURNAL_UPN`), and False when writing directly into the custodian's own
+    mailbox so end users do not view raw reasoning traces (override via `PURVIEW_INCLUDE_THOUGHT_TEXT`).
+    """
+    explicit = os.environ.get("PURVIEW_INCLUDE_THOUGHT_TEXT", "").strip().lower()
+    if explicit == "true":
+        return True
+    if explicit == "false":
+        return False
+    return bool(mailbox_upn and custodian_upn and mailbox_upn.strip().lower() != custodian_upn.strip().lower())
+
+
+def build_legal_brief_html(
+    turn_row: dict[str, Any],
+    *,
+    custodian_upn: str = "",
+    include_thought_text: bool = True,
+) -> str:
     """Formats a Gemini Enterprise / NotebookLM turn into a self-contained HTML Legal Brief for Purview Review Sets."""
     engine_id = html.escape(str(turn_row.get("engine_id") or "gemini-enterprise"))
     session_id = html.escape(str(turn_row.get("session_id") or ""))
     session_title = html.escape(str(turn_row.get("session_display_name") or session_id))
-    turn_idx = html.escape(str(turn_row.get("turn_index") or 1))
+    raw_turn_idx = turn_row.get("turn_index")
+    turn_idx = html.escape(str(raw_turn_idx if raw_turn_idx is not None else 1))
     event_ts = html.escape(str(turn_row.get("event_timestamp") or ""))
-    principal = html.escape(str(turn_row.get("user_iam_principal") or ""))
+    principal = html.escape(str(turn_row.get("user_iam_principal") or custodian_upn or ""))
     model_name = html.escape(str(turn_row.get("model_name") or "Gemini Enterprise Assistant"))
     transcript_uri = html.escape(str(turn_row.get("session_transcript_gcs_uri") or ""))
 
     prompt_html = html.escape(str(turn_row.get("prompt_text") or "")).replace("\n", "<br/>")
-    thought_raw = str(turn_row.get("thought_text") or "").strip()
+    thought_raw = str(turn_row.get("thought_text") or "").strip() if include_thought_text else ""
     thought_html = html.escape(thought_raw).replace("\n", "<br/>")
     response_html = html.escape(str(turn_row.get("response_text") or "")).replace("\n", "<br/>")
 
@@ -504,15 +566,70 @@ def download_gcs_bytes(gcs_uri: str, gcp_token: str, project_id: str) -> bytes:
     bucket, obj_path = gcs_uri[5:].split("/", 1)
     encoded_obj = urllib.parse.quote(obj_path, safe="")
     url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{encoded_obj}?alt=media"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bearer {gcp_token}",
-            "X-Goog-User-Project": project_id,
-        },
-    )
+    headers = {"Authorization": f"Bearer {gcp_token}"}
+    requester_pays_proj = os.environ.get("GCS_USER_PROJECT", "").strip()
+    if requester_pays_proj:
+        headers["X-Goog-User-Project"] = requester_pays_proj
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as resp:
         return resp.read()
+
+
+def upload_large_attachment_to_message(
+    mailbox_upn: str,
+    message_id: str,
+    file_name: str,
+    mime_type: str,
+    file_bytes: bytes,
+    graph_token: str,
+) -> None:
+    """
+    Uploads binary attachments > 3 MiB (up to 150 MiB) to an Exchange Online message via
+    Microsoft Graph `createUploadSession` in 3.75 MiB (12 * 320 KiB) chunks (mitigates ED-5).
+    """
+    encoded_upn = urllib.parse.quote(mailbox_upn, safe="")
+    encoded_msg = urllib.parse.quote(message_id, safe="")
+    session_url = (
+        f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/messages/{encoded_msg}/attachments/createUploadSession"
+    )
+    session_resp = graph_api_request(
+        "POST",
+        session_url,
+        graph_token,
+        {
+            "AttachmentItem": {
+                "attachmentType": "file",
+                "name": file_name,
+                "size": len(file_bytes),
+                "contentType": mime_type,
+            }
+        },
+    )
+    upload_url = session_resp.get("uploadUrl")
+    if not upload_url:
+        raise RuntimeError(f"Graph createUploadSession returned no uploadUrl for {file_name!r}")
+
+    total_len = len(file_bytes)
+    for start in range(0, total_len, GRAPH_UPLOAD_CHUNK_SIZE):
+        chunk = file_bytes[start : start + GRAPH_UPLOAD_CHUNK_SIZE]
+        end = start + len(chunk) - 1
+        headers = {
+            "Content-Type": "application/octet-stream",
+            "Content-Length": str(len(chunk)),
+            "Content-Range": f"bytes {start}-{end}/{total_len}",
+        }
+        for attempt in range(5):
+            req = urllib.request.Request(upload_url, data=chunk, headers=headers, method="PUT")
+            try:
+                with urllib.request.urlopen(req, context=SSL_CTX, timeout=60) as resp:
+                    resp.read()
+                break
+            except urllib.error.HTTPError as e:
+                if e.code in (429, 500, 502, 503, 504) and attempt < 4:
+                    wait_sec = float(e.headers.get("Retry-After") or (2 ** attempt))
+                    time.sleep(min(wait_sec, 10.0))
+                    continue
+                raise
 
 
 def push_turn_to_purview_ediscovery_mailbox(
@@ -524,72 +641,122 @@ def push_turn_to_purview_ediscovery_mailbox(
 ) -> dict[str, Any]:
     """
     Track 1: Writes a conversation turn and its binary attachments (`USER_PROVIDED`,
-    `AI_GENERATED`, `NOTEBOOK_STUDIO_ARTIFACT`) into the custodian's Exchange Online
-    `Gemini Enterprise eDiscovery` compliance folder so it is indexed by Microsoft
-    Purview eDiscovery Content Search, Custodian Holds, and Review Sets.
+    `AI_GENERATED`, `NOTEBOOK_STUDIO`) into the compliance target mailbox (dedicated
+    `PURVIEW_COMPLIANCE_JOURNAL_UPN` when configured, otherwise custodian mailbox)
+    so it is indexed by Microsoft Purview eDiscovery Content Search, Legal Holds,
+    and Review Sets without dropping >3 MiB binaries or allowing custodian deletion.
     """
     custodian_upn = resolve_custodian_upn(str(turn_row.get("user_iam_principal") or ""), graph_token=graph_token)
     if not custodian_upn:
-        return {"status": "skipped", "reason": "No resolves custodian UPN"}
+        return {"status": "skipped", "reason": "No resolved custodian UPN"}
+    mailbox_upn = resolve_mailbox_target_upn(custodian_upn)
 
     engine_id = str(turn_row.get("engine_id") or "gemini-enterprise")
     session_id = str(turn_row.get("session_id") or "unknown")
-    turn_idx = int(turn_row.get("turn_index") or 1)
+    raw_turn_idx = turn_row.get("turn_index")
+    turn_idx = int(raw_turn_idx) if raw_turn_idx is not None else 1
     session_title = str(turn_row.get("session_display_name") or session_id)[:100]
     event_ts = str(turn_row.get("event_timestamp") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     if " " in event_ts and "T" not in event_ts:
         event_ts = event_ts.replace(" ", "T").replace(" UTC", "Z")
 
     internet_msg_id = f"<ge-ediscovery-{engine_id}-{session_id}-turn-{turn_idx}@gemini.cloud.google.com>"
-    folder_id = ensure_compliance_mail_folder(custodian_upn, graph_token, folder_name=folder_name)
+    folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
 
-    existing_id = check_turn_already_ingested(custodian_upn, folder_id, internet_msg_id, graph_token)
+    existing_id = check_turn_already_ingested(mailbox_upn, folder_id, internet_msg_id, graph_token)
     if existing_id:
         return {
             "status": "already_exists",
             "message_id": existing_id,
             "custodian_upn": custodian_upn,
+            "mailbox_upn": mailbox_upn,
             "internet_message_id": internet_msg_id,
         }
 
-    # Build binary `#microsoft.graph.fileAttachment` payloads (for files <= 3 MB inline)
-    attachments: list[dict[str, Any]] = []
+    # Build binary attachments: <= 3 MiB inline (`fileAttachment`), > 3 MiB up to 150 MiB via createUploadSession
+    inline_attachments: list[dict[str, Any]] = []
+    large_attachments: list[tuple[str, str, bytes]] = []
     files = turn_row.get("files") or []
+    seen_file_keys: set[str] = set()
+    max_bytes = _max_attachment_bytes()
+    fail_closed = _is_fail_closed()
+
     for f in files:
         if not isinstance(f, dict):
             continue
         f_gcs = str(f.get("gcs_uri") or "")
-        f_name = str(f.get("file_name") or f.get("file_id") or "artifact.bin")
+        f_id = str(f.get("file_id") or "")
+        f_name = str(f.get("file_name") or f_id or "artifact.bin")
         f_mime = str(f.get("mime_type") or "application/octet-stream")
+        dedup_key = f_gcs or f_id or f_name
+        if dedup_key in seen_file_keys:
+            continue
+        seen_file_keys.add(dedup_key)
+
+        if f_gcs and NOTEBOOK_ARCHIVE_JSON_RE.search(f_gcs):
+            continue
+
         f_bytes: Optional[bytes] = f.get("_raw_bytes")
-        if f_bytes is None and f_gcs.startswith("gs://") and gcp_token and (
-            not f_gcs.endswith("/notebook_archive.json")
-        ):
+        if f_bytes is None and f_gcs.startswith("gs://") and gcp_token:
             try:
                 f_bytes = download_gcs_bytes(f_gcs, gcp_token, project_id)
             except Exception as e:
+                if fail_closed:
+                    raise RuntimeError(f"Failed to download GCS attachment {f_gcs} for Purview archival: {e}") from e
                 print(f"  [!] Could not fetch binary {f_gcs} for Purview attachment: {e}")
-        if f_bytes and len(f_bytes) <= 3 * 1024 * 1024:
-            attachments.append({
+                continue
+
+        if not f_bytes:
+            continue
+        if len(f_bytes) > max_bytes:
+            msg = f"Attachment {f_name!r} ({len(f_bytes)} bytes) exceeds PURVIEW_MAX_ATTACHMENT_MB limit ({max_bytes} bytes)"
+            if fail_closed:
+                raise RuntimeError(msg)
+            print(f"  [!] {msg}")
+            continue
+
+        if len(f_bytes) <= INLINE_ATTACHMENT_LIMIT_BYTES:
+            inline_attachments.append({
                 "@odata.type": "#microsoft.graph.fileAttachment",
                 "name": f_name,
                 "contentType": f_mime,
                 "contentBytes": base64.b64encode(f_bytes).decode("ascii"),
             })
+        else:
+            large_attachments.append((f_name, f_mime, f_bytes))
 
     # Custom headers (Max 5 per message creation in Graph API)
     headers_list = [
         {"name": "X-GE-Engine-ID", "value": engine_id[:200]},
         {"name": "X-GE-Session-ID", "value": session_id[:200]},
         {"name": "X-GE-Turn-Index", "value": str(turn_idx)},
-        {"name": "X-GE-Artifact-Count", "value": str(len(files))},
+        {"name": "X-GE-Custodian-UPN", "value": custodian_upn[:200]},
         {"name": "X-GE-Archive-URI", "value": str(turn_row.get("session_transcript_gcs_uri") or "")[:200]},
     ]
 
+    extended_props: list[dict[str, str]] = [
+        {
+            "id": "String 0x001A",
+            "value": PURVIEW_MESSAGE_CLASS,
+        },
+        {
+            "id": "SystemTime 0x0039",
+            "value": event_ts,
+        },
+        {
+            "id": "SystemTime 0x0E06",
+            "value": event_ts,
+        },
+    ]
+    if not large_attachments:
+        # PR_MESSAGE_FLAGS (0x0E07) = 1 (MSGFLAG_READ, non-draft received compliance item)
+        extended_props.append({"id": "Integer 0x0E07", "value": "1"})
+
+    include_thoughts = _should_include_thought_text(mailbox_upn, custodian_upn)
     msg_payload: dict[str, Any] = {
-        "subject": f"[Gemini Enterprise eDiscovery] {session_title} (Session {session_id} · Turn #{turn_idx})",
+        "subject": f"[Gemini Enterprise eDiscovery] {session_title} (Custodian: {custodian_upn} · Session {session_id} · Turn #{turn_idx})",
         "importance": "normal",
-        "isDraft": False,
+        "isDraft": bool(large_attachments),
         "internetMessageId": internet_msg_id,
         "internetMessageHeaders": headers_list,
         "from": {
@@ -601,7 +768,7 @@ def push_turn_to_purview_ediscovery_mailbox(
         "sender": {
             "emailAddress": {
                 "name": f"Google Gemini Enterprise ({engine_id})",
-                "address": custodian_upn,
+                "address": mailbox_upn,
             }
         },
         "toRecipients": [
@@ -614,43 +781,46 @@ def push_turn_to_purview_ediscovery_mailbox(
         ],
         "body": {
             "contentType": "HTML",
-            "content": build_legal_brief_html(turn_row),
+            "content": build_legal_brief_html(
+                turn_row,
+                custodian_upn=custodian_upn,
+                include_thought_text=include_thoughts,
+            ),
         },
-        "singleValueExtendedProperties": [
-            # PidTagMessageClass (0x001A) -> identifies item class in Purview eDiscovery
-            {
-                "id": "String 0x001A",
-                "value": PURVIEW_MESSAGE_CLASS,
-            },
-            # PR_MESSAGE_FLAGS (0x0E07) = 1 (MSGFLAG_READ, non-draft received compliance item)
-            {
-                "id": "Integer 0x0E07",
-                "value": "1",
-            },
-            # PR_CLIENT_SUBMIT_TIME (0x0039) & PR_MESSAGE_DELIVERY_TIME (0x0E06)
-            {
-                "id": "SystemTime 0x0039",
-                "value": event_ts,
-            },
-            {
-                "id": "SystemTime 0x0E06",
-                "value": event_ts,
-            },
-        ],
+        "singleValueExtendedProperties": extended_props,
     }
-    if attachments:
-        msg_payload["attachments"] = attachments
+    if inline_attachments:
+        msg_payload["attachments"] = inline_attachments
 
-    encoded_upn = urllib.parse.quote(custodian_upn, safe="")
+    encoded_upn = urllib.parse.quote(mailbox_upn, safe="")
     create_msg_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders/{folder_id}/messages"
     created = graph_api_request("POST", create_msg_url, graph_token, msg_payload)
+    msg_id = created.get("id", "")
+
+    if large_attachments and msg_id:
+        for lg_name, lg_mime, lg_bytes in large_attachments:
+            upload_large_attachment_to_message(mailbox_upn, msg_id, lg_name, lg_mime, lg_bytes, graph_token)
+        # Seal draft message as a read compliance item (PR_MESSAGE_FLAGS = 1) once all chunks finish
+        try:
+            patch_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/messages/{urllib.parse.quote(msg_id, safe='')}"
+            graph_api_request(
+                "PATCH",
+                patch_url,
+                graph_token,
+                {"singleValueExtendedProperties": [{"id": "Integer 0x0E07", "value": "1"}]},
+            )
+        except Exception:
+            pass
+
     return {
         "status": "created",
-        "message_id": created.get("id"),
+        "message_id": msg_id,
         "custodian_upn": custodian_upn,
+        "mailbox_upn": mailbox_upn,
         "folder_id": folder_id,
         "internet_message_id": internet_msg_id,
-        "attachments_count": len(attachments),
+        "attachments_count": len(inline_attachments) + len(large_attachments),
+        "large_attachments_count": len(large_attachments),
     }
 
 
@@ -671,7 +841,8 @@ def push_turn_to_purview_process_content(
 
     engine_id = str(turn_row.get("engine_id") or "gemini-enterprise")
     session_id = str(turn_row.get("session_id") or str(uuid.uuid4()))
-    turn_idx = int(turn_row.get("turn_index") or 1)
+    raw_turn_idx = turn_row.get("turn_index")
+    turn_idx = int(raw_turn_idx) if raw_turn_idx is not None else 1
     event_ts = str(turn_row.get("event_timestamp") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     if " " in event_ts and "T" not in event_ts:
         event_ts = event_ts.replace(" ", "T").replace(" UTC", "Z")
@@ -811,6 +982,11 @@ def forward_turns_to_purview(
         except Exception as e:
             print(f"  [!] processContent warning for {row.get('session_id')}: {e}")
 
+    if summary["errors"] and _is_fail_closed():
+        raise RuntimeError(
+            f"Purview eDiscovery mailbox archival failed for {len(summary['errors'])} turn(s): {summary['errors'][0]}"
+        )
+
     return summary
 
 
@@ -828,12 +1004,19 @@ if __name__ == "__main__":
     parser.add_argument("--tenant-id", default=MS_TENANT_ID, help="Microsoft Entra ID Tenant ID")
     parser.add_argument("--client-id", default=MS_CLIENT_ID, help="Microsoft Entra ID App Registration Client ID")
     parser.add_argument("--target-custodian-upn", default=PURVIEW_TARGET_CUSTODIAN_UPN, help="Optional target M365 custodian mailbox UPN")
+    parser.add_argument(
+        "--compliance-journal-upn",
+        default=PURVIEW_COMPLIANCE_JOURNAL_UPN,
+        help="Dedicated non-custodian Exchange Online compliance mailbox UPN under Legal Hold (recommended)",
+    )
     parser.add_argument("--device-login", action="store_true", help="Authenticate interactively via https://login.microsoft.com/device")
     parser.add_argument("--limit", type=int, default=25, help="Max turns to sync from BigQuery (default: 25)")
     args = parser.parse_args()
 
     if args.target_custodian_upn:
         PURVIEW_TARGET_CUSTODIAN_UPN = args.target_custodian_upn.strip()
+    if args.compliance_journal_upn:
+        PURVIEW_COMPLIANCE_JOURNAL_UPN = args.compliance_journal_upn.strip()
 
     if not args.project_id:
         print("Error: --project-id (or GCP_PROJECT_ID) is required.")

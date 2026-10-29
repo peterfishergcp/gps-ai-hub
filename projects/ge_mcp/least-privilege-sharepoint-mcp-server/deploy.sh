@@ -1,56 +1,54 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2026 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
 
-# Configuration
-SERVICE_NAME="${SERVICE_NAME:-least-privilege-sharepoint-mcp-server}"
-REGION="${REGION:-us-central1}"
-PROJECT_ID="${GCP_PROJECT:-<INSERTYOURPROJECT_ID>}"
-
-# Load environment variables from .env if it exists
 if [ -f .env ]; then
+  echo "Loading configuration from .env..."
   set -a
   # shellcheck disable=SC1091
   source .env
   set +a
 fi
 
-if [[ "$PROJECT_ID" == "<INSERTYOURPROJECT_ID>" && -n "${GCP_PROJECT:-}" ]]; then
-  PROJECT_ID="$GCP_PROJECT"
-fi
+GCP_PROJECT="${GCP_PROJECT:?Error: Set GCP_PROJECT in .env or environment}"
+GCP_REGION="${GCP_REGION:-us-central1}"
+SERVICE_NAME="${SERVICE_NAME:-least-privilege-sharepoint-mcp-server}"
+SA_NAME="${SA_NAME:-least-priv-sp-sa}"
+SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_EMAIL:-${SA_NAME}@${GCP_PROJECT}.iam.gserviceaccount.com}"
+MS_GRAPH_SECRET_NAME="${MS_GRAPH_SECRET_NAME:-ms-graph-client-secret}"
 
-if [[ -z "${MS_GRAPH_TENANT_ID:-}" || -z "${MS_GRAPH_CLIENT_ID:-}" || -z "${MS_GRAPH_CLIENT_SECRET:-}" || -z "${ALLOWED_SHAREPOINT_SITES:-}" ]]; then
-  echo "❌ Missing required environment variables. Please set in .env or environment:"
-  echo "   - MS_GRAPH_TENANT_ID"
-  echo "   - MS_GRAPH_CLIENT_ID"
-  echo "   - MS_GRAPH_CLIENT_SECRET"
-  echo "   - ALLOWED_SHAREPOINT_SITES (comma-separated SharePoint site URLs)"
+if [ -z "${MS_GRAPH_TENANT_ID:-}" ] || [ -z "${MS_GRAPH_CLIENT_ID:-}" ] || [ -z "${ALLOWED_SHAREPOINT_SITES:-}" ]; then
+  echo "Error: MS_GRAPH_TENANT_ID, MS_GRAPH_CLIENT_ID, and ALLOWED_SHAREPOINT_SITES must be set."
   exit 1
 fi
 
-echo "🚀 Starting deployment of $SERVICE_NAME to Cloud Run ($REGION)..."
+if ! gcloud iam service-accounts describe "${SERVICE_ACCOUNT_EMAIL}" --project="${GCP_PROJECT}" >/dev/null 2>&1; then
+  gcloud iam service-accounts create "${SA_NAME}" \
+    --display-name="Least-Privilege SharePoint MCP Cloud Run SA" \
+    --project="${GCP_PROJECT}"
+fi
 
-# Use ^|^ delimiter in --set-env-vars so comma-separated ALLOWED_SHAREPOINT_SITES is preserved intact
-gcloud run deploy "$SERVICE_NAME" \
+gcloud secrets describe "${MS_GRAPH_SECRET_NAME}" --project="${GCP_PROJECT}" >/dev/null 2>&1 || {
+  echo "Error: Secret '${MS_GRAPH_SECRET_NAME}' not found in Secret Manager (${GCP_PROJECT})."
+  exit 1
+}
+
+gcloud secrets add-iam-policy-binding "${MS_GRAPH_SECRET_NAME}" \
+  --project="${GCP_PROJECT}" \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/secretmanager.secretAccessor" \
+  --quiet >/dev/null
+
+# NOTE: --allow-unauthenticated is retained for quick evaluation with signed OAuth Bearer validation.
+# For production deployments, switch to --no-allow-unauthenticated and grant roles/run.invoker (see README.md).
+# Note: ALLOWED_SHAREPOINT_SITES may contain commas, so use ^|^ custom gcloud delimiter.
+gcloud run deploy "${SERVICE_NAME}" \
   --source . \
-  --region "$REGION" \
-  --project "$PROJECT_ID" \
+  --project "${GCP_PROJECT}" \
+  --region "${GCP_REGION}" \
+  --service-account "${SERVICE_ACCOUNT_EMAIL}" \
   --allow-unauthenticated \
-  --port 3000 \
-  --quiet \
-  --set-env-vars "^|^MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID}|MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID}|MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_CLIENT_SECRET}|SHAREPOINT_HOSTNAME=${SHAREPOINT_HOSTNAME:-}|ALLOWED_SHAREPOINT_SITES=${ALLOWED_SHAREPOINT_SITES}"
-
-echo "✅ Deployment complete!"
+  --set-env-vars="^|^MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID}|MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID}|SHAREPOINT_HOSTNAME=${SHAREPOINT_HOSTNAME:-}|ALLOWED_SHAREPOINT_SITES=${ALLOWED_SHAREPOINT_SITES}|ALLOW_APP_CREDENTIALS=true" \
+  --set-secrets="MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_SECRET_NAME}:latest"

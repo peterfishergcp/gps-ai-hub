@@ -69,7 +69,7 @@ flowchart LR
     end
 
     subgraph Storage["Compliance Archive & Analytics"]
-        G[("Cloud Storage Bucket\n(Versioning + UBLA)\n• session_transcript.json\n• notebook_archive.json\n• USER_PROVIDED binaries\n• AI_GENERATED PDFs, PNGs & HTML Slides\n• NOTEBOOK_STUDIO MP3/MP4/PDF/JSON")]
+        G[("Cloud Storage Bucket\n(Versioning + UBLA)\n• session_transcript_<sha256>.json\n• notebook_archive_<sha256>.json\n• USER_PROVIDED binaries\n• AI_GENERATED PDFs, PNGs & HTML Slides\n• NOTEBOOK_STUDIO MP3/MP4/PDF/JSON")]
         H[("BigQuery Dataset (ge_ediscovery)\n• conversation_turns\n• v_ediscovery_file_audit\n• v_realtime_agent_and_file_activity\n• v_notebooklm_forensic_audit\n• v_jailbreak_and_security_detections\n• fn_user_forensic_report()")]
     end
 
@@ -108,15 +108,15 @@ flowchart LR
 4. **Real-Time Event-Driven Cloud Run Harvester & Pub/Sub Dead-Letter Queue (`deploy_cloudrun_harvester.py`, `cloudrun_harvester_server.py`, `ge_harvest.py`, `scripts/replay-dlq.sh`)**:
    - **Real-Time Event-Driven Mode (`<10s` latency)**: A Cloud Logging sink (`ge-ediscovery-pubsub-sink`) streams `StreamAssist`, `Assist`, `UploadSessionFile`, `AddContextFile`, `GenerateFreeFormStreamed`, `BatchCreateSources`, `CreateNotebook`, `AudioOverviewService.*`, and `NotebookService.*` log entries to Pub/Sub (`ge-ediscovery-events`), which pushes each event via an OIDC-authenticated subscription (`ge-ediscovery-push-sub`) to the private Cloud Run service (`ge-ediscovery-harvester`, `--no-allow-unauthenticated`). Any unprocessable event after 10 delivery attempts is captured in `ge-ediscovery-dlq` (`ge-ediscovery-dlq-hold`) for inspection and replay via `scripts/replay-dlq.sh`.
    - **Gemini Enterprise, Custom Agents & Interactive Canvas**: Mints a per-user WIF STS token via Cloud KMS `:asymmetricSign`, fetches full untruncated `GetSession?includeAnswerDetails=true` transcripts, downloads all `USER_PROVIDED` and `AI_GENERATED` files via `:downloadFile`, inspects magic bytes (`detect_mime_and_extension`) to upgrade generic `application/octet-stream` payloads, compiles interactive Canvas `save_slides_to_artifact` tool calls into standalone multi-slide HTML presentations (`extract_canvas_slides`), computes `SHA-256` and `CRC32C` digests, and archives to GCS + BigQuery.
-   - **NotebookLM Enterprise (Sources, Chat & 12-Modality Studio)**: Mints a per-user WIF STS token via Cloud KMS `:asymmetricSign` to call `notebooks.get`, `notebooks.sources.get`, `audioOverviews`, and `notes`, downloads binary Studio media (`.mp3`, `.mp4`, `.pdf`, `.png`) via Discovery Engine's Scotty `/download/v1alpha/{name}:download?alt=media` endpoint, deduplicates streamed reply chunks (`clean_notebooklm_streamed_reply`), archives `notebook_archive.json` and Studio artifacts to `gs://<BUCKET>/notebooks/{location}/{notebook_id}/`, and loads structured turns, `NOTEBOOK_SOURCE` records, and `NOTEBOOK_STUDIO_ARTIFACT` records into BigQuery.
+   - **NotebookLM Enterprise (Sources, Chat & 12-Modality Studio)**: Mints a per-user WIF STS token via Cloud KMS `:asymmetricSign` to call `notebooks.get`, `notebooks.sources.get`, `audioOverviews`, and `notes`, downloads binary Studio media (`.mp3`, `.mp4`, `.pdf`, `.png`) via Discovery Engine's Scotty `/download/v1alpha/{name}:download?alt=media` endpoint, deduplicates streamed reply chunks (`clean_notebooklm_streamed_reply`), archives content-addressed `notebook_archive_<sha256>.json` and Studio artifacts to `gs://<BUCKET>/notebooks/{location}/{notebook_id}/`, and loads an immutable `turn_index = 0` inventory row plus timestamp-addressed chat turns, `NOTEBOOK_SOURCE` records, and `NOTEBOOK_STUDIO` records into BigQuery.
 5. **Spoliation Prevention & Drift-Safe Custom No-Delete Role (`setup_no_delete_role.py`, `sync_no_delete_role.py`, `scripts/swap-user-role.sh`, `scripts/sync-custom-role.sh`)**:
    - Provisions the custom role `projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete` with every testable permission from `roles/discoveryengine.user` **except** `discoveryengine.sessions.delete` and `discoveryengine.sessions.removeContextFile`, and swaps your Workforce Identity Pool principal non-authoritatively (with automatic IAM backup and 1-command `--rollback`).
    - Provides a Two-Layer Delete-Guard synchronization script (`sync_no_delete_role.py` / `scripts/sync-custom-role.sh`) that compares `roles/discoveryengine.user` against `geUserNoDelete`, allowing you to safely merge new read/chat/agent permissions added by Google over time without ever re-introducing session or file deletion capabilities.
 6. **Self-Contained Compliance & Legal Brief Narrative Review Portal (`portal/`, `deploy_portal.py`)**:
-   - Deploys a single self-contained Cloud Run service (`ge-ediscovery-portal`, `--no-allow-unauthenticated`, `--iap` enabled by default) running under a dedicated read-only service account (`ge-ediscovery-portal-sa` with zero KMS signing or write permissions) that serves both the compiled React 18 Legal Brief Narrative SPA (`portal/dist`) and the Python BigQuery/GCS API (`portal/server.py`) with structured Cloud Logging access audit logs (`ediscovery_portal_access_audit`) and strict Content-Security-Policy headers.
-   - Features side-by-side **Session Metadata**, **Turn Reasoning (`thought_text`)**, **File Provenance Box** (`SHA-256 Integrity`, `CRC32C Integrity`, `GCS Archive Path`, `Original File ID`, `MIME Type`, `Size`), inline PDF / HTML Slide Deck / Image / Audio / Video playback (with HTTP `206 Partial Content` `Range` streaming), and dedicated **NotebookLM Enterprise** tabs (**Sources**, **Chat**, and **Studio**).
+   - Deploys a single self-contained Cloud Run service (`ge-ediscovery-portal`, `--no-allow-unauthenticated`, `--iap` enabled by default, fail-closed `ALLOWED_REVIEWER_EMAILS` / `ALLOWED_REVIEWER_DOMAINS` RBAC) running under a dedicated read-only service account (`ge-ediscovery-portal-sa` with zero KMS signing or write permissions) that serves both the compiled React 18 Legal Brief Narrative SPA (`portal/dist`) and the Python BigQuery/GCS API (`portal/server.py`) with structured Cloud Logging access audit logs (`ediscovery_portal_access_audit`) and strict Content-Security-Policy headers.
+   - Features side-by-side **Session Metadata**, **Turn Reasoning (`thought_text`)**, **File Provenance Box** (`SHA-256 Integrity`, `CRC32C Integrity`, `GCS Archive Path`, `Original File ID`, `MIME Type`, `Size`), inline PDF / sandboxed HTML Slide Deck / Image / Audio / Video playback (with chunked HTTP `206 Partial Content` `Range` streaming), and dedicated **NotebookLM Enterprise** tabs (**Sources**, **Chat**, and **Studio**).
 7. **Microsoft Purview eDiscovery & DSPM for AI Connector (`purview_connector.py`)**:
-   - **Track 1 — Purview eDiscovery Custodian Mailbox Substrate**: Automatically resolves Entra ID UPNs or Object ID GUIDs (`google.subject = assertion.oid`), creates a dedicated `Gemini Enterprise eDiscovery` compliance folder in the custodian's Exchange Online mailbox, deduplicates via `internetMessageId` (`<ge-ediscovery-{engine_id}-{session_id}-turn-{turn_index}@gemini.cloud.google.com>`), stamps MAPI `PidTagMessageClass` (`String 0x001A` = `IPM.Note.Google.GeminiEnterprise`) and `X-GE-*` headers, renders a self-contained HTML Legal Brief (Prompt + Thought Trace + Response + SHA-256/CRC32C table), and attaches raw binary files (`#microsoft.graph.fileAttachment`) fetched directly from Cloud Storage.
+   - **Track 1 — Purview eDiscovery Compliance Journal / Mailbox Substrate**: Resolves Entra ID UPNs or Object ID GUIDs (`google.subject = assertion.oid`), writes immutable compliance copies into a dedicated non-custodian compliance journal mailbox (`PURVIEW_COMPLIANCE_JOURNAL_UPN` under Legal Hold / Preservation Lock) or hidden Exchange compliance folder (`isHidden: true`), deduplicates via `internetMessageId` (`X-GE-Session-ID` + `X-GE-Turn-Index`), stamps MAPI `PidTagMessageClass` (`String 0x001A` via `PURVIEW_MESSAGE_CLASS`) and `X-GE-*` headers, renders a self-contained HTML Legal Brief, attaches inline binaries `<= 3 MiB` (`#microsoft.graph.fileAttachment`), and uploads large binary attachments `> 3 MiB` (up to `150 MiB`) in `3.75 MiB` chunks via Microsoft Graph `createUploadSession` (failing closed to Pub/Sub DLQ on delivery error).
    - **Track 2 — Microsoft Purview DSPM for AI & Audit (`processContent` API)**: Calls `POST /v1.0/users/{upn}/dataSecurityAndGovernance/processContent` with `#microsoft.graph.processConversationMetadata` (`uploadText` for user prompt, `downloadText` for model response, `accessedResources_v2` for file URIs).
 
 ---
@@ -160,14 +160,14 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 | [`scripts/replay-dlq.sh`](./scripts/replay-dlq.sh) | Inspects (`--peek`) or republishes (`--replay`) dead-lettered events from `ge-ediscovery-dlq-hold` back to `ge-ediscovery-events` |
 | [`test_ge_ediscovery_e2e.py`](./test_ge_ediscovery_e2e.py) | End-to-end verification suite (runs 8 automated compliance, security, `DeleteSession -> HTTP 403`, and BigQuery checks) |
 | [`sites-search-agent/`](./sites-search-agent/) | Example ADK Agent (`sites_search_agent`) built with `agents-cli` and `fpdf2` that searches Google Sites and generates binary 1–2 page PDF summary artifacts (`AI_GENERATED`) captured by `ge_harvest.py` |
-| [`AGENTS.md`](./AGENTS.md) | Turnkey AGY CLI customer deployment playbook (auto-discovery commands, IAM preflight checks, split Org/Project Admin handling, and troubleshooting) |
+| [`AGENTS.md`](./AGENTS.md) | Turnkey customer deployment playbook (auto-discovery commands, IAM preflight checks, split Org/Project Admin handling, and troubleshooting) |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Deep-dive technical architecture, protocol specifications, Cloud KMS + Cloud Run design, Compliance Review Portal API, and production hardening guide |
 
 ---
 
 ## Quickstart & Installation Guide
 
-> **Deploying with AGY CLI at a Customer Site?** See [`AGENTS.md`](./AGENTS.md) for the automated AGY CLI deployment playbook, environment auto-discovery commands, preflight IAM permission test, and Org-vs-Project admin guidance.
+> **Deploying at a Customer Site?** See [`AGENTS.md`](./AGENTS.md) for the automated customer deployment playbook, environment auto-discovery commands, preflight IAM permission test, and Org-vs-Project admin guidance.
 
 ### Prerequisites
 
@@ -260,21 +260,26 @@ python3 ge_harvest.py \
 
 ### Step 6: Deploy or Run the Self-Contained Compliance Review Portal (`portal/`)
 
-Deploy the **Compliance & Legal Brief Narrative Review Portal** (`ge-ediscovery-portal`) to Cloud Run as a single self-contained container (serving both the compiled React 18 SPA and the BigQuery/GCS API endpoints):
+Deploy the **Compliance & Legal Brief Narrative Review Portal** (`ge-ediscovery-portal`) to Cloud Run as a single self-contained container (`1Gi` RAM, serving both the compiled React 18 SPA and the BigQuery/GCS API endpoints with server-side JWT `aud` verification and fail-closed reviewer RBAC):
 
 ```bash
-python3 deploy_portal.py --project-id "$GCP_PROJECT_ID"
+python3 deploy_portal.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --iap-accessor "user:legal-reviewer@example.com" \
+  --allowed-reviewer-emails "legal-reviewer@example.com,compliance-lead@example.com"
 ```
 
-To access the IAM-protected Cloud Run portal in your browser via `gcloud run services proxy`, or to run the portal directly on your workstation/cloudtop:
+> **Security Note**: `deploy_portal.py` automatically configures `IAP_AUDIENCE` for server-side ES256/RS256 token audience verification, grants read-only access strictly on the `ge_ediscovery` BigQuery dataset (rather than project-wide `bigquery.dataViewer`), and blocks broad `--iap-accessor domain:...` bindings so sensitive legal, HR, and executive transcripts are never exposed across an entire domain.
+
+To access the IAM-protected Cloud Run portal in your browser via `gcloud run services proxy`, or to run the portal locally on `127.0.0.1` for testing:
 
 ```bash
 # Option A: Proxy to the Cloud Run service
 gcloud run services proxy ge-ediscovery-portal --project "$GCP_PROJECT_ID" --region us-central1 --port 8085
 
-# Option B: Run the portal server directly (after building portal/dist)
+# Option B: Run the portal server locally on 127.0.0.1 (after building portal/dist)
 npm --prefix portal install && npm --prefix portal run build
-GCP_PROJECT_ID="$GCP_PROJECT_ID" PORT=8085 python3 portal/server.py
+ALLOW_LOCAL_DEV_BYPASS=true GCP_PROJECT_ID="$GCP_PROJECT_ID" HOST=127.0.0.1 PORT=8085 python3 portal/server.py
 ```
 
 ---
@@ -334,30 +339,96 @@ python3 test_ge_ediscovery_e2e.py \
 ### Step 9: (Optional) Sync Gemini Enterprise Turns & Binary Attachments to Microsoft Purview eDiscovery (`purview_connector.py`)
 
 For enterprises using **Microsoft Purview eDiscovery (Standard / Premium)** and **Purview DSPM for AI**, `purview_connector.py` pushes harvested Gemini Enterprise turns, reasoning traces (`thought_text`), and raw binary files (`USER_PROVIDED` uploads and `AI_GENERATED` PDFs/images/slides) into Microsoft 365 via two parallel Microsoft Graph tracks:
-- **Track 1 — Purview eDiscovery Custodian Mailbox Substrate**: Writes an immutable, deduplicated item (`internetMessageId: <ge-ediscovery-{engine_id}-{session_id}-turn-{turn_index}@gemini.cloud.google.com>`) into the custodian's Exchange Online `Gemini Enterprise eDiscovery` folder with MAPI `PidTagMessageClass` (`0x001A` = `IPM.Note.Google.GeminiEnterprise`), searchable `X-GE-*` headers, a self-contained HTML Legal Brief body, and raw binary `#microsoft.graph.fileAttachment` payloads fetched from Cloud Storage.
-- **Track 2 — Microsoft Purview DSPM for AI (`processContent`)**: Calls `POST /v1.0/users/{upn}/dataSecurityAndGovernance/processContent` with `#microsoft.graph.processConversationMetadata` (`uploadText` for user prompt, `downloadText` for model response, and `accessedResources_v2` for file URIs).
+- **Track 1 — Purview eDiscovery Compliance Journal / Mailbox Substrate**: Writes an immutable, deduplicated item (`internetMessageId: <ge-ediscovery-{engine_id}-{session_id}-turn-{turn_index}@gemini.cloud.google.com>`) with MAPI `PidTagMessageClass` (`0x001A` via `PURVIEW_MESSAGE_CLASS`), searchable `X-GE-*` headers (`X-GE-Custodian-UPN`, `X-GE-Session-ID`, `X-GE-Turn-Index`), a self-contained HTML Legal Brief body, inline binaries `<= 3 MiB` (`#microsoft.graph.fileAttachment`), and chunked Microsoft Graph `createUploadSession` uploads (`3.75 MiB` chunks up to `150 MiB`) for binary attachments `> 3 MiB`.
+- **Track 2 — Microsoft Purview DSPM for AI (`processContent`)**: Calls `POST /v1.0/users/{custodian_upn}/dataSecurityAndGovernance/processContent` with `#microsoft.graph.processConversationMetadata` (`uploadText` for user prompt, `downloadText` for model response, and `accessedResources_v2` for file URIs).
+
+#### Purview Compliance Journal Mailbox (`PURVIEW_COMPLIANCE_JOURNAL_UPN`) vs. Custodian Email — How Installation Works
+
+**Do administrators need to supply two emails per user?** **No.**
+- **Custodian Email (Automatic Per Turn — Zero Manual Per-User Input):** Every turn's custodian UPN (e.g., `alice@example.com` or an Entra Object ID GUID resolved via `/users/{oid}`) is automatically extracted from the federated WIF `user_iam_principal` in BigQuery / Cloud Logging. Track 2 (`processContent`) always attributes activity directly to that custodian, and Track 1 always stamps `From` and `X-GE-Custodian-UPN` with that custodian's email so Purview KQL queries by user (`"alice@example.com"`) continue to work identically.
+- **Target Mailbox for Track 1 Storage (Two Supported Modes):**
+  1. **Recommended Anti-Spoliation Mode (One Tenant-Wide Compliance Journal Mailbox):** Set `PURVIEW_COMPLIANCE_JOURNAL_UPN="ediscovery-journal@example.com"` once at install time to a single dedicated, non-custodian Exchange Online shared/compliance mailbox protected by Microsoft 365 Litigation Hold + Preservation Lock (with zero end-user login or delegate permissions). All custodian turns across the organization are archived into that single locked mailbox, preventing a custodian who is not yet on individual litigation hold from deleting items out of their own mailbox.
+  2. **Backward-Compatible Custodian Folder Mode (Default When Unset):** If `PURVIEW_COMPLIANCE_JOURNAL_UPN` is omitted, `purview_connector.py` defaults to archiving into a hidden folder (`PidTagAttributeHidden` / `isHidden: true`, named `Gemini Enterprise eDiscovery`) inside each custodian's own Exchange mailbox—requiring **zero configuration changes** for existing deployments, while logging a reminder to enforce an org-wide Microsoft Purview retention/hold policy on custodian mailboxes.
 
 ```bash
-# 1. Authenticate interactively via OAuth 2.0 Device Code flow (or set MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET for daemon mode):
+# 1. Recommended Production Mode: Archive all turns into one locked compliance journal mailbox
+#    (Custodian UPNs are still auto-detected per turn from WIF user_iam_principal!)
+PURVIEW_COMPLIANCE_JOURNAL_UPN="ediscovery-journal@example.com" \
 python3 purview_connector.py \
   --project-id "$GCP_PROJECT_ID" \
   --tenant-id "$MS_TENANT_ID" \
   --client-id "$MS_CLIENT_ID" \
-  --device-login \
-  --limit 25
+  --limit 50
 
-# 2. Sync turns from a specific Gemini Enterprise engine to a target M365 custodian mailbox:
+# 2. Backward-Compatible Mode (or CLI Ad-Hoc Test Override for a single test custodian):
 python3 purview_connector.py \
   --project-id "$GCP_PROJECT_ID" \
   --engine-id "$GE_ENGINE_ID" \
-  --target-custodian-upn "custodian@your-tenant.onmicrosoft.com" \
+  --target-custodian-upn "custodian@example.com" \
   --limit 50
 ```
 
-Once synced (or streamed automatically by `ge_harvest.py` when `MS_TENANT_ID` credentials are configured), compliance investigators can search, place legal holds on, and add Gemini Enterprise interactions directly into **Purview eDiscovery Review Sets** (`https://purview.microsoft.com/ediscovery/cases`) using KQL queries such as:
+Once synced (or streamed automatically by `ge_harvest.py` when `MS_TENANT_ID` credentials are configured, with `PURVIEW_FAIL_CLOSED=true` returning HTTP `500` so Pub/Sub retries / DLQs transient Microsoft Graph failures), compliance investigators can search, place legal holds on, and add Gemini Enterprise interactions directly into **Purview eDiscovery Review Sets** inside the Microsoft Purview portal using KQL queries such as:
 - All Gemini Enterprise turns: `"Gemini Enterprise eDiscovery"`
+- Specific Custodian UPN (works in both Journal Mailbox and Custodian Folder modes): `"Gemini Enterprise eDiscovery" AND "alice@example.com"`
 - Specific Session ID: `"<SESSION_ID>"`
-- Turns with binary PDF/image attachments: `"Gemini Enterprise eDiscovery" AND HasAttachment:true`
+- Turns with binary PDF/image/audio/video attachments (including `> 3 MiB` upload-session files): `"Gemini Enterprise eDiscovery" AND HasAttachment:true`
+
+---
+
+## Upgrading an Existing Customer GCP Deployment (Zero-Downtime Migration Guide)
+
+If you have already installed an earlier release of `ge-ediscovery-logging` in a customer GCP project, **you do not need to recreate your Cloud Storage bucket, BigQuery dataset, Cloud KMS key, or Workforce Identity Pool**. Existing historical archive blobs and `conversation_turns` rows remain 100% intact.
+
+### Summary of Security, Anti-Spoliation & Reliability Upgrades
+1. **BigQuery Evidence Preservation & Greenfield Safety (`setup_storage_and_bigquery.py`, `ge_harvest.py`)**:
+   - **72-Hour Session File Preservation**: `load_turns_to_bigquery` now unions existing `T.files` with newly harvested `S.files` (`COALESCE` by `file_id` / `gcs_uri`) during atomic `MERGE`, preventing re-harvests after Discovery Engine's ~72-hour session file TTL from overwriting earlier `USER_PROVIDED` file metadata with an empty array.
+   - **30-Day NotebookLM Turn Preservation**: NotebookLM chat turns now compute deterministic positive 31-bit hashes (`compute_notebook_turn_index(timestamp, prompt_text)`) instead of re-numbering sequentially (`1..N`) from the 30-day Cloud Logging window, preventing older turns from being overwritten.
+   - **Content-Addressed Transcript Snapshots**: Session and NotebookLM raw JSON snapshots are now stored at `session_transcript_<sha256[:16]>.json` and `notebook_archive_<sha256[:16]>.json` (while preserving backward compatibility with legacy filenames) and GCS bucket provisioning honors `--no-versioning` alongside WORM retention locks.
+   - **Greenfield `INFORMATION_SCHEMA` Guard & New Custodian View**: `setup_storage_and_bigquery.py` checks `INFORMATION_SCHEMA.TABLES` before referencing raw Cloud Logging sink tables (eliminating `Not found: Table ... gemini_enterprise_user_activity` errors on fresh projects before the first user chat) and adds `v_ediscovery_custodian_export` (filtering out internal `ediscovery-smoke-*` / `test@example.com` verification rows).
+2. **Least-Privilege IAM & WIF Subject Scoping (`deploy_cloudrun_harvester.py`, `ge_harvest.py`, `cloudrun_harvester_server.py`)**:
+   - Replaces `roles/storage.objectAdmin` on `ge-ediscovery-harvester-sa` with `roles/storage.objectCreator` + `roles/storage.objectViewer` (write-once/read-many—the harvester cannot delete archived GCS evidence).
+   - Enforces `ARCHIVER_ALLOWED_SUBJECT_DOMAINS` / `ARCHIVER_DENIED_SUBJECTS` before Cloud KMS signing, validates OIDC caller emails on `/pubsub` and `/sweep`, and passes `MS_CLIENT_SECRET` via Cloud Secret Manager (`--set-secrets`) instead of plaintext `--set-env-vars`.
+3. **Microsoft Purview Legal Hold & Large Attachment Support (`purview_connector.py`)**:
+   - Adds optional `PURVIEW_COMPLIANCE_JOURNAL_UPN` (single locked compliance mailbox across the tenant, backward-compatible with custodian hidden folders if unset), Microsoft Graph `createUploadSession` chunked uploads for binary attachments `> 3 MiB` (up to `150 MiB`), hidden folder creation (`isHidden: true`), and fail-closed Pub/Sub DLQ retry semantics.
+4. **Compliance Review Portal Security & Scale (`deploy_portal.py`, `portal/`)**:
+   - Enforces server-side JWT `aud` validation (`IAP_AUDIENCE`) via in-memory `cryptography` verification, fail-closed `ALLOWED_REVIEWER_EMAILS` / `ALLOWED_REVIEWER_DOMAINS` RBAC, dataset-scoped BigQuery `READER` permissions (instead of project-wide `bigquery.dataViewer`), `1Gi` container memory with chunked HTTP `206 Partial Content` `Range` media streaming, server-side BigQuery `/api/search` beyond the initial 2,000-turn UI window, and `dompurify@3.4.17` terminal sanitization with read-beacon-blocking `img-src data: blob:` slide CSP.
+
+### 5-Step Zero-Downtime Upgrade Commands for Existing Installations
+
+Run the following idempotent commands against an existing GCP deployment:
+
+```bash
+export GCP_PROJECT_ID="<YOUR_EXISTING_GCP_PROJECT_ID>"
+export WORKFORCE_POOL_ID="<YOUR_EXISTING_WORKFORCE_POOL_ID>"
+
+# 1. Pull the latest repository updates and rebuild the Portal frontend:
+git pull
+npm --prefix portal ci && npm --prefix portal run build
+
+# 2. Idempotently update BigQuery views/TVFs (adds v_ediscovery_custodian_export & greenfield-safe views):
+python3 setup_storage_and_bigquery.py --project-id "$GCP_PROJECT_ID"
+
+# 3. Redeploy the Cloud Run Harvester (updates non-destructive MERGE, content-addressed GCS, and Secret Manager wiring):
+#    Optional: pass --allowed-subject-domains "example.com" to restrict WIF subject minting by domain
+python3 deploy_cloudrun_harvester.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --workforce-pool-id "$WORKFORCE_POOL_ID"
+
+# 4. Redeploy the Compliance Review Portal (enables 1Gi RAM, IAP_AUDIENCE, Range streaming, and Reviewer RBAC):
+python3 deploy_portal.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --iap-accessor "user:legal-reviewer@example.com" \
+  --allowed-reviewer-emails "legal-reviewer@example.com"
+
+# 5. (Optional Recommended Hardening) Remove legacy over-broad IAM bindings from earlier versions:
+#    - Remove roles/storage.objectAdmin from ge-ediscovery-harvester-sa on your archive bucket
+#      (deploy_cloudrun_harvester.py already grants storage.objectCreator + storage.objectViewer)
+#    - Remove project-level roles/bigquery.dataViewer from ge-ediscovery-portal-sa
+#      (deploy_portal.py already grants dataset-level READER strictly on ge_ediscovery)
+#    - If using Microsoft Purview, optionally set PURVIEW_COMPLIANCE_JOURNAL_UPN on ge-ediscovery-harvester
+#      to route new compliance copies into a single Litigation-Hold-locked shared mailbox.
+```
 
 ---
 
@@ -393,7 +464,7 @@ ORDER BY event_timestamp DESC, turn_index ASC;
 
 ### 2. Full Turn-by-Turn Conversation & Model Reasoning Transcript (`conversation_turns`)
 
-Retrieves every conversation turn across all users, Gemini Enterprise engines, and NotebookLM Enterprise notebooks, including full untruncated prompts, responses, internal model reasoning (`thought_text`), and links to the raw `GetSession` or `notebook_archive.json` transcript in Cloud Storage:
+Retrieves every conversation turn across all users, Gemini Enterprise engines, and NotebookLM Enterprise notebooks, including full untruncated prompts, responses, internal model reasoning (`thought_text`), and links to the raw `GetSession` (`session_transcript_<sha256>.json`) or `notebook_archive_<sha256>.json` transcript in Cloud Storage:
 
 ```sql
 SELECT
@@ -531,7 +602,7 @@ ORDER BY event_timestamp DESC, session_id, turn_index ASC;
 
 ### 6. NotebookLM Enterprise Forensic Audit View (`v_notebooklm_forensic_audit`)
 
-Retrieves every NotebookLM Enterprise interaction (`NOTEBOOK_CHAT_QUERY` and `SOURCE_INGESTION_AUDIT`), including the user subject, notebook ID, notebook title, full prompt query, deduplicated grounded response with citations, source count, and the Cloud Storage archive URL (`notebook_archive.json`):
+Retrieves every NotebookLM Enterprise interaction (`NOTEBOOK_CHAT_QUERY` and `SOURCE_INGESTION_AUDIT`), including the user subject, notebook ID, notebook title, full prompt query, deduplicated grounded response with citations, source count, and the Cloud Storage archive URL (`notebook_archive_<sha256>.json`):
 
 ```sql
 SELECT
@@ -573,7 +644,7 @@ SELECT
   n.notebook_archive_console_url
 FROM `<YOUR_GCP_PROJECT_ID>.ge_ediscovery.v_notebooklm_forensic_audit` AS n,
 UNNEST(n.sources) AS s
-WHERE n.turn_index = 1
+WHERE n.turn_index = 0 OR n.activity_type = 'SOURCE_INGESTION_AUDIT'
 ORDER BY n.event_timestamp DESC, s.source_title_and_origin;
 ```
 

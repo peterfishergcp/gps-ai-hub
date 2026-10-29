@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "description": "Outlook MCP Server integrated with Microsoft Graph API (Mail & Calendar) and Gemini Enterprise",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "bash test_local.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",
     "axios": "^1.13.5",
     "dotenv": "^17.3.1"
+  },
+  "license": "Apache-2.0",
+  "overrides": {
+    "fast-uri": "^3.1.9",
+    "zod": "^4.6.6"
   }
 }

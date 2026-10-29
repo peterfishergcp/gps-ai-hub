@@ -1,12 +1,20 @@
-FROM node:20-alpine
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
 
-WORKDIR /app
+FROM node:22-slim
+
+WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev && npm cache clean --force
 
-COPY . .
+COPY index.js ./
 
-EXPOSE 3000
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=8080
+EXPOSE 8080
+
+USER node
 
 CMD ["node", "index.js"]

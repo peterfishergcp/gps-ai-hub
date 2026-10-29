@@ -1,0 +1,69 @@
+name: Gemini Enterprise MCP Security & Smoke CI
+
+on:
+  push:
+    paths:
+      - "projects/ge_mcp/**"
+      - ".github/workflows/ge-mcp-ci.yml"
+  pull_request:
+    paths:
+      - "projects/ge_mcp/**"
+      - ".github/workflows/ge-mcp-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-mcp-servers:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - claude_mcp_sonnet
+          - customize_outlook_mcp
+          - sharepoint-mcp-server
+          - customize-sharepoint-mcp-server
+          - least-privilege-sharepoint-mcp-server
+          - sharepoint-mcp-server-purview-label
+          - sharepoint-mcp-server-purview-sdp
+    defaults:
+      run:
+        working-directory: projects/ge_mcp/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: projects/ge_mcp/${{ matrix.service }}/package-lock.json
+
+      - name: Install production dependencies & audit advisories
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=moderate
+
+      - name: Syntax check scripts & run loopback smoke tests
+        run: |
+          for f in *.sh; do [ -f "$f" ] && bash -n "$f"; done
+          chmod +x test_local.sh
+          ./test_local.sh
+
+  verify-workiq-purview-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/ge_mcp/workiq-mcp-purview
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies & compile check
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+          python3 -m py_compile *.py

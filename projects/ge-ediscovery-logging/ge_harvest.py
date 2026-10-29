@@ -262,18 +262,48 @@ def sign_jwt_with_kms(signing_input: str, project_id: str) -> bytes:
         return base64.b64decode(resp_data["signature"])
 
 
+def _validate_sts_subject_policy(subject: str) -> None:
+    """
+    Enforces subject denylist (`ARCHIVER_DENIED_SUBJECTS`) and optional domain allowlist
+    (`ARCHIVER_ALLOWED_SUBJECT_DOMAINS`) prior to Cloud KMS JWT signing (mitigates ED-1).
+    """
+    sub_lower = subject.strip().lower()
+    denied_raw = os.environ.get("ARCHIVER_DENIED_SUBJECTS", "")
+    denied_set = {s.strip().lower() for s in denied_raw.split(",") if s.strip()}
+    if sub_lower in denied_set:
+        raise PermissionError(f"WIF subject '{subject}' is blocked by ARCHIVER_DENIED_SUBJECTS")
+
+    allowed_domains_raw = os.environ.get("ARCHIVER_ALLOWED_SUBJECT_DOMAINS", "")
+    allowed_domains = {d.strip().lower().lstrip("@") for d in allowed_domains_raw.split(",") if d.strip()}
+    if allowed_domains:
+        if "@" in sub_lower:
+            domain = sub_lower.rsplit("@", 1)[1]
+            if domain not in allowed_domains:
+                raise PermissionError(
+                    f"WIF subject domain '{domain}' is not in ARCHIVER_ALLOWED_SUBJECT_DOMAINS"
+                )
+        elif os.environ.get("ARCHIVER_REQUIRE_EMAIL_SUBJECT", "false").lower() == "true":
+            raise PermissionError(
+                f"Non-email WIF subject '{subject}' rejected because ARCHIVER_REQUIRE_EMAIL_SUBJECT=true"
+            )
+
+
 def mint_sts_token(subject: str, project_id: str, workforce_pool_id: str) -> str:
     """
     Mints an OAuth2 access token for the given WIF subject via STS token exchange
     backed exclusively by Google Cloud KMS asymmetricSign (zero private keys on disk).
-    Requests a narrow Discovery Engine scope (mitigates C2) and short 15-minute expiry.
+    Enforces subject denylist/domain policy and attaches an IAM Credential Access Boundary
+    scoping the minted token strictly to Discovery Engine in `project_id` (mitigates ED-1).
     """
     if "/subject/" in subject:
         subject = subject.split("/subject/", 1)[1].strip()
     if not subject or len(subject) > 256 or subject.endswith(".gserviceaccount.com"):
         raise ValueError("Invalid WIF subject for STS token exchange")
+    _validate_sts_subject_policy(subject)
+
+    cache_key = f"{project_id}:{workforce_pool_id}:{subject}"
     now = int(time.time())
-    cached = _STS_TOKEN_CACHE.get(subject)
+    cached = _STS_TOKEN_CACHE.get(cache_key)
     if cached and cached[1] > now + 60:
         return cached[0]
 
@@ -294,6 +324,17 @@ def mint_sts_token(subject: str, project_id: str, workforce_pool_id: str) -> str
     sig = sign_jwt_with_kms(signing_input, project_id)
     jwt_token = f"{signing_input}.{b64url_encode(sig)}"
 
+    sts_options: dict = {"userProject": project_id}
+    if os.environ.get("DISABLE_STS_ACCESS_BOUNDARY", "false").lower() != "true":
+        sts_options["accessBoundary"] = {
+            "accessBoundaryRules": [
+                {
+                    "availableResource": f"//discoveryengine.googleapis.com/projects/{project_id}",
+                    "availablePermissions": ["inRole:roles/discoveryengine.user"],
+                }
+            ]
+        }
+
     sts_body = urllib.parse.urlencode({
         "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
         "audience": f"//iam.googleapis.com/locations/global/workforcePools/{workforce_pool_id}/providers/{PROVIDER_ID}",
@@ -301,7 +342,7 @@ def mint_sts_token(subject: str, project_id: str, workforce_pool_id: str) -> str
         "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
         "subject_token": jwt_token,
         "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
-        "options": json.dumps({"userProject": project_id}),
+        "options": json.dumps(sts_options),
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -314,33 +355,54 @@ def mint_sts_token(subject: str, project_id: str, workforce_pool_id: str) -> str
         data = json.loads(resp.read().decode("utf-8"))
         token = data["access_token"]
         expires_in = min(float(data.get("expires_in", 900)), 900.0)
-        _STS_TOKEN_CACHE[subject] = (token, now + expires_in)
+        _STS_TOKEN_CACHE[cache_key] = (token, now + expires_in)
         return token
 
 
-def read_cloud_logging_entries(project_id: str, log_filter: str, page_size: int = 500) -> list[dict]:
-    """Reads log entries directly via the Cloud Logging REST API (entries:list)."""
+def read_cloud_logging_entries(
+    project_id: str,
+    log_filter: str,
+    page_size: int = 500,
+    max_entries: int = int(os.environ.get("CLOUD_LOGGING_MAX_ENTRIES", "100000")),
+) -> list[dict]:
+    """Reads log entries via the Cloud Logging REST API (`entries:list`) with full `nextPageToken` pagination."""
     gcp_token = get_gcp_access_token()
     url = "https://logging.googleapis.com/v2/entries:list"
-    body = json.dumps({
-        "resourceNames": [f"projects/{project_id}"],
-        "filter": log_filter,
-        "orderBy": "timestamp desc",
-        "pageSize": page_size,
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {gcp_token}",
-            "Content-Type": "application/json",
-            "X-Goog-User-Project": project_id,
-        },
-        method="POST",
-    )
-    with urllib.request.urlopen(req, context=SSL_CTX) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-        return data.get("entries", [])
+    entries: list[dict] = []
+    page_token = ""
+
+    while True:
+        remaining = (max_entries - len(entries)) if max_entries > 0 else page_size
+        if max_entries > 0 and remaining <= 0:
+            break
+        req_payload: dict = {
+            "resourceNames": [f"projects/{project_id}"],
+            "filter": log_filter,
+            "orderBy": "timestamp desc",
+            "pageSize": min(page_size, max(1, remaining)),
+        }
+        if page_token:
+            req_payload["pageToken"] = page_token
+
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(req_payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {gcp_token}",
+                "Content-Type": "application/json",
+                "X-Goog-User-Project": project_id,
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, context=SSL_CTX) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        batch = data.get("entries", [])
+        entries.extend(batch)
+        page_token = data.get("nextPageToken", "")
+        if not page_token:
+            break
+
+    return entries[:max_entries] if max_entries > 0 else entries
 
 
 def discover_from_cloud_logging(project_id: str, hours: int = 72, extra_filter: str = "") -> dict[str, dict]:
@@ -442,10 +504,10 @@ def _is_allowed_project_segment(proj_seg: str) -> bool:
     """
     Verifies that the `projects/<proj_seg>` segment in a Discovery Engine resource name
     belongs to the configured `PROJECT_ID` (either its project ID or its numeric project number).
-    Mitigates C1 residual (cross-project resource path injection).
+    Fails closed when `PROJECT_ID` is unset (mitigates C1 / ED-1 cross-project resource injection).
     """
     if not PROJECT_ID:
-        return True
+        return False
     allowed = {PROJECT_ID}
     if PROJECT_NUMBER:
         allowed.add(PROJECT_NUMBER)
@@ -556,14 +618,17 @@ def upload_bytes_to_gcs(
     gcp_token = get_gcp_access_token()
     encoded_name = urllib.parse.quote(gcs_object_path, safe="")
     upload_url = f"https://storage.googleapis.com/upload/storage/v1/b/{bucket_name}/o?uploadType=media&name={encoded_name}"
+    gcs_headers = {
+        "Authorization": f"Bearer {gcp_token}",
+        "Content-Type": content_type,
+    }
+    requester_pays_proj = os.environ.get("GCS_USER_PROJECT", "").strip()
+    if requester_pays_proj:
+        gcs_headers["X-Goog-User-Project"] = requester_pays_proj
     req = urllib.request.Request(
         upload_url,
         data=data,
-        headers={
-            "Authorization": f"Bearer {gcp_token}",
-            "Content-Type": content_type,
-            "X-Goog-User-Project": project_id,
-        },
+        headers=gcs_headers,
         method="POST",
     )
     with urllib.request.urlopen(req, context=SSL_CTX) as resp:
@@ -814,7 +879,13 @@ def harvest_session(
 
     for idx, turn in enumerate(answered_turns, start=1):
         q = turn.get("query", {})
-        prompt_text = q.get("text", "")
+        prompt_text = q.get("text") or ""
+        if not prompt_text and isinstance(q.get("parts"), list):
+            prompt_text = "\n".join(
+                str(part.get("text") or "")
+                for part in q["parts"]
+                if isinstance(part, dict) and part.get("text")
+            )
         query_id = q.get("queryId", "")
         assist_answer_full = turn.get("assistAnswer", "")
         assist_answer_id = (
@@ -1030,32 +1101,67 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
         if err_result:
             raise RuntimeError(f"BigQuery staging load job failed: {err_result}")
 
-        # 2. Atomic DML MERGE from per-run staging into destination table (never deletes un-staged rows)
+        # 2. Atomic DML MERGE from per-run staging into destination table:
+        #    - Never deletes un-staged rows
+        #    - Pre-computes `merged_files` inside USING (...) AS S via ARRAY_CONCAT + ROW_NUMBER
+        #      (avoiding BigQuery's restriction on correlated subqueries inside UPDATE SET) so
+        #      historical USER_PROVIDED / NOTEBOOK_SOURCE / NOTEBOOK_STUDIO file metadata is NEVER
+        #      wiped when Cloud Logging UploadSessionFile entries age past retention (mitigates ED-2).
         merge_url = f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries"
         merge_sql = f"""
             MERGE `{project_id}.{BQ_DATASET}.{BQ_TABLE}` AS T
             USING (
-              SELECT * EXCEPT(rn) FROM (
-                SELECT *, ROW_NUMBER() OVER (PARTITION BY session_id, turn_index ORDER BY harvested_at DESC) AS rn
-                FROM `{project_id}.{BQ_DATASET}.{staging_table}`
-              ) WHERE rn = 1
+              WITH dedup_staging AS (
+                SELECT * EXCEPT(rn) FROM (
+                  SELECT *, ROW_NUMBER() OVER (PARTITION BY session_id, turn_index ORDER BY harvested_at DESC) AS rn
+                  FROM `{project_id}.{BQ_DATASET}.{staging_table}`
+                ) WHERE rn = 1
+              )
+              SELECT
+                st.*,
+                ARRAY(
+                  SELECT AS STRUCT
+                    f.file_id,
+                    f.file_source,
+                    f.file_name,
+                    f.mime_type,
+                    f.byte_size,
+                    f.sha256,
+                    f.crc32c,
+                    f.gcs_uri,
+                    f.console_url
+                  FROM (
+                    SELECT
+                      raw_f AS f,
+                      ROW_NUMBER() OVER (
+                        PARTITION BY COALESCE(NULLIF(raw_f.file_id, ''), NULLIF(raw_f.gcs_uri, ''), IFNULL(raw_f.file_name, ''))
+                        ORDER BY ord ASC
+                      ) AS file_rn
+                    FROM UNNEST(ARRAY_CONCAT(st.files, IFNULL(ex.files, []))) AS raw_f WITH OFFSET AS ord
+                  )
+                  WHERE file_rn = 1
+                  ORDER BY file_id, file_name
+                ) AS merged_files
+              FROM dedup_staging AS st
+              LEFT JOIN `{project_id}.{BQ_DATASET}.{BQ_TABLE}` AS ex
+                ON ex.session_id = st.session_id AND ex.turn_index = st.turn_index
             ) AS S
             ON T.session_id = S.session_id AND T.turn_index = S.turn_index
             WHEN MATCHED AND S.harvested_at >= T.harvested_at THEN UPDATE SET
-              query_id = S.query_id,
-              assist_answer_id = S.assist_answer_id,
+              query_id = COALESCE(NULLIF(S.query_id, ''), T.query_id),
+              assist_answer_id = COALESCE(NULLIF(S.assist_answer_id, ''), T.assist_answer_id),
               engine_id = S.engine_id,
               location = S.location,
-              user_iam_principal = S.user_iam_principal,
-              session_display_name = S.session_display_name,
-              prompt_text = S.prompt_text,
-              response_text = S.response_text,
-              thought_text = S.thought_text,
-              model_name = S.model_name,
-              session_transcript_gcs_uri = S.session_transcript_gcs_uri,
-              session_transcript_console_url = S.session_transcript_console_url,
-              files = S.files,
-              event_timestamp = S.event_timestamp,
+              user_iam_principal = COALESCE(NULLIF(S.user_iam_principal, ''), T.user_iam_principal),
+              session_display_name = COALESCE(NULLIF(S.session_display_name, ''), T.session_display_name),
+              prompt_text = COALESCE(NULLIF(S.prompt_text, ''), T.prompt_text),
+              response_text = COALESCE(NULLIF(S.response_text, ''), T.response_text),
+              thought_text = COALESCE(NULLIF(S.thought_text, ''), T.thought_text),
+              model_name = COALESCE(NULLIF(S.model_name, ''), T.model_name),
+              session_transcript_gcs_uri = COALESCE(NULLIF(S.session_transcript_gcs_uri, ''), T.session_transcript_gcs_uri),
+              session_transcript_console_url = COALESCE(NULLIF(S.session_transcript_console_url, ''), T.session_transcript_console_url),
+              files = S.merged_files,
+              event_timestamp = COALESCE(S.event_timestamp, T.event_timestamp),
               harvested_at = S.harvested_at
             WHEN NOT MATCHED THEN INSERT (
               session_id, turn_index, query_id, assist_answer_id, engine_id, location,
@@ -1079,18 +1185,25 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
             },
             method="POST",
         )
-        with urllib.request.urlopen(merge_req, context=SSL_CTX) as resp:
-            merge_resp = json.loads(resp.read().decode("utf-8"))
-            m_job_id = merge_resp.get("jobReference", {}).get("jobId")
-            m_job_loc = merge_resp.get("jobReference", {}).get("location", "US")
-            while not merge_resp.get("jobComplete", False) and m_job_id:
-                time.sleep(0.5)
-                poll_req = urllib.request.Request(
-                    f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries/{m_job_id}?location={m_job_loc}",
-                    headers={"Authorization": f"Bearer {gcp_token}", "X-Goog-User-Project": project_id},
-                )
-                with urllib.request.urlopen(poll_req, context=SSL_CTX) as p_resp:
-                    merge_resp = json.loads(p_resp.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(merge_req, context=SSL_CTX) as resp:
+                merge_resp = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            err_detail = e.read().decode("utf-8", errors="replace")[:1000]
+            raise RuntimeError(f"BigQuery MERGE HTTP {e.code}: {err_detail}") from e
+        m_job_id = merge_resp.get("jobReference", {}).get("jobId")
+        m_job_loc = merge_resp.get("jobReference", {}).get("location", "US")
+        while not merge_resp.get("jobComplete", False) and m_job_id:
+            time.sleep(0.5)
+            poll_req = urllib.request.Request(
+                f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries/{m_job_id}?location={m_job_loc}",
+                headers={"Authorization": f"Bearer {gcp_token}", "X-Goog-User-Project": project_id},
+            )
+            with urllib.request.urlopen(poll_req, context=SSL_CTX) as p_resp:
+                merge_resp = json.loads(p_resp.read().decode("utf-8"))
+        merge_errors = merge_resp.get("errors")
+        if merge_errors:
+            raise RuntimeError(f"BigQuery MERGE query failed: {merge_errors}")
     finally:
         # 3. Clean up per-invocation staging table via BigQuery tables.delete REST API
         try:
@@ -1108,13 +1221,16 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
     table_ref = f"{project_id}:{BQ_DATASET}.{BQ_TABLE}"
     print(f"\n[+] Successfully merged {len(rows)} turn row(s) across {len(session_ids)} session(s) into {table_ref}!")
 
+    purview_fail_closed = os.environ.get("PURVIEW_FAIL_CLOSED", "true").lower() == "true"
     try:
         import purview_connector
         if purview_connector.is_purview_configured():
             print("[*] Forwarding harvested turn(s) and binary attachments to Microsoft Purview eDiscovery...")
             purview_connector.forward_turns_to_purview(rows, gcp_token=gcp_token, project_id=project_id)
     except Exception as e:
-        print(f"  [!] Microsoft Purview forwarding warning: {e}")
+        if purview_fail_closed:
+            raise RuntimeError(f"Microsoft Purview eDiscovery archival failed (PURVIEW_FAIL_CLOSED=true): {e}") from e
+        print(f"  [!] Microsoft Purview forwarding warning (PURVIEW_FAIL_CLOSED=false): {e}")
 
 
 def clean_notebooklm_streamed_reply(text: str) -> str:
@@ -1297,17 +1413,25 @@ def harvest_notebooklm_studio_and_notes(
             "created_at": audio_ov.get("createTime") or "",
         })
 
-    # 2. ListArtifacts on the notebook
-    list_url = f"https://{host}/v1alpha/{nb_name}/artifacts"
-    try:
-        req = urllib.request.Request(
-            list_url,
-            headers={"Authorization": f"Bearer {token}", "X-Goog-User-Project": project_id},
-        )
-        resp_data = json.loads(urllib.request.urlopen(req, context=SSL_CTX, timeout=15).read().decode("utf-8"))
-        raw_artifacts = resp_data.get("artifacts", [])
-    except Exception:
-        raw_artifacts = []
+    # 2. ListArtifacts on the notebook (with nextPageToken pagination)
+    raw_artifacts: list[dict] = []
+    art_page_token = ""
+    for _ in range(50):
+        list_url = f"https://{host}/v1alpha/{nb_name}/artifacts?pageSize=100"
+        if art_page_token:
+            list_url += f"&pageToken={urllib.parse.quote(art_page_token, safe='')}"
+        try:
+            req = urllib.request.Request(
+                list_url,
+                headers={"Authorization": f"Bearer {token}", "X-Goog-User-Project": project_id},
+            )
+            resp_data = json.loads(urllib.request.urlopen(req, context=SSL_CTX, timeout=15).read().decode("utf-8"))
+            raw_artifacts.extend(resp_data.get("artifacts", []))
+            art_page_token = resp_data.get("nextPageToken", "")
+            if not art_page_token:
+                break
+        except Exception:
+            break
 
     for art in raw_artifacts:
         art_name = art.get("name", "")
@@ -1353,32 +1477,34 @@ def harvest_notebooklm_studio_and_notes(
                 raw_bytes = extracted_text.encode("utf-8")
                 mime_type, ext = "text/markdown", ".md"
 
-        gcs_path = f"notebooks/{loc}/{nb_id}/studio/{art_id}{ext}"
+        art_sha = hashlib.sha256(raw_bytes).hexdigest()
+        gcs_path = f"notebooks/{loc}/{nb_id}/studio/{art_id}_{art_sha[:12]}{ext}"
         gcs_uri, console_url = upload_bytes_to_gcs(raw_bytes, gcs_path, bucket_name, project_id, mime_type)
         studio_records.append({
-            "artifact_id": art_id,
+            "artifact_id": f"{art_id}:{art_sha[:12]}",
             "modality": art_type,
             "title": title,
             "state": state,
             "mime_type": mime_type,
             "byte_size": len(raw_bytes),
-            "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+            "sha256": art_sha,
             "crc32c": compute_crc32c_base64(raw_bytes),
             "gcs_uri": gcs_uri,
             "console_url": console_url,
-            "extracted_text": extracted_text[:4000] if extracted_text else "",
+            "extracted_text": extracted_text if extracted_text else "",
             "created_at": created_at,
         })
 
-    # 3. BatchGetNotes for any discovered note IDs
+    # 3. BatchGetNotes for any discovered note IDs (chunked in batches of 50 to avoid HTTP 414)
     if logged_note_ids:
         note_names = [
             f"{nb_name}/notes/{nid}"
             for nid in sorted(logged_note_ids)
             if re.fullmatch(r"[A-Za-z0-9_-]{1,128}", nid or "")
         ]
-        if note_names:
-            q_params = "&".join(f"names={urllib.parse.quote(n, safe='/')}" for n in note_names)
+        for chunk_start in range(0, len(note_names), 50):
+            chunk = note_names[chunk_start : chunk_start + 50]
+            q_params = "&".join(f"names={urllib.parse.quote(n, safe='/')}" for n in chunk)
             notes_url = f"https://{host}/v1alpha/{nb_name}/notes:batchGet?{q_params}"
             try:
                 n_req = urllib.request.Request(
@@ -1396,26 +1522,54 @@ def harvest_notebooklm_studio_and_notes(
                     ntitle = note.get("title") or f"Studio Note ({nid[:8]})"
                     ncontent = note.get("content") or note.get("text") or json.dumps(note, indent=2)
                     raw_bytes = ncontent.encode("utf-8")
-                    gcs_path = f"notebooks/{loc}/{nb_id}/studio/note_{nid}.md"
+                    note_sha = hashlib.sha256(raw_bytes).hexdigest()
+                    gcs_path = f"notebooks/{loc}/{nb_id}/studio/note_{nid}_{note_sha[:12]}.md"
                     gcs_uri, console_url = upload_bytes_to_gcs(raw_bytes, gcs_path, bucket_name, project_id, "text/markdown")
                     studio_records.append({
-                        "artifact_id": nid,
+                        "artifact_id": f"{nid}:{note_sha[:12]}",
                         "modality": "STUDIO_NOTE",
                         "title": ntitle,
                         "state": "COMPLETED",
                         "mime_type": "text/markdown",
                         "byte_size": len(raw_bytes),
-                        "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+                        "sha256": note_sha,
                         "crc32c": compute_crc32c_base64(raw_bytes),
                         "gcs_uri": gcs_uri,
                         "console_url": console_url,
-                        "extracted_text": ncontent[:4000],
+                        "extracted_text": ncontent,
                         "created_at": note.get("createTime") or "",
                     })
             except Exception:
                 pass
 
     return studio_records
+
+
+def compute_immutable_notebook_turn_index(ts_str: str, unique_key: str) -> int:
+    """
+    Computes a deterministic, immutable, chronologically ordered INT64 turn_index (>= 1)
+    for NotebookLM log-sourced turns that fits well within JS Number.MAX_SAFE_INTEGER (9.007e15).
+    Prevents rolling 30-day Cloud Logging windows from re-numbering newer turns back to 1
+    and overwriting historical legal-hold turns in BigQuery or Purview (mitigates ED-2).
+    """
+    epoch_ms = 0
+    raw_ts = (ts_str or "").strip()
+    if raw_ts:
+        try:
+            norm = raw_ts[:-1] + "+00:00" if raw_ts.endswith("Z") else raw_ts
+            dt = datetime.datetime.fromisoformat(norm)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            epoch_ms = max(0, int(dt.timestamp() * 1000))
+        except Exception:
+            epoch_ms = 0
+    digest_num = int.from_bytes(
+        hashlib.sha256(f"{raw_ts}|{unique_key}".encode("utf-8")).digest()[:6],
+        "big",
+    )
+    if epoch_ms > 0:
+        return (epoch_ms * 100) + (digest_num % 100)
+    return max(1, digest_num % 9_000_000_000_000_000)
 
 
 def harvest_notebooklm_enterprise(
@@ -1546,42 +1700,49 @@ def harvest_notebooklm_enterprise(
         if target_notebook_id:
             break
         tok = get_token_for_principal(principal, project_id, workforce_pool_id)
-        for loc in ["global", "us"]:
+        for loc in ["global", "us", "eu"]:
             host = get_discovery_engine_host(loc)
-            url = (
-                f"https://{host}/v1alpha/"
-                f"projects/{project_id}/locations/{loc}/notebooks:listRecentlyViewed"
-            )
-            req = urllib.request.Request(
-                url,
-                headers={"Authorization": f"Bearer {tok}", "X-Goog-User-Project": project_id},
-            )
-            try:
-                resp = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode("utf-8"))
-                for nb in resp.get("notebooks", []):
-                    nb_id = nb.get("notebookId") or nb.get("name", "").split("/")[-1]
-                    if not nb_id or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", nb_id):
-                        continue
-                    candidate_nb_name = nb.get("name", f"projects/{project_id}/locations/{loc}/notebooks/{nb_id}")
-                    try:
-                        parse_notebook_resource(candidate_nb_name)
-                    except ValueError:
-                        continue
-                    nb_info = notebooks.setdefault(nb_id, {
-                        "notebook_id": nb_id,
-                        "notebook_name": candidate_nb_name,
-                        "location": loc,
-                        "user_iam_principal": principal,
-                        "title": nb.get("title", ""),
-                        "chat_turns": [],
-                        "logged_sources": {},
-                        "logged_note_ids": set(),
-                        "latest_timestamp": nb.get("metadata", {}).get("lastViewed") or nb.get("metadata", {}).get("createTime"),
-                    })
-                    if nb.get("title") and not nb_info["title"]:
-                        nb_info["title"] = nb["title"]
-            except Exception:
-                continue
+            nb_page_token = ""
+            for _ in range(25):
+                url = (
+                    f"https://{host}/v1alpha/"
+                    f"projects/{project_id}/locations/{loc}/notebooks:listRecentlyViewed?pageSize=100"
+                )
+                if nb_page_token:
+                    url += f"&pageToken={urllib.parse.quote(nb_page_token, safe='')}"
+                req = urllib.request.Request(
+                    url,
+                    headers={"Authorization": f"Bearer {tok}", "X-Goog-User-Project": project_id},
+                )
+                try:
+                    resp = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode("utf-8"))
+                    for nb in resp.get("notebooks", []):
+                        nb_id = nb.get("notebookId") or nb.get("name", "").split("/")[-1]
+                        if not nb_id or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", nb_id):
+                            continue
+                        candidate_nb_name = nb.get("name", f"projects/{project_id}/locations/{loc}/notebooks/{nb_id}")
+                        try:
+                            parse_notebook_resource(candidate_nb_name)
+                        except ValueError:
+                            continue
+                        nb_info = notebooks.setdefault(nb_id, {
+                            "notebook_id": nb_id,
+                            "notebook_name": candidate_nb_name,
+                            "location": loc,
+                            "user_iam_principal": principal,
+                            "title": nb.get("title", ""),
+                            "chat_turns": [],
+                            "logged_sources": {},
+                            "logged_note_ids": set(),
+                            "latest_timestamp": nb.get("metadata", {}).get("lastViewed") or nb.get("metadata", {}).get("createTime"),
+                        })
+                        if nb.get("title") and not nb_info["title"]:
+                            nb_info["title"] = nb["title"]
+                    nb_page_token = resp.get("nextPageToken", "")
+                    if not nb_page_token:
+                        break
+                except Exception:
+                    break
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     bq_rows: list[dict] = []
@@ -1756,37 +1917,16 @@ def harvest_notebooklm_enterprise(
             + (", ".join(source_titles) if source_titles else "No sources attached")
         )
 
-        if nb_info["chat_turns"]:
-            for idx, ct in enumerate(nb_info["chat_turns"], start=1):
-                provenance_note = (
-                    f"[PROVENANCE: UNVERIFIED_LOG_SOURCED_TURN | log_insert_id={ct.get('log_insert_id') or 'none'} "
-                    f"| receive_timestamp={ct.get('receive_timestamp') or 'unknown'}]\n{thought_summary}"
-                )
-                bq_rows.append({
-                    "session_id": nb_id,
-                    "turn_index": idx,
-                    "query_id": ct["query_id"],
-                    "assist_answer_id": ct["query_id"],
-                    "engine_id": engine_label,
-                    "location": loc,
-                    "user_iam_principal": principal,
-                    "session_display_name": display_label,
-                    "prompt_text": ct["prompt_text"],
-                    "response_text": ct["response_text"],
-                    "thought_text": provenance_note,
-                    "model_name": "notebooklm-enterprise",
-                    "session_transcript_gcs_uri": archive_gcs_uri,
-                    "session_transcript_console_url": archive_console_url,
-                    "files": nb_files if idx == 1 else [],
-                    "event_timestamp": ct["timestamp"] or create_time,
-                    "harvested_at": now_iso,
-                })
-        elif enriched_sources or studio_artifacts or title:
+        # Always emit a dedicated immutable turn_index = 0 inventory row for NotebookLM sources & Studio
+        # artifacts so new chat turns (which receive immutable timestamp+hash turn_index >= 1) never
+        # overwrite Turn 1 or wipe historical source/Studio manifests after 30 days (mitigates ED-2).
+        if enriched_sources or studio_artifacts or title or nb_info["chat_turns"]:
+            inv_qid = f"nb-inventory-{nb_id}"
             bq_rows.append({
                 "session_id": nb_id,
-                "turn_index": 1,
-                "query_id": f"nb-inventory-{nb_id[:8]}",
-                "assist_answer_id": f"nb-inventory-{nb_id[:8]}",
+                "turn_index": 0,
+                "query_id": inv_qid,
+                "assist_answer_id": inv_qid,
                 "engine_id": engine_label,
                 "location": loc,
                 "user_iam_principal": principal,
@@ -1801,7 +1941,40 @@ def harvest_notebooklm_enterprise(
                 "session_transcript_gcs_uri": archive_gcs_uri,
                 "session_transcript_console_url": archive_console_url,
                 "files": nb_files,
-                "event_timestamp": create_time,
+                "event_timestamp": create_time or now_iso,
+                "harvested_at": now_iso,
+            })
+
+        used_nb_turn_indices: set[int] = {0}
+        for ct in nb_info["chat_turns"]:
+            turn_ts_val = ct.get("timestamp") or ct.get("receive_timestamp") or create_time or now_iso
+            unique_turn_key = ct.get("log_insert_id") or ct.get("query_id") or ct.get("prompt_text", "")
+            immutable_idx = compute_immutable_notebook_turn_index(turn_ts_val, unique_turn_key)
+            while immutable_idx in used_nb_turn_indices:
+                immutable_idx += 1
+            used_nb_turn_indices.add(immutable_idx)
+
+            provenance_note = (
+                f"[PROVENANCE: UNVERIFIED_LOG_SOURCED_TURN | log_insert_id={ct.get('log_insert_id') or 'none'} "
+                f"| receive_timestamp={ct.get('receive_timestamp') or 'unknown'}]\n{thought_summary}"
+            )
+            bq_rows.append({
+                "session_id": nb_id,
+                "turn_index": immutable_idx,
+                "query_id": ct["query_id"],
+                "assist_answer_id": ct["query_id"],
+                "engine_id": engine_label,
+                "location": loc,
+                "user_iam_principal": principal,
+                "session_display_name": display_label,
+                "prompt_text": ct["prompt_text"],
+                "response_text": ct["response_text"],
+                "thought_text": provenance_note,
+                "model_name": "notebooklm-enterprise",
+                "session_transcript_gcs_uri": archive_gcs_uri,
+                "session_transcript_console_url": archive_console_url,
+                "files": [],
+                "event_timestamp": turn_ts_val,
                 "harvested_at": now_iso,
             })
 
@@ -1847,7 +2020,7 @@ def harvest_single_event(log_entry: dict) -> dict:
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id):
             raise ValueError("Invalid session_id format")
 
-        sessions = discover_from_cloud_logging(project_id, hours=72, extra_filter=f'"{session_id}"')
+        sessions = discover_from_cloud_logging(project_id, hours=720, extra_filter=f'"{session_id}"')
         sinfo = sessions.get(session_name) or {
             "session_name": session_name,
             "user_iam_principal": user_principal,
@@ -1923,6 +2096,7 @@ def harvest_single_event(log_entry: dict) -> dict:
 
 
 def main() -> None:
+    global PROJECT_ID, WORKFORCE_POOL_ID
     parser = argparse.ArgumentParser(description="Harvest Gemini Enterprise sessions, NotebookLM notebooks, and files to GCS & BigQuery.")
     parser.add_argument("--project-id", "--project", dest="project_id", default=PROJECT_ID, help="Google Cloud Project ID")
     parser.add_argument("--workforce-pool-id", default=WORKFORCE_POOL_ID, help="Workforce Identity Pool ID")
@@ -1940,6 +2114,9 @@ def main() -> None:
         print("Error: --project-id (or GCP_PROJECT_ID) and --workforce-pool-id (or WORKFORCE_POOL_ID) are required.")
         sys.exit(1)
 
+    PROJECT_ID = args.project_id
+    WORKFORCE_POOL_ID = args.workforce_pool_id
+
     bucket_name = args.bucket_name or get_bucket_name(args.project_id)
     sessions = discover_from_cloud_logging(args.project_id, hours=args.hours)
     for item in args.extra_session:
@@ -1949,6 +2126,7 @@ def main() -> None:
                 "session_name": sname,
                 "user_iam_principal": uprinc,
                 "uploaded_file_ids": set(),
+                "logged_file_names": {},
                 "turn_models": {},
                 "turn_timestamps": {},
                 "latest_timestamp": None,

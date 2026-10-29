@@ -20,6 +20,9 @@
 adc.json
 id_rsa
 id_ed25519
+.msal_token_cache.bin
+.purview_token_cache.json
+*token_cache*.json
 
 # Cloud & Auth Tokens
 .gcloud/
@@ -48,6 +51,12 @@ out/
 dist/
 build/
 
+# Terraform & Infrastructure State
+/terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
+
 # Zip & Heavy Archives
 *.zip
 *.tar.gz
@@ -71,68 +80,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Agent & Workspace Temporary Files
+# Local Scratch & Temporary Directories
 .tempmediaStorage/
 .system_generated/
 .brain/
-
-# ==========================================
-# Ignore Legacy Workspace Folders
-# ==========================================
-a2a_ge/
-A2UI_sample/
-adk_cityscape/
-adk-cepf-multiagent_completed/
-adk-cepf-multiagent_orig/
-adk-covered-ca-sdlc-insights/
-adk-samples/
-adk-streaming/
-adkpaint/
-adksamples/
-adktoday/
-agents/
-agy_demo/
-agy_gettingstarted/
-apex_labs/
-autoraters/
-byomcp/
-course-creation-ai-agent-architecture-main/
-gemini-enterprise-connector-eval-main/
-geminiadk_agent/
-geminicli/
-gov/
-gps_adk/
-labs/
-langchain/
-mcp-servers/
-mcp-toolbox/
-media_agent_adk/
-my-agents/
-my-gemini-cli-project/
-next26/
-originalds/
-rag/
-/terraform/
-*.tfstate
-*.tfstate.*
-.terraform/
-*.pdf
-
-# ==========================================
-# Projects folder exclusions
-# ==========================================
-projects/claude-a2ui-adk-agent/
-projects/cms-multiagent-demo/
-projects/gemini-enterprise-usage-analytics-sanitized/
-projects/gemini_thinking_mode_demo/
-projects/medicaid-fraud-adk/
-projects/ge_mcp/bigquery-managed-mcp-server/
-projects/ge_mcp/bigquery-mcp-server/
-projects/ge_mcp/box-mcp-server/
-projects/ge_mcp/citation_mcp_server.py
-projects/ge_mcp/databricks-mcp-bridge/
-projects/ge_mcp/jira-mcp-server/
-projects/ge_mcp/salesforce-mcp/
-projects/ge_mcp/skills/
-projects/ge_mcp/snowflake-mcp-server/
-projects/ge_skills/ge_medicaid_skill/
+scratch/
+local_only/

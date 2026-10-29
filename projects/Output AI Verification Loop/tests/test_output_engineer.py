@@ -139,6 +139,30 @@ class TestKarpathyCouncilAndEvalFramework(unittest.TestCase):
           "panel-gatekeeper",
       ):
         self.assertIn(panel_id, html_text)
+      self.assertNotIn("innerHTML", html_text)
+
+  def test_render_canvas_escapes_xss_in_title_and_script_breakout(self) -> None:
+    malicious_review = {
+        "header": {
+            "title": '</title><script>window.XSS=1</script><title>',
+        },
+        "claims": [
+            {
+                "id": "XSS-1",
+                "group": "CORE_ENG",
+                "source": "Untrusted Draft",
+                "v1Claim": "Payload </SCRIPT><script>alert(1)</script> <!-- breakout",
+                "reality": "Escaped cleanly",
+                "fix": "Use case-insensitive script breakout escaping",
+            }
+        ],
+    }
+    html_text = render_canvas.render_canvas_html(malicious_review)
+    self.assertNotIn("</title><script>", html_text)
+    self.assertIn("&lt;/title&gt;&lt;script&gt;window.XSS=1&lt;/script&gt;", html_text)
+    self.assertNotIn("</SCRIPT><script>", html_text)
+    self.assertIn(r"\u003c/SCRIPT\u003e", html_text)
+    self.assertIn(r"\u003c!--", html_text)
 
   def test_eval_council_against_golden_dataset(self) -> None:
     council_data = council_runner.load_preset_council("security-review")

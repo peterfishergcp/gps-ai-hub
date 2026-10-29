@@ -5,7 +5,7 @@
   "header": {
     "eyebrow_1": "Output Engineering Review Canvas",
     "eyebrow_2": "Public Sector Agency Security Review",
-    "eyebrow_3": "Karpathy 3-Stage Council: Gemini 3.1 Pro + Claude Opus 5.5 + Gemini 3.1 Flash",
+    "eyebrow_3": "Karpathy 3-Stage Council: Gemini 3.8 Flash + Claude Opus 4.6 + Gemini 3.5 Flash-Lite",
     "title": "Gemini Enterprise Security Architecture & QA Verification Loop",
     "subtitle": "Deconstructed into 4 Verifiable Modalities + 3-Stage Anonymized Blind Peer Review & Chairman Synthesis",
     "badge_1": "20 Contradictions Caught (8 New via Challenger Loop)",
@@ -83,33 +83,33 @@
       "id": "OQ-3(e)-2",
       "group": "CORE_ENG",
       "status": "CONTRADICTED",
-      "stage1_origin": "Stage 1: Caught by Seat 1 (Pro) + Seat 2 (Opus)",
+      "stage1_origin": "Stage 1: Caught by Seat 1 (Flash) + Seat 2 (Opus)",
       "consensus": "Stage 2 Blind Vote: 3/3 Unanimous",
       "source": "OQ-3(e) v1",
-      "v1Claim": "Internal RPC metadata carries only opaque stream correlation identifiers (tenant_stream_id).",
-      "reality": "tenant_stream_id is NOT opaque\u2014it embeds the project number and the caller's Cloud Principal ID (gcp_<project_number>.cpi_<user_cpi>.class_unknown) for abuse detection and per-caller attribution.",
-      "fix": "Disclose that cloud_principal_id (user_cpi) travels in the request extension for abuse detection and attribution."
+      "v1Claim": "Internal RPC metadata carries only opaque stream correlation identifiers (stream_attribution_id).",
+      "reality": "stream_attribution_id is NOT opaque\u2014it embeds the project number and the caller's Cloud Principal ID (caller_principal_id) for abuse detection and per-caller attribution.",
+      "fix": "Disclose that caller_principal_id travels in the request attribution metadata for abuse detection and attribution."
     },
     {
       "id": "OQ-5",
       "group": "CORE_ENG",
       "status": "CONTRADICTED",
-      "stage1_origin": "Stage 1: Caught by Seat 1 (Pro) + Seat 2 (Opus)",
+      "stage1_origin": "Stage 1: Caught by Seat 1 (Flash) + Seat 2 (Opus)",
       "consensus": "Stage 2 Blind Vote: 3/3 Unanimous",
       "source": "OQ-5 v1 & Email \u00a711",
-      "v1Claim": "Chat Markdown image stripping is deterministically enforced server-side by C++ MarkdownSanitizer::SanitizeAssistAnswer (and Email \u00a711 claims VPC-SC blocks exfiltration).",
-      "reality": "EnableMarkdownSanitizer__enable_in_backend is FALSE by default for StreamAssist chat. Image blocking is enforced client-side in the Gemini Enterprise Web UI (ucs_widget), gated on render_images_in_ui_directly=false.",
-      "fix": "Attribute chat image blocking to ucs_widget client rendering; warn that custom API callers outside ucs_widget must block <img> tags in their own UI; remove VPC-SC as a browser render exfil control."
+      "v1Claim": "Chat Markdown image stripping is deterministically enforced server-side by a backend Markdown image sanitizer (and Email \u00a711 claims VPC-SC blocks exfiltration).",
+      "reality": "Server-side Markdown image sanitization is FALSE by default for StreamAssist chat. Image blocking is enforced client-side in the Gemini Enterprise web UI, where direct UI image rendering is disabled by default.",
+      "fix": "Attribute chat image blocking to Gemini Enterprise web UI client rendering; warn that custom API callers outside the web UI must block <img> tags in their own client; remove VPC-SC as a browser render exfil control."
     },
     {
       "id": "OQ-10-CAPS",
       "group": "CORE_ENG",
       "status": "CONTRADICTED",
-      "stage1_origin": "Stage 1: Caught by Seat 1 (Pro) + Seat 2 (Opus)",
+      "stage1_origin": "Stage 1: Caught by Seat 1 (Flash) + Seat 2 (Opus)",
       "consensus": "Stage 2 Blind Vote: 3/3 Unanimous",
       "source": "OQ-10 v1",
       "v1Claim": "Cites only the outer 20 tool calls per turn cap (tool_turn_limit = 20).",
-      "reality": "Production enforces 3 layers: (1) 5 calls/turn to the MCP Python sandbox (mcp_code_executor_max_calls_per_turn = 5), (2) 8 root-agent thinking rounds (root_agent_max_thinking_rounds = 8), and (3) 20 outer compositional tool turns. None of these cap mutating actions across a whole session.",
+      "reality": "Production enforces 3 layers: (1) 5 calls/turn to the MCP Python sandbox, (2) 8 root-agent reasoning rounds, and (3) 20 outer compositional tool turns. None of these cap mutating actions across a whole session.",
       "fix": "Document all 3 per-turn caps (5 / 8 / 20) and state clearly that HITL (1 confirmation card/turn) is the control for mutating actions."
     },
     {
@@ -196,7 +196,7 @@
       "stage1_origin": "Stage 1: Missed by Seat 1 (90/100) \u2022 Caught by Seat 2 (Opus)",
       "consensus": "Stage 2 Blind Vote: 3/3 Verified (Seat 1 Flipped)",
       "source": "Version 2 Doc: OQ-8 vs OQ-3(e)",
-      "v1Claim": "Even in Version 2, OQ-8 still states that system_instruction 'Holds only the trusted agent instructions (PLANNER_PROMPT_TEMPLATE and admin-configured agent instructions).'",
+      "v1Claim": "Even in Version 2, OQ-8 still states that system_instruction 'Holds only the trusted agent instructions (system planner prompt template and admin-configured agent instructions).'",
       "reality": "Directly conflicts with Version 2's updated OQ-3(e), which discloses that user_email and user_full_name are injected into system_instruction.",
       "fix": "Update OQ-8 in Version 2 so it cross-references OQ-3(e)'s disclosure of user_email / user_full_name in system_instruction."
     },
@@ -204,22 +204,22 @@
       "id": "OQ-1-FAILOPEN",
       "group": "NUANCE",
       "status": "NUANCE_REQUIRED",
-      "stage1_origin": "Stage 1: Caught by Seat 1 (Pro) + Seat 2 (Opus)",
+      "stage1_origin": "Stage 1: Caught by Seat 1 (Flash) + Seat 2 (Opus)",
       "consensus": "Stage 2 Blind Vote: 3/3 Unanimous",
       "source": "Email \u00a72/\u00a74 vs OQ-1 & OQ-4(a)",
       "v1Claim": "Email \u00a72 & \u00a74 claim SDP and Model Armor are 'fail-closed by default' before any text reaches inference.",
-      "reality": "1) Prompt/response gates fail closed only when failure_mode=FAIL_CLOSED is configured on the template. 2) Connector snippet screening (_sanitize_search_snippets) explicitly FAILS OPEN on RPC transport errors. 3) Rewritten federated queries (OQ-4a) are not re-screened.",
+      "reality": "1) Prompt/response gates fail closed only when failure_mode=FAIL_CLOSED is configured on the template. 2) Post-retrieval connector snippet screening explicitly FAILS OPEN on RPC transport errors. 3) Rewritten federated queries (OQ-4a) are not re-screened.",
       "fix": "Instruct the customer to explicitly set failure_mode=FAIL_CLOSED, configure userPromptTemplate, and isolate sensitive federated connectors one-per-App (CF-6)."
     },
     {
       "id": "OQ-7-MA-QUOTA",
       "group": "NUANCE",
       "status": "NUANCE_REQUIRED",
-      "stage1_origin": "Stage 1: Caught by Seat 2 (Opus) \u2022 Confirmed by Seat 1 (Pro)",
+      "stage1_origin": "Stage 1: Caught by Seat 2 (Opus) \u2022 Confirmed by Seat 1 (Flash)",
       "consensus": "Stage 2 Blind Vote: 2/3 Majority",
       "source": "OQ-7 & OQ-1 (Bundled Model Armor Quota)",
       "v1Claim": "Model Armor is bundled with Gemini Enterprise Standard 'up to the Assistant query quota' (160 queries/user/day).",
-      "reality": "GovernancePlugin._sanitize_search_snippets invokes SanitizeUserPrompt once per retrieved snippet\u2014so a single Assistant query that retrieves 10 connector snippets triggers 10+ Model Armor calls.",
+      "reality": "Post-retrieval snippet screening invokes SanitizeUserPrompt once per retrieved snippet\u2014so a single Assistant query that retrieves 10 connector snippets triggers 10+ Model Armor calls.",
       "fix": "Confirm whether defense-in-depth snippet sanitization calls count against the customer's bundled 160/day Model Armor quota."
     }
   ],
@@ -264,8 +264,8 @@
     "stage1_seats": [
       {
         "seat_id": "seat-gemini-pro",
-        "model": "gemini-3.1-pro-high",
-        "title": "Gemini 3.1 Pro",
+        "model": "gemini-3.8-flash",
+        "title": "Gemini 3.8 Flash",
         "role": "Council Seat 1 \u2022 Context Synthesizer & Documentation Grounder",
         "badge": "~92s Turnaround \u2022 5/5 Core OQ Fixes",
         "color": "sky",
@@ -275,13 +275,13 @@
         "notes": [
           "Generous Scoring Bias: Scored V1 Logical Consistency at 90/100 and Grounding at 95/100 before Stage 2 peer calibration.",
           "Accepted the 13-point email's Workers' Comp claim that SDP masks SSNs (`[SSN-MASKED]`) on file uploads rather than noticing `CheckFileContent` hard-blocks the entire file.",
-          "Best Role in Council: Fast first-pass codebase/doc synthesis and executive storyboard generation."
+          "Best Role in Council: Fast first-pass doc synthesis and executive storyboard generation."
         ]
       },
       {
         "seat_id": "seat-claude-opus",
-        "model": "opus-5.5-high",
-        "title": "Claude Opus 5.5",
+        "model": "claude-opus-4-6",
+        "title": "Claude Opus 4.6",
         "role": "Council Seat 2 \u2022 Adversarial Logic Challenger & STE100 Enforcer",
         "badge": "43 Atomic Claims Audited \u2022 +8 Hidden Contradictions",
         "color": "purple",
@@ -296,8 +296,8 @@
       },
       {
         "seat_id": "seat-gemini-flash",
-        "model": "gemini-3.1-flash-high",
-        "title": "Gemini 3.1 Flash",
+        "model": "gemini-3.5-flash-lite",
+        "title": "Gemini 3.5 Flash-Lite",
         "role": "Council Seat 3 \u2022 Quota, InfoType & Regional Entitlement Verifier",
         "badge": "~28s Turnaround \u2022 InfoType & Quota Table Audit",
         "color": "emerald",
@@ -322,7 +322,7 @@
         {
           "anonymous_label": "Response B",
           "seat_id": "seat-claude-opus",
-          "model": "opus-5.5-high",
+          "model": "claude-opus-4-6",
           "role": "Council Seat 2 \u2022 Adversarial Logic Challenger & STE100 Enforcer",
           "borda_points": 9,
           "first_place_votes": 3,
@@ -335,7 +335,7 @@
         {
           "anonymous_label": "Response A",
           "seat_id": "seat-gemini-pro",
-          "model": "gemini-3.1-pro-high",
+          "model": "gemini-3.8-flash",
           "role": "Council Seat 1 \u2022 Context Synthesizer & Documentation Grounder",
           "borda_points": 5,
           "first_place_votes": 0,
@@ -348,7 +348,7 @@
         {
           "anonymous_label": "Response C",
           "seat_id": "seat-gemini-flash",
-          "model": "gemini-3.1-flash-high",
+          "model": "gemini-3.5-flash-lite",
           "role": "Council Seat 3 \u2022 Quota, InfoType & Regional Entitlement Verifier",
           "borda_points": 4,
           "first_place_votes": 0,
@@ -362,7 +362,7 @@
       "peer_ballots": [
         {
           "reviewer_seat": "seat-gemini-pro",
-          "reviewer_label": "Council Member A (Gemini 3.1 Pro)",
+          "reviewer_label": "Council Member A (Gemini 3.8 Flash)",
           "ranking": [
             "Response B",
             "Response A",
@@ -385,14 +385,14 @@
               "actionability": 8.8
             }
           },
-          "critique_summary": "Response B (Claude Opus 5.5) caught 8 cross-document contradictions between the 13-point cover email and the OQ responses that Response A missed\u2014most notably that `UploadSessionFile` rejects SSN-bearing files outright rather than masking `[SSN-MASKED]` inline.",
+          "critique_summary": "Response B (Claude Opus 4.6) caught 8 cross-document contradictions between the 13-point cover email and the OQ responses that Response A missed\u2014most notably that `UploadSessionFile` rejects SSN-bearing files outright rather than masking `[SSN-MASKED]` inline.",
           "rejected_false_positives": [
             "Response C Minor Nitpick: 'Specify TLS_AES_256_GCM_SHA384 cipher suite in Zone 1->2 edge' \u2014 Downgraded; Google Front End negotiates TLS 1.3 cipher suites automatically."
           ]
         },
         {
           "reviewer_seat": "seat-claude-opus",
-          "reviewer_label": "Council Member B (Claude Opus 5.5)",
+          "reviewer_label": "Council Member B (Claude Opus 4.6)",
           "ranking": [
             "Response B",
             "Response A",
@@ -415,12 +415,12 @@
               "actionability": 8.9
             }
           },
-          "critique_summary": "Response A (Gemini 3.1 Pro) produced the clearest executive architecture synthesis in 92s and caught all 5 core engineering discrepancies, but its initial 90/100 consistency score was too lenient given the Email \u00a72 vs \u00a713 inversion.",
+          "critique_summary": "Response A (Gemini 3.8 Flash) produced the clearest executive architecture synthesis in 92s and caught all 5 core engineering discrepancies, but its initial 90/100 consistency score was too lenient given the Email \u00a72 vs \u00a713 inversion.",
           "rejected_false_positives": []
         },
         {
           "reviewer_seat": "seat-gemini-flash",
-          "reviewer_label": "Council Member C (Gemini 3.1 Flash)",
+          "reviewer_label": "Council Member C (Gemini 3.5 Flash-Lite)",
           "ranking": [
             "Response B",
             "Response C",
@@ -449,7 +449,7 @@
       ]
     },
     "stage3_chairman": {
-      "chairman_model": "gemini-3.1-pro-high (Council Chairman Arbiter)",
+      "chairman_model": "gemini-3.8-flash (Council Chairman Arbiter)",
       "verdict_status": "HOLD_UNTIL_14_CORRECTIONS_APPLIED",
       "summary": "The Council Chairman calibrated Seat 1's initial 90/100 score down to 4.5/10 after Stage 2 blind peer review confirmed Seat 2's 8 cross-document contradictions. All 14 claims in the Claim Inspector must be corrected before sending the security questionnaire package to the agency CISO.",
       "arbitration_decisions": [
@@ -584,7 +584,7 @@
         {
           "type": "D",
           "words": 13,
-          "text": "GovernorModule::CheckQuery screens the raw prompt before the planner or the query rewriter runs."
+          "text": "Model Armor screens the raw prompt before the planner or query rewriter runs."
         },
         {
           "type": "D",
@@ -652,12 +652,12 @@
         {
           "type": "D",
           "words": 10,
-          "text": "Third, the tenant_stream_id extension contains the project number and user_cpi."
+          "text": "Third, the stream_attribution_id metadata contains the project number and caller_principal_id."
         },
         {
           "type": "D",
           "words": 10,
-          "text": "Vertex AI uses user_cpi for abuse detection and per-caller attribution."
+          "text": "Vertex AI uses caller_principal_id for abuse detection and per-caller attribution."
         },
         {
           "type": "D",
@@ -667,20 +667,20 @@
         {
           "type": "P",
           "words": 9,
-          "text": "Disclose user_email, user_full_name, and user_cpi in the QA-03 response."
+          "text": "Disclose user_email, user_full_name, and caller_principal_id in the QA-03 response."
         }
       ]
     },
     {
       "title": "OQ-5: Does the web UI render external Markdown images or link previews?",
-      "v1Stats": "V1 Summary: 2 sentences \u2022 Avg 42.5 words/sentence (FACTUALLY FALSE ON BACKEND FLAG)",
-      "steStats": "STE100 Rewrite: 9 sentences \u2022 Avg 11.7 words/sentence (Max 19 words \u2014 100% PASS)",
-      "v1Text": "Confirmed \u2014 deterministically prevented server-side by C++ MarkdownSanitizer::SanitizeAssistAnswer stripping untrusted ![alt](url) images to \"IMG\" and rewriting external links through Google's redirector.",
+      "v1Stats": "V1 Summary: 2 sentences \u2022 Avg 42.5 words/sentence (FACTUALLY FALSE ON BACKEND SETTING)",
+      "steStats": "STE100 Rewrite: 9 sentences \u2022 Avg 11.6 words/sentence (Max 19 words \u2014 100% PASS)",
+      "v1Text": "Confirmed \u2014 deterministically prevented server-side by a backend Markdown image sanitizer stripping untrusted ![alt](url) images to \"IMG\" and rewriting external links through Google's redirector.",
       "lines": [
         {
           "type": "D",
           "words": 10,
-          "text": "The web UI (ucs_widget) does not render external Markdown images."
+          "text": "The browser web UI does not render external Markdown images."
         },
         {
           "type": "D",
@@ -709,8 +709,8 @@
         },
         {
           "type": "D",
-          "words": 13,
-          "text": "The backend C++ MarkdownSanitizer is off by default for chat (enable_in_backend = false)."
+          "words": 12,
+          "text": "The backend Markdown image sanitizer stays off by default for chat responses."
         },
         {
           "type": "D",
@@ -800,8 +800,8 @@
           "status": "normal"
         },
         {
-          "heading": "2. Web UI (`ucs_widget` Client Renderer)",
-          "body": "Blocks external `![alt](https://...)` images in the browser (`isImageUrlAllowedForRendering`). Rewrites links via `google.com/url?q=`.",
+          "heading": "2. Gemini Enterprise Web UI (Client Renderer)",
+          "body": "Blocks external `![alt](https://...)` images in the browser via client-side allowlist checks. Rewrites links via `google.com/url?q=`.",
           "status": "success"
         },
         {
@@ -822,12 +822,12 @@
           "status": "normal"
         },
         {
-          "heading": "5. `CheckQuery` & Query Rewriter",
+          "heading": "5. Prompt Gate & Query Rewriter",
           "body": "Raw prompt screened before planner. Gap: Rewritten federated query to ServiceNow is NOT re-screened.",
           "status": "warning"
         },
         {
-          "heading": "6. Post-Tool Gate (`after_tool_callback`)",
+          "heading": "6. Post-Retrieval Screening Gate",
           "body": "SDP + Model Armor screen retrieved snippets (`userPromptTemplate` required; fails open on RPC error).",
           "status": "warning"
         }
@@ -840,19 +840,19 @@
       "items": [
         {
           "heading": "7. Exact ALTS Payload Crossing Zone 2 \u2192 3",
-          "body": "Prompt + inline session file parts + `function_response` snippets; `user_email` & `user_full_name` inside `system_instruction`; `user_cpi` inside `tenant_stream_id` extension.",
+          "body": "Prompt + inline session file parts + `function_response` snippets; `user_email` & `user_full_name` inside `system_instruction`; `caller_principal_id` inside `stream_attribution_id` metadata.",
           "status": "danger"
         },
         {
-          "heading": "8. Stateless Inference & `CheckResponse`",
-          "body": "Processed in RAM under ZDR. Output passes `SanitizeModelResponse` in Zone 2 before streaming to `ucs_widget` (backend C++ `MarkdownSanitizer` is OFF by default).",
+          "heading": "8. Stateless Inference & Response Gate",
+          "body": "Processed in RAM under ZDR. Output passes `SanitizeModelResponse` in Zone 2 before streaming to the browser web UI (server-side Markdown image sanitization is OFF by default).",
           "status": "normal"
         }
       ]
     }
   ],
-  "mermaid_flow": "flowchart LR\n  subgraph Z1[\"Zone 1: Customer GCP Org and Endpoints (Customer-Owned)\"]\n    U[\"Agency Claims Specialist\"]\n    UI[\"Browser: ucs_widget renderer (client-side image block)\"]\n    IDP[\"Entra ID / Okta IdP\"]\n    KMS[\"Cloud KMS (Customer CMEK key)\"]\n    MAT[\"Model Armor templates (userPromptTemplate, responseTemplate)\"]\n    LOG[\"Cloud Logging: gemini_enterprise_user_activity\"]\n  end\n\n  subgraph Z2[\"Zone 2: Single-Tenant Google-Managed Tenant Project (VPC-SC, CMEK)\"]\n    SA[\"StreamAssistHandler + GovernorModule (CheckQuery, CheckFileContent, CheckResponse)\"]\n    DOL[\"Dolphin Assistant (root agent, query rewrite agent)\"]\n    SESS[\"Session storage (UploadSessionFile blobs)\"]\n    GP[\"GovernancePlugin.after_tool_callback\"]\n    MA[\"Model Armor (modelarmor.googleapis.com)\"]\n    SDP[\"SDP Content Policy (dlp.googleapis.com)\"]\n  end\n\n  subgraph EXT[\"Federated SaaS Sources (outside Zone 2)\"]\n    FS[\"ServiceNow / Jira / SharePoint\"]\n  end\n\n  subgraph Z3[\"Zone 3: Stateless Multi-Tenant Model Serving (ZDR)\"]\n    VX[\"Vertex AI Gemini (aiplatform.googleapis.com)\"]\n  end\n\n  IDP -.->|\"SAML / OIDC federation (WIF)\"| U\n  U --> UI\n  UI -->|\"TLS 1.3 (WIF session)\"| SA\n  SA -->|\"UploadSessionFile blob\"| SESS\n  KMS -.->|\"CMEK key wrap\"| SESS\n  SA -->|\"Parallel fiber 1: SanitizeFileContent (max 4 MB)\"| MA\n  SA -->|\"Parallel fiber 2: ApplyContentPolicy (10 MB inline, 50 MB PDF)\"| SDP\n  SA -->|\"CheckQuery: SanitizeUserPrompt (fail-closed only if FAIL_CLOSED)\"| MA\n  MAT -.->|\"Template config\"| MA\n  SA -->|\"Prompt passed\"| DOL\n  DOL -->|\"RED FLAG: rewritten query NOT screened\"| FS\n  FS -->|\"retrieval_results (user OAuth ACL)\"| GP\n  GP -->|\"data_protection_after_tool_callback\"| SDP\n  GP -->|\"RED FLAG: snippet screen FAILS OPEN on RPC error\"| MA\n  DOL ==>|\"ALTS: system_instruction + user_email + user_full_name, file parts, tenant_stream_id with user_cpi\"| VX\n  VX -->|\"Candidate answer (no persistence)\"| DOL\n  DOL --> SA\n  SA -->|\"CheckResponse: SanitizeModelResponse\"| MA\n  SA -->|\"RED FLAG: raw Markdown, backend sanitizer OFF (enable_in_backend=false)\"| UI\n  SA -.->|\"Audit entry (no model field)\"| LOG",
-  "mermaid_seq": "sequenceDiagram\n  autonumber\n  actor U as Agency Specialist\n  participant UI as ucs_widget (Browser)\n  participant SA as StreamAssistHandler / GovernorModule\n  participant MA as Model Armor\n  participant SDP as SDP Content Policy\n  participant D as Dolphin Assistant\n  participant FS as Federated Connector\n  participant VX as Vertex AI Gemini (Zone 3)\n\n  Note over U,SA: Phase A - UploadSessionFile (Parallel Fibers)\n  U->>SA: UploadSessionFile (claim PDF)\n  par Model Armor file scan\n    SA->>MA: SanitizeFileContent (max 4 MB)\n    MA-->>SA: Verdict\n  and SDP file scan\n    SA->>SDP: ApplyContentPolicy (10 MB inline, 50 MB PDF via GCS)\n    SDP-->>SA: Verdict\n  end\n  alt Either verdict is BLOCK (for example SSN)\n    SA-->>U: Reject whole file (no mask-and-continue path)\n  else Both verdicts pass\n    SA->>SA: Attach file to session (no search index)\n  end\n\n  Note over U,VX: Phase B - StreamAssist Turn\n  U->>SA: StreamAssist (query)\n  SA->>MA: CheckQuery -> SanitizeUserPrompt (raw query)\n  alt Match and INSPECT_AND_BLOCK\n    SA-->>U: SKIPPED / CUSTOMER_POLICY_VIOLATION (no connector call)\n  else Prompt passes\n    SA->>D: Hand control to Dolphin\n    D->>D: Query rewrite agent (system_instruction contains user_email)\n    D->>FS: Rewritten query (NOT screened in prod)\n    FS-->>D: retrieval_results (1:1 user OAuth ACL)\n    D->>SDP: data_protection_after_tool_callback\n    D->>MA: _sanitize_search_snippets (fails open on RPC transport error)\n    D->>VX: GenerateContentRequest over ALTS (system_instruction + user_email, file parts, user_cpi)\n    VX-->>D: Candidate answer (stateless RAM under ZDR)\n    D-->>SA: AssistAnswer\n    SA->>MA: CheckResponse -> SanitizeModelResponse (responseTemplate)\n    SA-->>UI: Raw Markdown (backend MarkdownSanitizer OFF by default)\n    UI->>UI: isImageUrlAllowedForRendering (blocks external <img>, rewrites links)\n    UI-->>U: Rendered answer\n  end",
+  "mermaid_flow": "flowchart LR\n  subgraph Z1[\"Zone 1: Customer GCP Org and Endpoints (Customer-Owned)\"]\n    U[\"Agency Claims Specialist\"]\n    UI[\"Browser: Gemini Enterprise Web UI (client-side image block)\"]\n    IDP[\"Entra ID / Okta IdP\"]\n    KMS[\"Cloud KMS (Customer CMEK key)\"]\n    MAT[\"Model Armor templates (userPromptTemplate, responseTemplate)\"]\n    LOG[\"Cloud Logging: gemini_enterprise_user_activity\"]\n  end\n\n  subgraph Z2[\"Zone 2: Single-Tenant Google-Managed Tenant Project (VPC-SC, CMEK)\"]\n    SA[\"StreamAssist API Gateway + Policy Gate\"]\n    AST[\"Gemini Enterprise Assistant (root agent, query rewrite agent)\"]\n    SESS[\"Session storage (UploadSessionFile blobs)\"]\n    GP[\"Post-Retrieval Policy Gate\"]\n    MA[\"Model Armor (modelarmor.googleapis.com)\"]\n    SDP[\"SDP Content Policy (dlp.googleapis.com)\"]\n  end\n\n  subgraph EXT[\"Federated SaaS Sources (outside Zone 2)\"]\n    FS[\"ServiceNow / Jira / SharePoint\"]\n  end\n\n  subgraph Z3[\"Zone 3: Stateless Multi-Tenant Model Serving (ZDR)\"]\n    VX[\"Vertex AI Gemini (aiplatform.googleapis.com)\"]\n  end\n\n  IDP -.->|\"SAML / OIDC federation (WIF)\"| U\n  U --> UI\n  UI -->|\"TLS 1.3 (WIF session)\"| SA\n  SA -->|\"UploadSessionFile blob\"| SESS\n  KMS -.->|\"CMEK key wrap\"| SESS\n  SA -->|\"Parallel fiber 1: SanitizeFileContent (max 4 MB)\"| MA\n  SA -->|\"Parallel fiber 2: ApplyContentPolicy (10 MB inline, 50 MB PDF)\"| SDP\n  SA -->|\"Prompt Gate: SanitizeUserPrompt (fail-closed only if FAIL_CLOSED)\"| MA\n  MAT -.->|\"Template config\"| MA\n  SA -->|\"Prompt passed\"| AST\n  AST -->|\"RED FLAG: rewritten query NOT screened\"| FS\n  FS -->|\"retrieval_results (user OAuth ACL)\"| GP\n  GP -->|\"Post-Retrieval SDP Inspection\"| SDP\n  GP -->|\"RED FLAG: snippet screen FAILS OPEN on RPC error\"| MA\n  AST ==>|\"ALTS: system_instruction + user_email + user_full_name, file parts, stream_attribution_id with caller_principal_id\"| VX\n  VX -->|\"Candidate answer (no persistence)\"| AST\n  AST --> SA\n  SA -->|\"Response Gate: SanitizeModelResponse\"| MA\n  SA -->|\"RED FLAG: raw Markdown, server-side sanitizer OFF by default\"| UI\n  SA -.->|\"Audit entry (no model field)\"| LOG",
+  "mermaid_seq": "sequenceDiagram\n  autonumber\n  actor U as Agency Specialist\n  participant UI as Gemini Enterprise Web UI (Browser)\n  participant SA as StreamAssist API Gateway\n  participant MA as Model Armor\n  participant SDP as SDP Content Policy\n  participant A as Gemini Enterprise Assistant\n  participant FS as Federated Connector\n  participant VX as Vertex AI Gemini (Zone 3)\n\n  Note over U,SA: Phase A - UploadSessionFile (Parallel Fibers)\n  U->>SA: UploadSessionFile (claim PDF)\n  par Model Armor file scan\n    SA->>MA: SanitizeFileContent (max 4 MB)\n    MA-->>SA: Verdict\n  and SDP file scan\n    SA->>SDP: ApplyContentPolicy (10 MB inline, 50 MB PDF via GCS)\n    SDP-->>SA: Verdict\n  end\n  alt Either verdict is BLOCK (for example SSN)\n    SA-->>U: Reject whole file (no mask-and-continue path)\n  else Both verdicts pass\n    SA->>SA: Attach file to session (no search index)\n  end\n\n  Note over U,VX: Phase B - StreamAssist Turn\n  U->>SA: StreamAssist (query)\n  SA->>MA: Prompt Gate -> SanitizeUserPrompt (raw query)\n  alt Match and INSPECT_AND_BLOCK\n    SA-->>U: SKIPPED / CUSTOMER_POLICY_VIOLATION (no connector call)\n  else Prompt passes\n    SA->>A: Hand control to Assistant\n    A->>A: Query rewrite agent (system_instruction contains user_email)\n    A->>FS: Rewritten query (NOT screened in prod)\n    FS-->>A: retrieval_results (1:1 user OAuth ACL)\n    A->>SDP: Post-retrieval SDP inspection\n    A->>MA: Post-retrieval snippet screening (fails open on RPC transport error)\n    A->>VX: GenerateContentRequest over ALTS (system_instruction + user_email, file parts, caller_principal_id)\n    VX-->>A: Candidate answer (stateless RAM under ZDR)\n    A-->>SA: AssistAnswer\n    SA->>MA: Response Gate -> SanitizeModelResponse (responseTemplate)\n    SA-->>UI: Raw Markdown (server-side Markdown sanitizer OFF by default)\n    UI->>UI: Client-side image allowlist check (blocks external <img>, rewrites links)\n    UI-->>U: Rendered answer\n  end",
   "storyboard_title": "\"What Really Happens to a Workers' Comp Claim File in Gemini Enterprise\"",
   "scenes": [
     {
@@ -872,41 +872,41 @@
     {
       "time": "00:45 \u2013 01:10",
       "title": "Scene 3: Prompt Gate, Unscreened Query Rewrite & Snippet Screening",
-      "cue": "The user's question passes CheckQuery (Model Armor). The query rewriter constructs a ServiceNow query (flagged with an amber 'Rewrite Not Screened' badge). Returned ServiceNow snippets pass SDP and Model Armor snippet screening (with a note that snippet screening fails open on RPC errors).",
+      "cue": "The user's question passes the Prompt Gate (Model Armor). The query rewriter constructs a ServiceNow query (flagged with an amber 'Rewrite Not Screened' badge). Returned ServiceNow snippets pass SDP and Model Armor snippet screening (with a note that snippet screening fails open on RPC errors).",
       "narration": "Next, she asks a question. Model Armor screens her prompt before the Assistant plans any action. The Assistant then rewrites the query for ServiceNow, and no gate screens that rewrite. Returned snippets pass Sensitive Data Protection and Model Armor. The snippet check fails open if the Model Armor call has an error.",
       "check": "Verify that failure_mode=FAIL_CLOSED is set on the template and that single-federated-source-per-App (CF-6) mitigates rewritten query leakage."
     },
     {
       "time": "01:10 \u2013 01:35",
       "title": "Scene 4: Exact Payload Crossing into Zone 3 Model Serving",
-      "cue": "An ALTS-encrypted GenerateContentRequest envelope crosses into Zone 3. Inside the envelope: Prompt, inline file parts, function_response snippets, system_instruction (highlighting user_email), and tenant_stream_id (highlighting user_cpi). WIF tokens and Session IDs remain locked behind in Zone 2.",
+      "cue": "An ALTS-encrypted GenerateContentRequest envelope crosses into Zone 3. Inside the envelope: Prompt, inline file parts, function_response snippets, system_instruction (highlighting user_email), and stream_attribution_id (highlighting caller_principal_id). WIF tokens and Session IDs remain locked behind in Zone 2.",
       "narration": "Now the request crosses into Zone 3, the stateless model-serving layer. It carries the prompt, file content, and snippets. It also carries her email address in the system instruction. A request header carries her cloud principal ID for abuse detection. Her sign-in tokens and session ID stay behind in Zone 2.",
-      "check": "Verify that QA-03 and Email \u00a73 disclose user_email, user_full_name, and user_cpi instead of claiming 'zero user identifiers cross into Zone 3'."
+      "check": "Verify that QA-03 and Email \u00a73 disclose user_email, user_full_name, and caller_principal_id instead of claiming 'zero user identifiers cross into Zone 3'."
     },
     {
       "time": "01:35 \u2013 02:00",
       "title": "Scene 5: Outbound Response Gate, Browser Image Blocking & 24h Purge",
-      "cue": "The candidate response passes CheckResponse (Model Armor) in Zone 2. Raw Markdown arrives at the ucs_widget browser UI, which degrades an external ![img](https://...) tag into plain text and routes links through google.com/url. Finally, the 24-hour timer expires and purges the Zone 2 session.",
+      "cue": "The candidate response passes the Response Gate (Model Armor) in Zone 2. Raw Markdown arrives at the Gemini Enterprise browser web UI, which degrades an external ![img](https://...) tag into plain text and routes links through google.com/url. Finally, the 24-hour timer expires and purges the Zone 2 session.",
       "narration": "Model Armor screens the answer before it leaves Google. Her browser, not the backend, blocks external images and routes links through a Google redirect. A custom app that calls the API must block images itself. When the retention period ends, Zone 2 deletes the session and the file.",
-      "check": "Verify that ucs_widget enforces client-side image blocking (since backend C++ MarkdownSanitizer is false by default for chat)."
+      "check": "Verify that the Gemini Enterprise web UI enforces client-side image blocking (since server-side Markdown image sanitization stays off by default for chat)."
     }
   ],
   "tab6_label": "6. What We Added (v1 vs. Karpathy Council)",
   "upgrade_spec": {
-    "title": "What This Upgrade Adds to Peter's Output AI Verification Loop (Mode 1: Customer Deliverable Council)",
+    "title": "What This Upgrade Adds to the Output AI Verification Loop (Mode 1: Customer Deliverable Council)",
     "subtitle": "Upgrading the 1-pass Dual-Model Benchmark into Andrej Karpathy's 3-Stage LLM Council + Deterministic Pre-Send Gate + JSON-to-HTML Canvas Compiler",
     "karpathy_mapping": [
       {
         "stage": "Stage 1 \u2022 First Opinions (stage1_collect_responses)",
         "karpathy_design": "Query heterogeneous frontier LLMs in parallel so no model anchors another.",
-        "our_implementation": "3 specialized seats audit the CE security package independently: Seat 1 (Gemini 3.1 Pro \u2014 Context Synthesizer), Seat 2 (Claude Opus 5.5 \u2014 Adversarial Challenger), Seat 3 (Gemini 3.1 Flash \u2014 Quota, SDP InfoType & STE100 Verifier).",
+        "our_implementation": "3 specialized seats audit the CE security package independently: Seat 1 (Gemini 3.8 Flash \u2014 Context Synthesizer), Seat 2 (Claude Opus 4.6 \u2014 Adversarial Challenger), Seat 3 (Gemini 3.5 Flash-Lite \u2014 Quota, SDP InfoType & STE100 Verifier).",
         "problem_solved": "In v1, Seat 1 scored the draft 90/100 and missed 8 cover-email errors while Seat 2 scored it 4.5/10 and caught 8 new contradictions."
       },
       {
         "stage": "Stage 2 \u2022 Blind Peer Review & Ranking (stage2_collect_rankings)",
         "karpathy_design": "Strip model identities into anonymized labels (Response A, Response B, Response C); have each LLM critique and rank the others to eliminate self-preference bias.",
         "our_implementation": "compute_stage2_peer_review() blinds all Stage 1 outputs into Response A/B/C, collects Precision/Recall/Actionability ballots, computes Borda Count rankings, and filters uncorroborated nitpicks.",
-        "problem_solved": "When reviewing Response B blind, Gemini Pro verified the 8 cover-email contradictions and ranked Response B #1 above its own Response A\u2014automatically resolving the 90/100 vs. 4.5/10 split without human guesswork."
+        "problem_solved": "When reviewing Response B blind, Gemini 3.8 Flash verified the 8 cover-email contradictions and ranked Response B #1 above its own Response A\u2014automatically resolving the 90/100 vs. 4.5/10 split without human guesswork."
       },
       {
         "stage": "Stage 3 \u2022 Chairman Synthesis & Gate (stage3_synthesize_final)",

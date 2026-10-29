@@ -63,7 +63,7 @@
 
   <!-- MSIP Label Parser Sub-box -->
   <rect x="64" y="330" width="343" height="106" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
-  <text x="235" y="350" text-anchor="middle" fill="#38bdf8" font-size="12.5" font-weight="700">A. Native MSIP Label Extraction (DolphinService)</text>
+  <text x="235" y="350" text-anchor="middle" fill="#38bdf8" font-size="12.5" font-weight="700">A. Native MSIP Label Extraction (Discovery Engine)</text>
   <text x="78" y="370" fill="#e2e8f0" font-size="11">• Parses tool JSON for recognized MSIP keys:</text>
   <text x="90" y="388" fill="#34d399" font-size="11" font-family="monospace">msip_labels | assigned_labels | assigned_sensitivity_labels</text>
   <text x="78" y="406" fill="#e2e8f0" font-size="11">• Builds Cloud DLP proto payload:</text>

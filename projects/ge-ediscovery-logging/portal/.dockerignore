@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.git/
+__pycache__/
+*.pyc
+*.pem
+*.key
+*.crt

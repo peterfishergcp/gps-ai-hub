@@ -2,16 +2,15 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '../', '');
+  const env = loadEnv(mode, '.', 'VITE_');
 
   return {
     plugins: [react()],
-    envDir: '../',
     define: {
-      'import.meta.env.VITE_PROJECT_ID': JSON.stringify(env.PROJECT_ID || env.VITE_PROJECT_ID || ''),
-      'import.meta.env.VITE_BIGQUERY_DATASET': JSON.stringify(env.BIGQUERY_DATASET || env.VITE_BIGQUERY_DATASET || ''),
-      'import.meta.env.VITE_GCS_BUCKET': JSON.stringify(env.GCS_BUCKET || env.VITE_GCS_BUCKET || ''),
-      'import.meta.env.VITE_ALLOWED_DOMAINS': JSON.stringify(env.ALLOWED_DOMAINS || env.VITE_ALLOWED_DOMAINS || ''),
+      'import.meta.env.VITE_PROJECT_ID': JSON.stringify(env.VITE_PROJECT_ID || ''),
+      'import.meta.env.VITE_BIGQUERY_DATASET': JSON.stringify(env.VITE_BIGQUERY_DATASET || ''),
+      'import.meta.env.VITE_GCS_BUCKET': JSON.stringify(env.VITE_GCS_BUCKET || ''),
+      'import.meta.env.VITE_ALLOWED_DOMAINS': JSON.stringify(env.VITE_ALLOWED_DOMAINS || ''),
     },
     build: {
       target: 'esnext',
@@ -28,10 +27,10 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 3000,
-      host: true,
+      host: '127.0.0.1',
       proxy: {
         '/api': {
-          target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
+          target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8080',
           changeOrigin: true,
         },
       },

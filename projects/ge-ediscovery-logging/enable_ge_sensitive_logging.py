@@ -15,6 +15,7 @@ import ssl
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "").strip()
@@ -95,6 +96,28 @@ def enable_notebooklm_sensitive_logging(token: str) -> int:
     return nb_updated
 
 
+def _list_paginated_items(base_url: str, token: str, list_key: str) -> list[dict]:
+    """Fetches all pages of a Discovery Engine list endpoint via nextPageToken."""
+    items: list[dict] = []
+    page_token = ""
+    while True:
+        sep = "&" if "?" in base_url else "?"
+        url = f"{base_url}{sep}pageToken={urllib.parse.quote(page_token)}" if page_token else base_url
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-Goog-User-Project": PROJECT_ID,
+            },
+        )
+        resp = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode())
+        items.extend(resp.get(list_key, []))
+        page_token = str(resp.get("nextPageToken") or "").strip()
+        if not page_token:
+            break
+    return items
+
+
 def enable_agent_sensitive_logging(token: str, loc: str, prefix: str, engine_id: str) -> int:
     """Enables observabilityConfig (observabilityEnabled=true, sensitiveLoggingEnabled=true) on all custom Agents in an Engine."""
     agents_url = (
@@ -102,19 +125,10 @@ def enable_agent_sensitive_logging(token: str, loc: str, prefix: str, engine_id:
         f"projects/{PROJECT_ID}/locations/{loc}/collections/default_collection/"
         f"engines/{engine_id}/assistants/default_assistant/agents"
     )
-    req = urllib.request.Request(
-        agents_url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "X-Goog-User-Project": PROJECT_ID,
-        },
-    )
     try:
-        resp = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode())
+        agents = _list_paginated_items(agents_url, token, "agents")
     except urllib.error.HTTPError:
         return 0
-
-    agents = resp.get("agents", [])
     agents_updated = 0
     for ag in agents:
         ag_name = ag.get("name", "")
@@ -189,21 +203,13 @@ def main() -> None:
             f"https://{prefix}discoveryengine.googleapis.com/v1alpha/"
             f"projects/{PROJECT_ID}/locations/{loc}/collections/default_collection/engines"
         )
-        req = urllib.request.Request(
-            list_url,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "X-Goog-User-Project": PROJECT_ID,
-            },
-        )
         try:
-            resp = json.loads(urllib.request.urlopen(req, context=SSL_CTX).read().decode())
+            engines = _list_paginated_items(list_url, token, "engines")
         except urllib.error.HTTPError as e:
             err_msg = e.read().decode("utf-8", errors="ignore")
             print(f"[{loc}] Skipping or error ({e.code}): {err_msg[:200]}")
             continue
 
-        engines = resp.get("engines", [])
         if not engines:
             continue
 

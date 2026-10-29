@@ -1,14 +1,21 @@
 {
-  "name": "claude-mcp-sonnet",
-  "version": "1.0.0",
-  "description": "MCP Server for Anthropic Claude Sonnet on Vertex AI with A2UI component generation tools for A2A and ADK.",
+  "name": "vertex-claude-mcp",
+  "version": "2.1.0",
+  "description": "Custom Cloud Run MCP Server bridging Gemini Enterprise to Anthropic Claude on Vertex AI",
   "main": "index.mjs",
   "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
-    "start": "node index.mjs"
+    "start": "node index.mjs",
+    "test": "bash test_local.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.6.0",
-    "google-auth-library": "^9.15.0"
+    "google-auth-library": "^9.15.1"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

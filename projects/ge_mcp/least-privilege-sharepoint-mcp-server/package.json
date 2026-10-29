@@ -1,18 +1,29 @@
 {
   "name": "least-privilege-sharepoint-mcp-server",
-  "version": "1.0.0",
-  "description": "Least-Privilege SharePoint MCP Server using Microsoft Entra ID Sites.Selected (Read-Only, Site-Scoped) for Gemini Enterprise",
+  "version": "2.1.0",
+  "description": "Least-Privilege Read-Only Sites.Selected SharePoint MCP Connector",
   "main": "index.js",
-  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node index.js",
-    "test:local": "./test_local.sh"
+    "test": "bash test_local.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",
     "axios": "^1.13.5",
     "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
     "mammoth": "^1.12.0",
-    "xlsx": "^0.18.5"
+    "unpdf": "^1.0.6"
+  },
+  "overrides": {
+    "minimist": "^1.2.8",
+    "tmp": "^0.2.7",
+    "uuid": "^11.1.1",
+    "fast-uri": "^3.1.9",
+    "zod": "^4.6.6"
   }
 }

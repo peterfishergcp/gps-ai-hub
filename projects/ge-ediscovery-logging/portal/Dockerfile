@@ -11,7 +11,8 @@ RUN npm run build
 FROM python:3.12-slim
 WORKDIR /app
 
-RUN groupadd -r portal && useradd -r -g portal -d /app -s /sbin/nologin portal
+RUN pip install --no-cache-dir "cryptography>=44.0.0" \
+    && groupadd -r portal && useradd -r -g portal -d /app -s /sbin/nologin portal
 
 COPY --from=frontend-builder /build/dist /app/dist
 COPY server.py /app/server.py

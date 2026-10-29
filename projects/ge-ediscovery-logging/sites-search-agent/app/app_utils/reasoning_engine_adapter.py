@@ -22,8 +22,6 @@ contract. Agent Engine forwards calls to ``/api/reasoning_engine`` (sync) and
 packaged Agent Engine.
 """
 
-import base64
-import hashlib
 import inspect
 import json
 
@@ -35,6 +33,12 @@ from fastapi import FastAPI, HTTPException, Request, encoders, responses
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from app.app_utils import services
+from app.app_utils.auth import (
+    AuthenticationError,
+    AuthorizationError,
+    VerifiedCaller,
+    verify_request_identity,
+)
 
 ALLOWED_STREAMING_METHODS = frozenset({"stream_query", "async_stream_query"})
 ALLOWED_SYNC_METHODS = frozenset(
@@ -53,29 +57,22 @@ ALLOWED_SYNC_METHODS = frozenset(
 
 def _derive_authenticated_user_id(request: Request) -> str | None:
     """
-    Derives a deterministic caller user_id from verified IAP or Bearer token claims
-    when present (mitigates M4 session IDOR across users).
+    Derives a deterministic caller user_id strictly from cryptographically verified
+    IAP / OIDC JWT claims (never trusting raw X-Goog-Authenticated-User-Email or
+    unverified JWT base64 payloads).
     """
-    iap_email = (request.headers.get("X-Goog-Authenticated-User-Email") or "").strip()
-    if iap_email:
-        if ":" in iap_email:
-            iap_email = iap_email.split(":", 1)[1].strip()
-        if iap_email:
-            return iap_email
-    auth_hdr = (request.headers.get("Authorization") or "").strip()
-    if auth_hdr.startswith("Bearer "):
-        tok = auth_hdr.split(" ", 1)[1].strip()
-        parts = tok.split(".")
-        if len(parts) == 3:
-            try:
-                pad = "=" * (-len(parts[1]) % 4)
-                claims = json.loads(base64.urlsafe_b64decode(parts[1] + pad).decode("utf-8"))
-                sub = str(claims.get("email") or claims.get("sub") or "").strip()
-                if sub:
-                    return sub
-            except Exception:
-                pass
-        return f"token:{hashlib.sha256(tok.encode('utf-8')).hexdigest()[:24]}"
+    caller: VerifiedCaller | None = getattr(request.state, "verified_caller", None)
+    if caller is None:
+        client_host = request.client.host if request.client else None
+        try:
+            caller = verify_request_identity(request.headers, client_host=client_host)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except AuthorizationError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    if caller.auth_mode in ("iap_jwt", "oidc_jwt"):
+        return caller.user_id
     return None
 
 

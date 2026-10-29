@@ -14,11 +14,11 @@ import {
   isAuthorizedEmail,
   User,
 } from './services/firebaseAuth';
-import { fetchLiveComplianceLogs } from './services/complianceApi';
+import { fetchLiveComplianceLogs, searchBigQuery } from './services/complianceApi';
 import { matchesQuery } from './utils/searchUtils';
 import { ComplianceDataset, EMPTY_DATASET } from './types/schema';
 import { EditorialTheme, THEMES } from './types/theme';
-import { Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Theme State (Default: 'cloud' - True Blue)
@@ -41,12 +41,14 @@ export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  // BigQuery Dataset
+  // BigQuery Dataset + Server-Side Search Supplement (for records beyond initial LIMIT 2000)
   const [dataset, setDataset] = useState<ComplianceDataset>(EMPTY_DATASET);
+  const [serverSearchDataset, setServerSearchDataset] = useState<ComplianceDataset | null>(null);
 
   // Syncing state
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Surface & Filters State
   const [surfaceMode, setSurfaceMode] = useState<'NOTEBOOK_LM' | 'GEMINI_ENTERPRISE_CHAT'>('GEMINI_ENTERPRISE_CHAT');
@@ -58,8 +60,17 @@ export const App: React.FC = () => {
   // Live BigQuery Sync Function
   const syncWithBigQuery = useCallback(async (forceRefresh = false) => {
     setIsSyncing(true);
+    setSyncError(null);
     try {
       const live = await fetchLiveComplianceLogs(forceRefresh);
+      if (live.error) {
+        setDataset(EMPTY_DATASET);
+        setSyncError(live.error);
+        if (live.http_status === 401) {
+          setCurrentUser(null);
+        }
+        return;
+      }
       setDataset({
         processedLogs: live.processed_logs || [],
         sources: live.sources || [],
@@ -68,8 +79,9 @@ export const App: React.FC = () => {
         notebookRawLogs: live.notebook_raw_logs || [],
       });
       setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    } catch (e) {
-      console.warn('BigQuery live sync error:', e);
+    } catch {
+      setDataset(EMPTY_DATASET);
+      setSyncError('Unexpected error synchronizing BigQuery compliance logs.');
     } finally {
       setIsSyncing(false);
     }
@@ -95,6 +107,60 @@ export const App: React.FC = () => {
     }
   }, [currentUser, syncWithBigQuery]);
 
+  // Query server-side BigQuery /api/search (debounced) so records older than LIMIT 2000 are discoverable
+  useEffect(() => {
+    if (!currentUser) {
+      setServerSearchDataset(null);
+      return;
+    }
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2 && !selectedUserEmail) {
+      setServerSearchDataset(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const res = await searchBigQuery(trimmed, selectedUserEmail || '');
+      if (cancelled) return;
+      if (res.search_dataset) {
+        setServerSearchDataset({
+          processedLogs: res.search_dataset.processed_logs || [],
+          sources: res.search_dataset.sources || [],
+          chats: res.search_dataset.chat || [],
+          studio: res.search_dataset.studio || [],
+          notebookRawLogs: res.search_dataset.notebook_raw_logs || [],
+        });
+      }
+    }, 280);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [currentUser, searchQuery, selectedUserEmail]);
+
+  const mergedDataset = useMemo<ComplianceDataset>(() => {
+    if (!serverSearchDataset) return dataset;
+    const mergeByKey = <T,>(base: T[], extra: T[], keyFn: (item: T) => string): T[] => {
+      const seen = new Set(base.map(keyFn));
+      const out = [...base];
+      for (const item of extra) {
+        const k = keyFn(item);
+        if (k && !seen.has(k)) {
+          seen.add(k);
+          out.push(item);
+        }
+      }
+      return out;
+    };
+    return {
+      processedLogs: mergeByKey(dataset.processedLogs, serverSearchDataset.processedLogs, (x: any) => String(x.insert_id || '')),
+      sources: mergeByKey(dataset.sources, serverSearchDataset.sources, (x: any) => String(x.event_id || '')),
+      chats: mergeByKey(dataset.chats, serverSearchDataset.chats, (x: any) => String(x.event_id || '')),
+      studio: mergeByKey(dataset.studio, serverSearchDataset.studio, (x: any) => String(x.event_id || '')),
+      notebookRawLogs: mergeByKey(dataset.notebookRawLogs, serverSearchDataset.notebookRawLogs, (x: any) => String(x.event_id || '')),
+    };
+  }, [dataset, serverSearchDataset]);
+
   const handleSignOut = async () => {
     await logout();
     setCurrentUser(null);
@@ -102,13 +168,13 @@ export const App: React.FC = () => {
 
   // Build Dynamic Users
   const users = useMemo(() => {
-    return buildDynamicUsers(dataset);
-  }, [dataset]);
+    return buildDynamicUsers(mergedDataset);
+  }, [mergedDataset]);
 
   // Build Unified Review Items
   const unifiedItems = useMemo(() => {
-    return getUnifiedReviewItems(dataset);
-  }, [dataset]);
+    return getUnifiedReviewItems(mergedDataset);
+  }, [mergedDataset]);
 
   // Compute dataset bounds: Max is ALWAYS Today (Now), Min is earliest record creation
   const { minTimestamp, maxTimestamp } = useMemo(() => {
@@ -194,6 +260,25 @@ export const App: React.FC = () => {
             setSearchQuery('');
           }}
         />
+
+        {syncError && (
+          <div
+            role="alert"
+            className="shrink-0 flex items-center justify-between gap-3 border-b border-rose-300 bg-rose-50 px-4 py-2 text-xs text-rose-800"
+          >
+            <div className="flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{syncError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => syncWithBigQuery(true)}
+              className="rounded-md border border-rose-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 cursor-pointer"
+            >
+              Retry Sync
+            </button>
+          </div>
+        )}
 
         {/* Master-Detail Compliance Workspace */}
         <main className="flex-1 flex overflow-hidden">

@@ -1,16 +1,16 @@
 # Gemini Enterprise + Microsoft Work IQ MCP + Microsoft Purview Encryption Enforcement
 
-> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is not an official Google product or officially supported Google Cloud project. This code is provided as-is for demonstration purposes and is NOT intended or supported for production workloads. The views, code, and opinions expressed in this repository are those of the author(s) and do not necessarily reflect the position, opinions, or official policy of Google LLC or Google Cloud Platform.
+> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is not an official Google product or officially supported Google Cloud project. This code is provided as-is for demonstration purposes and is NOT intended or supported for production workloads.
 
 ![Reference Architecture](./architecture_diagram.svg)
 
 ## 1. Executive Summary
 
-This solution demonstrates how to connect **Google Cloud Gemini Enterprise (Agentspace)** directly to **Microsoft's Managed Work IQ MCP Server (`https://workiq.svc.cloud.microsoft/mcp`)** as a Bring-Your-Own (BYO) MCP Connector, while enforcing **Microsoft Purview Sensitivity Labels & AES-256 Rights Management (RMS) Encryption** in real time on behalf of the signed-in user.
+This module demonstrates how to connect **Google Cloud Gemini Enterprise** directly to **Microsoft's Managed Work IQ MCP Server (`https://workiq.svc.cloud.microsoft/mcp`)** as a Bring-Your-Own (BYO) MCP Connector, while enforcing **Microsoft Purview Sensitivity Labels & AES-256 Rights Management (RMS) Encryption** in real time on behalf of the signed-in user.
 
 By combining **Google Cloud Workforce Identity Federation (WIF)** with **OAuth 2.0 Authorization Code (3LO) delegation**, every query from Gemini Enterprise executes under the user's Microsoft Entra ID identity (`On-Behalf-Of` / OBO):
-1. **Scenario A — Allowed Path (`Confidential - RMS`)**: When a document in SharePoint Online is protected with a Microsoft Purview Sensitivity Label (`protectionEnabled: true`, AES-256 `MS-OFFCRYPTO` OLE2 container) whose label policy grants the signed-in user `VIEW` and `EXTRACT` rights, Microsoft Purview authorizes access based on the sensitivity label and Work IQ MCP decrypts and summarizes the content in Gemini Enterprise with clickable source citations.
-2. **Scenario B — Blocked Path (`SOC - Restricted Block`)**: When a document in the exact same SharePoint site carries a Microsoft Purview Sensitivity Label (`protectionEnabled: true`) that restricts access and excludes the signed-in user (`0` rights — `VIEW` and `EXTRACT` denied), access is blocked based on the Purview Sensitivity Label and Work IQ MCP natively prevents the document content from being extracted or summarized in Gemini Enterprise.
+1. **Scenario A — Allowed Path (`Confidential - RMS`)**: When a document in SharePoint Online is protected with a Microsoft Purview Sensitivity Label (`protectionEnabled: true`, AES-256 `MS-OFFCRYPTO` OLE2 container) whose label policy grants the signed-in user `VIEW` and `EXTRACT` rights, Microsoft Purview authorizes access and Work IQ MCP decrypts and summarizes the content in Gemini Enterprise with clickable source citations.
+2. **Scenario B — Blocked Path (`SOC - Restricted Block`)**: When a document in the exact same SharePoint site carries a Microsoft Purview Sensitivity Label (`protectionEnabled: true`) that excludes the signed-in user (`0` rights — `VIEW` and `EXTRACT` denied), Work IQ MCP natively prevents the document content from being extracted or summarized in Gemini Enterprise.
 
 ---
 
@@ -46,18 +46,21 @@ Ensure the test user(s) in your Microsoft 365 tenant hold:
 - **SharePoint Pay-As-You-Go / Metered Graph Billing** linked to an Azure Subscription if using Microsoft Graph `assignSensitivityLabel` programmatically.
 
 ### Step 2: Microsoft Entra ID OAuth Client App Registration
-1. Register a Web Application in **Microsoft Entra ID** (`<YOUR_ENTRA_CLIENT_ID>`).
+1. Register an Application in **Microsoft Entra ID** (`<YOUR_ENTRA_CLIENT_ID>`).
 2. Configure **API Permissions** (`requiredResourceAccess`):
    - **Work IQ (`fdcc1f02-fc51-4226-8753-f668596af7f7`)**: Add Delegated permissions (`McpServers.Ask.All`, `McpServers.Fetch.All`, `WorkIQAgent.Ask`) and grant tenant-wide Admin Consent.
    - **Microsoft Graph (`00000003-0000-0000-c000-000000000000`)**: Add `Files.ReadWrite.All` and `Sites.ReadWrite.All`.
-3. Under **Authentication**, register the Google Cloud WIF / Gemini Enterprise OAuth Redirect URI:
-   ```text
-   https://auth.cloud.google/signin-callback/locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>/providers/<YOUR_OIDC_PROVIDER_ID>
-   ```
+   - **Azure Rights Management Services (`00000012-0000-0000-c000-000000000000`)**: Add Delegated `user_impersonation` (used by `verify_azure_rms_templates.py`).
+3. Under **Authentication**:
+   - Register the Google Cloud WIF / Gemini Enterprise OAuth Redirect URI (Web):
+     ```text
+     https://auth.cloud.google/signin-callback/locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>/providers/<YOUR_OIDC_PROVIDER_ID>
+     ```
+   - Enable **Allow public client flows** (`isFallbackPublicClient = true`) if running the local verification scripts via **MSAL OAuth 2.0 Device Code flow** (`MS_AUTH_FLOW="device_code"`).
 4. Ensure the App Manifest sets `"requestedAccessTokenVersion": 2`.
 
 ### Step 3: Grant Downstream On-Behalf-Of (`oauth2PermissionGrants`) to the First-Party Work IQ Service Principal
-In a new Microsoft 365 tenant, the first-party **Work IQ Service Principal** (`appId: fdcc1f02-fc51-4226-8753-f668596af7f7`) must be granted delegated `oauth2PermissionGrants` (`AllPrincipals`) so it can call Microsoft Graph, SharePoint Online, and Azure Rights Management on the user's behalf:
+In a new Microsoft 365 tenant, grant the first-party **Work IQ Service Principal** (`appId: fdcc1f02-fc51-4226-8753-f668596af7f7`) delegated `oauth2PermissionGrants` (`AllPrincipals`):
 - **Microsoft Graph (`00000003-0000-0000-c000-000000000000`)**:
   `Sites.Read.All Files.Read.All Files.ReadWrite.All Mail.Read User.Read Calendars.Read Chat.Read.All ChannelMessage.Read.All People.Read.All OnlineMeetingTranscript.Read.All Tasks.ReadWrite Group.Read.All InformationProtectionPolicy.Read`
 - **Azure Rights Management Services (`00000012-0000-0000-c000-000000000000`)**:
@@ -77,25 +80,34 @@ In a new Microsoft 365 tenant, the first-party **Work IQ Service Principal** (`a
 ### Step 5: Configure Two Purview Sensitivity Labels for Side-by-Side Testing
 1. **Allowed Label (e.g., `Confidential - RMS`)**:
    - Enable Encryption (`EncryptionEnabled: $true`).
-   - Grant your test user (or tenant domain) `VIEW` and `EXTRACT` rights (`VIEW,DOCEDIT,EDIT,PRINT,EXTRACT,REPLY,REPLYALL,FORWARD,OBJMODEL,OWNER`).
-   - Publish the label in an active Purview Label Policy and apply it to your allowed document (`Quantum_Computing_Clean_Purview.docx`).
+   - Grant your test user (or tenant domain) `VIEW` and `EXTRACT` rights.
 2. **Blocked Label (e.g., `SOC - Restricted Block`)**:
    - Enable Encryption (`EncryptionEnabled: $true`).
-   - Restrict permissions (`EncryptionRightsDefinitions`) strictly to a dedicated security group or restricted user (`secops-restricted@<YOUR_TENANT_DOMAIN>:VIEW,OWNER`) so that your standard test user has **`0` rights** (`VIEW` and `EXTRACT` denied).
-   - **Important Purview `ISSUER / OWNER` Rule**: Because Azure RMS automatically grants the identity that applies an encryption label the `ISSUER` / `OWNER` right, apply the `SOC - Restricted Block` label using either an **Application Service Principal** (`client_credentials` with an X.509 certificate) or a separate admin account so your test user is not stamped as the `OWNER`.
+   - Restrict permissions (`EncryptionRightsDefinitions`) strictly to a dedicated security group (`secops-restricted@<YOUR_TENANT_DOMAIN>:VIEW,OWNER`) so your standard test user holds **`0` rights** (`VIEW` and `EXTRACT` denied).
+   - Apply the restricted label via an **Application Service Principal** (X.509 certificate in `test_soc_purview_block.py`) or separate admin account so the test user is not stamped as `ISSUER / OWNER`.
 
 ---
 
-## 4. Running the Verification Scripts
+## 4. Running the MFA-Compatible Verification Scripts
 
-1. Copy `.env.example` to `.env` and fill in your tenant, application, SharePoint drive, item, and sensitivity label identifiers:
+All Python verification scripts use **MSAL (`msal.PublicClientApplication`)** with Entra v2.0 Device Code or Interactive Browser flows (and local `0600` token cache reuse)—never deprecated ROPC plaintext password grants—ensuring full compatibility with FedRAMP, DoD Conditional Access, and MFA policies.
+
+1. Install dependencies and configure `.env`:
    ```bash
+   pip install -r requirements.txt
    cp .env.example .env
    ```
-2. Export your environment variables and run the verification scripts:
+2. Export your environment variables and run the three verification scripts:
    ```bash
    set -a && source .env && set +a
+
+   # 1. Inspect tenant Azure RMS FunctionalState, AES-256 templates, and MS-OFFCRYPTO file headers
+   python3 verify_azure_rms_templates.py
+
+   # 2. Verify Scenario A (Allowed Path: Confidential - RMS decryption & summarization via Work IQ MCP)
    python3 test_purview_encryption_and_workiq.py
+
+   # 3. Verify Scenario B (Blocked Path: SOC - Restricted Block native Purview denial via Work IQ MCP)
    python3 test_soc_purview_block.py
    ```
 3. Follow [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) for the 5-step interactive walkthrough in **Gemini Enterprise**.

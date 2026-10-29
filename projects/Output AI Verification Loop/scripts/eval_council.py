@@ -3,9 +3,9 @@
 
 Evaluates a compiled `council_review.json` artifact against a labeled golden
 benchmark dataset (`examples/golden_security_claims_eval.json`), comparing:
-  1. Single-Model Pass (Seat 1: Gemini 3.1 Pro alone)
-  2. Single-Model Pass (Seat 2: Claude Opus 5.5 alone)
-  3. Single-Model Pass (Seat 3: Gemini 3.1 Flash alone)
+  1. Single-Model Pass (Seat 1: Gemini 3.8 Flash alone)
+  2. Single-Model Pass (Seat 2: Claude Opus 4.6 alone)
+  3. Single-Model Pass (Seat 3: Gemini 3.5 Flash-Lite alone)
   4. Karpathy 3-Stage Council (Stage 1 Parallel -> Stage 2 Blind Peer Review -> Stage 3 Chairman)
 
 Metrics computed:
@@ -194,7 +194,7 @@ def format_markdown_report(res: Dict[str, Any]) -> str:
   lines = [
       f"# Evaluation Benchmark Report (`{res['benchmark_id']}`)",
       "",
-      "| Evaluation Metric | 1-Pass Gemini 3.1 Pro | 1-Pass Claude Opus 5.5 | 1-Pass Gemini 3.1 Flash | **v2 Karpathy 3-Stage Council** |",
+      "| Evaluation Metric | 1-Pass Gemini 3.8 Flash | 1-Pass Claude Opus 4.6 | 1-Pass Gemini 3.5 Flash-Lite | **v2 Karpathy 3-Stage Council** |",
       "| :--- | :--- | :--- | :--- | :--- |",
       f"| **Send-Blocker & Nuance Recall** | {pro['true_positives']}/{pro['total_expected']} ({pro['recall_pct']}%) | {opus['true_positives']}/{opus['total_expected']} ({opus['recall_pct']}%) | {flash['true_positives']}/{flash['total_expected']} ({flash['recall_pct']}%) | **{c3['true_positives']}/{pro['total_expected']} ({c3['recall_pct']}%)** |",
       f"| **Claim Precision** | {pro['precision_pct']}% | {opus['precision_pct']}% | {flash['precision_pct']}% (1 nitpick FP) | **{c3['precision_pct']}% (FP filtered in Stage 2)** |",

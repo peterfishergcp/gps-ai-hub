@@ -18,14 +18,14 @@
       "category": "IDENTITY_BOUNDARY",
       "severity": "SEND_BLOCKER",
       "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
-      "description": "tenant_stream_id embeds project number and caller Cloud Principal ID (user_cpi)."
+      "description": "stream_attribution_id metadata embeds project number and caller Cloud Principal ID (caller_principal_id)."
     },
     {
       "id": "OQ-5",
       "category": "CLIENT_VS_BACKEND",
       "severity": "SEND_BLOCKER",
       "caught_in_stage1_by": ["seat-gemini-pro", "seat-claude-opus"],
-      "description": "Backend C++ MarkdownSanitizer is OFF by default for chat; ucs_widget enforces image blocking client-side."
+      "description": "Server-side Markdown image sanitization stays OFF by default for chat; the Gemini Enterprise web UI enforces image blocking client-side."
     },
     {
       "id": "OQ-10-CAPS",

@@ -22,11 +22,25 @@ import re
 import ssl
 import subprocess
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+try:
+    from cryptography import x509 as _crypto_x509
+    from cryptography.hazmat.primitives import hashes as _crypto_hashes
+    from cryptography.hazmat.primitives.asymmetric import ec as _crypto_ec
+    from cryptography.hazmat.primitives.asymmetric import padding as _crypto_padding
+    from cryptography.hazmat.primitives.serialization import (
+        load_pem_public_key as _load_pem_public_key,
+    )
+
+    _HAS_CRYPTOGRAPHY = True
+except Exception:
+    _HAS_CRYPTOGRAPHY = False
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "")
 BQ_DATASET = os.environ.get("BQ_DATASET", "ge_ediscovery")
@@ -44,11 +58,13 @@ SSL_CTX = (
     else ssl.create_default_context()
 )
 
+_CACHE_LOCK = threading.Lock()
 _GCP_TOKEN_CACHE: dict[str, tuple[str, float]] = {}
-_IAP_PUBKEYS_CACHE: dict[str, object] = {"keys": {}, "expires_at": 0.0}
-_GOOGLE_OIDC_CERTS_CACHE: dict[str, object] = {"certs": {}, "expires_at": 0.0}
+_IAP_PUBKEYS_CACHE: dict[str, object] = {"keys": {}, "parsed": {}, "expires_at": 0.0}
+_GOOGLE_OIDC_CERTS_CACHE: dict[str, object] = {"certs": {}, "parsed": {}, "expires_at": 0.0}
 _LOGS_CACHE: dict[str, object] = {"data": None, "timestamp": 0.0}
 _NB_ARCHIVE_CACHE: dict[str, dict] = {}
+MAX_NB_ARCHIVE_CACHE_ENTRIES = 128
 CACHE_TTL_SECONDS = 30.0
 
 
@@ -72,31 +88,37 @@ def _ecdsa_raw_to_der(raw_sig: bytes) -> bytes:
 
 def _fetch_iap_public_keys() -> dict[str, str]:
     now = time.time()
-    cached = _IAP_PUBKEYS_CACHE.get("keys")
-    if isinstance(cached, dict) and cached and float(_IAP_PUBKEYS_CACHE.get("expires_at", 0.0)) > now:
-        return cached
+    with _CACHE_LOCK:
+        cached = _IAP_PUBKEYS_CACHE.get("keys")
+        if isinstance(cached, dict) and cached and float(_IAP_PUBKEYS_CACHE.get("expires_at", 0.0)) > now:
+            return dict(cached)
     req = urllib.request.Request("https://www.gstatic.com/iap/verify/public_key")
     with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as resp:
         keys = json.loads(resp.read().decode("utf-8"))
         if isinstance(keys, dict):
-            _IAP_PUBKEYS_CACHE["keys"] = keys
-            _IAP_PUBKEYS_CACHE["expires_at"] = now + 3600.0
-            return keys
+            with _CACHE_LOCK:
+                _IAP_PUBKEYS_CACHE["keys"] = keys
+                _IAP_PUBKEYS_CACHE["parsed"] = {}
+                _IAP_PUBKEYS_CACHE["expires_at"] = now + 3600.0
+            return dict(keys)
     return {}
 
 
 def _fetch_google_oidc_certs() -> dict[str, str]:
     now = time.time()
-    cached = _GOOGLE_OIDC_CERTS_CACHE.get("certs")
-    if isinstance(cached, dict) and cached and float(_GOOGLE_OIDC_CERTS_CACHE.get("expires_at", 0.0)) > now:
-        return cached
+    with _CACHE_LOCK:
+        cached = _GOOGLE_OIDC_CERTS_CACHE.get("certs")
+        if isinstance(cached, dict) and cached and float(_GOOGLE_OIDC_CERTS_CACHE.get("expires_at", 0.0)) > now:
+            return dict(cached)
     req = urllib.request.Request("https://www.googleapis.com/oauth2/v1/certs")
     with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as resp:
         certs = json.loads(resp.read().decode("utf-8"))
         if isinstance(certs, dict):
-            _GOOGLE_OIDC_CERTS_CACHE["certs"] = certs
-            _GOOGLE_OIDC_CERTS_CACHE["expires_at"] = now + 3600.0
-            return certs
+            with _CACHE_LOCK:
+                _GOOGLE_OIDC_CERTS_CACHE["certs"] = certs
+                _GOOGLE_OIDC_CERTS_CACHE["parsed"] = {}
+                _GOOGLE_OIDC_CERTS_CACHE["expires_at"] = now + 3600.0
+            return dict(certs)
     return {}
 
 
@@ -104,7 +126,7 @@ def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
     """
     Cryptographically verifies a `X-Goog-IAP-JWT-Assertion` ES256 JWT against
     Google IAP's public EC keys (`https://www.gstatic.com/iap/verify/public_key`).
-    Mitigates N2.
+    Uses in-memory `cryptography` (zero subprocesses or /tmp writes) with OpenSSL fallback.
     """
     parts = jwt_token.split(".")
     if len(parts) != 3:
@@ -127,7 +149,8 @@ def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
         return None
     if claims.get("iss") != "https://cloud.google.com/iap":
         return None
-    if IAP_EXPECTED_AUDIENCE and str(claims.get("aud") or "") != IAP_EXPECTED_AUDIENCE:
+    expected_iap_aud = (os.environ.get("IAP_AUDIENCE") or IAP_EXPECTED_AUDIENCE).strip()
+    if not expected_iap_aud or str(claims.get("aud") or "") != expected_iap_aud:
         return None
 
     email = str(claims.get("email") or "").strip()
@@ -140,33 +163,46 @@ def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
         keys = _fetch_iap_public_keys()
         pub_pem = keys.get(kid, "")
         if not pub_pem:
-            _IAP_PUBKEYS_CACHE["expires_at"] = 0.0
+            with _CACHE_LOCK:
+                _IAP_PUBKEYS_CACHE["expires_at"] = 0.0
             pub_pem = _fetch_iap_public_keys().get(kid, "")
         if not pub_pem:
             return None
         der_sig = _ecdsa_raw_to_der(raw_sig)
-        with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as pf, tempfile.NamedTemporaryFile(
-            "wb", suffix=".sig", delete=False
-        ) as sf:
-            pub_path, sig_path = pf.name, sf.name
-            pf.write(pub_pem)
-            sf.write(der_sig)
-        try:
-            res = subprocess.run(
-                ["openssl", "dgst", "-sha256", "-verify", pub_path, "-signature", sig_path],
-                input=f"{parts[0]}.{parts[1]}".encode("ascii"),
-                capture_output=True,
-                timeout=5,
-            )
-            if res.returncode != 0:
-                return None
-        finally:
-            for p in (pub_path, sig_path):
-                if os.path.exists(p):
-                    try:
-                        os.remove(p)
-                    except OSError:
-                        pass
+        signing_input = f"{parts[0]}.{parts[1]}".encode("ascii")
+        if _HAS_CRYPTOGRAPHY:
+            with _CACHE_LOCK:
+                parsed_map = _IAP_PUBKEYS_CACHE.get("parsed")
+                pub_key = parsed_map.get(kid) if isinstance(parsed_map, dict) else None
+            if pub_key is None:
+                pub_key = _load_pem_public_key(pub_pem.encode("utf-8"))
+                with _CACHE_LOCK:
+                    if isinstance(_IAP_PUBKEYS_CACHE.get("parsed"), dict):
+                        _IAP_PUBKEYS_CACHE["parsed"][kid] = pub_key  # type: ignore[index]
+            pub_key.verify(der_sig, signing_input, _crypto_ec.ECDSA(_crypto_hashes.SHA256()))  # type: ignore[union-attr]
+        else:
+            with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as pf, tempfile.NamedTemporaryFile(
+                "wb", suffix=".sig", delete=False
+            ) as sf:
+                pub_path, sig_path = pf.name, sf.name
+                pf.write(pub_pem)
+                sf.write(der_sig)
+            try:
+                res = subprocess.run(
+                    ["openssl", "dgst", "-sha256", "-verify", pub_path, "-signature", sig_path],
+                    input=signing_input,
+                    capture_output=True,
+                    timeout=5,
+                )
+                if res.returncode != 0:
+                    return None
+            finally:
+                for p in (pub_path, sig_path):
+                    if os.path.exists(p):
+                        try:
+                            os.remove(p)
+                        except OSError:
+                            pass
     except Exception:
         return None
 
@@ -175,8 +211,8 @@ def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
 
 def _verify_rs256_google_oidc_jwt(jwt_token: str) -> tuple[str, str] | None:
     """
-    Cryptographically verifies a Google-signed RS256 OIDC ID token (for Cloud Run IAM
-    invokers when testing or calling via `Authorization: Bearer <id_token>`).
+    Cryptographically verifies a Google-signed RS256 OIDC ID token using in-memory
+    `cryptography` (zero subprocesses or /tmp writes) with OpenSSL fallback.
     """
     parts = jwt_token.split(".")
     if len(parts) != 3:
@@ -199,6 +235,16 @@ def _verify_rs256_google_oidc_jwt(jwt_token: str) -> tuple[str, str] | None:
         return None
     if str(claims.get("iss") or "") not in ("https://accounts.google.com", "accounts.google.com"):
         return None
+    expected_oidc_aud = os.environ.get("EXPECTED_OAUTH_CLIENT_ID", "").strip()
+    if not expected_oidc_aud or str(claims.get("aud") or "") != expected_oidc_aud:
+        return None
+    allowed_hd = {
+        d.strip().lower().lstrip("@")
+        for d in os.environ.get("ALLOWED_HOSTED_DOMAINS", "").split(",")
+        if d.strip()
+    }
+    if allowed_hd and str(claims.get("hd") or "").strip().lower() not in allowed_hd:
+        return None
 
     email = str(claims.get("email") or "").strip()
     if not email or claims.get("email_verified") is not True:
@@ -208,39 +254,53 @@ def _verify_rs256_google_oidc_jwt(jwt_token: str) -> tuple[str, str] | None:
         certs = _fetch_google_oidc_certs()
         cert_pem = certs.get(kid, "")
         if not cert_pem:
-            _GOOGLE_OIDC_CERTS_CACHE["expires_at"] = 0.0
+            with _CACHE_LOCK:
+                _GOOGLE_OIDC_CERTS_CACHE["expires_at"] = 0.0
             cert_pem = _fetch_google_oidc_certs().get(kid, "")
         if not cert_pem:
             return None
-        with tempfile.NamedTemporaryFile("w", suffix=".crt", delete=False) as cf, tempfile.NamedTemporaryFile(
-            "wb", suffix=".pub", delete=False
-        ) as pf, tempfile.NamedTemporaryFile("wb", suffix=".sig", delete=False) as sf:
-            cert_path, pub_path, sig_path = cf.name, pf.name, sf.name
-            cf.write(cert_pem)
-            sf.write(sig)
-        try:
-            pub_pem = subprocess.check_output(
-                ["openssl", "x509", "-pubkey", "-noout", "-in", cert_path],
-                stderr=subprocess.DEVNULL,
-                timeout=5,
-            )
-            with open(pub_path, "wb") as pf_out:
-                pf_out.write(pub_pem)
-            res = subprocess.run(
-                ["openssl", "dgst", "-sha256", "-verify", pub_path, "-signature", sig_path],
-                input=f"{parts[0]}.{parts[1]}".encode("ascii"),
-                capture_output=True,
-                timeout=5,
-            )
-            if res.returncode != 0:
-                return None
-        finally:
-            for p in (cert_path, pub_path, sig_path):
-                if os.path.exists(p):
-                    try:
-                        os.remove(p)
-                    except OSError:
-                        pass
+        signing_input = f"{parts[0]}.{parts[1]}".encode("ascii")
+        if _HAS_CRYPTOGRAPHY:
+            with _CACHE_LOCK:
+                parsed_map = _GOOGLE_OIDC_CERTS_CACHE.get("parsed")
+                pub_key = parsed_map.get(kid) if isinstance(parsed_map, dict) else None
+            if pub_key is None:
+                cert_obj = _crypto_x509.load_pem_x509_certificate(cert_pem.encode("utf-8"))
+                pub_key = cert_obj.public_key()
+                with _CACHE_LOCK:
+                    if isinstance(_GOOGLE_OIDC_CERTS_CACHE.get("parsed"), dict):
+                        _GOOGLE_OIDC_CERTS_CACHE["parsed"][kid] = pub_key  # type: ignore[index]
+            pub_key.verify(sig, signing_input, _crypto_padding.PKCS1v15(), _crypto_hashes.SHA256())  # type: ignore[union-attr]
+        else:
+            with tempfile.NamedTemporaryFile("w", suffix=".crt", delete=False) as cf, tempfile.NamedTemporaryFile(
+                "wb", suffix=".pub", delete=False
+            ) as pf, tempfile.NamedTemporaryFile("wb", suffix=".sig", delete=False) as sf:
+                cert_path, pub_path, sig_path = cf.name, pf.name, sf.name
+                cf.write(cert_pem)
+                sf.write(sig)
+            try:
+                pub_pem = subprocess.check_output(
+                    ["openssl", "x509", "-pubkey", "-noout", "-in", cert_path],
+                    stderr=subprocess.DEVNULL,
+                    timeout=5,
+                )
+                with open(pub_path, "wb") as pf_out:
+                    pf_out.write(pub_pem)
+                res = subprocess.run(
+                    ["openssl", "dgst", "-sha256", "-verify", pub_path, "-signature", sig_path],
+                    input=signing_input,
+                    capture_output=True,
+                    timeout=5,
+                )
+                if res.returncode != 0:
+                    return None
+            finally:
+                for p in (cert_path, pub_path, sig_path):
+                    if os.path.exists(p):
+                        try:
+                            os.remove(p)
+                        except OSError:
+                            pass
     except Exception:
         return None
 
@@ -254,9 +314,10 @@ def get_bucket_name(project_id: str) -> str:
 def get_gcp_access_token() -> str:
     """Obtains a Google Cloud OAuth2 access token from the Cloud Run Metadata Server or gcloud CLI."""
     now = time.time()
-    cached = _GCP_TOKEN_CACHE.get("default")
-    if cached and cached[1] > now + 60:
-        return cached[0]
+    with _CACHE_LOCK:
+        cached = _GCP_TOKEN_CACHE.get("default")
+        if cached and cached[1] > now + 60:
+            return cached[0]
 
     meta_url = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
     req = urllib.request.Request(meta_url, headers={"Metadata-Flavor": "Google"})
@@ -265,7 +326,8 @@ def get_gcp_access_token() -> str:
             data = json.loads(resp.read().decode("utf-8"))
             token = data["access_token"]
             expires_in = float(data.get("expires_in", 300))
-            _GCP_TOKEN_CACHE["default"] = (token, now + expires_in)
+            with _CACHE_LOCK:
+                _GCP_TOKEN_CACHE["default"] = (token, now + expires_in)
             return token
     except Exception:
         pass
@@ -282,7 +344,8 @@ def get_gcp_access_token() -> str:
             "Local gcloud credentials have expired (Reauthentication required). "
             "Run `gcloud auth login` in your terminal to refresh your cloudtop session."
         ) from e
-    _GCP_TOKEN_CACHE["default"] = (token, now + 300)
+    with _CACHE_LOCK:
+        _GCP_TOKEN_CACHE["default"] = (token, now + 300)
     return token
 
 
@@ -393,10 +456,26 @@ def run_bq_query(project_id: str, sql: str, query_params: list[dict] | None = No
     return parsed_rows
 
 
+def _build_gcs_headers(gcp_token: str) -> dict[str, str]:
+    """
+    Builds HTTP headers for `storage.googleapis.com` requests.
+    Does NOT send `X-Goog-User-Project` unless `GCS_USER_PROJECT` is explicitly set
+    (e.g. for Requester Pays buckets), because `storage.googleapis.com` enforces
+    `serviceusage.services.use` whenever `X-Goog-User-Project` is present, which causes
+    `HTTP 403` on least-privilege service accounts (`roles/storage.objectViewer`).
+    """
+    hdrs = {"Authorization": f"Bearer {gcp_token}"}
+    requester_pays_proj = os.environ.get("GCS_USER_PROJECT", "").strip()
+    if requester_pays_proj:
+        hdrs["X-Goog-User-Project"] = requester_pays_proj
+    return hdrs
+
+
 def fetch_gcs_json_cached(gcs_uri: str, allowed_bucket: str, project_id: str) -> dict:
-    """Fetches and caches a JSON archive object (such as notebook_archive.json) from GCS."""
-    if gcs_uri in _NB_ARCHIVE_CACHE:
-        return _NB_ARCHIVE_CACHE[gcs_uri]
+    """Fetches and caches a JSON archive object (bounded LRU-style cap) from GCS."""
+    with _CACHE_LOCK:
+        if gcs_uri in _NB_ARCHIVE_CACHE:
+            return _NB_ARCHIVE_CACHE[gcs_uri]
     try:
         bucket, obj_path = validate_archive_gcs_uri(gcs_uri, allowed_bucket)
         gcp_token = get_gcp_access_token()
@@ -404,59 +483,24 @@ def fetch_gcs_json_cached(gcs_uri: str, allowed_bucket: str, project_id: str) ->
         url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{encoded_obj}?alt=media"
         req = urllib.request.Request(
             url,
-            headers={
-                "Authorization": f"Bearer {gcp_token}",
-                "X-Goog-User-Project": project_id,
-            },
+            headers=_build_gcs_headers(gcp_token),
         )
         with urllib.request.urlopen(req, context=SSL_CTX, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if isinstance(data, dict):
-                _NB_ARCHIVE_CACHE[gcs_uri] = data
+                with _CACHE_LOCK:
+                    if len(_NB_ARCHIVE_CACHE) >= MAX_NB_ARCHIVE_CACHE_ENTRIES:
+                        oldest_key = next(iter(_NB_ARCHIVE_CACHE))
+                        _NB_ARCHIVE_CACHE.pop(oldest_key, None)
+                    _NB_ARCHIVE_CACHE[gcs_uri] = data
                 return data
     except Exception:
         pass
     return {}
 
 
-def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> dict:
-    """
-    Queries `ge_ediscovery.conversation_turns` and transforms rows into the
-    ComplianceDataResponse structure expected by the React Review Portal.
-    """
-    now = time.time()
-    if not force_refresh and _LOGS_CACHE["data"] is not None and (now - float(_LOGS_CACHE["timestamp"])) < CACHE_TTL_SECONDS:
-        return _LOGS_CACHE["data"]  # type: ignore[return-value]
-
-    if force_refresh:
-        _NB_ARCHIVE_CACHE.clear()
-
-    allowed_bucket = get_bucket_name(project_id)
-    sql = f"""
-        SELECT
-          session_id,
-          turn_index,
-          query_id,
-          assist_answer_id,
-          engine_id,
-          location,
-          user_iam_principal,
-          session_display_name,
-          prompt_text,
-          response_text,
-          thought_text,
-          model_name,
-          session_transcript_gcs_uri,
-          session_transcript_console_url,
-          files,
-          event_timestamp,
-          harvested_at
-        FROM `{project_id}.{BQ_DATASET}.{BQ_TABLE}`
-        ORDER BY event_timestamp DESC, session_id, turn_index ASC
-        LIMIT 2000
-    """
-    rows = run_bq_query(project_id, sql)
-
+def _transform_bq_rows_to_dataset(rows: list[dict], project_id: str, allowed_bucket: str) -> dict:
+    """Transforms BigQuery `conversation_turns` rows into a ComplianceDataResponse payload."""
     processed_logs: list[dict] = []
     sources: list[dict] = []
     chat: list[dict] = []
@@ -467,7 +511,8 @@ def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> di
     for r in rows:
         engine_id = str(r.get("engine_id") or "")
         session_id = str(r.get("session_id") or "")
-        turn_index = int(r.get("turn_index") or 1)
+        raw_turn_index = r.get("turn_index")
+        turn_index = int(raw_turn_index) if raw_turn_index is not None else 1
         principal = str(r.get("user_iam_principal") or "")
         user_email = extract_email_from_principal(principal)
         event_ts = str(r.get("event_timestamp") or r.get("harvested_at") or "")
@@ -490,7 +535,7 @@ def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> di
                 "user_email": user_email,
             })
 
-            if not prompt_txt.startswith("[NotebookLM Notebook & Source Inventory]") or not files_list:
+            if turn_index != 0 and (not prompt_txt.startswith("[NotebookLM Notebook & Source Inventory]") or not files_list):
                 chat.append({
                     "event_id": query_id,
                     "event_time": event_ts,
@@ -505,7 +550,7 @@ def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> di
                     "citations": [],
                 })
 
-            # Enrich sources and studio artifacts from notebook_archive.json (once per notebook)
+            # Enrich sources and studio artifacts from notebook_archive_<sha256>.json (once per notebook)
             if transcript_uri and transcript_uri not in seen_nb_archives:
                 seen_nb_archives.add(transcript_uri)
                 nb_archive = fetch_gcs_json_cached(transcript_uri, allowed_bucket, project_id)
@@ -677,7 +722,7 @@ def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> di
             "session_id": session_id,
             "session_path": transcript_uri,
             "turn_count": turn_index,
-            " query_id": str(r.get("query_id") or ""),
+            "query_id": str(r.get("query_id") or ""),
             "answer_id": str(r.get("assist_answer_id") or ""),
             "state": "SUCCEEDED",
             "archive_status": "COMPLETE",
@@ -687,56 +732,153 @@ def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> di
             "input_artifacts": input_artifacts,
             "output_artifacts": output_artifacts,
             "citations": [],
-            "gcs_raw_Conversation_uri": transcript_uri,
+            "gcs_raw_conversation_uri": transcript_uri,
         })
 
-    result = {
+    return {
         "processed_logs": processed_logs,
         "sources": sources,
         "chat": chat,
         "studio": studio,
         "notebook_raw_logs": notebook_raw_logs,
-        "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+        "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "is_live": True,
     }
-    _LOGS_CACHE["data"] = result
-    _LOGS_CACHE["timestamp"] = now
+
+
+def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> dict:
+    """
+    Queries `ge_ediscovery.conversation_turns` and transforms rows into the
+    ComplianceDataResponse structure expected by the React Review Portal.
+    """
+    now = time.time()
+    with _CACHE_LOCK:
+        if not force_refresh and _LOGS_CACHE["data"] is not None and (now - float(_LOGS_CACHE["timestamp"])) < CACHE_TTL_SECONDS:
+            return _LOGS_CACHE["data"]  # type: ignore[return-value]
+        if force_refresh:
+            _NB_ARCHIVE_CACHE.clear()
+
+    allowed_bucket = get_bucket_name(project_id)
+    sql = f"""
+        SELECT
+          session_id,
+          turn_index,
+          query_id,
+          assist_answer_id,
+          engine_id,
+          location,
+          user_iam_principal,
+          session_display_name,
+          prompt_text,
+          response_text,
+          thought_text,
+          model_name,
+          session_transcript_gcs_uri,
+          session_transcript_console_url,
+          files,
+          event_timestamp,
+          harvested_at
+        FROM `{project_id}.{BQ_DATASET}.{BQ_TABLE}`
+        ORDER BY event_timestamp DESC, session_id, turn_index ASC
+        LIMIT 2000
+    """
+    rows = run_bq_query(project_id, sql)
+    result = _transform_bq_rows_to_dataset(rows, project_id, allowed_bucket)
+    with _CACHE_LOCK:
+        _LOGS_CACHE["data"] = result
+        _LOGS_CACHE["timestamp"] = now
     return result
 
 
+def is_reviewer_authorized(reviewer_email: str) -> bool:
+    """
+    Enforces mandatory server-side Role-Based Access Control (RBAC) for compliance reviewers.
+    Fails closed (returns False) if neither `ALLOWED_REVIEWER_EMAILS` nor `ALLOWED_REVIEWER_DOMAINS`
+    is configured (unless explicit loopback `ALLOW_LOCAL_DEV_BYPASS=true` outside Cloud Run).
+    """
+    norm_email = (reviewer_email or "").strip().lower()
+    if not norm_email or "@" not in norm_email:
+        return False
+
+    raw_emails = os.environ.get("ALLOWED_REVIEWER_EMAILS", "")
+    allowed_emails = {
+        e.strip().lower()
+        for e in raw_emails.split(",")
+        if e.strip() and not e.strip().startswith("<")
+    }
+    explicit_reviewer = os.environ.get("PORTAL_REVIEWER_EMAIL", "").strip().lower()
+    if (
+        explicit_reviewer
+        and "@" in explicit_reviewer
+        and explicit_reviewer != "compliance-reviewer@enterprise.internal"
+        and not explicit_reviewer.startswith("<")
+    ):
+        allowed_emails.add(explicit_reviewer)
+
+    allowed_domains = {
+        d.strip().lower().lstrip("@")
+        for d in os.environ.get("ALLOWED_REVIEWER_DOMAINS", "").split(",")
+        if d.strip() and not d.strip().startswith("<")
+    }
+
+    if not allowed_emails and not allowed_domains:
+        if not os.environ.get("K_SERVICE") and os.environ.get("ALLOW_LOCAL_DEV_BYPASS", "").lower() == "true":
+            return True
+        return False
+
+    if norm_email in allowed_emails:
+        return True
+    domain = norm_email.rsplit("@", 1)[1]
+    if domain in allowed_domains:
+        return True
+    return False
+
+
 class PortalRequestHandler(BaseHTTPRequestHandler):
-    def send_security_headers(self, is_media: bool = False) -> None:
+    def send_security_headers(self, is_media: bool = False, allow_sameorigin_frame: bool = False) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Frame-Options", "SAMEORIGIN" if allow_sameorigin_frame else "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         if is_media:
-            self.send_header("Content-Security-Policy", "default-src 'none'; sandbox")
+            if allow_sameorigin_frame:
+                self.send_header(
+                    "Content-Security-Policy",
+                    "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; object-src 'self'; frame-ancestors 'self'",
+                )
+            else:
+                self.send_header(
+                    "Content-Security-Policy",
+                    "default-src 'none'; img-src 'self' data:; media-src 'self' blob:; style-src 'unsafe-inline'; sandbox; frame-ancestors 'none'",
+                )
+            self.send_header("Cache-Control", "no-store")
         else:
             self.send_header(
                 "Content-Security-Policy",
                 "default-src 'self'; "
-                "script-src 'self' https://cdnjs.cloudflare.com; "
-                "worker-src 'self' blob: https://cdnjs.cloudflare.com; "
+                "script-src 'self'; "
+                "worker-src 'self' blob:; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                 "font-src 'self' https://fonts.gstatic.com data:; "
-                "img-src 'self' data: blob: https:; "
+                "img-src 'self' data: blob:; "
                 "media-src 'self' blob:; "
-                "frame-src https://www.youtube.com; "
-                "connect-src 'self' https://cdnjs.cloudflare.com; "
-                "object-src 'none'; "
+                "frame-src 'self' blob: https://www.youtube.com; "
+                "connect-src 'self'; "
+                "object-src 'self'; "
                 "base-uri 'self'; "
                 "frame-ancestors 'none'",
             )
 
     def get_authenticated_reviewer(self) -> tuple[str, str] | None:
         """
-        Cryptographically verifies the reviewer identity (mitigates N2):
-          1. Verifies `X-Goog-IAP-JWT-Assertion` (ES256) against Google IAP's public EC keys.
+        Cryptographically verifies the reviewer identity (mitigates N2 & ED-6):
+          1. Verifies `X-Goog-IAP-JWT-Assertion` (ES256) against Google IAP's public EC keys
+             and mandatory `IAP_AUDIENCE`.
           2. Or verifies `Authorization: Bearer <id_token>` (RS256) against Google OIDC certs
-             (for Cloud Run IAM authenticated callers).
+             and mandatory `EXPECTED_OAUTH_CLIENT_ID`.
           3. Never trusts raw `X-Goog-Authenticated-User-Email` headers or falls back to a static
-             identity when running in Cloud Run (`K_SERVICE` is set).
-          4. Only allows local-dev identity when running outside Cloud Run (`K_SERVICE` unset).
+             identity unless running outside Cloud Run (`K_SERVICE` unset) on loopback with
+             explicit `ALLOW_LOCAL_DEV_BYPASS=true`.
         """
         iap_jwt = self.headers.get("X-Goog-IAP-JWT-Assertion", "").strip()
         if iap_jwt:
@@ -756,7 +898,13 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         if os.environ.get("K_SERVICE"):
             return None
 
-        return REVIEWER_EMAIL, REVIEWER_NAME
+        if (
+            os.environ.get("ALLOW_LOCAL_DEV_BYPASS", "").lower() == "true"
+            and self.client_address[0] in ("127.0.0.1", "::1")
+        ):
+            return REVIEWER_EMAIL, REVIEWER_NAME
+
+        return None
 
     def emit_access_audit_log(self, reviewer_email: str, action: str, target: str, extra: dict | None = None) -> None:
         """Emits a structured Cloud Logging audit entry for every eDiscovery compliance access."""
@@ -804,6 +952,20 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                 )
                 return
             rev_email, rev_name = reviewer
+            if not is_reviewer_authorized(rev_email):
+                self.emit_access_audit_log(
+                    rev_email,
+                    "DENIED_UNAUTHORIZED_REVIEWER",
+                    path,
+                    {"severity": "WARNING"},
+                )
+                self.send_json(
+                    403,
+                    {
+                        "error": "Forbidden: Identity is not authorized in ALLOWED_REVIEWER_EMAILS / ALLOWED_REVIEWER_DOMAINS",
+                    },
+                )
+                return
         else:
             rev_email, rev_name = "", ""
 
@@ -831,25 +993,49 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/search":
             q = (qs.get("q", [""])[0] or "").strip()
             user_email = (qs.get("user_email", [""])[0] or "").strip().lower()
-            if len(q) < 2:
+            if len(q) < 2 and not user_email:
                 self.send_json(200, {"matched_sessions": [], "matched_notebooks": [], "total_matches": 0})
                 return
             self.emit_access_audit_log(rev_email, "SEARCH_COMPLIANCE_LOGS", f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}", {"query_length": len(q), "filtered_user": user_email})
             try:
                 sql = f"""
-                    SELECT DISTINCT
-                      session_id,
-                      engine_id
-                    FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}`
-                    WHERE (
-                      SEARCH((prompt_text, response_text, thought_text, files), @search_term)
-                      OR LOWER(prompt_text) LIKE CONCAT('%', LOWER(@search_term), '%')
-                      OR LOWER(response_text) LIKE CONCAT('%', LOWER(@search_term), '%')
-                      OR LOWER(session_display_name) LIKE CONCAT('%', LOWER(@search_term), '%')
-                      OR LOWER(user_iam_principal) LIKE CONCAT('%', LOWER(@search_term), '%')
+                    WITH matched AS (
+                      SELECT DISTINCT session_id
+                      FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}`
+                      WHERE (
+                        @search_term = ''
+                        OR SEARCH((prompt_text, response_text, thought_text, files), @search_term)
+                        OR LOWER(prompt_text) LIKE CONCAT('%', LOWER(@search_term), '%')
+                        OR LOWER(response_text) LIKE CONCAT('%', LOWER(@search_term), '%')
+                        OR LOWER(session_display_name) LIKE CONCAT('%', LOWER(@search_term), '%')
+                        OR LOWER(user_iam_principal) LIKE CONCAT('%', LOWER(@search_term), '%')
+                      )
+                      AND (@user_email = '' OR LOWER(user_iam_principal) LIKE CONCAT('%', @user_email, '%'))
+                      LIMIT 200
                     )
-                    AND (@user_email = '' OR LOWER(user_iam_principal) LIKE CONCAT('%', @user_email, '%'))
-                    LIMIT 200
+                    SELECT
+                      t.session_id,
+                      t.turn_index,
+                      t.query_id,
+                      t.assist_answer_id,
+                      t.engine_id,
+                      t.location,
+                      t.user_iam_principal,
+                      t.session_display_name,
+                      t.prompt_text,
+                      t.response_text,
+                      t.thought_text,
+                      t.model_name,
+                      t.session_transcript_gcs_uri,
+                      t.session_transcript_console_url,
+                      t.files,
+                      t.event_timestamp,
+                      t.harvested_at
+                    FROM `{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}` AS t
+                    INNER JOIN matched AS m
+                      ON t.session_id = m.session_id
+                    ORDER BY t.event_timestamp DESC, t.session_id, t.turn_index ASC
+                    LIMIT 2000
                 """
                 params = [
                     {
@@ -864,20 +1050,22 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                     },
                 ]
                 rows = run_bq_query(PROJECT_ID, sql, params)
-                matched_sessions = [
+                matched_sessions = sorted({
                     str(r["session_id"])
                     for r in rows
                     if not str(r.get("engine_id") or "").startswith("notebooklm-enterprise")
-                ]
-                matched_notebooks = [
+                })
+                matched_notebooks = sorted({
                     str(r["session_id"])
                     for r in rows
                     if str(r.get("engine_id") or "").startswith("notebooklm-enterprise")
-                ]
+                })
+                search_dataset = _transform_bq_rows_to_dataset(rows, PROJECT_ID, get_bucket_name(PROJECT_ID))
                 self.send_json(200, {
                     "matched_sessions": matched_sessions,
                     "matched_notebooks": matched_notebooks,
                     "total_matches": len(matched_sessions) + len(matched_notebooks),
+                    "search_dataset": search_dataset,
                 })
             except Exception as e:
                 print(f"[!] Error in /api/search: {e}")
@@ -913,10 +1101,7 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                 gcp_token = get_gcp_access_token()
                 encoded_obj = urllib.parse.quote(obj_path, safe="")
                 media_url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{encoded_obj}?alt=media"
-                headers = {
-                    "Authorization": f"Bearer {gcp_token}",
-                    "X-Goog-User-Project": PROJECT_ID,
-                }
+                headers = _build_gcs_headers(gcp_token)
                 range_header = self.headers.get("Range")
                 if range_header:
                     headers["Range"] = range_header
@@ -945,11 +1130,15 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                         content_type = "text/plain; charset=utf-8"
                         is_download = True
 
-                    data = gcs_resp.read()
+                    is_inline_pdf = (not is_download) and (
+                        lower_fname.endswith(".pdf") or lower_ct.startswith("application/pdf")
+                    )
                     self.send_response(status_code)
-                    self.send_security_headers(is_media=True)
+                    self.send_security_headers(is_media=True, allow_sameorigin_frame=is_inline_pdf)
                     self.send_header("Content-Type", content_type)
-                    self.send_header("Content-Length", str(len(data)))
+                    upstream_len = gcs_resp.headers.get("Content-Length")
+                    if upstream_len and upstream_len.isdigit():
+                        self.send_header("Content-Length", upstream_len)
                     self.send_header("Accept-Ranges", "bytes")
                     content_range = gcs_resp.headers.get("Content-Range")
                     if content_range:
@@ -958,7 +1147,11 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                     safe_fname = re.sub(r'[^A-Za-z0-9._-]', '_', fname)
                     self.send_header("Content-Disposition", f'{disp}; filename="{safe_fname}"')
                     self.end_headers()
-                    self.wfile.write(data)
+                    while True:
+                        chunk = gcs_resp.read(65536)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
             except urllib.error.HTTPError as e:
                 self.send_json(e.code, {"error": f"GCS media fetch failed (HTTP {e.code})"})
             except Exception as e:
@@ -966,11 +1159,11 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                 self.send_json(500, {"error": "Internal media streaming error"})
             return
 
-        # Serve compiled SPA static files from DIST_DIR with SPA index.html fallback
+        # Serve compiled SPA static files from DIST_DIR with strict trailing-separator boundary check
         rel_path = path.lstrip("/") or "index.html"
-        candidate = os.path.realpath(os.path.join(DIST_DIR, rel_path))
         dist_real = os.path.realpath(DIST_DIR)
-        if not candidate.startswith(dist_real) or not os.path.isfile(candidate):
+        candidate = os.path.realpath(os.path.join(DIST_DIR, rel_path))
+        if not (candidate == dist_real or candidate.startswith(dist_real + os.sep)) or not os.path.isfile(candidate):
             candidate = os.path.join(dist_real, "index.html")
 
         if not os.path.isfile(candidate):
@@ -987,9 +1180,19 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def _reject_unsupported_method(self) -> None:
+        self.send_json(405, {"error": "Method Not Allowed"})
+
+    do_POST = _reject_unsupported_method
+    do_PUT = _reject_unsupported_method
+    do_DELETE = _reject_unsupported_method
+    do_PATCH = _reject_unsupported_method
+    do_TRACE = _reject_unsupported_method
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
-    server = ThreadingHTTPServer(("0.0.0.0", port), PortalRequestHandler)
-    print(f"[*] Gemini Enterprise eDiscovery Review Portal listening on http://0.0.0.0:{port}")
+    bind_host = "0.0.0.0" if os.environ.get("K_SERVICE") else os.environ.get("BIND_HOST", "127.0.0.1")
+    server = ThreadingHTTPServer((bind_host, port), PortalRequestHandler)
+    print(f"[*] Gemini Enterprise eDiscovery Review Portal listening on http://{bind_host}:{port}")
     server.serve_forever()

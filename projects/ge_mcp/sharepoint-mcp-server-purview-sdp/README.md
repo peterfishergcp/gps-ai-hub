@@ -1,217 +1,85 @@
-# Customize SharePoint MCP Server
+# SharePoint MCP Server with Dynamic Cloud SDP & Microsoft Purview Governance
 
-This repository provides an enterprise-grade Model Context Protocol (MCP) connector bridging Microsoft Graph API with Gemini Enterprise.
+This module deploys a **Fail-Closed Sensitive Data Protection (SDP) + Microsoft Purview** Model Context Protocol (MCP) connector bridging Microsoft SharePoint Online / OneDrive with **Gemini Enterprise**.
 
-> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is **NOT** an official Google product or officially supported Google software. It is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE pursuant to Section 7 & Section 8 of the Apache License 2.0.
-
-Built specifically to empower AI agents with seamless access to your corporate knowledge base, this connector provides fully autonomous document management across your Entra ID tenant while enforcing strict governance and security compliance through Gemini Enterprise's native Action Approval dialogs.
+> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is **NOT** an official Google product or officially supported Google software. Provided under the Apache License 2.0.
 
 ---
 
-## 🌟 Core Enterprise Capabilities
+## Core Enterprise Capabilities
 
-- **Dynamic SDP Content Policy & Microsoft Purview Synchronization**:
-  - Automatically queries Google Cloud Discovery Engine to discover the assigned Sensitive Data Protection (SDP) Content Policy.
-  - Dynamically fetches all registered Microsoft Purview Sensitivity Label GUIDs and custom regex patterns directly from the Cloud DLP API at runtime—**eliminating hardcoded GUIDs entirely**.
-  - Automatically refreshes policy definitions on a 5-minute cache TTL.
-- **Autonomous Navigation**: AI agents can navigate your SharePoint team sites, document libraries, and nested folders using natural, human-readable names without requiring end users to know complex system IDs or GUIDs.
-- **Multi-Format Intelligence**: Supports reading, extracting, and summarizing content across diverse enterprise document formats including Word documents (`.docx`), PowerPoint presentations (`.pptx`), Excel spreadsheets (`.xlsx`), and plain text files.
-- **Mandatory Page-Level Citation Links (`#page=N` & `#section=HeadingName`)**:
-  - Automatically appends physical PDF page anchors (`#page=N`) or Word document section anchors (`#section=HeadingName`) to document `webUrl` links.
-  - Accounts for Table of Contents (TOC) and unnumbered front-matter page offsets by linking to the physical viewer page index.
-- **Empty Result Retry Prompting**:
-  - Automatically detects when zero search results are returned from Microsoft Graph and prompts the LLM/user with a retry suggestion:
-    > *"We didn't receive any query results for your query. Would you try again and be more specific with your query?"*
-- **Secure Write Governance**: All data modification actions trigger Gemini Enterprise's built-in Action Approval dialog, ensuring zero data mutations occur without explicit human consent.
-- **Performance Optimization**: Native HTTP Keep-Alive agent connection pooling (`keepAlive: true`) for minimal latency.
-- **Dual-Layer Authentication Support**:
-  - **Delegated OAuth 2.0**: Passes user Bearer tokens directly to Microsoft Graph when available.
-  - **Application Client Credentials**: Seamless fallback using Entra ID (Azure AD) Client ID, Secret, and Tenant ID.
-- **Architecture Reference**: See [`ARCHITECTURE.md`](ARCHITECTURE.md) for deep technical specifications, data flow diagrams, and BigQuery audit log schemas.
+- **Dynamic Cloud SDP Content Policy Synchronization**:
+  - Automatically resolves the Google Cloud Sensitive Data Protection (`ContentPolicy`) attached to your Discovery Engine MCP data store (or configured via `SDP_CONTENT_POLICY`).
+  - Fetches active Microsoft Purview Sensitivity Label GUIDs (`fileLabelInfoType.sensitivityLabel.guid`) and custom regex detectors directly from `https://dlp.googleapis.com/v2/...` on a 5-minute TTL cache.
+  - Strictly validates remote policy URLs against `https://dlp.googleapis.com/` and `https://storage.googleapis.com/` before attaching GCP credentials (`CWE-918` SSRF protection).
+- **Fail-Closed Server-Side `BLOCK` & `MASK` Enforcement**:
+  - Inflates OOXML `docProps/custom.xml` asynchronously (`maxOutputLength: 10 MB`) to detect embedded `MSIP_Label_<GUID>` tags in `.docx`, `.xlsx`, and `.pptx` files.
+  - When a restricted Purview label or sensitive InfoType matches a `BLOCK` rule, **withholds 100% of `extractedText` server-side** while still emitting `msip_labels`, `assigned_labels`, and `assigned_sensitivity_labels` so Discovery Engine and BigQuery audit logs capture the exact matched classification.
+  - When a rule specifies `MASK` / `REDACT`, scrubs matched tokens in-place (`[REDACTED:<RULE_NAME>]`).
+- **Multi-Format Extraction**: Supports `.docx` (`mammoth`), `.xlsx` (`exceljs`), `.pptx` (slide-ordered XML), `.pdf` (`unpdf`), and text/CSV/Markdown/HTML files.
+- **Architecture Specification**: See [`ARCHITECTURE.md`](ARCHITECTURE.md) for end-to-end data flow diagrams and BigQuery audit schema details.
 
 ---
 
-## 💡 Retrieval & Performance Optimizations (Server Instructions in `index.js`)
+## Supported MCP Tools (12 Total)
 
-To maximize LLM retrieval accuracy and server responsiveness, the following system instructions and optimizations are embedded directly into `index.js`:
+### Read Tools (`readOnlyHint: true`)
+1. `query_sharepoint_sites_lookup` — Search SharePoint sites across the tenant.
+2. `query_document_libraries_lookup` — List document libraries within a SharePoint site.
+3. `query_library_items_lookup` — List files, folders, and descriptive sensitivity labels (5-way bounded concurrency).
+4. `query_file_metadata_lookup` — Retrieve file metadata and native `msip_labels` / `assigned_labels` (`itemId` required).
+5. `query_file_content_lookup` — Extract document text with fail-closed SDP `BLOCK`/`MASK` enforcement and `msip_labels` (`itemId` required).
+6. `query_file_download_url_lookup` — Retrieve pre-authenticated download URLs (withheld when SDP verdict is `BLOCK`, `itemId` required).
 
-1. **Mandatory Page-Level & Section Citations**:
-   - Forces the LLM to include direct clickable SharePoint URLs with deep page anchors (`#page=N`) or section anchors (`#section=HeadingName`).
-   - Accounts for Table of Contents (TOC) and unnumbered introductory pages by calculating the physical viewer page offset.
-2. **HTTP Keep-Alive Connection Pooling**:
-   - Uses a global `https.Agent({ keepAlive: true, maxSockets: 50 })` to maintain persistent TLS connections to Microsoft Graph API, eliminating handshake overhead and cutting query latency by up to 60%.
-3. **Empty Result Interception & Smart Retry Prompting**:
-   - When Microsoft Graph returns zero results, the server injects a user retry prompt asking them to refine or broaden search terms instead of returning empty silence.
-4. **Graph API Search Limitations Notice**:
-   - Instructs the AI model to include a subtle disclaimer reminding users that Microsoft Graph Search indexing may occasionally miss newly uploaded or re-indexed files.
-
----
-
-## 🛠️ Supported Action Catalog
-
-This connector empowers your Gemini Enterprise AI with 12 advanced read and write capabilities across your entire SharePoint and OneDrive ecosystem:
-
-### 🔍 Read Actions (Instant, Interruption-Free Streaming)
-
-1. **Search SharePoint Sites (`query_sharepoint_sites_lookup`)**
-   Allows the AI agent to discover relevant corporate SharePoint sites across your organization based on keywords or department names.
-   - *Example Prompt*: `"Search for SharePoint sites related to Sales and Marketing."`
-
-2. **List Document Libraries (`query_document_libraries_lookup`)**
-   Retrieves all available document repositories and drives within a specific SharePoint team site.
-   - *Example Prompt*: `"List all document libraries in my Sales site."`
-
-3. **List Library Items (`query_library_items_lookup`)**
-   Explores the directory structure, listing all files, subfolders, and metadata within a specific drive or folder location.
-   - *Example Prompt*: `"List all files and folders inside my Documents library."`
-
-4. **Get File Metadata (`query_file_metadata_lookup`)**
-   Retrieves detailed properties for any specific file, including creation date, last modified time, file size, and web URLs.
-   - *Example Prompt*: `"Get the metadata and last modified time for summary.txt."`
-
-5. **Read Document Content (`query_file_content_lookup`)**
-   Streams clean, extracted text directly to the AI agent from Word documents (`.docx`), PowerPoint presentations (`.pptx`), Excel spreadsheets (`.xlsx`), and text files for instant summarization or analysis.
-   - *Example Prompt*: `"Read the text content of Annual_Report.docx and give me a 3-bullet summary."`
-
-6. **Get Secure Download URL (`query_file_download_url_lookup`)**
-   Generates temporary, secure, authenticated direct download URLs for any document in your repository.
-   - *Example Prompt*: `"Generate a direct download URL for my SharePoint presentation."`
+### Write Tools (`destructiveHint: true`)
+7. `query_create_folder_action_lookup`
+8. `query_create_file_action_lookup`
+9. `query_update_file_action_lookup`
+10. `query_rename_item_action_lookup`
+11. `query_move_item_action_lookup`
+12. `query_delete_item_action_lookup`
 
 ---
 
-### 🚀 Write Actions (Protected by Action Approval Consent Dialog)
+## Setup, Smoke Testing & Cloud Run Deployment
 
-7. **Create a New Folder (`query_create_folder_action_lookup`)**
-   Creates a new subfolder inside any document library or parent folder using natural names.
-   - *Example Prompt*: `"Create a new folder named 'QuarterlyReports' in Documents."`
-
-8. **Create a New Document (`query_create_file_action_lookup`)**
-   Surgically creates new text documents inside specified folders and populates them with AI-generated content.
-   - *Example Prompt*: `"Create a new document named 'summary.txt' inside my 'Quarterly Meeting notes' folder in Documents with the content 'Q1 meeting notes summary.' "`
-
-9. **Update / Overwrite Document Content (`query_update_file_action_lookup`)**
-   Overwrites or updates the text content of an existing document instantly.
-   - *Example Prompt*: `"Update the content of summary.txt in Documents to say 'Record Q1 performance achieved.' "`
-
-10. **Rename an Item (`query_rename_item_action_lookup`)**
-    Renames any existing file or folder while preserving its contents and location.
-    - *Example Prompt*: `"Rename summary.txt in Documents to 'Final_Summary.txt'."`
-
-11. **Move an Item (`query_move_item_action_lookup`)**
-    Moves files or folders between different directories or archive locations.
-    - *Example Prompt*: `"Move Final_Summary.txt from Documents into the Archive folder."`
-
-12. **Delete an Item (`query_delete_item_action_lookup`)**
-    Securely deletes unwanted files or folders from your repository.
-    - *Example Prompt*: `"Delete my old temporary summary file from Documents."`
-
----
-
-## 📋 Prerequisites: Google Cloud & Microsoft Entra ID Setup
-
-### 1. Override Organization Policy Constraint (Custom MCP Data Stores)
-By default, Gemini Enterprise blocks the creation of Custom Model Context Protocol (MCP) data stores using a managed organization policy constraint. Before deploying and registering this custom MCP server, an Organization Policy Administrator must override this restriction.
-
-> 📖 **Official Documentation**: See [Override the organization policy for Custom MCP data stores](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/custom-mcp-server/override-constraint-for-custom-mcp-data-stores) for complete GCP details.
-
-> **Role Required:** Ensure you have the **Organization Policy Administrator** role (`roles/orgpolicy.policyAdmin`).
-
-1. In the Google Cloud console, navigate to the **Organization Policies** page.
-2. In the project selector at the top, select the specific project for which you want to change enforcement (do **not** apply at org level unless intended for all projects).
-3. In the **Filter** field, enter: `Disable custom MCP server connector for Gemini Enterprise`.
-4. Click the policy name to navigate to policy details.
-5. Click **Manage Policy**.
-6. Select **Override parent's policy**.
-7. Add a new rule and set enforcement toggle to **OFF**.
-8. Click **Set Policy**.
-9. Verify status is updated to **Not enforced**.
-
----
-
-### 2. Configure Allowed Egress FQDNs (`allowedDataSources` Constraint)
-If your organization enforces the **Restrict egress domains for data connectors** managed organization policy constraint, you must allowlist the target domains (FQDNs) under `allowedDataSources` before provisioning the data store in Gemini Enterprise.
-
-> 📖 **Official Documentation**: See [Configure allowed egress FQDNs](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/configure-allowed-egress-fqdns) for complete GCP details.
-
-The domains you need to allowlist in your `allowedDataSources` policy typically include:
-* `graph.microsoft.com`
-* `login.microsoftonline.com`
-* `bigquery.googleapis.com`
-* `accounts.google.com`
-* `oauth2.googleapis.com`
-* `googleapis.com`
-* `<yourtenant>.sharepoint.com`
-* `<your-cloud-run-url>.run.app`
-
----
-
-## 🔒 Security Note & Enterprise Authentication
-
-### Why `--allow-unauthenticated` is Used in Cloud Run
-The provided `deploy.sh` script deploys Cloud Run using `--allow-unauthenticated`. This is intentional and safe for standard setups because:
-* **Dual-Layer Application Authentication**: The MCP server code itself enforces user authentication at the application level via OAuth 2.0 (e.g. Microsoft Entra ID / Google OAuth) before allowing access to downstream APIs like Microsoft Graph or BigQuery.
-* **Header Preservation**: Gemini Enterprise passes end-user OAuth Bearer tokens directly to the connector. Unauthenticated ingress ensures Cloud Run does not strip or reject these authorization headers at the network boundary.
-
-### Restricting Access via HTTPS Load Balancer & IAP (Enterprise Pattern)
-If your organization's compliance policy prohibits public Cloud Run endpoints:
-1. Deploy Cloud Run with `--no-allow-unauthenticated` or `--ingress=internal-and-cloud-load-balancing`.
-2. Place an **External Application Load Balancer (HTTPS)** in front of your Cloud Run service.
-3. Enable **Identity-Aware Proxy (IAP)** on the Load Balancer to enforce Zero-Trust Google IAM access control before traffic reaches the Cloud Run instance.
-
-### Secret Management Best Practices (Google Secret Manager)
-The default `deploy.sh` script passes sensitive values (such as `MS_GRAPH_CLIENT_SECRET`) using environment variables via `--set-env-vars`. For production workloads, it is strongly recommended to store sensitive credentials in **Google Secret Manager**:
-
-1. **Create the secret in Secret Manager**:
+1. **Configure `.env` & Secret Manager**:
    ```bash
-   gcloud secrets create ms-graph-client-secret --data-file=- <<< "$MS_GRAPH_CLIENT_SECRET"
+   cp .env.example .env
+   printf '%s' "<YOUR_ENTRA_CLIENT_SECRET>" | gcloud secrets create ms-graph-client-secret \
+     --data-file=- \
+     --project="<YOUR_PROJECT_ID>"
    ```
-2. **Mount the secret in Cloud Run**:
-   Replace `--set-env-vars` in `deploy.sh` with `--set-secrets`:
+   Grant your dedicated Cloud Run service account permission to read the SDP Content Policy (`roles/dlp.reader` or `roles/dlp.user`) and Secret Manager (`roles/secretmanager.secretAccessor`).
+
+2. **Run Local Smoke & DLP Unit Tests**:
    ```bash
-   gcloud run deploy "$SERVICE_NAME" \
-     --set-secrets "MS_GRAPH_CLIENT_SECRET=ms-graph-client-secret:latest" \
-     --set-env-vars "MS_GRAPH_TENANT_ID=$MS_GRAPH_TENANT_ID,MS_GRAPH_CLIENT_ID=$MS_GRAPH_CLIENT_ID,SHAREPOINT_INSTANCE_URL=$SHAREPOINT_INSTANCE_URL"
+   npm install
+   chmod +x test_local.sh
+   ./test_local.sh
    ```
-3. **Grant Secret Access**: Ensure the Cloud Run service account has the `Secret Manager Secret Accessor` (`roles/secretmanager.secretAccessor`) role.
 
----
+3. **Deploy to Cloud Run**:
+   ```bash
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
 
-### 3. Microsoft Entra ID Setup
+### Recommended Production Hardening: Switch to `--no-allow-unauthenticated` + `roles/run.invoker`
 
-Before deploying the server, register a Microsoft Entra ID OAuth application:
-
-1. Go to the **Microsoft Entra Admin Center** -> **App registrations** -> **New registration**.
-2. Name your app (e.g., `Gemini-Enterprise-SharePoint-MCP`).
-3. Choose **Accounts in this organizational directory only**.
-4. Under **API permissions**, add Delegated permissions: `Files.ReadWrite.All`, `Sites.ReadWrite.All`, `User.Read`.
-5. **Grant Admin Consent** for your tenant.
-6. Create a **Client Secret** and note your **Client ID** and **Tenant ID**.
-
----
-
-## 🚀 Deployment & Local Testing
-
-### Local Validation
-Run the provided `test_local.sh` script to launch a local test instance on port `3005`, discover tools, and verify endpoints:
+By default, `deploy.sh` retains `--allow-unauthenticated` for evaluation while enforcing OAuth Bearer validation at the application layer. For production deployments, lock down Cloud Run network ingress by switching to `--no-allow-unauthenticated` and granting `roles/run.invoker`:
 
 ```bash
-chmod +x test_local.sh
-./test_local.sh
-```
+# 1. Disable public unauthenticated Cloud Run ingress
+gcloud run services update sharepoint-mcp-server-purview-sdp \
+  --project="${GCP_PROJECT}" \
+  --region="${GCP_REGION:-us-central1}" \
+  --no-allow-unauthenticated
 
-### Deploying to Google Cloud Run
-Set your Azure AD environment variables in a local `.env` file or export them:
-
-```env
-MS_GRAPH_TENANT_ID=your_tenant_id
-MS_GRAPH_CLIENT_ID=your_client_id
-MS_GRAPH_CLIENT_SECRET=your_client_secret
-SHAREPOINT_INSTANCE_URL=https://yourtenant.sharepoint.com
-```
-
-Deploy using `deploy.sh`:
-
-```bash
-chmod +x deploy.sh
-./deploy.sh
+# 2. Grant Cloud Run Invoker strictly to your authorized caller / Discovery Engine service agent
+gcloud run services add-iam-policy-binding sharepoint-mcp-server-purview-sdp \
+  --project="${GCP_PROJECT}" \
+  --region="${GCP_REGION:-us-central1}" \
+  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-discoveryengine.iam.gserviceaccount.com" \
+  --role="roles/run.invoker"
 ```

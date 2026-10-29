@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
 """
 End-to-End Verification Script (Blocked Path):
 Native Microsoft Purview Block Verification for Restricted Security Documents
@@ -10,7 +12,7 @@ Native Microsoft Purview Block Verification for Restricted Security Documents
    X.509 certificate token (`client_credentials`) so the standard test user (`MS_TEST_USER`)
    is NOT the document Issuer/Owner and holds ZERO Purview usage rights.
 3. Queries Work IQ MCP (`https://workiq.svc.cloud.microsoft/mcp`) as `MS_TEST_USER`
-   to confirm that Microsoft Purview natively blocks the document content from being read.
+   via MFA-compatible MSAL v2.0 authentication to confirm Microsoft Purview natively blocks extraction.
 """
 
 import base64
@@ -25,12 +27,10 @@ import urllib.parse
 import urllib.request
 import uuid
 
-# Load configuration from environment variables (see .env.example)
+from msal_auth_helper import acquire_delegated_token
+
 TENANT_ID = os.environ["MS_TENANT_ID"]
 CLIENT_ID = os.environ["MS_CLIENT_ID"]
-CLIENT_SECRET = os.environ["MS_CLIENT_SECRET"]
-USER_UPN = os.environ["MS_TEST_USER"]
-USER_PASSWORD = os.environ["MS_TEST_PASSWORD"]
 
 DRIVE_ID = os.environ["MS_SHAREPOINT_DRIVE_ID"]
 SITE_NAME = os.environ.get("MS_SHAREPOINT_SITE_NAME", "SharePoint")
@@ -55,17 +55,19 @@ def get_cert_app_token() -> str | None:
         check=True,
         capture_output=True,
     ).stdout
-    x5t = base64.urlsafe_b64encode(hashlib.sha1(der).digest()).decode().rstrip("=")
+    x5t = base64.urlsafe_b64encode(hashlib.sha256(der).digest()).decode().rstrip("=")
+    x5t_sha1 = base64.urlsafe_b64encode(hashlib.sha1(der).digest()).decode().rstrip("=")  # Required by Entra x5t JWT header
     header = (
-        base64.urlsafe_b64encode(json.dumps({"alg": "RS256", "typ": "JWT", "x5t": x5t}).encode())
+        base64.urlsafe_b64encode(json.dumps({"alg": "RS256", "typ": "JWT", "x5t": x5t_sha1, "x5t#S256": x5t}).encode())
         .decode()
         .rstrip("=")
     )
     now = int(time.time())
+    safe_tenant = urllib.parse.quote(TENANT_ID, safe="")
     payload = (
         base64.urlsafe_b64encode(
             json.dumps({
-                "aud": f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token",
+                "aud": f"https://login.microsoftonline.com/{safe_tenant}/oauth2/v2.0/token",
                 "exp": now + 600,
                 "iss": CLIENT_ID,
                 "jti": str(uuid.uuid4()),
@@ -92,44 +94,35 @@ def get_cert_app_token() -> str | None:
     }).encode()
     return json.loads(
         urllib.request.urlopen(
-            f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token",
+            f"https://login.microsoftonline.com/{safe_tenant}/oauth2/v2.0/token",
             data=data,
             context=SSL_CTX,
-        ).read()
-    )["access_token"]
-
-
-def get_delegated_token(scope: str = "https://graph.microsoft.com/.default") -> str:
-    data = urllib.parse.urlencode({
-        "grant_type": "password",
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "scope": scope,
-        "username": USER_UPN,
-        "password": USER_PASSWORD,
-    }).encode()
-    return json.loads(
-        urllib.request.urlopen(
-            f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token",
-            data=data,
-            context=SSL_CTX,
+            timeout=30,
         ).read()
     )["access_token"]
 
 
 def main() -> None:
     app_only_tok = get_cert_app_token()
-    del_tok = get_delegated_token()
+    del_tok = acquire_delegated_token(
+        ["https://graph.microsoft.com/Files.ReadWrite.All", "https://graph.microsoft.com/Sites.ReadWrite.All"],
+        env_override_var="MS_GRAPH_ACCESS_TOKEN",
+    )
     read_tok = app_only_tok or del_tok
+
+    safe_drive = urllib.parse.quote(DRIVE_ID, safe="")
+    safe_allowed = urllib.parse.quote(ALLOWED_ITEM_ID, safe="")
+    safe_restricted = urllib.parse.quote(RESTRICTED_ITEM_ID, safe="")
 
     print("=== Step 0: Verifying Allowed File Remains Encrypted & Accessible ===")
     q_meta = json.loads(
         urllib.request.urlopen(
             urllib.request.Request(
-                f"https://graph.microsoft.com/v1.0/drives/{DRIVE_ID}/items/{ALLOWED_ITEM_ID}?$select=id,name,sensitivityLabel",
+                f"https://graph.microsoft.com/v1.0/drives/{safe_drive}/items/{safe_allowed}?$select=id,name,sensitivityLabel",
                 headers={"Authorization": f"Bearer {read_tok}"},
             ),
             context=SSL_CTX,
+            timeout=30,
         ).read()
     )
     print("  Allowed file sensitivityLabel:", json.dumps(q_meta.get("sensitivityLabel")))
@@ -138,17 +131,18 @@ def main() -> None:
     meta = json.loads(
         urllib.request.urlopen(
             urllib.request.Request(
-                f"https://graph.microsoft.com/v1.0/drives/{DRIVE_ID}/items/{RESTRICTED_ITEM_ID}?$select=id,name,size,lastModifiedBy,sensitivityLabel",
+                f"https://graph.microsoft.com/v1.0/drives/{safe_drive}/items/{safe_restricted}?$select=id,name,size,lastModifiedBy,sensitivityLabel",
                 headers={"Authorization": f"Bearer {read_tok}"},
             ),
             context=SSL_CTX,
+            timeout=30,
         ).read()
     )
     print("  Current item metadata:", json.dumps(meta, indent=2))
 
     if meta.get("sensitivityLabel", {}).get("id") != RESTRICTED_LABEL_ID:
         print(f"\n=== Step 2: Assigning Native Purview Label ({RESTRICTED_LABEL_ID}) ===")
-        assign_url = f"https://graph.microsoft.com/v1.0/drives/{DRIVE_ID}/items/{RESTRICTED_ITEM_ID}/assignSensitivityLabel"
+        assign_url = f"https://graph.microsoft.com/v1.0/drives/{safe_drive}/items/{safe_restricted}/assignSensitivityLabel"
         assign_tok = app_only_tok or del_tok
         req = urllib.request.Request(
             assign_url,
@@ -164,26 +158,30 @@ def main() -> None:
             }).encode(),
         )
         try:
-            resp = urllib.request.urlopen(req, context=SSL_CTX)
+            resp = urllib.request.urlopen(req, context=SSL_CTX, timeout=30)
             op_loc = resp.headers.get("Location")
             print("  assignSensitivityLabel accepted (HTTP 202). Polling operation status...")
-            for _ in range(8):
-                time.sleep(3)
-                op_res = json.loads(urllib.request.urlopen(op_loc, context=SSL_CTX).read())
-                status = op_res.get("status")
-                print(f"    Operation status: {status}")
-                if status in ("completed", "succeeded"):
-                    break
-                if status == "failed":
-                    print("    Operation failed:", op_res.get("error"))
-                    return
+            if op_loc and op_loc.startswith("https://graph.microsoft.com/"):
+                for _ in range(8):
+                    time.sleep(3)
+                    op_res = json.loads(urllib.request.urlopen(op_loc, context=SSL_CTX, timeout=30).read())
+                    status = op_res.get("status")
+                    print(f"    Operation status: {status}")
+                    if status in ("completed", "succeeded"):
+                        break
+                    if status == "failed":
+                        print("    Operation failed:", op_res.get("error"))
+                        return
         except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8", errors="ignore")
             print(f"  Label assignment error (HTTP {e.code}): {err_body[:300]}")
             return
 
     print("\n=== Step 3: Querying Work IQ MCP Server as Test User (Expecting Purview Block) ===")
-    wiq_tok = get_delegated_token(f"{WORKIQ_RESOURCE_APP_ID}/.default")
+    wiq_tok = acquire_delegated_token(
+        [f"{WORKIQ_RESOURCE_APP_ID}/.default"],
+        env_override_var="MS_WORKIQ_ACCESS_TOKEN",
+    )
     file_name = meta.get("name", "SOC-2026-0919-SEC.docx")
     mcp_req = {
         "jsonrpc": "2.0",
@@ -207,7 +205,7 @@ def main() -> None:
         },
         data=json.dumps(mcp_req).encode(),
     )
-    res_mcp = urllib.request.urlopen(req_mcp, context=SSL_CTX).read().decode("utf-8", errors="ignore")
+    res_mcp = urllib.request.urlopen(req_mcp, context=SSL_CTX, timeout=60).read().decode("utf-8", errors="ignore")
     print(res_mcp)
 
 

@@ -34,8 +34,8 @@ def _sanitize_identifier(val: str, default: str) -> str:
 
 
 PROJECT_ID = _sanitize_identifier(
-    os.environ.get("GCP_PROJECT_ID") or os.environ.get("PROJECT_ID", "ai-hub-459714"),
-    "ai-hub-459714",
+    os.environ.get("GCP_PROJECT_ID") or os.environ.get("PROJECT_ID", "YOUR_PROJECT_ID"),
+    "YOUR_PROJECT_ID",
 )
 PRIMARY_BQ_DATASET = _sanitize_identifier(os.environ.get("BQ_DATASET", "ge_token_analytics"), "ge_token_analytics")
 GE_DATASET = _sanitize_identifier(os.environ.get("GE_TRANSFORMED_DATASET", "ge_transformed"), "ge_transformed")
@@ -86,13 +86,13 @@ def apply_security_headers(response: Response) -> Response:
 
 KNOWN_ENGINES = [
     {"id": "ALL", "name": "All Gemini Enterprise Instances (Global Rollup)", "type": "GLOBAL"},
-    {"id": "gemini-us-enterprise-test_1762882221278", "name": "gemini-us-enterprise-test_1762882221278 (Live WIF Enterprise Hub)", "type": "LIVE_BQ"},
-    {"id": "gpsinvo-workiq_1789839712741", "name": "gpsinvo-workiq_1789839712741 (Live WorkIQ & Entra WIF Engine)", "type": "LIVE_BQ"},
+    {"id": "gemini-us-enterprise-prod", "name": "gemini-us-enterprise-prod (Live WIF Enterprise Hub)", "type": "LIVE_BQ"},
+    {"id": "workiq-wif-engine", "name": "workiq-wif-engine (Live WorkIQ & Entra WIF Engine)", "type": "LIVE_BQ"},
     {"id": "notebooklm-enterprise-us", "name": "notebooklm-enterprise-us (Live NotebookLM Enterprise - US)", "type": "LIVE_BQ"},
     {"id": "notebooklm-enterprise-global", "name": "notebooklm-enterprise-global (Live NotebookLM Enterprise - Global)", "type": "LIVE_BQ"},
-    {"id": "agentspace-us-peter_1756255065286", "name": "agentspace-us-peter_1756255065286 (Live SharePoint Connector)", "type": "LIVE_BQ"},
-    {"id": "agentspace-adk_1749611082035", "name": "agentspace-adk_1749611082035 (Live ADK & Search Hub)", "type": "LIVE_BQ"},
-    {"id": "mcp3_1787098719547", "name": "mcp3_1787098719547 (Live MCP Integration Engine)", "type": "LIVE_BQ"},
+    {"id": "sharepoint-connector-app", "name": "sharepoint-connector-app (Live SharePoint Connector)", "type": "LIVE_BQ"},
+    {"id": "adk-search-hub", "name": "adk-search-hub (Live ADK & Search Hub)", "type": "LIVE_BQ"},
+    {"id": "mcp-integration-engine", "name": "mcp-integration-engine (Live MCP Integration Engine)", "type": "LIVE_BQ"},
 ]
 
 
@@ -586,18 +586,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 def _classify_wif_principal(principal: str) -> Dict[str, str]:
     """Returns human-readable display metadata for a Workforce Identity or IAM principal."""
     p = (principal or "").strip()
-    if p == "4f32a44e-9502-4892-8055-5c9fd793c653":
-        return {
-            "short_label": "peterfisher@gpsrapid... (Entra WIF)",
-            "principal_display": "Microsoft Entra ID Subject GUID • Pool: entrapf-id-oidc-pool",
-            "idp_type": "Entra ID WIF (OIDC)",
-        }
-    if "peterfisher.demo.altostrat.com" in p:
-        return {
-            "short_label": "peterfisher@altostrat (WIF Pool)",
-            "principal_display": "Workforce Identity Federation • Pool: entrapf-id-oidc-pool",
-            "idp_type": "WIF OIDC Pool",
-        }
     if p.startswith("principal://iam.googleapis.com/locations/global/workforcePools/"):
         parts = p.split("/workforcePools/", 1)[-1].split("/subject/")
         pool_name = parts[0] if parts else "workforce-pool"
@@ -625,45 +613,45 @@ def _classify_wif_principal(principal: str) -> Dict[str, str]:
 def _default_tokens_by_principal(scoped_factor: int = 1) -> List[Dict[str, Any]]:
     return [
         {
-            "user_principal": "peterfisher@peterfisher.demo.altostrat.com",
-            "short_label": "peterfisher@altostrat (WIF Pool)",
-            "principal_display": "Workforce Identity Federation • Pool: entrapf-id-oidc-pool",
+            "user_principal": "analyst@example.com",
+            "short_label": "analyst@example (WIF Pool)",
+            "principal_display": "Workforce Identity Federation • Pool: enterprise-oidc-pool",
             "idp_type": "WIF OIDC Pool",
             "llm_calls": 500 * scoped_factor,
             "total_sessions": 68 * scoped_factor,
             "engines_used": 8,
-            "engine_list": "mcp3_1787098719547, ge-mcp-sharepoint, gemini-us-enterprise-test_1762882221278",
-            "models_used": "gemini-3.8-flash, gemini-3.1-pro-preview, gemini-3.5-flash, gemini-3.7-flash",
+            "engine_list": "mcp-integration-engine, ge-mcp-sharepoint, gemini-us-enterprise-prod",
+            "models_used": "gemini-3.8-flash, gemini-3.5-flash-lite",
             "input_tokens": 7890187 * scoped_factor,
             "output_tokens": 263278 * scoped_factor,
             "total_tokens": 8153465 * scoped_factor,
             "avg_tokens_per_call": 16307,
         },
         {
-            "user_principal": "4f32a44e-9502-4892-8055-5c9fd793c653",
-            "short_label": "peterfisher@gpsrapid... (Entra WIF)",
-            "principal_display": "Microsoft Entra ID Subject GUID • Pool: entrapf-id-oidc-pool",
+            "user_principal": "00000000-0000-0000-0000-000000000001",
+            "short_label": "investigator@example (Entra WIF)",
+            "principal_display": "Microsoft Entra ID Subject GUID • Pool: enterprise-oidc-pool",
             "idp_type": "Entra ID WIF (OIDC)",
             "llm_calls": 130 * scoped_factor,
             "total_sessions": 24 * scoped_factor,
             "engines_used": 1,
-            "engine_list": "gpsinvo-workiq_1789839712741",
-            "models_used": "gemini-3.5-flash, gemini-3.8-flash",
+            "engine_list": "workiq-wif-engine",
+            "models_used": "gemini-3.8-flash, gemini-3.5-flash-lite",
             "input_tokens": 3021779 * scoped_factor,
             "output_tokens": 57935 * scoped_factor,
             "total_tokens": 3079714 * scoped_factor,
             "avg_tokens_per_call": 23690,
         },
         {
-            "user_principal": "demo@peterfisher.altostrat.com",
-            "short_label": "demo@altostrat (Workspace)",
+            "user_principal": "auditor@example.com",
+            "short_label": "auditor@example (Workspace)",
             "principal_display": "Google Workspace / Cloud Identity Federated User",
             "idp_type": "Cloud Identity / Workspace",
             "llm_calls": 193 * scoped_factor,
             "total_sessions": 42 * scoped_factor,
             "engines_used": 1,
-            "engine_list": "agentspace-adk_1749611082035",
-            "models_used": "gemini-3.5-flash, gemini-3.7-flash, gemini-3.1-pro-preview",
+            "engine_list": "adk-search-hub",
+            "models_used": "gemini-3.8-flash, gemini-3.5-flash-lite",
             "input_tokens": 826850 * scoped_factor,
             "output_tokens": 8947 * scoped_factor,
             "total_tokens": 835797 * scoped_factor,

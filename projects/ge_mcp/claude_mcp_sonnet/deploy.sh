@@ -1,90 +1,103 @@
 #!/usr/bin/env bash
 # Copyright 2026 Google LLC
-# Interactive Setup & Deployment Script for Claude Model MCP Server
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-set -e
+set -euo pipefail
 
-echo "=================================================================="
-echo "🚀 Claude MCP Server - Interactive Deployer for Cloud Run"
-echo "=================================================================="
-
-# 1. Detect or Prompt for GCP Project ID
-DEFAULT_PROJECT=$(gcloud config get-value project 2>/dev/null || echo "")
-if [ -n "$DEFAULT_PROJECT" ]; then
-  read -p "Enter GCP Project ID [default: ${DEFAULT_PROJECT}]: " INPUT_PROJECT
-  PROJECT_ID="${INPUT_PROJECT:-$DEFAULT_PROJECT}"
-else
-  read -p "Enter GCP Project ID: " PROJECT_ID
+if [ -f .env ]; then
+  echo "Loading configuration from .env..."
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
 fi
 
-if [ -z "$PROJECT_ID" ]; then
-  echo "❌ Error: GCP Project ID is required."
+echo "================================================================="
+echo " Deploying Vertex AI Claude Sonnet 4.6 MCP Server to Cloud Run"
+echo "================================================================="
+echo ""
+
+PROJECT_ID="${PROJECT_ID:-}"
+if [ -z "${PROJECT_ID}" ]; then
+  read -r -p "Enter your Google Cloud Project ID: " PROJECT_ID
+fi
+if [ -z "${PROJECT_ID}" ]; then
+  echo "Error: PROJECT_ID cannot be empty."
   exit 1
 fi
 
-# 2. Detect or Prompt for GCP Region
-read -p "Enter GCP Region [default: us-central1]: " INPUT_REGION
-REGION="${INPUT_REGION:-us-central1}"
-
-# 3. Select Claude Model Choice with sonnet as default
-echo ""
-echo "Select Anthropic Claude Model:"
-echo "  1) claude-sonnet-5 (Default - Latest Claude Sonnet)"
-echo "  2) claude-3-5-sonnet-v2@20241022 (Claude 3.5 Sonnet v2)"
-echo "  3) claude-3-5-haiku@20241022 (Claude 3.5 Haiku)"
-echo "  4) claude-3-opus@20240229 (Claude 3 Opus)"
-echo "  5) Custom Model ID"
-read -p "Choose option [1-5, default: 1]: " MODEL_CHOICE
-
-case "$MODEL_CHOICE" in
-  2) MODEL_ID="claude-3-5-sonnet-v2@20241022" ;;
-  3) MODEL_ID="claude-3-5-haiku@20241022" ;;
-  4) MODEL_ID="claude-3-opus@20240229" ;;
-  5) read -p "Enter custom model ID: " CUSTOM_MODEL; MODEL_ID="${CUSTOM_MODEL}" ;;
-  *) MODEL_ID="claude-sonnet-5" ;;
-esac
-
-SERVICE_NAME="claude-mcp-sonnet"
-IMAGE_NAME="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:latest"
+DEPLOY_REGION="${DEPLOY_REGION:-us-central1}"
+VERTEX_REGION="${VERTEX_REGION:-global}"
+DEFAULT_MODEL="${DEFAULT_MODEL:-claude-sonnet-4-6}"
+SERVICE_NAME="${SERVICE_NAME:-vertex-claude-mcp}"
+SA_NAME="${SA_NAME:-vertex-claude-mcp-sa}"
+SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_EMAIL:-${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com}"
 
 echo ""
-echo "📌 Deployment Configuration:"
-echo "   - Project ID:   ${PROJECT_ID}"
-echo "   - Region:       ${REGION}"
-echo "   - Service Name: ${SERVICE_NAME}"
-echo "   - Model ID:     ${MODEL_ID}"
-echo "=================================================================="
+echo "Summary of Configuration:"
+echo "  Project ID:            ${PROJECT_ID}"
+echo "  Cloud Run Region:      ${DEPLOY_REGION}"
+echo "  Vertex AI Region:      ${VERTEX_REGION}"
+echo "  Default Model:         ${DEFAULT_MODEL}"
+echo "  Service Name:          ${SERVICE_NAME}"
+echo "  Service Account:       ${SERVICE_ACCOUNT_EMAIL}"
 echo ""
 
-# Enable required Google Cloud APIs
-echo "⚙️ Enabling required GCP APIs (Cloud Run, Cloud Build, Vertex AI / Agent Platform)..."
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com aiplatform.googleapis.com --project="${PROJECT_ID}"
+echo "[1/4] Setting active gcloud project and enabling required APIs..."
+gcloud config set project "${PROJECT_ID}"
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  aiplatform.googleapis.com \
+  iam.googleapis.com \
+  --project="${PROJECT_ID}"
 
-# Build container image with Cloud Build
-echo "📦 Building container image using Cloud Build..."
-gcloud builds submit --tag "${IMAGE_NAME}" --project "${PROJECT_ID}"
+echo "[2/4] Ensuring dedicated least-privilege Service Account (${SA_NAME})..."
+if ! gcloud iam service-accounts describe "${SERVICE_ACCOUNT_EMAIL}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud iam service-accounts create "${SA_NAME}" \
+    --display-name="Vertex AI Claude MCP Cloud Run SA" \
+    --project="${PROJECT_ID}"
+fi
 
-# Deploy container image to Cloud Run
-echo "🚀 Deploying ${SERVICE_NAME} to Cloud Run..."
+echo "[3/4] Granting roles/aiplatform.user to ${SERVICE_ACCOUNT_EMAIL}..."
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/aiplatform.user" \
+  --condition=None \
+  --quiet >/dev/null
+
+# NOTE: --allow-unauthenticated is retained here for quick evaluation with app-layer Bearer token enforcement.
+# For production deployments, switch to --no-allow-unauthenticated and grant roles/run.invoker (see README.md).
+echo "[4/4] Building and deploying ${SERVICE_NAME} to Cloud Run..."
 gcloud run deploy "${SERVICE_NAME}" \
-  --image "${IMAGE_NAME}" \
+  --source . \
   --project "${PROJECT_ID}" \
-  --region "${REGION}" \
+  --region "${DEPLOY_REGION}" \
+  --service-account "${SERVICE_ACCOUNT_EMAIL}" \
   --allow-unauthenticated \
-  --set-env-vars PROJECT_ID="${PROJECT_ID}",LOCATION_ID="global",MODEL_ID="${MODEL_ID}"
+  --set-env-vars="PROJECT_ID=${PROJECT_ID},REGION=${VERTEX_REGION},DEFAULT_MODEL=${DEFAULT_MODEL}"
 
-SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT_ID}" --region="${REGION}" --format='value(status.url)' 2>/dev/null || echo "")
+SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT_ID}" --region="${DEPLOY_REGION}" --format='value(status.url)')"
 
 echo ""
-echo "=================================================================="
-echo "🎉 DEPLOYMENT COMPLETE!"
-echo "=================================================================="
-echo "🔗 Your MCP SSE Endpoint URL:"
-echo "   ${SERVICE_URL}/mcp"
+echo "================================================================="
+echo " Deployment Complete!"
+echo "================================================================="
+echo "Your MCP Endpoint URL is:"
+echo "  ${SERVICE_URL}/mcp"
 echo ""
-echo "📋 Next Steps (Gemini Enterprise BYO MCP Connector Setup):"
-echo "   1. Open Gemini Enterprise Admin Console -> Connectors & Tools."
-echo "   2. Click 'Add BYO MCP Connector' -> Select 'Remote MCP Server (SSE)'."
-echo "   3. Paste the URL: ${SERVICE_URL}/mcp"
-echo "   4. Test in Gemini Enterprise chat!"
-echo "=================================================================="
+echo "Production Hardening Reminder:"
+echo "  Lock down network ingress with --no-allow-unauthenticated and grant roles/run.invoker"
+echo "  to your Gemini Enterprise / Discovery Engine service agent (see README.md)."
+echo "================================================================="
