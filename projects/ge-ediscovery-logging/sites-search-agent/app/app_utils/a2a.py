@@ -103,7 +103,7 @@ def _resolve_app_url(app_url: str | None) -> str:
             f"/reasoningEngines/{agent_engine_id}/api"
         )
 
-    return "http://0.0.0.0:8000"
+    return "http://127.0.0.1:8000"
 
 
 async def attach_a2a_routes(

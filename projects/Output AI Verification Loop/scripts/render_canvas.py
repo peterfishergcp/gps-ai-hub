@@ -8,6 +8,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import sys
 from pathlib import Path
@@ -36,7 +37,15 @@ def render_canvas_html(
   start_idx = template_html.index(START_MARKER) + len(START_MARKER)
   end_idx = template_html.index(END_MARKER)
 
-  json_payload = json.dumps(review_data, indent=2).replace("</script>", "<\\/script>")
+  # HTML-safe JSON serialization (OWASP / Go encoding/json pattern): escape '<', '>',
+  # and '&' as Unicode escapes so untrusted JSON strings can never trigger </script>,
+  # <!--, or tag breakout inside inline <script> blocks.
+  json_payload = (
+      json.dumps(review_data, indent=2)
+      .replace("&", "\\u0026")
+      .replace("<", "\\u003c")
+      .replace(">", "\\u003e")
+  )
   compiled = (
       template_html[:start_idx]
       + "\nconst COUNCIL_REVIEW_DATA = "
@@ -45,13 +54,14 @@ def render_canvas_html(
       + template_html[end_idx:]
   )
 
-  # Also set the HTML <title> tag dynamically
-  title = review_data.get("header", {}).get(
+  # Safely HTML-escape the dynamic <title> text to prevent markup injection.
+  raw_title = review_data.get("header", {}).get(
       "title", "Output Engineering Review Canvas"
   )
+  safe_title = html.escape(str(raw_title), quote=True)
   compiled = compiled.replace(
       "<title>Output Engineering Review Canvas — Enterprise Security Architecture Audit</title>",
-      f"<title>{title} — Output Engineering Review Canvas</title>",
+      f"<title>{safe_title} — Output Engineering Review Canvas</title>",
   )
   return compiled
 

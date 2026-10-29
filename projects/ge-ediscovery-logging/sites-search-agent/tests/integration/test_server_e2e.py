@@ -64,12 +64,13 @@ def start_server() -> subprocess.Popen[str]:
         "uvicorn",
         "app.fast_api_app:app",
         "--host",
-        "0.0.0.0",
+        "127.0.0.1",
         "--port",
         "8000",
     ]
     env = os.environ.copy()
     env["INTEGRATION_TEST"] = "TRUE"
+    env["ALLOW_LOCAL_UNAUTHENTICATED_DEV"] = "true"
     # Advertise a loopback URL so the A2A client can reach the card's transport.
     env["APP_URL"] = BASE_URL
     process = subprocess.Popen(

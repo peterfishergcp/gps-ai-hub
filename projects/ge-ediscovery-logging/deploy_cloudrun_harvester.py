@@ -5,7 +5,7 @@ deploy_cloudrun_harvester.py — Deploys the Real-Time Event-Driven GE eDiscover
 Provisions:
   1. Dedicated Service Account (ge-ediscovery-harvester-sa) with least-privilege IAM:
      - roles/cloudkms.signerVerifier on CryptoKey ediscovery-archiver-jwt-key
-     - roles/storage.objectAdmin on gs://<GCP_PROJECT_ID>-ge-ediscovery
+     - roles/storage.objectCreator + roles/storage.objectViewer on gs://<GCP_PROJECT_ID>-ge-ediscovery
      - roles/bigquery.dataEditor + roles/bigquery.jobUser + roles/logging.viewer
      - roles/serviceusage.serviceUsageConsumer (for X-Goog-User-Project quota headers)
   2. Cloud Run Service (ge-ediscovery-harvester) with --no-allow-unauthenticated
@@ -24,6 +24,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "").strip()
 WORKFORCE_POOL_ID = os.environ.get("WORKFORCE_POOL_ID", "").strip()
@@ -83,6 +84,12 @@ def main() -> None:
         default=SERVICE_NAME,
         help="Cloud Run service name (default: ge-ediscovery-harvester)",
     )
+    parser.add_argument(
+        "--ms-client-secret-name",
+        dest="ms_client_secret_name",
+        default=os.environ.get("MS_CLIENT_SECRET_SECRET_NAME", ""),
+        help="Optional Secret Manager secret name holding MS_CLIENT_SECRET for Purview eDiscovery forwarding",
+    )
     args = parser.parse_args()
     PROJECT_ID = (args.project_id or "").strip()
     WORKFORCE_POOL_ID = (args.workforce_pool_id or "").strip()
@@ -133,15 +140,36 @@ def main() -> None:
         f"--project={PROJECT_ID}",
     ])
 
-    run_cmd([
-        "gcloud", "storage", "buckets", "add-iam-policy-binding", f"gs://{gcs_bucket_name}",
-        f"--member=serviceAccount:{sa_email}",
-        "--role=roles/storage.objectAdmin",
-        f"--project={PROJECT_ID}",
-    ])
+    # Anti-spoliation least privilege: grant objectCreator + objectViewer (never objectAdmin / storage.objects.delete)
+    for bucket_role in ("roles/storage.objectCreator", "roles/storage.objectViewer"):
+        run_cmd([
+            "gcloud", "storage", "buckets", "add-iam-policy-binding", f"gs://{gcs_bucket_name}",
+            f"--member=serviceAccount:{sa_email}",
+            f"--role={bucket_role}",
+            f"--project={PROJECT_ID}",
+        ])
+
+    # Scope BigQuery write access strictly to BQ_DATASET rather than project-wide roles/bigquery.dataEditor
+    ds_show = run_cmd(
+        ["bq", f"--project_id={PROJECT_ID}", "show", "--format=prettyjson", f"{PROJECT_ID}:{BQ_DATASET}"],
+        check=False,
+    )
+    if ds_show.returncode == 0 and ds_show.stdout.strip():
+        ds_json = json.loads(ds_show.stdout)
+        access_list = ds_json.get("access", [])
+        if not any(a.get("userByEmail") == sa_email and a.get("role") == "WRITER" for a in access_list):
+            access_list.append({"role": "WRITER", "userByEmail": sa_email})
+            ds_json["access"] = access_list
+            with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as tf:
+                tmp_ds_path = tf.name
+                json.dump(ds_json, tf)
+            try:
+                run_cmd(["bq", f"--project_id={PROJECT_ID}", "update", "--source", tmp_ds_path, f"{PROJECT_ID}:{BQ_DATASET}"])
+            finally:
+                if os.path.exists(tmp_ds_path):
+                    os.remove(tmp_ds_path)
 
     for role in [
-        "roles/bigquery.dataEditor",
         "roles/bigquery.jobUser",
         "roles/logging.viewer",
         "roles/discoveryengine.viewer",
@@ -155,20 +183,46 @@ def main() -> None:
             "--quiet",
         ])
 
+    ms_secret_name = (args.ms_client_secret_name or "").strip()
+    if ms_secret_name:
+        run_cmd([
+            "gcloud", "secrets", "add-iam-policy-binding", ms_secret_name,
+            f"--member=serviceAccount:{sa_email}",
+            "--role=roles/secretmanager.secretAccessor",
+            f"--project={PROJECT_ID}",
+        ])
+
     print(f"\n=== [3/6] Deploying Cloud Run Service '{SERVICE_NAME}' ({REGION}) ===")
-    env_vars = (
-        f"GCP_PROJECT_ID={PROJECT_ID},"
-        f"GCP_PROJECT_NUMBER={proj_num},"
-        f"WORKFORCE_POOL_ID={WORKFORCE_POOL_ID},"
-        f"ARCHIVER_PROVIDER_ID={PROVIDER_ID},"
-        f"KMS_LOCATION={KMS_LOCATION},"
-        f"KMS_KEYRING={KMS_KEYRING},"
-        f"KMS_KEY={KMS_KEY},"
-        f"GCS_BUCKET_NAME={gcs_bucket_name},"
-        f"BQ_DATASET={BQ_DATASET},"
-        f"BQ_TABLE={BQ_TABLE}"
-    )
-    run_cmd([
+    env_pairs = [
+        f"GCP_PROJECT_ID={PROJECT_ID}",
+        f"GCP_PROJECT_NUMBER={proj_num}",
+        f"WORKFORCE_POOL_ID={WORKFORCE_POOL_ID}",
+        f"ARCHIVER_PROVIDER_ID={PROVIDER_ID}",
+        f"KMS_LOCATION={KMS_LOCATION}",
+        f"KMS_KEYRING={KMS_KEYRING}",
+        f"KMS_KEY={KMS_KEY}",
+        f"GCS_BUCKET_NAME={gcs_bucket_name}",
+        f"BQ_DATASET={BQ_DATASET}",
+        f"BQ_TABLE={BQ_TABLE}",
+        f"EXPECTED_INVOKER_SA={sa_email}",
+    ]
+    for passthrough_var in (
+        "MS_TENANT_ID",
+        "MS_CLIENT_ID",
+        "PURVIEW_COMPLIANCE_JOURNAL_UPN",
+        "PURVIEW_TARGET_CUSTODIAN_UPN",
+        "PURVIEW_FALLBACK_UPN",
+        "PURVIEW_EDISCOVERY_FOLDER",
+        "PURVIEW_FAIL_CLOSED",
+        "ARCHIVER_ALLOWED_SUBJECT_DOMAINS",
+        "ARCHIVER_DENIED_SUBJECTS",
+    ):
+        val = os.environ.get(passthrough_var, "").strip()
+        if val:
+            env_pairs.append(f"{passthrough_var}={val}")
+    env_vars = ",".join(env_pairs)
+
+    deploy_cmd = [
         "gcloud", "run", "deploy", SERVICE_NAME,
         f"--source={BASE_DIR}",
         f"--region={REGION}",
@@ -176,12 +230,15 @@ def main() -> None:
         "--no-allow-unauthenticated",
         "--concurrency=10",
         "--max-instances=5",
-        "--memory=512Mi",
+        "--memory=1Gi",
         "--timeout=300",
         f"--set-env-vars={env_vars}",
         f"--project={PROJECT_ID}",
         "--quiet",
-    ])
+    ]
+    if ms_secret_name:
+        deploy_cmd.append(f"--set-secrets=MS_CLIENT_SECRET={ms_secret_name}:latest")
+    run_cmd(deploy_cmd)
 
     service_url = run_cmd([
         "gcloud", "run", "services", "describe", SERVICE_NAME,
@@ -190,6 +247,15 @@ def main() -> None:
         "--format=value(status.url)",
     ]).stdout.strip()
     print(f"  [+] Cloud Run Service URL: {service_url}")
+
+    # Pin EXPECTED_OIDC_AUDIENCE to the deployed /pubsub push endpoint URL
+    run_cmd([
+        "gcloud", "run", "services", "update", SERVICE_NAME,
+        f"--region={REGION}",
+        f"--update-env-vars=EXPECTED_OIDC_AUDIENCE={service_url}/pubsub",
+        f"--project={PROJECT_ID}",
+        "--quiet",
+    ])
 
     run_cmd([
         "gcloud", "run", "services", "add-iam-policy-binding", SERVICE_NAME,

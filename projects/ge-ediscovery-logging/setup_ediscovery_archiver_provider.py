@@ -136,10 +136,18 @@ def ensure_kms_key_and_jwks() -> None:
     print(f"[3/4] Wrote Cloud KMS JWKS public key (kid={KMS_KEY_ID}) to {JWKS_PATH}")
 
 
-def ensure_oidc_provider() -> None:
+def ensure_oidc_provider(
+    allowed_subject_domain: str = "",
+    denied_subjects: list[str] | None = None,
+    subject_cel_condition: str = "",
+    allow_shared_workforce_pool: bool = False,
+) -> None:
     issuer_uri = f"https://ediscovery.{PROJECT_ID}.internal"
-    # Mitigates C2: Require explicit `purpose == 'ediscovery_harvest'` claim, block service account subjects,
-    # and support an optional CEL allowlist of licensed Gemini Enterprise users (`ARCHIVER_ALLOWED_SUBJECTS_CEL`).
+    # Mitigates C2 & ED-1:
+    #   1. Require explicit `purpose == 'ediscovery_harvest'` claim and block service account subjects.
+    #   2. Enforce optional subject domain allowlist, explicit admin subject denylist, and custom CEL condition.
+    #   3. Check Workforce Pool isolation so `ediscovery-archiver` is not silently attached to an unscoped
+    #      Org-wide GCP Console Admin Workforce Pool without subject restrictions.
     attr_condition = (
         f"assertion.iss == '{issuer_uri}' "
         f"&& assertion.aud == '{CLIENT_ID}' "
@@ -147,9 +155,51 @@ def ensure_oidc_provider() -> None:
         f"&& assertion.sub != '' "
         f"&& !(assertion.sub.endsWith('.gserviceaccount.com'))"
     )
-    allowed_subjects_cel = os.environ.get("ARCHIVER_ALLOWED_SUBJECTS_CEL", "").strip()
+    domain_clean = (allowed_subject_domain or os.environ.get("ARCHIVER_ALLOWED_SUBJECT_DOMAIN", "")).strip().lstrip("@")
+    if domain_clean:
+        escaped_domain = domain_clean.replace("'", "")
+        attr_condition = f"({attr_condition}) && assertion.sub.endsWith('@{escaped_domain}')"
+
+    raw_denied = denied_subjects if denied_subjects is not None else [
+        s.strip() for s in os.environ.get("ARCHIVER_DENIED_SUBJECTS", "").split(",") if s.strip()
+    ]
+    if raw_denied:
+        denied_literals = ", ".join(f"'{s.replace(chr(39), '')}'" for s in raw_denied)
+        attr_condition = f"({attr_condition}) && !(assertion.sub in [{denied_literals}])"
+
+    allowed_subjects_cel = (subject_cel_condition or os.environ.get("ARCHIVER_ALLOWED_SUBJECTS_CEL", "")).strip()
     if allowed_subjects_cel:
         attr_condition = f"({attr_condition}) && ({allowed_subjects_cel})"
+
+    prov_list = subprocess.run(
+        [
+            "gcloud", "iam", "workforce-pools", "providers", "list",
+            f"--workforce-pool={WORKFORCE_POOL_ID}",
+            "--location=global",
+            "--limit=20",
+            "--format=json(name,displayName)",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if prov_list.returncode == 0 and prov_list.stdout.strip():
+        try:
+            existing_providers = json.loads(prov_list.stdout)
+            other_providers = [
+                p.get("name", "").split("/")[-1]
+                for p in existing_providers
+                if isinstance(p, dict) and not str(p.get("name", "")).endswith(f"/providers/{PROVIDER_ID}")
+            ]
+            if other_providers and not (domain_clean or raw_denied or allowed_subjects_cel):
+                print(
+                    f"\n  [SECURITY NOTICE] Workforce Pool '{WORKFORCE_POOL_ID}' also hosts IdP provider(s): {other_providers}.\n"
+                    "  Best Practice: Use a dedicated Gemini Enterprise Workforce Pool separate from GCP Console Admin\n"
+                    "  Workforce Pools, and pass --allowed-subject-domain / --denied-subjects to restrict impersonatable subjects.\n"
+                    "  (Note: ge_harvest.py also attaches an IAM Credential Access Boundary restricting STS tokens strictly\n"
+                    f"  to //discoveryengine.googleapis.com/projects/{PROJECT_ID}.)\n"
+                )
+        except Exception:
+            pass
 
     print(f"[4/5] Ensuring OIDC provider '{PROVIDER_ID}' in workforce pool '{WORKFORCE_POOL_ID}'...")
     desc = subprocess.run(
@@ -213,42 +263,53 @@ def ensure_kms_key_iam_and_monitoring() -> None:
       2. Provisions a Cloud Logging log-based metric (`ediscovery_kms_asymmetric_sign_calls`)
          tracking every `AsymmetricSign` invocation on `ediscovery-archiver-jwt-key` for audit alerting.
     """
-    harvester_sa = f"ge-ediscovery-harvester-sa@{PROJECT_ID}.iam.gserviceaccount.com"
-    print(f"[5/5] Locking down Cloud KMS key IAM to '{harvester_sa}' and configuring AsymmetricSign monitoring...")
+    harvester_sa_name = "ge-ediscovery-harvester-sa"
+    harvester_sa = f"{harvester_sa_name}@{PROJECT_ID}.iam.gserviceaccount.com"
+    print(f"[5/5] Ensuring '{harvester_sa}' exists and locking down Cloud KMS key IAM + AsymmetricSign monitoring...")
     sa_check = subprocess.run(
         ["gcloud", "iam", "service-accounts", "describe", harvester_sa, f"--project={PROJECT_ID}"],
         capture_output=True,
         text=True,
     )
-    if sa_check.returncode == 0:
-        with tempfile.NamedTemporaryFile("w+", suffix=".json", delete=False) as tf:
-            policy_path = tf.name
-            json.dump(
-                {
-                    "bindings": [
-                        {
-                            "role": "roles/cloudkms.signerVerifier",
-                            "members": [f"serviceAccount:{harvester_sa}"],
-                        }
-                    ]
-                },
-                tf,
-            )
-        try:
-            subprocess.run(
-                [
-                    "gcloud", "kms", "keys", "set-iam-policy", KMS_KEY,
-                    policy_path,
-                    f"--keyring={KMS_KEYRING}",
-                    f"--location={KMS_LOCATION}",
-                    f"--project={PROJECT_ID}",
-                    "--quiet",
-                ],
-                check=True,
-            )
-        finally:
-            if os.path.exists(policy_path):
-                os.remove(policy_path)
+    if sa_check.returncode != 0:
+        print(f"      Pre-creating dedicated service account '{harvester_sa}' so KMS key IAM is locked down immediately...")
+        subprocess.run(
+            [
+                "gcloud", "iam", "service-accounts", "create", harvester_sa_name,
+                "--display-name=GE eDiscovery Real-Time Harvester SA",
+                f"--project={PROJECT_ID}",
+            ],
+            check=True,
+        )
+
+    with tempfile.NamedTemporaryFile("w+", suffix=".json", delete=False) as tf:
+        policy_path = tf.name
+        json.dump(
+            {
+                "bindings": [
+                    {
+                        "role": "roles/cloudkms.signerVerifier",
+                        "members": [f"serviceAccount:{harvester_sa}"],
+                    }
+                ]
+            },
+            tf,
+        )
+    try:
+        subprocess.run(
+            [
+                "gcloud", "kms", "keys", "set-iam-policy", KMS_KEY,
+                policy_path,
+                f"--keyring={KMS_KEYRING}",
+                f"--location={KMS_LOCATION}",
+                f"--project={PROJECT_ID}",
+                "--quiet",
+            ],
+            check=True,
+        )
+    finally:
+        if os.path.exists(policy_path):
+            os.remove(policy_path)
 
     metric_name = "ediscovery_kms_asymmetric_sign_calls"
     metric_filter = (
@@ -308,10 +369,29 @@ if __name__ == "__main__":
         default=PROVIDER_ID,
         help="OIDC Provider ID (default: ediscovery-archiver)",
     )
+    parser.add_argument(
+        "--allowed-subject-domain",
+        dest="allowed_subject_domain",
+        default=os.environ.get("ARCHIVER_ALLOWED_SUBJECT_DOMAIN", ""),
+        help="Optional email domain allowlist for WIF subjects (e.g. agency.gov)",
+    )
+    parser.add_argument(
+        "--denied-subjects",
+        dest="denied_subjects",
+        default=os.environ.get("ARCHIVER_DENIED_SUBJECTS", ""),
+        help="Optional comma-separated list of privileged/admin WIF subjects never allowed for archival impersonation",
+    )
+    parser.add_argument(
+        "--subject-cel-condition",
+        dest="subject_cel_condition",
+        default=os.environ.get("ARCHIVER_ALLOWED_SUBJECTS_CEL", ""),
+        help="Optional additional CEL expression appended to the OIDC provider --attribute-condition",
+    )
     args = parser.parse_args()
     PROJECT_ID = (args.project_id or "").strip()
     WORKFORCE_POOL_ID = (args.workforce_pool_id or "").strip()
     PROVIDER_ID = (args.provider_id or "ediscovery-archiver").strip()
+    denied_list = [s.strip() for s in (args.denied_subjects or "").split(",") if s.strip()]
 
     if not PROJECT_ID or PROJECT_ID.startswith("<"):
         sys.exit("ERROR: Please pass --project-id or set GCP_PROJECT_ID (e.g., export GCP_PROJECT_ID='your-project-id').")
@@ -319,7 +399,11 @@ if __name__ == "__main__":
         sys.exit("ERROR: Please pass --workforce-pool-id or set WORKFORCE_POOL_ID (e.g., export WORKFORCE_POOL_ID='your-workforce-pool-id').")
     try:
         ensure_kms_key_and_jwks()
-        ensure_oidc_provider()
+        ensure_oidc_provider(
+            allowed_subject_domain=args.allowed_subject_domain,
+            denied_subjects=denied_list,
+            subject_cel_condition=args.subject_cel_condition,
+        )
         ensure_kms_key_iam_and_monitoring()
     finally:
         if os.path.exists(JWKS_PATH):

@@ -16,7 +16,7 @@ When Customer Engineers (CEs), Solutions Architects, and Field Specialists use A
 
 ### The Karpathy 3-Stage LLM Review Council
 - **Stage 1 — Independent Parallel Council Specialists (`stage1_collect_responses`):**
-  Dispatches heterogeneous frontier models in parallel so no model anchors another (`gemini-3.1-pro-high` as Context Synthesizer & Grounder, `opus-5.5-high` as Adversarial Logic Challenger & STE100 Enforcer, and `gemini-3.1-flash-high` as Quota, SDP `infoType` & Regional Entitlement Verifier).
+  Dispatches heterogeneous GA frontier models in parallel so no model anchors another (`gemini-3.8-flash` as Context Synthesizer & Grounder, `claude-opus-4-6` as Adversarial Logic Challenger & STE100 Enforcer, and `gemini-3.5-flash-lite` as Quota, SDP `infoType` & Regional Entitlement Verifier).
 - **Stage 2 — Anonymized Blind Peer Review & Borda Consensus Matrix (`stage2_collect_rankings`):**
   Strips model identities into blind labels (`Response A`, `Response B`, `Response C`), has each council model score its peers on **Precision (1–10)**, **Recall (1–10)**, and **Actionability (1–10)**, filters out hallucinated false-positive nitpicks, and computes **Borda Count** rankings plus per-claim consensus badges.
 - **Stage 3 — Council Chairman Synthesis & Deterministic Gate (`stage3_synthesize_final`):**
@@ -28,7 +28,7 @@ When Customer Engineers (CEs), Solutions Architects, and Field Specialists use A
 2. **Modality 2 — Diagrams (Declarative Mermaid.js Architecture & Sequence Models):**
    - Automatically maps narrative claims into `flowchart LR` trust-boundary diagrams (Zone 1 / Zone 2 / Zone 3) and chronological `sequenceDiagram` gate flows, exposing missing hops or ordering contradictions immediately.
 3. **Modality 3 — Web Pages (6-Tab Interactive HTML Review Canvas):**
-   - Compiles any `council_review.json` into a self-contained, 6-tab **Interactive HTML Review Canvas** (`review_canvas_template.html`) that renders natively in the **Jetski / Antigravity** side pane or any desktop browser.
+   - Compiles any `council_review.json` into a self-contained, 6-tab **Interactive HTML Review Canvas** (`review_canvas_template.html`) that renders cleanly in any modern desktop browser or IDE preview pane.
 4. **Modality 4 — Explainer Videos & Narrated Storyboards:**
    - Generates a timestamped 2-minute visual storyboard (`00:00–02:00`) with an interactive scene stepper and built-in browser voice narration (`window.speechSynthesis`) so reviewers can listen to and inspect complex data flows step by step.
 
@@ -41,10 +41,10 @@ flowchart TD
     A["Raw AI / CE Technical Draft\n(Security Questionnaire, RFP, Architecture Email)"] --> B
 
     subgraph Stage1["Stage 1: Parallel Council Specialists (stage1_collect_responses)"]
-        B["Atomic Claim Extraction\n(Execution Order, Identity, Flags, Quotas, DRZ)"]
-        C1["Seat 1: Gemini 3.1 Pro\n(gemini-3.1-pro-high)\nContext Synthesizer & Grounder"]
-        C2["Seat 2: Claude Opus 5.5\n(opus-5.5-high)\nAdversarial Logic Challenger"]
-        C3["Seat 3: Gemini 3.1 Flash\n(gemini-3.1-flash-high)\nQuota, InfoType & STE100 Verifier"]
+        B["Atomic Claim Extraction\n(Execution Order, Identity, Settings, Quotas, DRZ)"]
+        C1["Seat 1: Gemini 3.8 Flash\n(gemini-3.8-flash)\nContext Synthesizer & Grounder"]
+        C2["Seat 2: Claude Opus 4.6\n(claude-opus-4-6)\nAdversarial Logic Challenger"]
+        C3["Seat 3: Gemini 3.5 Flash-Lite\n(gemini-3.5-flash-lite)\nQuota, InfoType & STE100 Verifier"]
         B --> C1 & C2 & C3
     end
 
@@ -70,10 +70,10 @@ flowchart TD
 ```text
 Output AI Verification Loop/
 ├── README.md                                       # Onboarding & 3-Stage Council architecture guide
-├── install_skill.sh                                # One-command installer for Jetski / Antigravity
+├── install_skill.sh                                # One-command local skill installer
 ├── skill/
 │   └── output-engineer/
-│       ├── SKILL.md                                # Portable skill definition for Jetski / Antigravity
+│       ├── SKILL.md                                # Portable skill definition for AI coding agents
 │       ├── references/
 │       │   └── asd_ste100_quick_reference.md       # ASD-STE100 (~80% pragmatic) rules & examples
 │       └── resources/
@@ -87,9 +87,9 @@ Output AI Verification Loop/
 │   ├── sample_security_review_council.json         # 3-Stage Council JSON for Agency Security Review
 │   ├── sample_security_review_canvas.html          # 6-tab HTML Review Canvas for Agency Security Review
 │   ├── golden_security_claims_eval.json            # Labeled ground-truth dataset (14 claims + 1 FP trap)
-│   └── dual_model_benchmark_report.md              # Benchmark comparing Gemini 3.1 Pro vs. Claude Opus 5.5
+│   └── dual_model_benchmark_report.md              # Benchmark comparing Gemini 3.8 Flash vs. Claude Opus 4.6
 └── tests/
-    └── test_output_engineer.py                     # Automated unittest suite (9 tests)
+    └── test_output_engineer.py                     # Automated unittest suite (10 tests)
 ```
 
 ---

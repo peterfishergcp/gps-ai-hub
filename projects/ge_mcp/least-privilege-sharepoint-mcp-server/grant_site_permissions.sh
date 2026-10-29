@@ -38,13 +38,13 @@ Usage:
   export ADMIN_BEARER_TOKEN="<admin-graph-access-token-with-Sites.FullControl.All>"
 
   # 1. Grant READ-ONLY ('read') permission on a specific SharePoint site to your MCP App:
-  ./grant_site_permissions.sh grant "https://your-tenant.sharepoint.com/sites/Finance" "<TARGET_APP_CLIENT_ID>" "Least-Privilege SharePoint MCP"
+  ./grant_site_permissions.sh grant "https://<YOUR_TENANT>.sharepoint.com/sites/Finance" "<TARGET_APP_CLIENT_ID>" "Least-Privilege SharePoint MCP"
 
   # 2. List all app permissions currently granted on a specific SharePoint site:
-  ./grant_site_permissions.sh list "https://your-tenant.sharepoint.com/sites/Finance"
+  ./grant_site_permissions.sh list "https://<YOUR_TENANT>.sharepoint.com/sites/Finance"
 
   # 3. Revoke an app permission ID from a specific SharePoint site:
-  ./grant_site_permissions.sh revoke "https://your-tenant.sharepoint.com/sites/Finance" "<PERMISSION_ID>"
+  ./grant_site_permissions.sh revoke "https://<YOUR_TENANT>.sharepoint.com/sites/Finance" "<PERMISSION_ID>"
 EOF
   exit 0
 fi
@@ -56,7 +56,7 @@ if [[ -z "${ADMIN_BEARER_TOKEN:-}" ]]; then
   exit 1
 fi
 
-# Convert full URL (https://your-tenant.sharepoint.com/sites/Finance) to Graph path (your-tenant.sharepoint.com:/sites/Finance)
+# Convert full URL (https://<YOUR_TENANT>.sharepoint.com/sites/Finance) to Graph path (your-tenant.sharepoint.com:/sites/Finance)
 if [[ "$SITE_URL_OR_PATH" =~ ^https?://([^/]+)(/.+)$ ]]; then
   GRAPH_SITE_SPEC="${BASH_REMATCH[1]}:${BASH_REMATCH[2]%/}"
 else

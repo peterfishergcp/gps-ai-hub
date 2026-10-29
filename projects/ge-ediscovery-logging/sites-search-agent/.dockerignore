@@ -1,0 +1,22 @@
+# Prevent local credentials, virtualenvs, and dev artifacts from entering container builds
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+tests
+deployment
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*token_cache*.json
+._*
+.DS_Store

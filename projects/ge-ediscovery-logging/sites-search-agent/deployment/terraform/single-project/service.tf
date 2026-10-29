@@ -58,6 +58,11 @@ resource "google_vertex_ai_reasoning_engine" "app" {
         value = "sites-search-agent"
       }
 
+      # Two-tier observability separation (per google-agents-cli-observability):
+      # NO_CONTENT + ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS="false" keeps raw PII out of
+      # Cloud Trace spans, while OTEL_INSTRUMENTATION_GENAI_COMPLETION_HOOK="upload"
+      # independently writes full prompt/response JSONL to gs://<logs_bucket>/completions
+      # for BigQuery completions_view.
       env {
         name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
         value = "NO_CONTENT"
@@ -90,6 +95,16 @@ resource "google_vertex_ai_reasoning_engine" "app" {
 
       env {
         name  = "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY"
+        value = "true"
+      }
+
+      env {
+        name  = "GOOGLE_SITES_DATASTORE_ID"
+        value = var.google_sites_datastore_id
+      }
+
+      env {
+        name  = "REQUIRE_USER_OAUTH_TOKEN"
         value = "true"
       }
     }

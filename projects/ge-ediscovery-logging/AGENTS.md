@@ -1,6 +1,6 @@
-# AGY CLI Customer Deployment Playbook — Gemini Enterprise & NotebookLM Enterprise eDiscovery (`ge-ediscovery-logging`)
+# Customer Deployment Playbook — Gemini Enterprise & NotebookLM Enterprise eDiscovery (`ge-ediscovery-logging`)
 
-When a user or customer asks you (AGY CLI) to install, configure, verify, or troubleshoot the **Gemini Enterprise & NotebookLM Enterprise eDiscovery Pipeline**, follow this step-by-step runbook.
+When a user or customer asks an AI coding assistant or operator to install, configure, verify, or troubleshoot the **Gemini Enterprise & NotebookLM Enterprise eDiscovery Pipeline**, follow this step-by-step runbook.
 
 ---
 

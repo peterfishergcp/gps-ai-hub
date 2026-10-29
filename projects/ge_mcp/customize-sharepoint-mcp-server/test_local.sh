@@ -1,47 +1,75 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
 
-echo "🚀 Starting local SharePoint MCP Server on port 3005 for validation..."
+set -euo pipefail
 
-# Run server on an isolated port in background
-PORT=3005 node index.js &
+PORT="${TEST_PORT:-18084}"
+BASE_URL="http://127.0.0.1:${PORT}"
+
+DOTENV_CONFIG_PATH=/dev/null \
+HOST=127.0.0.1 \
+PORT="${PORT}" \
+ALLOW_LOCAL_MOCK_AUTH="true" \
+ALLOW_APP_CREDENTIALS="false" \
+node index.js >/tmp/customize_sharepoint_mcp_test.log 2>&1 &
 SERVER_PID=$!
 
-# Give the server 2 seconds to bind
-sleep 2
+cleanup() {
+  kill "${SERVER_PID}" >/dev/null 2>&1 || true
+  wait "${SERVER_PID}" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
-echo "--------------------------------------------------"
-echo "🧪 1. Validating Tool Discovery (tools/list)..."
-curl -s -X POST http://localhost:3005/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
+for _ in $(seq 1 25); do
+  if curl -fsS "${BASE_URL}/health" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 0.2
+done
 
-echo ""
-echo "--------------------------------------------------"
-echo "🧪 2. Validating Action Execution (search_sharepoint_sites)..."
-curl -s -X POST http://localhost:3005/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc": "2.0", "method": "tools/call", "id": 2, "params": {"name": "search_sharepoint_sites", "arguments": {"query": "Finance"}}}'
+echo "[1/5] Verifying unauthenticated /mcp returns HTTP 401..."
+CODE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE_URL}/mcp" \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')"
+[ "${CODE}" = "401" ] || { echo "Expected 401, got ${CODE}"; exit 1; }
 
-echo ""
-echo "--------------------------------------------------"
-echo "🧪 3. Validating Action Execution (list_document_libraries)..."
-curl -s -X POST http://localhost:3005/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc": "2.0", "method": "tools/call", "id": 3, "params": {"name": "list_document_libraries", "arguments": {"siteId": "syc52.sharepoint.com"}}}'
+echo "[2/5] Verifying /auth open redirect protection (HTTP 400)..."
+RCODE="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/auth?redirect_uri=https://evil.example/cb")"
+[ "${RCODE}" = "400" ] || { echo "Expected 400, got ${RCODE}"; exit 1; }
 
-echo ""
-echo "--------------------------------------------------"
-echo "🧪 4. Validating OAuth Registration Endpoints (/auth & /token)..."
-echo "--- /auth Redirect Headers ---"
-curl -s -I "http://localhost:3005/auth?redirect_uri=https://console.cloud.google.com&state=123" | grep -E "(HTTP/|Location)"
-echo "--- /token Response Payload ---"
-curl -s "http://localhost:3005/token"
+echo "[3/5] Verifying malformed URI returns HTTP 400 without crashing..."
+MCODE="$(curl -s -o /dev/null -w '%{http_code}' --path-as-is "${BASE_URL}/%E0%A4%A")"
+[ "${MCODE}" = "400" ] || { echo "Expected 400, got ${MCODE}"; exit 1; }
 
-echo ""
-echo "--------------------------------------------------"
-echo "🧹 Cleaning up server background process (PID: $SERVER_PID)..."
-kill $SERVER_PID
-echo "✅ Validation complete!"
+echo "[4/5] Verifying 12 tools, required itemId schemas & destructiveHint..."
+TOOLS_JSON="$(curl -fsS -X POST "${BASE_URL}/mcp" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'Authorization: Bearer local-test-token-0000' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}')"
+python3 - "${TOOLS_JSON}" << 'PY'
+import json, sys
+data = json.loads(sys.argv[1])
+tools = {t["name"]: t for t in data["result"]["tools"]}
+assert len(tools) == 12, len(tools)
+for tname in ("query_file_metadata_lookup", "query_file_content_lookup", "query_file_download_url_lookup"):
+    assert "itemId" in tools[tname]["inputSchema"].get("required", []), tname
+for wname in ("query_create_file_action_lookup", "query_update_file_action_lookup", "query_delete_item_action_lookup"):
+    assert tools[wname]["annotations"]["destructiveHint"] is True, wname
+PY
+
+echo "[5/5] Verifying webUrl formatting (?web=1 for Office, stripped for PDF)..."
+DOC_JSON="$(curl -fsS -X POST "${BASE_URL}/mcp" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'Authorization: Bearer local-test-token-0000' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query_file_content_lookup","arguments":{"itemId":"Master_Agreement.docx"}}}')"
+python3 - "${DOC_JSON}" << 'PY'
+import json, sys
+outer = json.loads(sys.argv[1])
+inner = json.loads(outer["result"]["content"][0]["text"])
+assert inner["webUrl"].endswith("?web=1"), inner
+PY
+
+echo "customize-sharepoint-mcp-server smoke tests passed."

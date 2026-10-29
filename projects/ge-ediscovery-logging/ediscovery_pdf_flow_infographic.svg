@@ -128,7 +128,7 @@
     <!-- Sub-box 5A: GCS -->
     <rect x="64" y="690" width="265" height="92" rx="8" fill="#0f172a" stroke="#334155"/>
     <text x="78" y="712" fill="#38bdf8" font-size="12.5" font-weight="800">🗄️ Cloud Storage Archive</text>
-    <text x="78" y="732" fill="#cbd5e1" font-size="11.5">• session_transcript.json</text>
+    <text x="78" y="732" fill="#cbd5e1" font-size="11.5">• session_transcript_&lt;sha256&gt;.json</text>
     <text x="78" y="750" fill="#cbd5e1" font-size="11.5">• files/.../AI_GENERATED/*.pdf</text>
     <text x="78" y="768" fill="#94a3b8" font-size="11">Object Versioning + Retention Lock</text>
 

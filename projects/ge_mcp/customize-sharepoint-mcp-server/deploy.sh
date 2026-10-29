@@ -1,23 +1,53 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
 
-# Configuration
-SERVICE_NAME="customize-sharepoint-mcp-server"
-REGION="us-central1"
+set -euo pipefail
 
-# Load environment variables from .env if it exists
 if [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  echo "Loading configuration from .env..."
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
 fi
 
-echo "🚀 Starting deployment of $SERVICE_NAME to Cloud Run..."
+GCP_PROJECT="${GCP_PROJECT:?Error: Set GCP_PROJECT in .env or environment}"
+GCP_REGION="${GCP_REGION:-us-central1}"
+SERVICE_NAME="${SERVICE_NAME:-customize-sharepoint-mcp-server}"
+SA_NAME="${SA_NAME:-customize-sharepoint-sa}"
+SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_EMAIL:-${SA_NAME}@${GCP_PROJECT}.iam.gserviceaccount.com}"
+MS_GRAPH_SECRET_NAME="${MS_GRAPH_SECRET_NAME:-ms-graph-client-secret}"
 
-# Build and deploy
-gcloud run deploy "$SERVICE_NAME" \
+if [ -z "${MS_GRAPH_TENANT_ID:-}" ] || [ -z "${MS_GRAPH_CLIENT_ID:-}" ]; then
+  echo "Error: MS_GRAPH_TENANT_ID and MS_GRAPH_CLIENT_ID must be set."
+  exit 1
+fi
+
+if ! gcloud iam service-accounts describe "${SERVICE_ACCOUNT_EMAIL}" --project="${GCP_PROJECT}" >/dev/null 2>&1; then
+  gcloud iam service-accounts create "${SA_NAME}" \
+    --display-name="Customize SharePoint MCP Cloud Run SA" \
+    --project="${GCP_PROJECT}"
+fi
+
+gcloud secrets describe "${MS_GRAPH_SECRET_NAME}" --project="${GCP_PROJECT}" >/dev/null 2>&1 || {
+  echo "Error: Secret '${MS_GRAPH_SECRET_NAME}' not found in Secret Manager (${GCP_PROJECT})."
+  exit 1
+}
+
+gcloud secrets add-iam-policy-binding "${MS_GRAPH_SECRET_NAME}" \
+  --project="${GCP_PROJECT}" \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/secretmanager.secretAccessor" \
+  --quiet >/dev/null
+
+# NOTE: --allow-unauthenticated is retained for quick evaluation with app-layer OAuth Bearer validation.
+# For production deployments, switch to --no-allow-unauthenticated and grant roles/run.invoker (see README.md).
+gcloud run deploy "${SERVICE_NAME}" \
   --source . \
-  --region "$REGION" \
+  --project "${GCP_PROJECT}" \
+  --region "${GCP_REGION}" \
+  --service-account "${SERVICE_ACCOUNT_EMAIL}" \
   --allow-unauthenticated \
-  --port 3000 \
-  --project <INSERTYOURPROJECT_ID> \
-  --set-env-vars "MS_GRAPH_TENANT_ID=$MS_GRAPH_TENANT_ID,MS_GRAPH_CLIENT_ID=$MS_GRAPH_CLIENT_ID,MS_GRAPH_CLIENT_SECRET=$MS_GRAPH_CLIENT_SECRET,SHAREPOINT_INSTANCE_URL=$SHAREPOINT_INSTANCE_URL"
-
-echo "✅ Deployment complete!"
+  --set-env-vars="MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID},MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID},SHAREPOINT_INSTANCE_URL=${SHAREPOINT_INSTANCE_URL:-}" \
+  --set-secrets="MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_SECRET_NAME}:latest"

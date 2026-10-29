@@ -35,7 +35,7 @@ if not os.environ.get("GOOGLE_CLOUD_PROJECT"):
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "true")
 os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
 
-MODEL = "gemini-3.7-flash"
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 
 AGENT_INSTRUCTION = """You are the Google Sites Search Agent, an enterprise research and document synthesis assistant.
 

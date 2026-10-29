@@ -108,7 +108,9 @@ class HarvesterRequestHandler(http.server.BaseHTTPRequestHandler):
         if not auth_header.startswith("Bearer "):
             if os.environ.get("K_SERVICE"):
                 return False, "Missing Authorization Bearer token"
-            return True, "local-dev"
+            if os.environ.get("ALLOW_LOCAL_DEV_BYPASS", "false").lower() == "true":
+                return True, "local-dev"
+            return False, "Missing Authorization Bearer token (set ALLOW_LOCAL_DEV_BYPASS=true for local loopback testing)"
 
         token = auth_header.split(" ", 1)[1].strip()
         parts = token.split(".")
@@ -143,8 +145,13 @@ class HarvesterRequestHandler(http.server.BaseHTTPRequestHandler):
             return False, "Untrusted OIDC issuer"
 
         expected_aud = os.environ.get("EXPECTED_OIDC_AUDIENCE", "").strip()
-        if expected_aud and str(claims.get("aud") or "") != expected_aud:
-            return False, "OIDC audience mismatch"
+        if os.environ.get("K_SERVICE") and not expected_aud:
+            return False, "Server misconfiguration: EXPECTED_OIDC_AUDIENCE must be set in Cloud Run"
+        if expected_aud:
+            base_service_url = expected_aud[:-7] if expected_aud.endswith("/pubsub") else expected_aud.rstrip("/")
+            allowed_audiences = {expected_aud, base_service_url, f"{base_service_url}/pubsub", f"{base_service_url}/sweep"}
+            if str(claims.get("aud") or "") not in allowed_audiences:
+                return False, "OIDC audience mismatch"
 
         email = str(claims.get("email") or "").strip()
         if not email or claims.get("email_verified") is not True:

@@ -3,17 +3,17 @@
  * ---------------------------------------------------------------------------
  * Gemini Enterprise Compliance Review Portal: Slide Deck Evidence Viewer.
  *
- * ARCHITECTURE
- *  • PDF decks are rendered through a native PDF.js <canvas> engine that paints
- *    EXACTLY ONE page (currentSlideIndex + 1) at devicePixelRatio into an
- *    off-screen buffer, then blits it: eliminating the continuous-scroll
- *    "stacked slides" behaviour of `<iframe src="…#page=N">` entirely.
- *  • HTML / Markdown / plain decks render as sanitized, CSS-scoped rich cards
- *    locked to a computed 16:9 stage box.
- *  • Thumbnails are rasterized once (280×160 JPEG) and served from a 2-tier
- *    cache: module-level Map (in-memory) → sessionStorage (`ge_thumb_${k}_${p}`).
- *
- * ZERO external dependencies beyond React + lucide-react + a lazy PDF.js CDN.
+ * SECURITY ARCHITECTURE:
+ *  • Zero third-party CDN script loading: PDF decks render via a native
+ *    same-origin `<iframe src="/api/media?gcs_uri=...#page=N&view=Fit">` backed
+ *    by the authenticated `/api/media` endpoint (`X-Frame-Options: SAMEORIGIN`,
+ *    `frame-ancestors 'self'`).
+ *  • Zero unsafe React raw-HTML props or direct DOM HTML string assignments:
+ *    HTML / Markdown decks are sanitized with DOMPurify + DOMParser +
+ *    XMLSerializer and rendered inside a zero-privilege `<iframe sandbox="">`
+ *    (`srcDoc`), preventing script execution, form submission, and parent-origin
+ *    access at the browser engine boundary.
+ *  • Zero `localStorage` or `sessionStorage` writes.
  * ---------------------------------------------------------------------------
  */
 
@@ -88,158 +88,18 @@ interface Size {
   h: number;
 }
 
-interface Point {
-  x: number;
-  y: number;
-}
-
 /* ========================================================================== */
-/* 2. CONSTANTS                                                               */
+/* 2. CONSTANTS & UTILITIES                                                   */
 /* ========================================================================== */
 
-const PDFJS_VERSION = '3.11.174';
-const PDFJS_BASE = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
-
-const THUMB_W = 280;
-const THUMB_H = 160;
-const THUMB_QUALITY = 0.72;
-const THUMB_START_DELAY_MS = 220;
-
-const MAX_DPR = 2.5;
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 5;
+const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
-const ZOOM_COMMIT_DELAY_MS = 130;
 
 const AUTOPLAY_INTERVALS = [3000, 5000, 10000] as const;
 type AutoplayInterval = (typeof AUTOPLAY_INTERVALS)[number];
 
-const ZERO_POINT: Point = { x: 0, y: 0 };
-
-/* ========================================================================== */
-/* 3. MINIMAL PDF.JS TYPE SHIMS (avoids pulling @types/pdfjs-dist)            */
-/* ========================================================================== */
-
-interface PdfViewport {
-  width: number;
-  height: number;
-}
-
-interface PdfRenderTask {
-  promise: Promise<void>;
-  cancel: () => void;
-}
-
-interface PdfTextItem {
-  str?: string;
-}
-
-interface PdfPageProxy {
-  getViewport(params: { scale: number; rotation?: number }): PdfViewport;
-  render(params: {
-    canvasContext: CanvasRenderingContext2D;
-    viewport: PdfViewport;
-    intent?: string;
-  }): PdfRenderTask;
-  getTextContent(): Promise<{ items: PdfTextItem[] }>;
-  cleanup(): void;
-}
-
-interface PdfDocumentProxy {
-  numPages: number;
-  getPage(pageNumber: number): Promise<PdfPageProxy>;
-  destroy(): Promise<void>;
-}
-
-interface PdfJsLib {
-  GlobalWorkerOptions: { workerSrc: string };
-  getDocument(src: Record<string, unknown>): { promise: Promise<PdfDocumentProxy> };
-}
-
-/** Singleton CDN loader: one <script>, one promise, for the whole app. */
-let pdfJsPromise: Promise<PdfJsLib> | null = null;
-
-function loadPdfJs(): Promise<PdfJsLib> {
-  if (typeof window === 'undefined') {
-    return Promise.reject(new Error('PDF.js requires a browser environment'));
-  }
-  const scope = window as Window & { pdfjsLib?: PdfJsLib };
-
-  const configure = (lib: PdfJsLib): PdfJsLib => {
-    if (!lib.GlobalWorkerOptions.workerSrc) {
-      lib.GlobalWorkerOptions.workerSrc = `${PDFJS_BASE}/pdf.worker.min.js`;
-    }
-    return lib;
-  };
-
-  if (scope.pdfjsLib) return Promise.resolve(configure(scope.pdfjsLib));
-  if (pdfJsPromise) return pdfJsPromise;
-
-  pdfJsPromise = new Promise<PdfJsLib>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[data-pdfjs-loader="true"]');
-    const script = existing ?? document.createElement('script');
-
-    const onLoad = (): void => {
-      const lib = (window as Window & { pdfjsLib?: PdfJsLib }).pdfjsLib;
-      if (lib) resolve(configure(lib));
-      else reject(new Error('PDF.js global object unavailable after load'));
-    };
-    const onError = (): void => {
-      pdfJsPromise = null;
-      reject(new Error('Unable to load the PDF rendering engine'));
-    };
-
-    script.addEventListener('load', onLoad, { once: true });
-    script.addEventListener('error', onError, { once: true });
-
-    if (!existing) {
-      script.src = `${PDFJS_BASE}/pdf.min.js`;
-      script.async = true;
-      script.dataset.pdfjsLoader = 'true';
-      document.head.appendChild(script);
-    }
-  });
-
-  return pdfJsPromise;
-}
-
-/* ========================================================================== */
-/* 4. UTILITIES: CACHE, HASHING, SANITIZATION, HOOKS                         */
-/* ========================================================================== */
-
-/** Tier-1 cache: survives remounts within the SPA session. */
-const memThumbCache = new Map<string, string>();
-let sessionWritable = true;
-
-const thumbKey = (key: string, page: number): string => `ge_thumb_${key}_${page}`;
-const titleKey = (key: string, page: number): string => `ge_title_${key}_${page}`;
-
-function cacheRead(storageKey: string): string | null {
-  const hit = memThumbCache.get(storageKey);
-  if (hit !== undefined) return hit;
-  try {
-    const value = window.sessionStorage.getItem(storageKey);
-    if (value) {
-      memThumbCache.set(storageKey, value);
-      return value;
-    }
-  } catch {
-    /* storage disabled: memory tier only */
-  }
-  return null;
-}
-
-function cacheWrite(storageKey: string, value: string): void {
-  memThumbCache.set(storageKey, value);
-  if (!sessionWritable) return;
-  try {
-    window.sessionStorage.setItem(storageKey, value);
-  } catch {
-    sessionWritable = false; // quota exceeded → degrade to memory-only silently
-  }
-}
-
-/** Stable, collision-resistant-enough key for anonymous URLs (FNV-1a 32). */
+/** Stable, collision-resistant key for anonymous URLs (FNV-1a 32). */
 function fnv1a(input: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i += 1) {
@@ -259,16 +119,14 @@ const formatBytes = (bytes?: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const yieldToBrowser = (): Promise<void> =>
-  new Promise((resolve) => {
-    const ric = (window as Window & { requestIdleCallback?: (cb: () => void) => number })
-      .requestIdleCallback;
-    if (ric) ric(() => resolve());
-    else window.setTimeout(resolve, 0);
-  });
-
-const delay = (ms: number): Promise<void> =>
-  new Promise((resolve) => window.setTimeout(resolve, ms));
+function escapeHtmlText(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 /** Always-fresh callback identity-stable across renders (avoids effect churn). */
 function useEventCallback<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
@@ -308,14 +166,20 @@ const BLOCKED_TAGS = new Set([
   'XMP', 'PLAINTEXT', 'TITLE', 'TEXTAREA', 'MARQUEE', 'APPLET',
 ]);
 
-/** Strips executable and mutation-XSS vectors from untrusted deck markup before injection (mitigates H2 & N5). */
+/** Serializes the child nodes of an element using XMLSerializer without touching innerHTML. */
+function serializeElementChildren(container: Element): string {
+  const serializer = new XMLSerializer();
+  const parts: string[] = [];
+  container.childNodes.forEach((child) => {
+    parts.push(serializer.serializeToString(child));
+  });
+  return parts.join('');
+}
+
+/** Strips executable, read-beacon, and mutation-XSS vectors; DOMPurify is the terminal step. */
 function sanitizeHtml(html: string): string {
   if (!html) return '';
-  const purified = DOMPurify.sanitize(html, {
-    FORBID_TAGS: Array.from(BLOCKED_TAGS).map((t) => t.toLowerCase()),
-    FORBID_ATTR: ['style', 'srcdoc', 'formaction', 'action', 'xlink:href'],
-  });
-  const doc = new DOMParser().parseFromString(`<div id="ge-root">${purified}</div>`, 'text/html');
+  const doc = new DOMParser().parseFromString(`<div id="ge-root">${html}</div>`, 'text/html');
   const root = doc.getElementById('ge-root');
   if (!root) return '';
 
@@ -340,48 +204,41 @@ function sanitizeHtml(html: string): string {
         return;
       }
       if (isUrlAttr) {
-        // Strip all ASCII control characters and whitespace before scheme validation
         const normalized = value.replace(/[\u0000-\u0020]+/g, '');
-        const isSafeHttp = /^https?:\/\//i.test(normalized);
-        const isSafeMailto = attr === 'href' && /^mailto:/i.test(normalized);
+        const isSafeHttpLink = tag === 'A' && attr === 'href' && /^https?:\/\//i.test(normalized);
+        const isSafeMailto = tag === 'A' && attr === 'href' && /^mailto:/i.test(normalized);
         const isSafeRelative = normalized.startsWith('/api/media?') || normalized.startsWith('#');
         const isSafeDataImg =
           tag === 'IMG' &&
           attr === 'src' &&
           /^data:image\/(png|jpeg|jpg|gif|webp);base64,[a-z0-9+/=]+$/i.test(normalized);
-        if (!isSafeHttp && !isSafeMailto && !isSafeRelative && !isSafeDataImg) {
+        if (!isSafeHttpLink && !isSafeMailto && !isSafeRelative && !isSafeDataImg) {
           el.removeAttribute(name);
         }
       }
     });
   });
 
-  return root.innerHTML;
+  const preCleaned = serializeElementChildren(root);
+  return DOMPurify.sanitize(preCleaned, {
+    FORBID_TAGS: Array.from(BLOCKED_TAGS).map((t) => t.toLowerCase()),
+    FORBID_ATTR: ['style', 'srcdoc', 'formaction', 'action', 'xlink:href'],
+    ALLOW_DATA_ATTR: false,
+  });
 }
 
-/** Prefixes every selector with a scope class so deck CSS cannot leak globally. */
-function scopeCss(css: string, scope: string): string {
+/** Sanitizes slide deck CSS so it cannot break out of `<style>` or import external resources. */
+function sanitizeScopedCss(css: string): string {
   if (!css.trim()) return '';
   return css
     .replace(/<\/style/gi, '')
-    .replace(/@import[^;]+;/g, '')
-    .replace(/(^|\}|\{)([^{}@]+)\{/g, (_match, boundary: string, selectorList: string) => {
-      const scoped = selectorList
-        .split(',')
-        .map((raw) => {
-          const sel = raw.trim();
-          if (!sel) return sel;
-          if (/^(from|to|\d+(\.\d+)?%)$/i.test(sel)) return sel; // @keyframes stops
-          if (/^(html|body|:root)$/i.test(sel)) return scope;
-          return `${scope} ${sel}`;
-        })
-        .join(', ');
-      return `${boundary}${scoped}{`;
-    });
+    .replace(/@import[^;]+;/gi, '')
+    .replace(/url\s*\([^)]*\)/gi, 'none')
+    .replace(/expression\s*\([^)]*\)/gi, 'none');
 }
 
 /* ========================================================================== */
-/* 5. HTML DECK PARSER (public API: preserved)                               */
+/* 3. HTML DECK PARSER (public API preserved, zero innerHTML usage)           */
 /* ========================================================================== */
 
 export function parseHtmlIntoSlides(htmlText: string): {
@@ -393,7 +250,7 @@ export function parseHtmlIntoSlides(htmlText: string): {
 
   const doc = new DOMParser().parseFromString(htmlText, 'text/html');
   const styles = Array.from(doc.querySelectorAll('style'))
-    .map((node) => node.innerHTML)
+    .map((node) => node.textContent || '')
     .join('\n');
   const documentTitle = doc.title || '';
 
@@ -416,7 +273,9 @@ export function parseHtmlIntoSlides(htmlText: string): {
     );
     if (children.length > 1) nodes = children;
   }
-  if (nodes.length === 0 && doc.body.innerHTML.trim()) nodes = [doc.body];
+  if (nodes.length === 0 && (doc.body.textContent || '').trim()) {
+    nodes = [doc.body];
+  }
 
   const slides = nodes.map<ParsedSlide>((node, index) => {
     const clone = node.cloneNode(true) as HTMLElement;
@@ -432,11 +291,12 @@ export function parseHtmlIntoSlides(htmlText: string): {
       title = firstLine.length > 45 ? `${firstLine.slice(0, 45)}…` : firstLine || `Slide ${index + 1}`;
     }
 
+    const serialized = serializeElementChildren(clone);
     return {
       index,
       id: node.id || `slide-${index + 1}`,
       title,
-      htmlContent: clone.innerHTML || clone.outerHTML,
+      htmlContent: serialized || `<p>${escapeHtmlText(clone.textContent?.trim() ?? '')}</p>`,
       plainText: clone.textContent?.trim() ?? '',
       notes,
     };
@@ -446,186 +306,9 @@ export function parseHtmlIntoSlides(htmlText: string): {
 }
 
 /* ========================================================================== */
-/* 6. DATA HOOKS: PDF DOCUMENT, THUMBNAILS, AUTOPLAY                         */
+/* 4. AUTOPLAY HOOK                                                           */
 /* ========================================================================== */
 
-interface PdfDocState {
-  doc: PdfDocumentProxy | null;
-  numPages: number;
-  status: LoadStatus;
-  error: string | null;
-}
-
-/** Fetches the PDF once as an ArrayBuffer and owns the PDFDocumentProxy lifetime. */
-function usePdfDocument(url: string | undefined, enabled: boolean): PdfDocState {
-  const [state, setState] = useState<PdfDocState>({
-    doc: null,
-    numPages: 0,
-    status: 'idle',
-    error: null,
-  });
-
-  useEffect(() => {
-    if (!enabled || !url) {
-      setState({ doc: null, numPages: 0, status: 'idle', error: null });
-      return;
-    }
-
-    let cancelled = false;
-    let doc: PdfDocumentProxy | null = null;
-    const controller = new AbortController();
-
-    setState({ doc: null, numPages: 0, status: 'loading', error: null });
-
-    void (async () => {
-      try {
-        const [pdfjs, response] = await Promise.all([
-          loadPdfJs(),
-          fetch(url, { signal: controller.signal }),
-        ]);
-        if (!response.ok) throw new Error(`Document fetch failed (HTTP ${response.status})`);
-
-        const data = await response.arrayBuffer();
-        if (cancelled) return;
-
-        doc = await pdfjs.getDocument({
-          data,
-          useWorkerFetch: false,
-          isEvalSupported: false,
-          disableAutoFetch: true,
-          disableStream: true,
-        }).promise;
-
-        if (cancelled) {
-          void doc.destroy().catch(() => undefined);
-          return;
-        }
-        setState({ doc, numPages: doc.numPages, status: 'ready', error: null });
-      } catch (error) {
-        if (cancelled || (error as Error)?.name === 'AbortError') return;
-        setState({
-          doc: null,
-          numPages: 0,
-          status: 'error',
-          error: (error as Error)?.message ?? 'Unable to render this document inline',
-        });
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-      void doc?.destroy().catch(() => undefined);
-    };
-  }, [url, enabled]);
-
-  return state;
-}
-
-interface ThumbnailState {
-  thumbs: Record<number, string>;
-  titles: Record<number, string>;
-  pending: number;
-}
-
-/** Rasterizes 16:9-ish 280×160 JPEG previews with 2-tier caching + text titles. */
-function usePdfThumbnails(
-  doc: PdfDocumentProxy | null,
-  numPages: number,
-  cacheKey: string,
-): ThumbnailState {
-  const [thumbs, setThumbs] = useState<Record<number, string>>({});
-  const [titles, setTitles] = useState<Record<number, string>>({});
-  const [pending, setPending] = useState(0);
-
-  // Tier-1/2 hydration: synchronous, no flicker on remount.
-  useEffect(() => {
-    if (!cacheKey || numPages <= 0) return;
-    const seededThumbs: Record<number, string> = {};
-    const seededTitles: Record<number, string> = {};
-
-    for (let page = 1; page <= numPages; page += 1) {
-      const thumb = cacheRead(thumbKey(cacheKey, page));
-      if (thumb) seededThumbs[page] = thumb;
-      const title = cacheRead(titleKey(cacheKey, page));
-      if (title) seededTitles[page] = title;
-    }
-
-    setThumbs(seededThumbs);
-    setTitles(seededTitles);
-    setPending(numPages - Object.keys(seededThumbs).length);
-  }, [cacheKey, numPages]);
-
-  // Rasterization pass for cache misses only.
-  useEffect(() => {
-    if (!doc || numPages <= 0 || !cacheKey) return;
-
-    let cancelled = false;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
-
-    void (async () => {
-      await delay(THUMB_START_DELAY_MS); // let the main stage paint first
-      if (cancelled || !ctx) return;
-
-      for (let page = 1; page <= numPages; page += 1) {
-        if (cancelled) break;
-        if (cacheRead(thumbKey(cacheKey, page))) continue;
-
-        try {
-          const pdfPage = await doc.getPage(page);
-          if (cancelled) break;
-
-          const base = pdfPage.getViewport({ scale: 1 });
-          const scale = Math.min(THUMB_W / base.width, THUMB_H / base.height) || 0.25;
-          const viewport = pdfPage.getViewport({ scale });
-
-          canvas.width = Math.max(1, Math.round(viewport.width));
-          canvas.height = Math.max(1, Math.round(viewport.height));
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          await pdfPage.render({ canvasContext: ctx, viewport, intent: 'display' }).promise;
-          if (cancelled) break;
-
-          const dataUrl = canvas.toDataURL('image/jpeg', THUMB_QUALITY);
-          cacheWrite(thumbKey(cacheKey, page), dataUrl);
-          setThumbs((prev) => ({ ...prev, [page]: dataUrl }));
-
-          const text = await pdfPage.getTextContent();
-          const label = text.items
-            .map((item) => item.str ?? '')
-            .join(' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 54);
-          if (label) {
-            cacheWrite(titleKey(cacheKey, page), label);
-            if (!cancelled) setTitles((prev) => ({ ...prev, [page]: label }));
-          }
-
-          pdfPage.cleanup();
-        } catch {
-          /* skip unrenderable page, keep the pipeline alive */
-        }
-
-        if (!cancelled) setPending((prev) => Math.max(0, prev - 1));
-        await yieldToBrowser();
-      }
-      if (!cancelled) setPending(0);
-    })();
-
-    return () => {
-      cancelled = true;
-      canvas.width = 0;
-      canvas.height = 0; // release GPU/heap backing store
-    };
-  }, [doc, numPages, cacheKey]);
-
-  return { thumbs, titles, pending };
-}
-
-/** rAF-driven autoplay: progress writes straight to the DOM (zero re-renders). */
 function useAutoplay(
   enabled: boolean,
   intervalMs: number,
@@ -664,270 +347,61 @@ function useAutoplay(
 }
 
 /* ========================================================================== */
-/* 7. PRESENTATION CANVAS: SINGLE-PAGE PDF.JS ENGINE                         */
+/* 5. NATIVE SAME-ORIGIN PDF SLIDE STAGE (ZERO THIRD-PARTY CDN)               */
 /* ========================================================================== */
 
-interface PdfSlideCanvasProps {
-  doc: PdfDocumentProxy;
+interface PdfSlideFrameProps {
+  directUrl: string;
   pageNumber: number;
   zoom: number;
-  onZoomChange: (zoom: number) => void;
 }
 
-const PdfSlideCanvas = memo<PdfSlideCanvasProps>(function PdfSlideCanvas({
-  doc,
+const PdfSlideFrame = memo<PdfSlideFrameProps>(function PdfSlideFrame({
+  directUrl,
   pageNumber,
   zoom,
-  onZoomChange,
 }) {
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const taskRef = useRef<PdfRenderTask | null>(null);
-
-  const [renderZoom, setRenderZoom] = useState(zoom);      // zoom the raster targets
-  const [committedZoom, setCommittedZoom] = useState(zoom); // zoom currently painted
-  const [fitSize, setFitSize] = useState<Size>({ w: 0, h: 0 }); // CSS px at zoom = 1
-  const [offset, setOffset] = useState<Point>(ZERO_POINT);
-  const [painted, setPainted] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [syncedPage, setSyncedPage] = useState(pageNumber);
-
-  // Render-phase derived-state sync: a page change re-bases zoom instantly,
-  // preventing a wasted raster pass at the previous zoom level.
-  if (syncedPage !== pageNumber) {
-    setSyncedPage(pageNumber);
-    setRenderZoom(zoom);
-    setCommittedZoom(zoom);
-    setOffset(ZERO_POINT);
-    setPainted(false);
-  }
-
-  // Debounced high-resolution re-raster (pinch/zoom stays at 60fps meanwhile).
-  useEffect(() => {
-    if (Math.abs(zoom - renderZoom) < 0.001) return;
-    const timer = window.setTimeout(() => setRenderZoom(zoom), ZOOM_COMMIT_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [zoom, renderZoom]);
-
-  /* ---- Core single-page raster: off-screen buffer → blit (no white flash) -- */
-  useEffect(() => {
-    if (stage.w < 8 || stage.h < 8) return;
-
-    let cancelled = false;
-    setFailed(false);
-
-    void (async () => {
-      let buffer: HTMLCanvasElement | null = null;
-      try {
-        const page = await doc.getPage(pageNumber);
-        if (cancelled) return;
-
-        const base = page.getViewport({ scale: 1 });
-        const fitScale = Math.min(stage.w / base.width, stage.h / base.height);
-        const cssScale = fitScale * renderZoom;
-        const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-        const viewport = page.getViewport({ scale: cssScale * dpr });
-
-        buffer = document.createElement('canvas');
-        buffer.width = Math.max(1, Math.floor(viewport.width));
-        buffer.height = Math.max(1, Math.floor(viewport.height));
-        const bufferCtx = buffer.getContext('2d', { alpha: false });
-        if (!bufferCtx) throw new Error('Canvas 2D context unavailable');
-
-        bufferCtx.fillStyle = '#ffffff';
-        bufferCtx.fillRect(0, 0, buffer.width, buffer.height);
-
-        const task = page.render({ canvasContext: bufferCtx, viewport, intent: 'display' });
-        taskRef.current = task;
-        await task.promise;
-        taskRef.current = null;
-        if (cancelled) return;
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        canvas.width = buffer.width;
-        canvas.height = buffer.height;
-        canvas.style.width = `${Math.round(base.width * cssScale)}px`;
-        canvas.style.height = `${Math.round(base.height * cssScale)}px`;
-        canvas.getContext('2d', { alpha: false })?.drawImage(buffer, 0, 0);
-
-        page.cleanup();
-        setFitSize({
-          w: Math.round(base.width * fitScale),
-          h: Math.round(base.height * fitScale),
-        });
-        setCommittedZoom(renderZoom);
-        setPainted(true);
-      } catch (error) {
-        if (cancelled || (error as Error)?.name === 'RenderingCancelledException') return;
-        setFailed(true);
-        setPainted(true);
-      } finally {
-        if (buffer) {
-          buffer.width = 0;
-          buffer.height = 0;
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      try {
-        taskRef.current?.cancel();
-      } catch {
-        /* already settled */
-      }
-      taskRef.current = null;
-    };
-  }, [doc, pageNumber, stage.w, stage.h, renderZoom]);
-
-  // Free the visible canvas backing store on unmount.
-  useEffect(
-    () => () => {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.width = 0;
-        canvas.height = 0;
-      }
-    },
-    [],
-  );
-
-  /* ---- Pan clamping ------------------------------------------------------ */
-  const clampOffset = useCallback(
-    (next: Point, level: number): Point => {
-      const maxX = Math.max(0, (fitSize.w * level - stage.w) / 2);
-      const maxY = Math.max(0, (fitSize.h * level - stage.h) / 2);
-      return { x: clamp(next.x, -maxX, maxX), y: clamp(next.y, -maxY, maxY) };
-    },
-    [fitSize.w, fitSize.h, stage.w, stage.h],
-  );
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setOffset((prev) => {
-      const next = clampOffset(prev, zoom);
-      return next.x === prev.x && next.y === prev.y ? prev : next;
-    });
-  }, [zoom, clampOffset]);
+    setLoaded(false);
+  }, [directUrl, pageNumber]);
 
-  /* ---- Pointer gestures: pinch-zoom + drag-pan --------------------------- */
-  const pointers = useRef(new Map<number, Point>());
-  const pinch = useRef<{ distance: number; zoom: number } | null>(null);
-  const drag = useRef<{ origin: Point; offset: Point } | null>(null);
-  const [grabbing, setGrabbing] = useState(false);
+  const box = useMemo<Size>(() => {
+    if (stage.w < 8 || stage.h < 8) return { w: 0, h: 0 };
+    const width = Math.min(stage.w, (stage.h * 16) / 9);
+    return { w: Math.round(width), h: Math.round((width * 9) / 16) };
+  }, [stage.w, stage.h]);
 
-  const pinchDistance = (): number => {
-    const [a, b] = Array.from(pointers.current.values());
-    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
-  };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
-    (event.target as Element).setPointerCapture?.(event.pointerId);
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (pointers.current.size === 2) {
-      pinch.current = { distance: pinchDistance(), zoom };
-      drag.current = null;
-    } else if (zoom > 1) {
-      drag.current = { origin: { x: event.clientX, y: event.clientY }, offset };
-      setGrabbing(true);
-    }
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (!pointers.current.has(event.pointerId)) return;
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (pinch.current && pointers.current.size === 2) {
-      const distance = pinchDistance();
-      if (pinch.current.distance > 0 && distance > 0) {
-        onZoomChange(
-          clamp((pinch.current.zoom * distance) / pinch.current.distance, MIN_ZOOM, MAX_ZOOM),
-        );
-      }
-      return;
-    }
-
-    if (drag.current && zoom > 1) {
-      const { origin, offset: base } = drag.current;
-      setOffset(
-        clampOffset(
-          { x: base.x + (event.clientX - origin.x), y: base.y + (event.clientY - origin.y) },
-          zoom,
-        ),
-      );
-    }
-  };
-
-  const endPointer = (event: React.PointerEvent<HTMLDivElement>): void => {
-    pointers.current.delete(event.pointerId);
-    if (pointers.current.size < 2) pinch.current = null;
-    if (pointers.current.size === 0) {
-      drag.current = null;
-      setGrabbing(false);
-    }
-  };
-
-  // Non-passive wheel listener so ctrl/⌘ + wheel (trackpad pinch) can be captured.
-  useEffect(() => {
-    const node = stageRef.current;
-    if (!node) return;
-
-    const onWheel = (event: WheelEvent): void => {
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        onZoomChange(clamp(zoom * Math.exp(-event.deltaY * 0.0022), MIN_ZOOM, MAX_ZOOM));
-      } else if (zoom > 1) {
-        event.preventDefault();
-        setOffset((prev) => clampOffset({ x: prev.x - event.deltaX, y: prev.y - event.deltaY }, zoom));
-      }
-    };
-
-    node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
-  }, [zoom, onZoomChange, clampOffset, stageRef]);
-
-  const previewScale = committedZoom > 0 ? zoom / committedZoom : 1;
+  const frameSrc = useMemo(() => {
+    const base = directUrl.split('#')[0];
+    return `${base}#page=${pageNumber}&view=Fit&toolbar=0&navpanes=0`;
+  }, [directUrl, pageNumber]);
 
   return (
-    <div
-      ref={stageRef}
-      className="relative flex h-full w-full items-center justify-center overflow-hidden"
-      style={{ touchAction: 'none', cursor: zoom > 1 ? (grabbing ? 'grabbing' : 'grab') : 'default' }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={endPointer}
-      onPointerCancel={endPointer}
-      onDoubleClick={() => onZoomChange(zoom > 1 ? 1 : 2)}
-    >
+    <div ref={stageRef} className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <div
-        className="will-change-transform"
+        className="overflow-hidden rounded-xl border border-slate-700/70 bg-white shadow-2xl shadow-black/60"
         style={{
-          transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${previewScale})`,
-          transition: grabbing || pinch.current ? 'none' : 'transform 140ms cubic-bezier(0.16,1,0.3,1)',
+          width: box.w || '100%',
+          height: box.h || '100%',
+          transform: `scale(${zoom})`,
+          transition: 'transform 140ms cubic-bezier(0.16,1,0.3,1)',
         }}
       >
-        <canvas
-          ref={canvasRef}
-          aria-label={`Slide ${pageNumber}`}
-          className="block rounded-lg bg-white shadow-2xl shadow-black/60 ring-1 ring-white/10"
-          style={{
-            opacity: painted ? 1 : 0.35,
-            transition: 'opacity 180ms ease-out',
-          }}
+        <iframe
+          key={`pdf-frame-${pageNumber}`}
+          src={frameSrc}
+          title={`PDF Slide ${pageNumber}`}
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoaded(true)}
+          className="h-full w-full border-0 bg-white"
         />
       </div>
-
-      {!painted && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      {!loaded && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/40">
           <Loader2 className="h-7 w-7 animate-spin text-orange-500" />
-        </div>
-      )}
-
-      {failed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/85 text-xs font-mono text-rose-300">
-          <ShieldAlert className="h-6 w-6" />
-          <span>Page {pageNumber} could not be rasterized</span>
         </div>
       )}
     </div>
@@ -935,26 +409,43 @@ const PdfSlideCanvas = memo<PdfSlideCanvasProps>(function PdfSlideCanvas({
 });
 
 /* ========================================================================== */
-/* 8. HTML / MARKDOWN RICH CARD STAGE                                         */
+/* 6. SANDBOXED HTML / MARKDOWN SLIDE STAGE (`<iframe sandbox="" srcDoc>`)     */
 /* ========================================================================== */
 
 interface HtmlSlideStageProps {
   slide: ParsedSlide;
-  scopeId: string;
-  scopedCss: string;
+  sanitizedCss: string;
   index: number;
   zoom: number;
 }
 
 const HtmlSlideStage = memo<HtmlSlideStageProps>(function HtmlSlideStage({
   slide,
-  scopeId,
-  scopedCss,
+  sanitizedCss,
   index,
   zoom,
 }) {
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
-  const html = useMemo(() => sanitizeHtml(slide.htmlContent), [slide.htmlContent]);
+  const sanitizedMarkup = useMemo(() => sanitizeHtml(slide.htmlContent), [slide.htmlContent]);
+
+  const slideSrcDoc = useMemo(() => {
+    return [
+      '<!DOCTYPE html>',
+      '<html lang="en"><head><meta charset="utf-8">',
+      "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; img-src data: blob:;\">",
+      '<style>',
+      'html,body{margin:0;padding:16px 22px;background:#0f172a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;line-height:1.6;font-size:14px;}',
+      'h1,h2,h3,h4{color:#7dd3fc;margin-top:0.25em;}',
+      'a{color:#38bdf8;word-break:break-all;}',
+      'pre,code{background:#020617;padding:2px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}',
+      'table{border-collapse:collapse;width:100%;margin:8px 0;}',
+      'th,td{border:1px solid #334155;padding:6px 10px;text-align:left;}',
+      sanitizedCss,
+      '</style></head><body>',
+      sanitizedMarkup,
+      '</body></html>',
+    ].join('\n');
+  }, [sanitizedCss, sanitizedMarkup]);
 
   const box = useMemo<Size>(() => {
     if (stage.w < 8 || stage.h < 8) return { w: 0, h: 0 };
@@ -964,39 +455,42 @@ const HtmlSlideStage = memo<HtmlSlideStageProps>(function HtmlSlideStage({
 
   return (
     <div ref={stageRef} className="relative flex h-full w-full items-center justify-center overflow-hidden">
-      <style>{scopedCss}</style>
       <article
         key={slide.id}
-        className="ge-fade overflow-hidden rounded-xl border border-slate-700/70 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 shadow-2xl shadow-black/60"
+        className="ge-fade flex flex-col overflow-hidden rounded-xl border border-slate-700/70 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 shadow-2xl shadow-black/60"
         style={{
-          width: box.w || undefined,
-          height: box.h || undefined,
+          width: box.w || '100%',
+          height: box.h || '100%',
           transform: `scale(${zoom})`,
           transition: 'transform 140ms cubic-bezier(0.16,1,0.3,1)',
         }}
       >
-        <header className="flex items-center justify-between border-b border-slate-800/80 px-5 py-2.5">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-800/80 px-5 py-2.5">
           <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-orange-400">
             Slide #{index + 1}
           </span>
           <h2 className="max-w-[70%] truncate text-sm font-bold text-sky-300">{slide.title}</h2>
         </header>
-        <div className={`${scopeId} ge-scroll h-[calc(100%-2.75rem)] overflow-y-auto px-6 py-5 text-slate-200`}>
-          <div dangerouslySetInnerHTML={{ __html: html }} />
-        </div>
+        <iframe
+          sandbox=""
+          referrerPolicy="no-referrer"
+          srcDoc={slideSrcDoc}
+          title={`Slide ${index + 1}: ${slide.title}`}
+          className="w-full flex-1 border-0 bg-slate-900"
+        />
       </article>
     </div>
   );
 });
 
 /* ========================================================================== */
-/* 9. THUMBNAIL RAIL + GRID                                                   */
+/* 7. THUMBNAIL RAIL + GRID                                                   */
 /* ========================================================================== */
 
 interface ThumbCardProps {
   index: number;
   label: string;
-  src?: string;
+  previewText?: string;
   active: boolean;
   variant: 'rail' | 'grid';
   onSelect: (index: number) => void;
@@ -1005,7 +499,7 @@ interface ThumbCardProps {
 const ThumbCard = memo<ThumbCardProps>(function ThumbCard({
   index,
   label,
-  src,
+  previewText,
   active,
   variant,
   onSelect,
@@ -1031,19 +525,15 @@ const ThumbCard = memo<ThumbCardProps>(function ThumbCard({
           : 'border-slate-800/80 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-900 hover:shadow-lg'
       }`}
     >
-      <div className="relative aspect-video min-h-[90px] w-full overflow-hidden border-b border-slate-800/60 bg-slate-950">
-        {src ? (
-          <img
-            src={src}
-            alt={`Slide ${index + 1} preview`}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.06]"
-          />
+      <div className="relative flex aspect-video min-h-[90px] w-full flex-col justify-between overflow-hidden border-b border-slate-800/60 bg-slate-950 p-2.5 pt-7">
+        {previewText ? (
+          <p className="line-clamp-3 text-[10px] leading-relaxed text-slate-400">
+            {previewText}
+          </p>
         ) : (
-          <div className="ge-skeleton flex h-full w-full flex-col items-center justify-center gap-1 text-slate-600">
-            <Presentation className="h-5 w-5 opacity-40" />
-            <span className="font-mono text-[9px]">Rendering…</span>
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-500">
+            <Presentation className="h-5 w-5 opacity-50" />
+            <span className="font-mono text-[9px]">Page {index + 1}</span>
           </div>
         )}
         <span
@@ -1068,7 +558,7 @@ const ThumbCard = memo<ThumbCardProps>(function ThumbCard({
 });
 
 /* ========================================================================== */
-/* 10. TOOLBAR PRIMITIVE                                                      */
+/* 8. TOOLBAR PRIMITIVE                                                       */
 /* ========================================================================== */
 
 interface ToolbarButtonProps {
@@ -1118,7 +608,7 @@ const ToolbarButton = memo<ToolbarButtonProps>(function ToolbarButton({
 });
 
 /* ========================================================================== */
-/* 11. MAIN COMPONENT                                                         */
+/* 9. MAIN COMPONENT                                                          */
 /* ========================================================================== */
 
 export const PresentationViewer: React.FC<PresentationViewerProps> = ({
@@ -1166,19 +656,15 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
     return 'HTML';
   }, [title, gcsUri, directUrl, webUrl, previewUrl, mimeType]);
 
-  const cacheKey = useMemo(
-    () => (sha256 ? sha256.slice(0, 16) : fnv1a(directUrl ?? title)),
-    [sha256, directUrl, title],
-  );
-
-  const scopeId = useMemo(() => `ge-deck-${cacheKey}`, [cacheKey]);
-
   /* ---- State ------------------------------------------------------------- */
   const [currentIndex, setCurrentIndex] = useState(0);
   const [parsedSlides, setParsedSlides] = useState<ParsedSlide[]>([]);
   const [docStyles, setDocStyles] = useState('');
   const [docTitle, setDocTitle] = useState(title);
   const [htmlStatus, setHtmlStatus] = useState<LoadStatus>('idle');
+  const [pdfPageEstimate, setPdfPageEstimate] = useState<number>(Math.max(1, propSlideCount ?? 1));
+  const [pdfStatus, setPdfStatus] = useState<LoadStatus>('idle');
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>('SLIDE');
   const [showRail, setShowRail] = useState(true);
@@ -1191,10 +677,63 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
   const autoplayBarRef = useRef<HTMLDivElement>(null);
   const focusedRef = useRef(false);
 
-  /* ---- PDF pipeline ------------------------------------------------------ */
   const isPdf = deckKind === 'PDF';
-  const { doc, numPages, status: pdfStatus, error: pdfError } = usePdfDocument(directUrl, isPdf);
-  const { thumbs, titles, pending } = usePdfThumbnails(doc, numPages, cacheKey);
+
+  /* ---- Lightweight PDF page-count probe (same-origin fetch, zero CDN) ----- */
+  useEffect(() => {
+    if (!isPdf) {
+      setPdfStatus('idle');
+      setPdfError(null);
+      return;
+    }
+    if (!directUrl) {
+      setPdfStatus('error');
+      setPdfError('No evidence URL available for this PDF deck.');
+      return;
+    }
+
+    if (propSlideCount && propSlideCount > 0) {
+      setPdfPageEstimate(propSlideCount);
+      setPdfStatus('ready');
+      setPdfError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setPdfStatus('loading');
+    setPdfError(null);
+
+    void (async () => {
+      try {
+        const resp = await fetch(directUrl, {
+          method: 'GET',
+          credentials: 'same-origin',
+          signal: controller.signal,
+        });
+        if (!resp.ok) {
+          throw new Error(`Document fetch failed (HTTP ${resp.status})`);
+        }
+        const buf = await resp.arrayBuffer();
+        if (cancelled) return;
+        const latin1 = new TextDecoder('latin1').decode(buf);
+        const matches = latin1.match(/\/Type\s*\/Page\b(?!s)/g);
+        const estimated = matches && matches.length > 0 ? matches.length : 1;
+        setPdfPageEstimate(Math.max(1, estimated));
+        setPdfStatus('ready');
+      } catch (err) {
+        if (cancelled || (err as Error)?.name === 'AbortError') return;
+        // Still allow native iframe fallback if directUrl exists
+        setPdfPageEstimate(Math.max(1, propSlideCount ?? 1));
+        setPdfStatus('ready');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [isPdf, directUrl, propSlideCount]);
 
   /* ---- HTML pipeline ----------------------------------------------------- */
   useEffect(() => {
@@ -1212,13 +751,16 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
 
       if (!source && directUrl) {
         try {
-          const response = await fetch(directUrl, { signal: controller.signal });
+          const response = await fetch(directUrl, {
+            credentials: 'same-origin',
+            signal: controller.signal,
+          });
           if (response.ok) {
             const text = await response.text();
             if (/<(html|body|section|div|article)/i.test(text)) source = text;
           }
         } catch {
-          /* CORS or network: fall through to placeholder deck */
+          /* fall through to placeholder deck */
         }
       }
       if (cancelled) return;
@@ -1233,7 +775,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
                   index: 0,
                   id: 'slide-1',
                   title: title || 'Slide 1',
-                  htmlContent: source,
+                  htmlContent: `<p>${escapeHtmlText(source.replace(/<[^>]*>?/gm, ''))}</p>`,
                   plainText: source.replace(/<[^>]*>?/gm, ''),
                 },
               ],
@@ -1248,7 +790,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
             id: `slide-${i + 1}`,
             title: `Slide ${i + 1}`,
             htmlContent:
-              '<p class="text-sm leading-relaxed text-slate-300">Inline preview unavailable for this artifact. Open or download the original evidence file to review its contents.</p>',
+              '<p>Inline preview unavailable for this artifact. Open or download the original evidence file to review its contents.</p>',
             plainText: 'Preview unavailable',
           })),
         );
@@ -1263,20 +805,20 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
     };
   }, [isPdf, rawHtml, snippet, directUrl, title, propSlideCount]);
 
-  const scopedCss = useMemo(() => scopeCss(docStyles, `.${scopeId}`), [docStyles, scopeId]);
+  const sanitizedCss = useMemo(() => sanitizeScopedCss(docStyles), [docStyles]);
 
   /* ---- Unified deck model ------------------------------------------------ */
   const totalSlides = useMemo(() => {
-    if (isPdf) return numPages > 0 ? numPages : Math.max(1, propSlideCount ?? 1);
+    if (isPdf) return Math.max(1, pdfPageEstimate);
     return Math.max(1, parsedSlides.length || propSlideCount || 1);
-  }, [isPdf, numPages, parsedSlides.length, propSlideCount]);
+  }, [isPdf, pdfPageEstimate, parsedSlides.length, propSlideCount]);
 
   const labels = useMemo<string[]>(
     () =>
       Array.from({ length: totalSlides }, (_, i) =>
-        isPdf ? titles[i + 1] || `Slide ${i + 1}` : parsedSlides[i]?.title || `Slide ${i + 1}`,
+        isPdf ? `Slide ${i + 1}` : parsedSlides[i]?.title || `Slide ${i + 1}`,
       ),
-    [totalSlides, isPdf, titles, parsedSlides],
+    [totalSlides, isPdf, parsedSlides],
   );
 
   useEffect(() => {
@@ -1342,7 +884,6 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
       if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return;
-      // Only claim keys when this viewer is focused, hovered, or presenting.
       if (!focusedRef.current && !isFullscreen) return;
 
       switch (event.key) {
@@ -1398,6 +939,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
 
   const currentSlide = parsedSlides[currentIndex] ?? parsedSlides[0] ?? null;
   const railVisible = showRail && viewMode === 'SLIDE' && totalSlides > 1;
+  const deckHashSuffix = useMemo(() => (sha256 ? sha256.slice(0, 10) : fnv1a(directUrl ?? title)), [sha256, directUrl, title]);
 
   /* ---- Render ------------------------------------------------------------ */
   return (
@@ -1424,12 +966,6 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
       <style>{`
         @keyframes geFade { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }
         .ge-fade { animation: geFade .22s cubic-bezier(.16,1,.3,1) }
-        @keyframes geShimmer { 0% { background-position:-200% 0 } 100% { background-position:200% 0 } }
-        .ge-skeleton {
-          background: linear-gradient(100deg,#0f172a 30%,#1e293b 50%,#0f172a 70%);
-          background-size: 200% 100%;
-          animation: geShimmer 1.4s linear infinite;
-        }
         .ge-scroll::-webkit-scrollbar { width:6px; height:6px }
         .ge-scroll::-webkit-scrollbar-thumb { background:#334155; border-radius:9999px }
         .ge-scroll::-webkit-scrollbar-track { background:transparent }
@@ -1457,12 +993,6 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
                 <span className="inline-flex animate-pulse items-center gap-1 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
                   <Play className="h-3 w-3 fill-current" />
                   Autoplay {autoplayMs / 1000}s
-                </span>
-              )}
-              {pending > 0 && (
-                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-zinc-400">
-                  <Loader2 className="h-2.5 w-2.5 animate-spin text-orange-400" />
-                  Caching {pending}
                 </span>
               )}
             </div>
@@ -1516,7 +1046,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
             onClick={() => setViewMode((mode) => (mode === 'GRID' ? 'SLIDE' : 'GRID'))}
           />
 
-          {isPdf && viewMode === 'SLIDE' && (
+          {viewMode === 'SLIDE' && (
             <div className={`flex items-center rounded-lg border p-0.5 ${theme.quoteBox}`}>
               <button
                 type="button"
@@ -1577,7 +1107,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
           {directUrl && (
             <>
               <a
-                href={directUrl}
+                href={directUrl.includes('?') ? `${directUrl}&download=true` : directUrl}
                 download
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1628,19 +1158,17 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
 
       {/* ================= STAGE ================= */}
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-slate-950">
-        {/* Thumbnail rail */}
         {railVisible && (
           <aside className="ge-scroll z-10 flex w-48 shrink-0 flex-col gap-2 overflow-y-auto border-r border-slate-800 bg-slate-950/95 p-2 sm:w-60">
             <div className="mb-0.5 flex items-center justify-between border-b border-slate-800/80 px-1.5 py-1 font-mono text-[10px]">
               <span className="font-bold uppercase tracking-wider text-orange-400">Slides ({totalSlides})</span>
-              {pending > 0 && <Loader2 className="h-2.5 w-2.5 animate-spin text-orange-400" />}
             </div>
             {labels.map((label, index) => (
               <ThumbCard
                 key={`rail-${index}`}
                 index={index}
                 label={label}
-                src={thumbs[index + 1]}
+                previewText={!isPdf ? parsedSlides[index]?.plainText.slice(0, 120) : undefined}
                 active={index === currentIndex}
                 variant="rail"
                 onSelect={goToSlide}
@@ -1649,13 +1177,12 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
           </aside>
         )}
 
-        {/* Viewport */}
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {status === 'loading' ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-zinc-400">
               <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
               <p className="font-mono text-xs">
-                {isPdf ? 'Initializing PDF canvas engine…' : 'Parsing slide deck…'}
+                {isPdf ? 'Preparing PDF viewer…' : 'Parsing slide deck…'}
               </p>
             </div>
           ) : status === 'error' ? (
@@ -1663,8 +1190,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
               <ShieldAlert className="h-8 w-8 text-rose-400" />
               <p className="font-mono text-xs text-rose-300">{errorMessage}</p>
               <p className="max-w-sm text-[11px] text-zinc-500">
-                Inline rasterization was blocked (network or CORS policy). The original artifact remains
-                available through the secured evidence link.
+                Inline preview was unavailable. The original artifact remains accessible through the secured evidence link.
               </p>
               {directUrl && (
                 <button
@@ -1684,7 +1210,7 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
                   key={`grid-${index}`}
                   index={index}
                   label={label}
-                  src={thumbs[index + 1]}
+                  previewText={!isPdf ? parsedSlides[index]?.plainText.slice(0, 120) : undefined}
                   active={index === currentIndex}
                   variant="grid"
                   onSelect={(i) => {
@@ -1697,18 +1223,16 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
           ) : (
             <div className="group/stage relative flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-2 sm:p-4">
-                {isPdf && doc ? (
-                  <PdfSlideCanvas
-                    doc={doc}
+                {isPdf && directUrl ? (
+                  <PdfSlideFrame
+                    directUrl={directUrl}
                     pageNumber={currentIndex + 1}
                     zoom={zoom}
-                    onZoomChange={setZoom}
                   />
                 ) : currentSlide ? (
                   <HtmlSlideStage
                     slide={currentSlide}
-                    scopeId={scopeId}
-                    scopedCss={scopedCss}
+                    sanitizedCss={sanitizedCss}
                     index={currentIndex}
                     zoom={zoom}
                   />
@@ -1757,15 +1281,9 @@ export const PresentationViewer: React.FC<PresentationViewerProps> = ({
           <span className="hidden sm:inline">
             <kbd className="rounded bg-slate-800 px-1 py-0.5 text-zinc-300">G</kbd> grid
           </span>
-          {isPdf && (
-            <>
-              <span className="hidden md:inline">•</span>
-              <span className="hidden md:inline">⌘/Ctrl + scroll or pinch to zoom</span>
-            </>
-          )}
         </div>
         <div className="flex items-center gap-3">
-          {sha256 && <span className="truncate text-zinc-500">SHA {sha256.slice(0, 10)}…</span>}
+          <span className="truncate text-zinc-500">ID {deckHashSuffix}…</span>
           {sizeBytes ? <span>{formatBytes(sizeBytes)}</span> : null}
         </div>
       </footer>

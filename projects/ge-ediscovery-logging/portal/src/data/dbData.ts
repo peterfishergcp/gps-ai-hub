@@ -352,6 +352,11 @@ export function getUnifiedReviewItems(
       sorted.find((l) => l.input_text && l.input_text.trim().length > 0)?.input_text ||
       sessId;
     const title = firstPrompt.length > 70 ? `${firstPrompt.slice(0, 70)}...` : firstPrompt;
+    const gcsRawUri =
+      sorted
+        .slice()
+        .reverse()
+        .find((l) => Boolean(l.gcs_raw_conversation_uri))?.gcs_raw_conversation_uri || undefined;
 
     items.push({
       id: sessId,
@@ -361,6 +366,7 @@ export function getUnifiedReviewItems(
       user_name: userEmail ? (userEmail.split('@')[0] || userEmail) : '',
       surface: 'GEMINI_ENTERPRISE_CHAT',
       timestamp: latest.timestamp || first.timestamp || '',
+      gcs_uri: gcsRawUri,
       turn_count: sorted.length,
       is_held: false,
       privilege_status: 'NONE',

@@ -24,13 +24,13 @@ Always format SharePoint URLs based on the file extension so clicking a link **a
   - Browsers have a built-in PDF viewer that jumps to `#page=N`, whereas SharePoint's `?web=1` wrapper ignores `#page=N`.
   - **Rule**: Always strip `?web=1` from `.pdf` URLs and append `#page=N`.
   - ✅ **Correct PDF Link**:
-    `https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4`
+    `https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4`
 
 - **For Word, PowerPoint & Excel Files (`.docx`, `.pptx`, `.xlsx`) — ALWAYS END WITH `?web=1`**:
   - Browsers cannot render raw `.docx` files natively—if `?web=1` is missing, clicking the link **downloads the file to the user's computer**.
   - **Rule**: Always keep or append `?web=1` at the end of `.docx`, `.pptx`, and `.xlsx` URLs (never append `#section=`). Put the exact Section/Clause name inside the clickable link label so the user sees it when Word Online opens.
   - ✅ **Correct Word (`.docx`) Link**:
-    `[Master Services Agreement — Section 8: Intellectual Property Rights](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Master%20Services%20Agreement.docx?web=1)`
+    `[Master Services Agreement — Section 8: Intellectual Property Rights](https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Master%20Services%20Agreement.docx?web=1)`
 
 ---
 
@@ -45,7 +45,7 @@ Do not use complicated Table of Contents or Introduction exclusion formulas. Fol
       - Section `7.4 Force Majeure` (*"Neither party shall be liable for any failure to perform its obligations where such failure results from any cause beyond the party’s reasonable control, including acts of God, war, or systemic telecommunications failure"*) has printed footer / chunk index `3`, which means it resides on **Physical PDF Page 4**.
       - You **MUST** cite **`#page=4`** (not `#page=3`):
         ```markdown
-        [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4)
+        [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4)
         ```
 
 ---
@@ -57,12 +57,12 @@ Your response **MUST** follow this structure:
 ```markdown
 ### 📄 Summary & Answer
 <Your detailed answer containing inline clickable citations:
-- For PDF files (Strip `?web=1`, apply `+1` physical page rule): "Under [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4), neither party is liable for failure to perform due to acts of God, war, or systemic telecommunications failure."
-- For Word `.docx` files (Keep `?web=1` so it opens in Word Online): "Under [Master Services Agreement — Section 8: Intellectual Property Rights](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Master%20Services%20Agreement.docx?web=1), custom IP vests in the Customer.">
+- For PDF files (Strip `?web=1`, apply `+1` physical page rule): "Under [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4), neither party is liable for failure to perform due to acts of God, war, or systemic telecommunications failure."
+- For Word `.docx` files (Keep `?web=1` so it opens in Word Online): "Under [Master Services Agreement — Section 8: Intellectual Property Rights](https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Master%20Services%20Agreement.docx?web=1), custom IP vests in the Customer.">
 
 ### 📚 Sources & Citations
-- 🔗 **PDF Document**: [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4)
-- 🔗 **Word Document (Opens in Word Online)**: [Master Services Agreement — Section 8: Intellectual Property Rights](https://demoalto.sharepoint.com/sites/peterf2ndsite/Shared%20Documents/Master%20Services%20Agreement.docx?web=1)
+- 🔗 **PDF Document**: [Statement of Work: Project Cal-Nexus — Section 7.4 Force Majeure (Page 4)](https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Statement%20of%20Work_%20Project%20Cal-Nexus%20%282%29.pdf#page=4)
+- 🔗 **Word Document (Opens in Word Online)**: [Master Services Agreement — Section 8: Intellectual Property Rights](https://YOUR_TENANT.sharepoint.com/sites/YOUR_SITE/Shared%20Documents/Master%20Services%20Agreement.docx?web=1)
 
 ---
 *Note: Microsoft SharePoint search results may be paginated or partial. If you suspect missing results, please try again with a more specific document title or query.*

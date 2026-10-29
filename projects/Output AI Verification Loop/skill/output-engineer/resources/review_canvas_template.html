@@ -54,7 +54,7 @@
       font-size: 14.5px;
     }
 
-    /* Hero Band (Full-Width Aligned with Main Content) */
+    /* Hero Band */
     .gc-band-wrap {
       background: #f8f9fa;
       border-bottom: 1px solid #e8eaed;
@@ -123,7 +123,7 @@
       margin: 0;
     }
 
-    /* Full-Width Aligned Main Container (Zero Redundant Left Sidebar) */
+    /* Main Container */
     .gc-page {
       max-width: 1220px;
       margin: 0 auto;
@@ -179,7 +179,7 @@
       color: #1967d2;
     }
 
-    /* Clean Tables */
+    /* Tables */
     .gc-table {
       width: 100%;
       border-collapse: collapse;
@@ -289,7 +289,7 @@
       <div class="gc-eyebrow" id="hero-eyebrow">Output-Engineer v2 &middot; 3-Stage Council Audit Report</div>
       <div class="gc-tagline" id="hero-title">Public Sector Agency Security Review — Pre-Send Audit</div>
       <div class="gc-band-sub" id="hero-sub">
-        <b>Target Audited:</b> 15-page customer security response (13-point cover email + 10 architecture OQs) &middot; <b>Council:</b> Gemini 3.1 Pro, Claude Opus 5.5 &amp; Gemini 3.1 Flash
+        <b>Target Audited:</b> 15-page customer security response (13-point cover email + 10 architecture OQs) &middot; <b>Council:</b> Gemini 3.8 Flash, Claude Opus 4.6 &amp; Gemini 3.5 Flash-Lite
       </div>
       <div class="gc-kpi-row" id="kpi-row"></div>
     </div>
@@ -300,7 +300,7 @@
       <main class="gc-main">
         <div class="gc-stripe"></div>
 
-        <!-- Section 1: 3-Stage Council Scorecard (3 Seats Only, Zero Duplication) -->
+        <!-- Section 1: 3-Stage Council Scorecard -->
         <section id="panel-models">
           <h2 class="gc-h2">1. Council Seats: Stage 1 Independent Verdict vs. Stage 2 Blind Peer Ranking</h2>
           <table class="gc-table">
@@ -364,7 +364,7 @@
                 <tr>
                   <td><b>Zone 1: Ingress &amp; Auth</b></td>
                   <td>GFE TLS 1.3 termination; Workforce Identity / OIDC auth stripped at ingress.</td>
-                  <td><code class="gc-code">user_email</code> and <code class="gc-code">user_full_name</code> travel in <code class="gc-code">system_instruction</code>; <code class="gc-code">user_cpi</code> travels in <code class="gc-code">tenant_stream_id</code>.</td>
+                  <td><code class="gc-code">user_email</code> and <code class="gc-code">user_full_name</code> travel in <code class="gc-code">system_instruction</code>; <code class="gc-code">caller_principal_id</code> travels in <code class="gc-code">stream_attribution_id</code>.</td>
                 </tr>
                 <tr>
                   <td><b>Zone 2: Orchestration &amp; Screening</b></td>
@@ -373,8 +373,8 @@
                 </tr>
                 <tr>
                   <td><b>Zone 3: Model Serving &amp; UI</b></td>
-                  <td>Zero-data-retention Vertex AI inference; client-side image blocking in <code class="gc-code">ucs_widget</code>.</td>
-                  <td>Backend C++ <code class="gc-code">MarkdownSanitizer</code> is off by default for chat; DRZ/CMEK require the <code class="gc-code">us</code> or <code class="gc-code">eu</code> multi-region.</td>
+                  <td>Zero-data-retention Vertex AI inference; client-side image blocking in the Gemini Enterprise web UI.</td>
+                  <td>Backend Markdown image sanitization stays off by default for chat; DRZ/CMEK require the <code class="gc-code">us</code> or <code class="gc-code">eu</code> multi-region.</td>
                 </tr>
               </tbody>
             </table>
@@ -405,163 +405,269 @@
 const COUNCIL_REVIEW_DATA = {};
     /*__COUNCIL_REVIEW_JSON_END__*/
 
-    function formatText(raw) {
-      if (!raw) return "";
-      const escaped = String(raw)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-      return escaped.replace(
-        /(gcp_&amp;lt;project_number&amp;gt;\.cpi_&amp;lt;user_cpi&amp;gt;\.class_unknown|gcp_&lt;project_number&gt;\.cpi_&lt;user_cpi&gt;\.class_unknown|&lt;\/?[a-zA-Z0-9_-]+&gt;|\[SSN-MASKED\]|\b[a-zA-Z0-9_]+::[a-zA-Z0-9_]+\b|\b[a-zA-Z0-9]+_[a-zA-Z0-9_.]+(?:=[a-zA-Z0-9_.-]+)?\b|\b(?:GenerateContentRequest|UploadSessionFile|StreamAssist|MarkdownSanitizer|SanitizeUserPrompt|userPromptTemplate|CheckFileContent|SearchRequestsPerMinutePerProjectPerRegion|AssistRequestsPerMinutePerProjectPerRegion|us-central1)\b)/g,
-        '<code class="gc-code">$1</code>'
-      );
+    const CODE_TOKEN_RE = /(\[SSN-MASKED\]|\b[a-zA-Z0-9]+_[a-zA-Z0-9_.]+(?:=[a-zA-Z0-9_.-]+)?\b|\b(?:GenerateContentRequest|UploadSessionFile|StreamAssist|SanitizeUserPrompt|SanitizeModelResponse|SanitizeFileContent|ApplyContentPolicy|userPromptTemplate|responseTemplate|CheckFileContent|SearchRequestsPerMinutePerProjectPerRegion|AssistRequestsPerMinutePerProjectPerRegion|us-central1|readOnlyHint)\b)/g;
+
+    function el(tag, attrs, children) {
+      const node = document.createElement(tag);
+      if (attrs) {
+        Object.keys(attrs).forEach((k) => {
+          if (k === "className") {
+            node.className = attrs[k];
+          } else if (k === "style") {
+            node.setAttribute("style", attrs[k]);
+          } else if (k === "textContent") {
+            node.textContent = String(attrs[k]);
+          } else {
+            node.setAttribute(k, String(attrs[k]));
+          }
+        });
+      }
+      if (Array.isArray(children)) {
+        children.forEach((child) => {
+          if (child == null) return;
+          if (typeof child === "string") {
+            node.appendChild(document.createTextNode(child));
+          } else {
+            node.appendChild(child);
+          }
+        });
+      }
+      return node;
+    }
+
+    function buildFormattedFragment(raw) {
+      const frag = document.createDocumentFragment();
+      if (!raw) return frag;
+      const text = String(raw);
+      let lastIndex = 0;
+      CODE_TOKEN_RE.lastIndex = 0;
+      let match;
+      while ((match = CODE_TOKEN_RE.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        }
+        frag.appendChild(el("code", { className: "gc-code", textContent: match[0] }));
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+      return frag;
     }
 
     (function renderReport() {
       const data = COUNCIL_REVIEW_DATA || {};
       if (data.project_name) {
-        document.getElementById("top-project-crumb").textContent = "/ " + data.project_name;
+        document.getElementById("top-project-crumb").textContent = "/ " + String(data.project_name);
+      }
+      if (data.header && data.header.title) {
+        document.getElementById("hero-title").textContent = String(data.header.title);
       }
 
-      // Render 4 Document-Level KPI Cards (Zero Duplication with Section 1)
+      // Render 4 Document-Level KPI Cards using safe DOM APIs
       const kpiRow = document.getElementById("kpi-row");
       const kpis = [
         { label: "Release Readiness", val: "HOLD (4.5 / 10)", pill: "pill-fail", sub: "Do not send v1 draft to customer" },
-        { label: "Send-Blocking Contradictions", val: "14 Verified", pill: "pill-pass", sub: "7 in cover email · 7 in QA responses" },
+        { label: "Send-Blocking Contradictions", val: "14 Verified", pill: "pill-pass", sub: "7 in cover email \u00b7 7 in QA responses" },
         { label: "Peer-Filtered False Alarms", val: "1 Rejected", pill: "pill-info", sub: "Unverified TLS 1.3 nitpick dropped (0/2)" },
         { label: "ASD-STE100 Readability", val: "50 / 50 Pass", pill: "pill-pass", sub: "11.5w avg sentence (down from 39.9w)" }
       ];
-      kpiRow.innerHTML = kpis.map(k => `
-        <div class="gc-kpi-card">
-          <div class="gc-kpi-label">${k.label}</div>
-          <div class="gc-kpi-val"><span class="${k.pill}" style="font-size:13.5px; padding:3px 9px;">${k.val}</span></div>
-          <div class="gc-kpi-sub" style="margin-top:4px;">${k.sub}</div>
-        </div>
-      `).join("");
+      kpiRow.replaceChildren(
+        ...kpis.map((k) =>
+          el("div", { className: "gc-kpi-card" }, [
+            el("div", { className: "gc-kpi-label", textContent: k.label }),
+            el("div", { className: "gc-kpi-val" }, [
+              el("span", { className: k.pill, style: "font-size:13.5px; padding:3px 9px;", textContent: k.val })
+            ]),
+            el("div", { className: "gc-kpi-sub", style: "margin-top:4px;", textContent: k.sub })
+          ])
+        )
+      );
 
-      // Render 3-Seat Council Table (Concise 1-Liners)
+      // Render 3-Seat Council Table
       const modelsTbody = document.getElementById("models-tbody");
       const seats = [
         {
-          seat: "Seat 1: Gemini 3.1 Pro",
-          s1: '<span class="pill-fail">90 / 100 (False Pass)</span>',
-          s2: 'Rank #2 (5 Borda pts)',
-          note: "Caught 7 core code issues; missed 7 cover-email contradictions until reviewing Response B in Stage 2."
+          seat: "Seat 1: Gemini 3.8 Flash",
+          s1Pill: "pill-fail",
+          s1Text: "90 / 100 (False Pass)",
+          s2Pill: null,
+          s2Text: "Rank #2 (5 Borda pts)",
+          note: "Caught 7 core architecture issues; missed 7 cover-email contradictions until reviewing Response B in Stage 2."
         },
         {
-          seat: "Seat 2: Claude Opus 5.5",
-          s1: '<span class="pill-pass">4.5 / 10 (True Fail)</span>',
-          s2: '<span class="pill-pass">Rank #1 (9/9 Borda pts)</span>',
+          seat: "Seat 2: Claude Opus 4.6",
+          s1Pill: "pill-pass",
+          s1Text: "4.5 / 10 (True Fail)",
+          s2Pill: "pill-pass",
+          s2Text: "Rank #1 (9/9 Borda pts)",
           note: "Caught all 14 contradictions across the cover email and QA draft; ranked #1 unanimously in blind peer vote."
         },
         {
-          seat: "Seat 3: Gemini 3.1 Flash",
-          s1: '<span class="pill-warn">7.2 / 10 (Conditional)</span>',
-          s2: 'Rank #3 (4 Borda pts)',
+          seat: "Seat 3: Gemini 3.5 Flash-Lite",
+          s1Pill: "pill-warn",
+          s1Text: "7.2 / 10 (Conditional)",
+          s2Pill: null,
+          s2Text: "Rank #3 (4 Borda pts)",
           note: "Verified 50/50 STE100 sentences; raised 1 TLS 1.3 cipher nitpick that both peers voted down (0/2)."
         }
       ];
-      modelsTbody.innerHTML = seats.map(r => `
-        <tr>
-          <td><b>${r.seat}</b></td>
-          <td>${r.s1}</td>
-          <td>${r.s2}</td>
-          <td>${r.note}</td>
-        </tr>
-      `).join("");
+      modelsTbody.replaceChildren(
+        ...seats.map((r) =>
+          el("tr", null, [
+            el("td", null, [el("b", { textContent: r.seat })]),
+            el("td", null, [el("span", { className: r.s1Pill, textContent: r.s1Text })]),
+            el("td", null, [
+              r.s2Pill
+                ? el("span", { className: r.s2Pill, textContent: r.s2Text })
+                : document.createTextNode(r.s2Text)
+            ]),
+            el("td", { textContent: r.note })
+          ])
+        )
+      );
 
       // Render Side-by-Side Claims Table
-      const claims = data.claims || [];
-      document.getElementById("claims-count").textContent = claims.length;
+      const claims = Array.isArray(data.claims) ? data.claims : [];
+      document.getElementById("claims-count").textContent = String(claims.length);
       const filterBar = document.getElementById("filter-bar");
       const groups = [
-        { id: "ALL", label: `All Verified Findings (${claims.length})` },
-        { id: "NEW_OPUS", label: `Caught via Stage 2 Blind Review (${claims.filter(c => c.group === "NEW_OPUS").length})` },
-        { id: "CORE_ENG", label: `Caught by All Models (${claims.filter(c => c.group === "CORE_ENG").length})` },
-        { id: "NUANCE", label: `Quota & Fail-Open Nuances (${claims.filter(c => c.group === "NUANCE").length})` }
+        { id: "ALL", label: "All Verified Findings (" + claims.length + ")" },
+        { id: "NEW_OPUS", label: "Caught via Stage 2 Blind Review (" + claims.filter((c) => c.group === "NEW_OPUS").length + ")" },
+        { id: "CORE_ENG", label: "Caught by All Models (" + claims.filter((c) => c.group === "CORE_ENG").length + ")" },
+        { id: "NUANCE", label: "Quota & Fail-Open Nuances (" + claims.filter((c) => c.group === "NUANCE").length + ")" }
       ];
       let activeGroup = "ALL";
 
       function drawClaims() {
-        const filtered = activeGroup === "ALL" ? claims : claims.filter(c => c.group === activeGroup);
+        const filtered = activeGroup === "ALL" ? claims : claims.filter((c) => c.group === activeGroup);
         const tbody = document.getElementById("claims-tbody");
-        tbody.innerHTML = filtered.map(c => {
-          const isFlipped = c.group === "NEW_OPUS";
-          const voteBadge = isFlipped
-            ? '<span class="pill-info">Pro flipped in Stage 2</span>'
-            : '<span class="pill-pass">3/3 Unanimous</span>';
-          return `
-            <tr>
-              <td>
-                <div style="margin-bottom:4px;"><span class="gc-code">${formatText(c.id)}</span></div>
-                <div style="font-size:12px; color:#5f6368; margin-bottom:5px;">${formatText(c.source || "")}</div>
-                <div>${voteBadge}</div>
-              </td>
-              <td>${formatText(c.v1Claim)}</td>
-              <td>${formatText(c.reality)}</td>
-              <td>${formatText(c.fix)}</td>
-            </tr>
-          `;
-        }).join("");
+        tbody.replaceChildren(
+          ...filtered.map((c) => {
+            const isFlipped = c.group === "NEW_OPUS";
+            const voteNode = isFlipped
+              ? el("span", { className: "pill-info", textContent: "Seat 1 flipped in Stage 2" })
+              : el("span", { className: "pill-pass", textContent: "3/3 Unanimous" });
+
+            const td1 = el("td", null, [
+              el("div", { style: "margin-bottom:4px;" }, [
+                el("span", { className: "gc-code", textContent: c.id || "" })
+              ]),
+              el("div", { style: "font-size:12px; color:#5f6368; margin-bottom:5px;", textContent: c.source || "" }),
+              el("div", null, [voteNode])
+            ]);
+            const td2 = el("td");
+            td2.appendChild(buildFormattedFragment(c.v1Claim || ""));
+            const td3 = el("td");
+            td3.appendChild(buildFormattedFragment(c.reality || ""));
+            const td4 = el("td");
+            td4.appendChild(buildFormattedFragment(c.fix || ""));
+            return el("tr", null, [td1, td2, td3, td4]);
+          })
+        );
       }
 
       function drawFilters() {
-        filterBar.innerHTML = groups.map(g => `
-          <button type="button" class="gc-filter-btn ${g.id === activeGroup ? 'active' : ''}" data-group="${g.id}">
-            ${g.label}
-          </button>
-        `).join("");
-        filterBar.querySelectorAll(".gc-filter-btn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            activeGroup = btn.getAttribute("data-group");
-            drawFilters();
-            drawClaims();
-          });
-        });
+        filterBar.replaceChildren(
+          ...groups.map((g) => {
+            const btn = el("button", {
+              type: "button",
+              className: "gc-filter-btn" + (g.id === activeGroup ? " active" : ""),
+              textContent: g.label
+            });
+            btn.addEventListener("click", () => {
+              activeGroup = g.id;
+              drawFilters();
+              drawClaims();
+            });
+            return btn;
+          })
+        );
       }
       drawFilters();
       drawClaims();
 
-      // Render STE100 Before/After Samples
-      const steRows = (data.ste100_rewrites || []).slice(0, 4);
+      // Render STE100 Before/After Samples (supports both canonical s.v1Text + s.lines and legacy s.v1_text + s.v2_bullets)
+      const steRows = (Array.isArray(data.ste100_rewrites) ? data.ste100_rewrites : []).slice(0, 5);
       const steTbody = document.getElementById("ste100-tbody");
       if (steRows.length > 0) {
-        steTbody.innerHTML = steRows.map(s => `
-          <tr>
-            <td>
-              <div style="margin-bottom:4px;"><span class="pill-fail">${formatText(s.v1_words || "42w")} &middot; ${formatText(s.section || "Draft")}</span></div>
-              <div style="color:#5f6368;">${formatText(s.v1_text || "")}</div>
-            </td>
-            <td>
-              <div style="margin-bottom:4px;"><span class="pill-pass">STE100 Compliant</span></div>
-              <div>${(s.v2_bullets || []).map(b => `<div style="margin-bottom:3px;">&bull; ${formatText(b)}</div>`).join("")}</div>
-            </td>
-          </tr>
-        `).join("");
+        steTbody.replaceChildren(
+          ...steRows.map((s) => {
+            const headerBadgeText = s.v1Stats
+              ? String(s.v1Stats)
+              : String(s.v1_words || "42w") + " \u00b7 " + String(s.title || s.section || "Draft");
+            const originalText = s.v1Text || s.v1_text || "";
+            const bulletItems = Array.isArray(s.lines)
+              ? s.lines.map((ln) => "[" + String(ln.type || "D") + "] (" + String(ln.words || 0) + "w) " + String(ln.text || ""))
+              : Array.isArray(s.v2_bullets)
+                ? s.v2_bullets.map((b) => String(b))
+                : [];
+
+            const leftTd = el("td", null, [
+              el("div", { style: "margin-bottom:4px;" }, [
+                el("span", { className: "pill-fail", textContent: headerBadgeText })
+              ]),
+              s.title ? el("div", { style: "font-weight:500; margin-bottom:4px;", textContent: s.title }) : null,
+              el("div", { style: "color:#5f6368;" }, [buildFormattedFragment(originalText)])
+            ]);
+
+            const rightTd = el("td", null, [
+              el("div", { style: "margin-bottom:4px;" }, [
+                el("span", { className: "pill-pass", textContent: s.steStats || "STE100 Compliant" })
+              ]),
+              el(
+                "div",
+                null,
+                bulletItems.map((bText) => {
+                  const rowDiv = el("div", { style: "margin-bottom:3px;" }, ["\u2022 "]);
+                  rowDiv.appendChild(buildFormattedFragment(bText));
+                  return rowDiv;
+                })
+              )
+            ]);
+            return el("tr", null, [leftTd, rightTd]);
+          })
+        );
       } else {
-        steTbody.innerHTML = `
-          <tr>
-            <td><span class="pill-fail">68 words &middot; Email &sect;13</span><div style="color:#5f6368; margin-top:4px;">When a claims adjuster uploads a PDF containing an SSN, Cloud SDP masks the SSN inline as [SSN-MASKED] and forwards the sanitized file to the model.</div></td>
-            <td><span class="pill-pass">2 sentences &middot; 14w &amp; 12w</span><div style="margin-top:4px;">&bull; <b>[D] (14w)</b> <code class="gc-code">UploadSessionFile</code> blocks the entire file upload when Cloud SDP detects a configured InfoType.<br>&bull; <b>[P] (12w)</b> Remove sensitive fields from session files before uploading them to Gemini Enterprise.</div></td>
-          </tr>
-        `;
+        steTbody.replaceChildren(
+          el("tr", null, [
+            el("td", null, [
+              el("span", { className: "pill-fail", textContent: "68 words \u00b7 Email \u00a713" }),
+              el("div", {
+                style: "color:#5f6368; margin-top:4px;",
+                textContent: "When a claims adjuster uploads a PDF containing an SSN, Cloud SDP masks the SSN inline as [SSN-MASKED] and forwards the sanitized file to the model."
+              })
+            ]),
+            el("td", null, [
+              el("span", { className: "pill-pass", textContent: "2 sentences \u00b7 14w & 12w" }),
+              el("div", { style: "margin-top:4px;" }, [
+                buildFormattedFragment("\u2022 [D] (14w) UploadSessionFile blocks the entire file upload when Cloud SDP detects a configured InfoType.")
+              ]),
+              el("div", { style: "margin-top:3px;" }, [
+                buildFormattedFragment("\u2022 [P] (12w) Remove sensitive fields from session files before uploading them to Gemini Enterprise.")
+              ])
+            ])
+          ])
+        );
       }
 
       // Render Gatekeeper Checks
       const gkTbody = document.getElementById("gatekeeper-tbody");
       const gates = [
-        { name: "1. Secret & Internal URL Scanner", status: '<span class="pill-pass">PASS</span>', detail: "0 API keys, private keys, or internal-only hostnames detected." },
-        { name: "2. ASD-STE100 Readability Linter", status: '<span class="pill-pass">PASS (50/50)</span>', detail: "All 50 rewritten sentences pass active-voice and word-cap checks (avg 11.5w)." },
-        { name: "3. Code-to-README Consistency", status: '<span class="pill-pass">PASS</span>', detail: "All CLI flags and script paths in SKILL.md match scripts/*.py." },
-        { name: "4. Stage 2 Council Consensus Gate", status: '<span class="pill-fail">HOLD (4.5/10)</span>', detail: "14 send-blocking contradictions require fixes before sending to customer." }
+        { name: "1. Secret & Internal URL Scanner", pill: "pill-pass", status: "PASS", detail: "0 API keys, private keys, or internal-only hostnames detected." },
+        { name: "2. ASD-STE100 Readability Linter", pill: "pill-pass", status: "PASS (50/50)", detail: "All 50 rewritten sentences pass active-voice and word-cap checks (avg 11.5w)." },
+        { name: "3. Code-to-README Consistency", pill: "pill-pass", status: "PASS", detail: "All CLI flags and script paths in SKILL.md match scripts/*.py." },
+        { name: "4. Stage 2 Council Consensus Gate", pill: "pill-fail", status: "HOLD (4.5/10)", detail: "14 send-blocking contradictions require fixes before sending to customer." }
       ];
-      gkTbody.innerHTML = gates.map(g => `
-        <tr>
-          <td><b>${g.name}</b></td>
-          <td>${g.status}</td>
-          <td>${g.detail}</td>
-        </tr>
-      `).join("");
+      gkTbody.replaceChildren(
+        ...gates.map((g) =>
+          el("tr", null, [
+            el("td", null, [el("b", { textContent: g.name })]),
+            el("td", null, [el("span", { className: g.pill, textContent: g.status })]),
+            el("td", { textContent: g.detail })
+          ])
+        )
+      );
     })();
   </script>
 </body>

@@ -1,4 +1,4 @@
-# Dual-Model Output Engineering Benchmark: Gemini Pro vs. Claude Opus
+# Dual-Model Output Engineering Benchmark: Gemini 3.8 Flash vs. Claude Opus 4.6
 
 > **Disclaimer**: This benchmark and sample audit are provided for illustration and educational purposes only. All customer-identifying details, internal project IDs, and credentials have been sanitized.
 
@@ -10,22 +10,22 @@ When Customer Engineers (CEs) and Solutions Architects use generative AI to draf
 
 This benchmark evaluates the **Output AI Verification Loop (`output-engineer` skill)** on a real-world **Public Sector Agency Security Architecture Review** (consisting of a 13-point security architecture email and 9 deep-dive Open Questions on **Gemini Enterprise**, **Model Armor**, and **Sensitive Data Protection**).
 
-Using Jetski / Antigravity `swarm` orchestration, we ran the exact same Version 1 technical draft through two frontier models in parallel:
-- **Model A (Context Synthesizer):** `gemini-3.1-pro-high` (Gemini Pro)
-- **Model B (Adversarial Challenger):** `opus-5.5-high` (Claude Opus)
+Using parallel multi-agent orchestration, we ran the exact same Version 1 technical draft through two frontier models in parallel:
+- **Model A (Context Synthesizer):** `gemini-3.8-flash` (Gemini 3.8 Flash)
+- **Model B (Adversarial Challenger):** `claude-opus-4-6` (Claude Opus 4.6)
 
 ---
 
 ## 2. Head-to-Head Benchmark Results
 
-| Evaluation Dimension | Gemini Pro (`gemini-3.1-pro-high`) | Claude Opus (`opus-5.5-high`) | Architectural Takeaway |
+| Evaluation Dimension | Gemini 3.8 Flash (`gemini-3.8-flash`) | Claude Opus 4.6 (`claude-opus-4-6`) | Architectural Takeaway |
 | :--- | :--- | :--- | :--- |
-| **Execution Time** | **~92 seconds** (140 lines) | **~11 minutes** (535 lines + live doc/config verification) | **Gemini Pro** is ~7x faster for rapid synthesis; **Claude Opus** invests deep compute in adversarial verification. |
-| **V1 Draft Scoring Calibration** | **Generous:** Logical Consistency `90/100`, Grounding `95/100`, STE100 `85/100` | **Forensic:** Logical Consistency `4.5/10`, Grounding `4.5/10`, STE100 `2.5/10` | **Claude Opus** measured V1's actual sentence length (39.9 words/sentence average; 78% over the 25-word ASD-STE100 cap) and penalized internal contradictions. |
-| **Core Engineering Review Findings (5)** | **5 / 5 Caught** (`OQ-1` parallel fibers, `OQ-3(e)` `user_email` & `user_cpi`, `OQ-5` `ucs_widget`, `OQ-10` 5/8/20 caps & 600 RPM) | **5 / 5 Caught** + verified quota definitions & flag dependencies | **Tie** on known OQ discrepancies. |
-| **Unprompted Contradictions Caught** | **0** beyond the 5 OQ findings (accepted the 13-point email's Workers' Comp SSN-masking narrative at face value) | **8 New Contradictions** across the 13-point email and Version 2 doc (see Section 3 below) | **Claude Opus** excelled as an adversarial red-team challenger. |
-| **ASD-STE100 Rule Adherence** | **100% within word caps** (written as smooth multi-sentence paragraphs, ~11 words/sentence) | **100% within word caps** (141 sentences machine-verified with `[P]`/`[D]` & `[nw]` tags; 0 violations) | **Gemini Pro** reads more naturally for executive emails; **Claude Opus** is superior for line-by-line technical sign-off. |
-| **Declarative Mermaid Diagrams** | Clean executive overview diagrams ready for customer slide decks | Detailed forensic diagrams with explicit `RED FLAG` edges and `par`/`alt` blocks | Complementary: **Gemini Pro** for customer presentation; **Claude Opus** for internal CE/SA architecture audit. |
+| **Execution Time** | **~92 seconds** (140 lines) | **~11 minutes** (535 lines + live doc/config verification) | **Gemini 3.8 Flash** is ~7x faster for rapid synthesis; **Claude Opus 4.6** invests deep compute in adversarial verification. |
+| **V1 Draft Scoring Calibration** | **Generous:** Logical Consistency `90/100`, Grounding `95/100`, STE100 `85/100` | **Forensic:** Logical Consistency `4.5/10`, Grounding `4.5/10`, STE100 `2.5/10` | **Claude Opus 4.6** measured V1's actual sentence length (39.9 words/sentence average; 78% over the 25-word ASD-STE100 cap) and penalized internal contradictions. |
+| **Core Engineering Review Findings (5)** | **5 / 5 Caught** (`OQ-1` parallel fibers, `OQ-3(e)` `user_email` & `caller_principal_id`, `OQ-5` browser web UI, `OQ-10` 5/8/20 caps & 600 RPM) | **5 / 5 Caught** + verified quota definitions & setting dependencies | **Tie** on known OQ discrepancies. |
+| **Unprompted Contradictions Caught** | **0** beyond the 5 OQ findings (accepted the 13-point email's Workers' Comp SSN-masking narrative at face value) | **8 New Contradictions** across the 13-point email and Version 2 doc (see Section 3 below) | **Claude Opus 4.6** excelled as an adversarial red-team challenger. |
+| **ASD-STE100 Rule Adherence** | **100% within word caps** (written as smooth multi-sentence paragraphs, ~11 words/sentence) | **100% within word caps** (141 sentences machine-verified with `[P]`/`[D]` & `[nw]` tags; 0 violations) | **Gemini 3.8 Flash** reads more naturally for executive emails; **Claude Opus 4.6** is superior for line-by-line technical sign-off. |
+| **Declarative Mermaid Diagrams** | Clean executive overview diagrams ready for customer slide decks | Detailed forensic diagrams with explicit `RED FLAG` edges and `par`/`alt` blocks | Complementary: **Gemini 3.8 Flash** for customer presentation; **Claude Opus 4.6** for internal CE/SA architecture audit. |
 
 ---
 
@@ -39,12 +39,12 @@ Using Jetski / Antigravity `swarm` orchestration, we ran the exact same Version 
 2. **`OQ-3(e)` — `user_email` and `user_full_name` in `system_instruction`:**
    - **V1 Claim:** Stated that user email is stripped and never sent to Zone 3 model serving.
    - **Production Reality:** While raw Workforce Identity (SAML/OIDC) tokens, IAM group lists, and `Session` IDs are never sent as RPC credentials, **`user_email`** is injected into `system_instruction` for the Connector Query Rewrite sub-agent and root agent instructions, and **`user_full_name` + `user_email`** are injected into Agent Builder email sign-off instructions.
-3. **`OQ-3(e)` — `cloud_principal_id` (`user_cpi`) in Request Extensions:**
-   - **V1 Claim:** Described `tenant_stream_id` as an "opaque" correlation identifier.
-   - **Production Reality:** `tenant_stream_id` embeds `gcp_<project_number>.cpi_<user_cpi>.class_unknown` for abuse detection and per-caller usage attribution.
-4. **`OQ-5` — Client-Side Web UI (`ucs_widget`) vs. Backend C++ Markdown Sanitizer:**
-   - **V1 Claim:** Attributed chat Markdown image stripping (`![alt](url)`) to the backend C++ `MarkdownSanitizer`.
-   - **Production Reality:** The backend `enable_in_backend` flag defaults to `false` on `StreamAssist` chat responses. External image blocking and link redirection (`google.com/url?q=`) are enforced **client-side in the Gemini Enterprise Web UI (`ucs_widget`)**, meaning custom API callers outside the Google web UI must block `<img>` rendering in their own client.
+3. **`OQ-3(e)` — `caller_principal_id` in Request Attribution Metadata:**
+   - **V1 Claim:** Described `stream_attribution_id` as an "opaque" correlation identifier.
+   - **Production Reality:** `stream_attribution_id` embeds the project number and the caller's Cloud Principal ID (`caller_principal_id`) for abuse detection and per-caller usage attribution.
+4. **`OQ-5` — Client-Side Web UI vs. Server-Side Markdown Sanitizer:**
+   - **V1 Claim:** Attributed chat Markdown image stripping (`![alt](url)`) to a server-side Markdown sanitizer.
+   - **Production Reality:** Server-side Markdown image sanitization is disabled by default on `StreamAssist` chat responses. External image blocking and link redirection (`google.com/url?q=`) are enforced **client-side in the Gemini Enterprise web UI**, meaning custom API callers outside the Google web UI must block `<img>` rendering in their own client.
 5. **`OQ-10` — Multi-Layer Per-Turn Tool Caps (5 / 8 / 20) & Assistant vs. Search Quotas:**
    - **V1 Claim:** Cited only the outer 20 tool-turn limit and a "300 requests/minute/project" quota.
    - **Production Reality:** Production enforces **5** code-executor sandbox calls/turn, **8** root-agent thinking rounds, and **20** outer compositional tool turns; and the **Assistant** quota is **600 requests/min/project/region** (**1,800/min/org/region**), whereas **300/min** is the **Search** quota.
@@ -104,7 +104,7 @@ Below is an excerpt of the machine-verified ASD-STE100 rewrite (`P` = Procedural
 flowchart LR
   subgraph Z1["Zone 1: Customer GCP Org and Endpoints (Customer-Owned)"]
     U["Agency Claims Specialist"]
-    UI["Browser: ucs_widget Renderer (Client-Side Image Block)"]
+    UI["Browser: Gemini Enterprise Web UI (Client-Side Image Block)"]
     IDP["Entra ID / Okta IdP"]
     KMS["Cloud KMS (Customer CMEK Key in 'us' Multi-Region)"]
     MAT["Model Armor Templates (userPromptTemplate, responseTemplate)"]
@@ -112,10 +112,10 @@ flowchart LR
   end
 
   subgraph Z2["Zone 2: Single-Tenant Google Project (VPC-SC, CMEK)"]
-    SA["StreamAssistHandler + GovernorModule"]
-    DOL["Dolphin Assistant (Root Agent & Query Rewriter)"]
+    SA["StreamAssist API Gateway + Policy Gate"]
+    AST["Gemini Enterprise Assistant (Root Agent & Query Rewriter)"]
     SESS["Ephemeral Session Storage (UploadSessionFile)"]
-    GP["GovernancePlugin.after_tool_callback"]
+    GP["Post-Retrieval Policy Gate"]
     MA["Model Armor (modelarmor.googleapis.com)"]
     SDP["SDP Content Policy (dlp.googleapis.com)"]
   end
@@ -135,17 +135,17 @@ flowchart LR
   KMS -.->|"CMEK Key Wrap"| SESS
   SA -->|"Parallel Fiber 1: SanitizeFileContent (<= 4 MB)"| MA
   SA -->|"Parallel Fiber 2: ApplyContentPolicy (<= 50 MB PDF)"| SDP
-  SA -->|"CheckQuery: SanitizeUserPrompt"| MA
+  SA -->|"Prompt Gate: SanitizeUserPrompt"| MA
   MAT -.->|"Template Config"| MA
-  SA -->|"Prompt Approved"| DOL
-  DOL -->|"GAP: Rewritten Query Not Screened"| FS
+  SA -->|"Prompt Approved"| AST
+  AST -->|"GAP: Rewritten Query Not Screened"| FS
   FS -->|"retrieval_results (1:1 User OAuth ACL)"| GP
-  GP -->|"data_protection_after_tool_callback"| SDP
+  GP -->|"Post-Retrieval SDP Inspection"| SDP
   GP -->|"GAP: Snippet Screen Fails Open on RPC Error"| MA
-  DOL ==>|"ALTS: system_instruction (with user_email), file parts, tenant_stream_id (with user_cpi)"| VX
-  VX -->|"Stateless Candidate Answer (ZDR)"| DOL
-  DOL --> SA
-  SA -->|"CheckResponse: SanitizeModelResponse"| MA
-  SA -->|"Raw Markdown (Backend C++ Sanitizer OFF)"| UI
+  AST ==>|"ALTS: system_instruction (with user_email), file parts, stream_attribution_id (with caller_principal_id)"| VX
+  VX -->|"Stateless Candidate Answer (ZDR)"| AST
+  AST --> SA
+  SA -->|"Response Gate: SanitizeModelResponse"| MA
+  SA -->|"Raw Markdown (Server-Side Image Sanitizer OFF)"| UI
   SA -.->|"Audit Log (Admin Prompts Only)"| LOG
 ```

@@ -182,8 +182,24 @@ _ALLOWED_OAUTH_STATE_KEYS = (
 )
 
 
+_RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def _validate_resource_segment(value: str, label: str) -> str:
+    cleaned = value.strip()
+    if not cleaned or not _RESOURCE_SEGMENT_RE.match(cleaned):
+        raise ValueError(f"Invalid {label} resource identifier.")
+    return cleaned
+
+
 def _extract_bearer_token(tool_context: ToolContext | None) -> str:
-    """Extract end-user OAuth token from explicit ToolContext state keys, with optional ADC fallback."""
+    """Extract end-user OAuth token from explicit ToolContext state keys.
+
+    Fails closed by default (`REQUIRE_USER_OAUTH_TOKEN=true`) so Discovery Engine
+    queries execute under the end user's document ACLs rather than escalating to
+    the service account's project-wide viewer role unless explicitly opted out
+    (`REQUIRE_USER_OAUTH_TOKEN=false`).
+    """
     if tool_context is not None and hasattr(tool_context, "state"):
         try:
             state_dict = (
@@ -198,13 +214,15 @@ def _extract_bearer_token(tool_context: ToolContext | None) -> str:
         except Exception:
             pass
 
-    if os.environ.get("REQUIRE_USER_OAUTH_TOKEN", "false").lower() in ("true", "1"):
+    require_user_token = os.environ.get("REQUIRE_USER_OAUTH_TOKEN", "true").strip().lower()
+    if require_user_token not in ("false", "0", "no"):
         raise PermissionError(
-            "User OAuth access token is required in ToolContext state when REQUIRE_USER_OAUTH_TOKEN=true."
+            "End-user OAuth access token is required in ToolContext state "
+            "(REQUIRE_USER_OAUTH_TOKEN defaults to true to enforce per-user document ACLs)."
         )
 
     creds, _ = google.auth.default(
-        scopes=["https://www.googleapis.com/auth/discoveryengine.readwrite"]
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
     )
     if not creds.valid:
         creds.refresh(Request())
@@ -247,14 +265,23 @@ def search_google_sites(
     ).encode("utf-8")
 
     endpoints = []
-    if target_project and DATASTORE_ID:
-        endpoints.append(
-            f"https://discoveryengine.googleapis.com/v1/projects/{target_project}/locations/global/collections/default_collection/dataStores/{DATASTORE_ID}/servingConfigs/default_search:search"
-        )
+    active_datastore = os.environ.get("GOOGLE_SITES_DATASTORE_ID", DATASTORE_ID).strip()
+    active_fallbacks = [
+        e.strip()
+        for e in os.environ.get("GOOGLE_SITES_FALLBACK_ENGINES", ",".join(FALLBACK_ENGINES)).split(",")
+        if e.strip()
+    ]
     if target_project:
-        for eng in FALLBACK_ENGINES:
+        safe_proj = _validate_resource_segment(target_project, "project")
+        if active_datastore:
+            safe_ds = _validate_resource_segment(active_datastore, "datastore")
             endpoints.append(
-                f"https://discoveryengine.googleapis.com/v1/projects/{target_project}/locations/global/collections/default_collection/engines/{eng}/servingConfigs/default_search:search"
+                f"https://discoveryengine.googleapis.com/v1/projects/{safe_proj}/locations/global/collections/default_collection/dataStores/{safe_ds}/servingConfigs/default_search:search"
+            )
+        for eng in active_fallbacks:
+            safe_eng = _validate_resource_segment(eng, "engine")
+            endpoints.append(
+                f"https://discoveryengine.googleapis.com/v1/projects/{safe_proj}/locations/global/collections/default_collection/engines/{safe_eng}/servingConfigs/default_search:search"
             )
 
     last_error = ""

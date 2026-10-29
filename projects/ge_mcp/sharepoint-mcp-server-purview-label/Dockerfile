@@ -1,30 +1,20 @@
-# Build stage
-FROM node:20-slim AS builder
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
 
-WORKDIR /app
+FROM node:22-slim
 
-# Copy package files
+WORKDIR /usr/src/app
+
 COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Install dependencies
-RUN npm install
+COPY index.js sharepoint_common.js ./
 
-# Copy source code
-COPY . .
-
-# Production stage
-FROM node:20-slim
-
-WORKDIR /app
-
-# Copy from builder
-COPY --from=builder /app ./
-
-# Set environment to production
 ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=8080
+EXPOSE 8080
 
-# Expose the port (Cloud Run uses PORT env var)
-EXPOSE 3000
+USER node
 
-# Start the server
 CMD ["node", "index.js"]

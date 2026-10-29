@@ -5,11 +5,11 @@ Implements Andrej Karpathy's 3-Stage `llm-council` architecture adapted for
 Customer Engineer (CE) security questionnaire, RFP, and architecture reviews:
 
   - Stage 1 (`stage1_collect_responses` — Independent Parallel Specialists):
-      Heterogeneous frontier models audit the technical draft in isolation so
+      Heterogeneous GA frontier models audit the technical draft in isolation so
       no model anchors another:
-        * Seat 1 (`gemini-3.1-pro-high`) — Context Synthesizer & Doc Grounder
-        * Seat 2 (`opus-5.5-high`) — Adversarial Logic Challenger & STE100 Enforcer
-        * Seat 3 (`gemini-3.1-flash-high`) — Quota, SDP InfoType & Regional Verifier
+        * Seat 1 (`gemini-3.8-flash`) — Context Synthesizer & Doc Grounder
+        * Seat 2 (`claude-opus-4-6`) — Adversarial Logic Challenger & STE100 Enforcer
+        * Seat 3 (`gemini-3.5-flash-lite`) — Quota, SDP InfoType & Regional Verifier
   - Stage 2 (`stage2_collect_rankings` — Anonymized Blind Peer Review & Borda Matrix):
       Strips model identities into blind labels (`Response A`, `Response B`,
       `Response C`), has each council model score the anonymized outputs on

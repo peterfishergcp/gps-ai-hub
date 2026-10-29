@@ -29,6 +29,12 @@ variable "region" {
   default     = "us-central1"
 }
 
+variable "google_sites_datastore_id" {
+  type        = string
+  description = "Discovery Engine Google Sites Data Store ID queried by search_google_sites."
+  default     = ""
+}
+
 variable "telemetry_logs_filter" {
   type        = string
   description = "Log Sink filter for capturing telemetry data. Captures logs with the `traceloop.association.properties.log_type` attribute set to `tracing`."
@@ -40,7 +46,7 @@ variable "app_sa_roles" {
   type        = list(string)
   default = [
     "roles/aiplatform.user",
-    "roles/discoveryengine.viewer",
+    "roles/logging.logWriter",
     "roles/cloudtrace.agent",
     "roles/serviceusage.serviceUsageConsumer",
   ]

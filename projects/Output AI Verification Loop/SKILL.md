@@ -66,9 +66,9 @@ When given a technical draft, email thread, or document to verify, execute the f
 
 Before rewriting or formatting any text, extract every testable assertion from the draft and classify it into one of five high-risk categories:
 
-1. **Execution Order & Pipeline Gates:** Does the draft claim Service A runs before Service B (e.g., Model Armor vs. Sensitive Data Protection inspection order, or pre-planner vs. post-rewriter screening)? Verify the exact call sequence in official architecture docs or source code.
-2. **Data Boundaries & Identity Propagation:** Does the draft claim "zero user identifiers cross into model serving"? Check whether `user_email`, `user_full_name`, or `cloud_principal_id` (`user_cpi`) are injected into `system_instruction` or request extensions (`tenant_stream_id`).
-3. **Default Flag States & Client vs. Backend Enforcement:** Does the draft credit a backend service for a security control that is actually disabled by default (`enable_in_backend = false`) and enforced in the web client (`ucs_widget`) instead?
+1. **Execution Order & Pipeline Gates:** Does the draft claim Service A runs before Service B (e.g., Model Armor vs. Sensitive Data Protection inspection order, or pre-planner vs. post-rewriter screening)? Verify the exact call sequence in official architecture docs or configuration specifications.
+2. **Data Boundaries & Identity Propagation:** Does the draft claim "zero user identifiers cross into model serving"? Check whether `user_email`, `user_full_name`, or `caller_principal_id` are injected into `system_instruction` or request attribution metadata (`stream_attribution_id`).
+3. **Default Setting States & Client vs. Backend Enforcement:** Does the draft credit a backend service for a security control that is disabled by default on the server and enforced in the Gemini Enterprise web UI instead?
 4. **Numeric Quotas, Limits & Thresholds:** Verify every number (MB upload limits, requests/minute, tool call caps per turn) against official quota documentation and configuration files. Never conflate Search quotas with Assistant quotas.
 5. **Edition & Licensing Entitlements:** Confirm whether security controls (CMEK, VPC-SC, Data Residency, Access Transparency, Model Armor) are included in the customer's purchased tier (e.g., Standard vs. Plus) and note regional constraints (`us` / `eu` multi-regions).
 
@@ -81,12 +81,12 @@ Assign each claim a verification status:
 
 ## Phase 2: Karpathy 3-Stage LLM Review Council (Independent Seats → Blind Peer Review → Chairman Synthesis)
 
-When reviewing a technical draft, security questionnaire, or RFP response, execute the **3-Stage LLM Council** (via `scripts/council_runner.py` or Jetski `swarm` workers):
+When reviewing a technical draft, security questionnaire, or RFP response, execute the **3-Stage LLM Council** (via `scripts/council_runner.py` or parallel multi-agent workers):
 
 1. **Stage 1 — Independent Council Specialists (`stage1_collect_responses`):**
-   - **Seat 1 (`gemini-3.1-pro-high` — Context Synthesizer & Grounder):** Rapid multi-document and codebase synthesis, quota/config cross-referencing, and clean architectural diagrams.
-   - **Seat 2 (`opus-5.5-high` — Adversarial Logic & Security Challenger):** Cross-section contradiction hunting, implicit assumption detection, and strict ASD-STE100 enforcement.
-   - **Seat 3 (`gemini-3.1-flash-high` — Quota, InfoType & STE100 Verifier):** Fast verification of built-in SDP `infoType` identifiers, Cloud KMS rotation semantics, regional constraints, and sentence word-count caps.
+   - **Seat 1 (`gemini-3.8-flash` — Context Synthesizer & Grounder):** Rapid multi-document synthesis, quota/config cross-referencing, and clean architectural diagrams.
+   - **Seat 2 (`claude-opus-4-6` — Adversarial Logic & Security Challenger):** Cross-section contradiction hunting, implicit assumption detection, and strict ASD-STE100 enforcement.
+   - **Seat 3 (`gemini-3.5-flash-lite` — Quota, InfoType & STE100 Verifier):** Fast verification of built-in SDP `infoType` identifiers, Cloud KMS rotation semantics, regional constraints, and sentence word-count caps.
 2. **Stage 2 — Anonymized Blind Peer Review & Borda Ranking (`stage2_collect_rankings`):**
    - Strip model names into blind labels (`Response A`, `Response B`, `Response C`).
    - Have each council model score the anonymized outputs on **Precision (1–10)**, **Recall (1–10)**, and **Actionability (1–10)**, flag any hallucinated false-positive nitpicks for removal, and compute **Borda Count** rankings plus per-claim consensus badges.
@@ -99,7 +99,7 @@ When reviewing a technical draft, security questionnaire, or RFP response, execu
 
 ### Modality 1: Controlled Technical Writing — ASD-STE100 (~80% Pragmatic Strictness)
 
-Rewrite dense AI prose into **Simplified Technical English (ASD-STE100)** so a reviewer can verify every claim on a single read. See [references/asd_ste100_quick_reference.md](./references/asd_ste100_quick_reference.md) for the complete rule catalog.
+Rewrite dense AI prose into **Simplified Technical English (ASD-STE100)** so a reviewer can verify every claim on a single read. See [references/asd_ste100_quick_reference.md](./skill/output-engineer/references/asd_ste100_quick_reference.md) for the complete rule catalog.
 
 - **Classify Every Sentence:** Tag **Procedural (`P`)** instructions (what the admin/user does) separately from **Descriptive (`D`)** architecture explanations (how the system works).
 - **Hard Sentence Length Caps:**
@@ -120,14 +120,14 @@ Translate every architectural narrative into at least two declarative Mermaid di
    - Label every edge with the protocol, credential type, or payload restriction (e.g., `ALTS / TLS 1.3 (Service Agent Identity)`).
    - Quote all node labels containing parentheses or special characters: `id["Label (Detail)"]`.
 2. **Sequence & Gate Execution Diagram (`sequenceDiagram`):**
-   - Show the exact chronological order of security gates (e.g., `CheckQuery` -> `SanitizeUserPrompt` -> `Dolphin Planner` -> `Connector Tool` -> `after_tool_callback (SDP + Model Armor)` -> `Vertex AI Gemini` -> `CheckResponse`).
+   - Show the exact chronological order of security gates (e.g., `Prompt Gate` -> `SanitizeUserPrompt` -> `Assistant Planner` -> `Connector Tool` -> `Post-Retrieval Screening (SDP + Model Armor)` -> `Vertex AI Gemini` -> `Response Gate`).
    - Highlight parallel (`par`) vs. sequential execution paths and fail-closed (`alt`) rejection branches.
 
 ### Modality 3: Interactive HTML Review Canvas
 
-Generate a self-contained, interactive HTML artifact based on [resources/review_canvas_template.html](./resources/review_canvas_template.html):
+Generate a self-contained, interactive HTML artifact based on [resources/review_canvas_template.html](./skill/output-engineer/resources/review_canvas_template.html):
 
-- **Host Theme & Tailwind Compliance:** Include `<script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>` and use semantic host CSS variables (`bg-[var(--background)]`, `bg-[var(--card)]`, `text-[var(--foreground)]`, `text-[var(--muted-foreground)]`, `border-[var(--border)]`) so the Canvas adapts automatically to light and dark modes in Jetski/Antigravity and standalone browsers.
+- **Self-Contained Styling & Safe DOM Rendering:** Use self-contained inline CSS variables and safe DOM construction (`document.createElement` / `textContent` / `replaceChildren`) with zero external script CDNs or unsafe `innerHTML` assignments so the Canvas renders safely in any browser or IDE preview pane.
 - **Required Interactive Views (5-Tab Interface):**
   1. **Claim & Red-Flag Inspector:** Filterable table of atomic claims with V1 Statement vs. Production Reality vs. Required Fix.
   2. **Dual-Model Benchmark (Gemini Pro vs. Claude Opus):** Side-by-side comparison of model findings, latency, and Challenger-Defender insights.
