@@ -196,7 +196,83 @@ python3 test_ge_ediscovery_e2e.py \
 
 ---
 
-## 4. Common Customer Site Troubleshooting
+## 4. Upgrading an Existing Customer Deployment (Zero-Downtime + Backfill)
+
+When a customer already has an earlier version of `ge-ediscovery-logging` installed (for example, prior to the BigQuery staging schema fix `b55733f` and the `3d30544` security/anti-spoliation hardening), **do not delete or recreate their Cloud Storage bucket, BigQuery dataset, Cloud KMS key, or Workforce Identity Pool**. Follow this 7-step zero-downtime upgrade sequence:
+
+### Step U1: Pull Latest Code & Load Existing `.env`
+```bash
+git pull origin main
+set -a && source .env && set +a
+echo "Upgrading Project: $GCP_PROJECT_ID | Workforce Pool: $WORKFORCE_POOL_ID | Reviewer: $PORTAL_REVIEWER_EMAIL"
+```
+
+### Step U2: Update Workforce Pool OIDC Provider & Lock Down KMS Key IAM
+Updates the `ediscovery-archiver` OIDC provider CEL condition, ensures `ge-ediscovery-harvester-sa` has exclusive signing rights on `ediscovery-archiver-jwt-key`, and scopes the WIF provider's `roles/discoveryengine.user` binding to the project:
+```bash
+python3 setup_ediscovery_archiver_provider.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --workforce-pool-id "$WORKFORCE_POOL_ID"
+```
+
+### Step U3: Update BigQuery Views & TVFs In-Place (Zero Data Loss)
+Re-running `setup_storage_and_bigquery.py` leaves all existing `conversation_turns` rows and GCS blobs untouched while updating all 6 views/TVFs (adding `v_ediscovery_custodian_export`, content-addressed transcript URI resolution, and greenfield `INFORMATION_SCHEMA` safety guards):
+```bash
+python3 setup_storage_and_bigquery.py --project-id "$GCP_PROJECT_ID"
+```
+
+### Step U4: Rebuild & Redeploy the Cloud Run Harvester (Includes BigQuery Schema Fix + Anti-Spoliation `MERGE`)
+Packages `conversation_turns_schema.json` + `purview_connector.py` into the container image (`b55733f`), switches BigQuery `MERGE` to union-merge `files` (preserving `>72h` session uploads) and deterministic NotebookLM `turn_index` hashing (preserving `>30d` notebook turns), downscopes STS tokens via IAM Credential Access Boundaries, enforces `EXPECTED_OIDC_AUDIENCE`, upgrades container memory to `1Gi`, and scopes GCS IAM to `objectCreator` + `objectViewer`:
+```bash
+python3 deploy_cloudrun_harvester.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --workforce-pool-id "$WORKFORCE_POOL_ID"
+```
+
+### Step U5: Rebuild & Redeploy the Compliance Review Portal
+Upgrades the portal to `1Gi` RAM, fixes `HTTP 403` media streaming under least-privilege `ge-ediscovery-portal-sa` (with `64 KiB` chunked HTTP `206` Range support), wires server-side BigQuery `/api/search`, enforces `IAP_AUDIENCE` + fail-closed `ALLOWED_REVIEWER_EMAILS` RBAC, and isolates HTML slides in `<iframe sandbox="">` with `dompurify@3.4.17`:
+```bash
+python3 deploy_portal.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --reviewer-email "$PORTAL_REVIEWER_EMAIL" \
+  --iap-accessor "user:${PORTAL_REVIEWER_EMAIL}" \
+  --allowed-reviewer-emails "$PORTAL_REVIEWER_EMAIL"
+```
+
+### Step U6: Remove Legacy Over-Broad IAM Bindings from Earlier Releases
+Earlier deployments granted `roles/storage.objectAdmin` to `ge-ediscovery-harvester-sa` (which allowed object deletion) and project-wide `roles/bigquery.dataViewer` to `ge-ediscovery-portal-sa`. Strip those two legacy bindings now that the scripts have granted least-privilege replacements (`objectCreator` + `objectViewer` on the bucket and dataset-level `READER` on `ge_ediscovery`):
+```bash
+# 1. Remove legacy storage.objectAdmin from Harvester SA on the archive bucket:
+gcloud storage buckets remove-iam-policy-binding "gs://${GCP_PROJECT_ID}-ge-ediscovery" \
+  --member="serviceAccount:ge-ediscovery-harvester-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectAdmin" || true
+
+# 2. Remove legacy project-wide bigquery.dataViewer from Portal SA:
+gcloud projects remove-iam-policy-binding "$GCP_PROJECT_ID" \
+  --member="serviceAccount:ge-ediscovery-portal-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/bigquery.dataViewer" || true
+```
+
+### Step U7: Replay Dead-Lettered Events, Run Historical Backfill & Verify
+If the customer's deployment ran prior to commit `b55733f` (missing `conversation_turns_schema.json` in `Dockerfile`), real-time Pub/Sub events may have failed BigQuery staging load jobs and landed in `ge-ediscovery-dlq-hold`. Replay the DLQ and run a 7-day (`168h`) backfill sweep to recover 100% of turns and files into BigQuery:
+```bash
+# 1. Replay any dead-lettered Pub/Sub events back through the upgraded harvester:
+scripts/replay-dlq.sh "$GCP_PROJECT_ID" --replay
+
+# 2. Run a 7-day (168h) historical backfill sweep with full Cloud Logging pagination:
+python3 ge_harvest.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --workforce-pool-id "$WORKFORCE_POOL_ID" \
+  --hours 168
+
+# 3. Sync geUserNoDelete custom role permissions and run the health check:
+scripts/sync-custom-role.sh "$GCP_PROJECT_ID" --apply
+scripts/verify.sh "$GCP_PROJECT_ID"
+```
+
+---
+
+## 5. Common Customer Site Troubleshooting
 
 | Symptom / Error | Root Cause | Fix |
 | :--- | :--- | :--- |
