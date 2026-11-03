@@ -18,6 +18,7 @@ import sys
 import urllib.error
 import urllib.request
 
+import ge_harvest
 from ge_harvest import (
     BQ_DATASET,
     BQ_TABLE,
@@ -363,6 +364,11 @@ def main() -> None:
             "(or corresponding env vars) are required."
         )
         sys.exit(1)
+
+    os.environ["GCP_PROJECT_ID"] = args.project_id
+    os.environ["WORKFORCE_POOL_ID"] = args.workforce_pool_id
+    ge_harvest.PROJECT_ID = args.project_id
+    ge_harvest.WORKFORCE_POOL_ID = args.workforce_pool_id
 
     bucket_name = get_bucket_name(args.project_id)
     check_1_sensitive_logging_all_engines(args.project_id)

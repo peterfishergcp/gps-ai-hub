@@ -30,11 +30,14 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+
+_BQ_MERGE_LOCK = threading.Lock()
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "")
 PROJECT_NUMBER = os.environ.get("GCP_PROJECT_NUMBER", "")
@@ -500,26 +503,27 @@ def discover_from_cloud_logging(project_id: str, hours: int = 72, extra_filter: 
 _PROJECT_NUMBER_CACHE: dict[str, str] = {}
 
 
-def _is_allowed_project_segment(proj_seg: str) -> bool:
+def _is_allowed_project_segment(proj_seg: str, expected_project_id: str = "") -> bool:
     """
     Verifies that the `projects/<proj_seg>` segment in a Discovery Engine resource name
     belongs to the configured `PROJECT_ID` (either its project ID or its numeric project number).
     Fails closed when `PROJECT_ID` is unset (mitigates C1 / ED-1 cross-project resource injection).
     """
-    if not PROJECT_ID:
+    target_project = (expected_project_id or PROJECT_ID or "").strip()
+    if not target_project:
         return False
-    allowed = {PROJECT_ID}
-    if PROJECT_NUMBER:
+    allowed = {target_project}
+    if PROJECT_NUMBER and target_project == PROJECT_ID:
         allowed.add(PROJECT_NUMBER)
     if proj_seg in allowed:
         return True
     if proj_seg.isdigit():
-        cached_num = _PROJECT_NUMBER_CACHE.get(PROJECT_ID)
+        cached_num = _PROJECT_NUMBER_CACHE.get(target_project)
         if cached_num is None:
             try:
                 gcp_token = get_gcp_access_token()
                 req = urllib.request.Request(
-                    f"https://cloudresourcemanager.googleapis.com/v1/projects/{PROJECT_ID}",
+                    f"https://cloudresourcemanager.googleapis.com/v1/projects/{target_project}",
                     headers={"Authorization": f"Bearer {gcp_token}"},
                 )
                 with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as resp:
@@ -527,13 +531,13 @@ def _is_allowed_project_segment(proj_seg: str) -> bool:
                     cached_num = str(pdata.get("projectNumber") or "")
             except Exception:
                 cached_num = ""
-            _PROJECT_NUMBER_CACHE[PROJECT_ID] = cached_num
+            _PROJECT_NUMBER_CACHE[target_project] = cached_num
         if cached_num and proj_seg == cached_num:
             return True
     return False
 
 
-def parse_session_resource(session_name: str) -> tuple[str, str, str]:
+def parse_session_resource(session_name: str, expected_project_id: str = "") -> tuple[str, str, str]:
     """
     Validates a full session resource name against SESSION_RESOURCE_RE and pins the
     project segment to PROJECT_ID / PROJECT_NUMBER. Returns (location, engine_id, session_id).
@@ -543,12 +547,13 @@ def parse_session_resource(session_name: str) -> tuple[str, str, str]:
     if not m:
         raise ValueError(f"Rejected invalid session resource name: {session_name!r}")
     proj, loc, engine_id, session_id = m.group(1), m.group(2), m.group(3), m.group(4)
-    if not _is_allowed_project_segment(proj):
-        raise ValueError(f"Rejected cross-project session resource '{proj}' (expected {PROJECT_ID!r})")
+    target_project = (expected_project_id or PROJECT_ID or "").strip()
+    if not _is_allowed_project_segment(proj, target_project):
+        raise ValueError(f"Rejected cross-project session resource '{proj}' (expected {target_project!r})")
     return loc, engine_id, session_id
 
 
-def parse_notebook_resource(nb_name: str) -> tuple[str, str]:
+def parse_notebook_resource(nb_name: str, expected_project_id: str = "") -> tuple[str, str]:
     """
     Validates a full notebook resource name against NOTEBOOK_RESOURCE_RE and pins the
     project segment to PROJECT_ID / PROJECT_NUMBER. Returns (location, notebook_id).
@@ -558,13 +563,14 @@ def parse_notebook_resource(nb_name: str) -> tuple[str, str]:
     if not m:
         raise ValueError(f"Rejected invalid notebook resource name: {nb_name!r}")
     proj, loc, nb_id = m.group(1), m.group(2), m.group(3)
-    if not _is_allowed_project_segment(proj):
-        raise ValueError(f"Rejected cross-project notebook resource '{proj}' (expected {PROJECT_ID!r})")
+    target_project = (expected_project_id or PROJECT_ID or "").strip()
+    if not _is_allowed_project_segment(proj, target_project):
+        raise ValueError(f"Rejected cross-project notebook resource '{proj}' (expected {target_project!r})")
     return loc, nb_id
 
 
 def fetch_session_details(session_name: str, token: str, project_id: str) -> dict:
-    loc, _, _ = parse_session_resource(session_name)
+    loc, _, _ = parse_session_resource(session_name, project_id)
     host = get_discovery_engine_host(loc)
     url = f"https://{host}/v1alpha/{session_name}?includeAnswerDetails=true"
     req = urllib.request.Request(
@@ -583,7 +589,7 @@ def download_session_file(session_name: str, file_id: str, token: str, project_i
     Downloads a binary file from Discovery Engine using the :downloadFile endpoint.
     Returns (raw_bytes, mime_type, filename).
     """
-    loc, _, _ = parse_session_resource(session_name)
+    loc, _, _ = parse_session_resource(session_name, project_id)
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", file_id or ""):
         raise ValueError(f"Invalid file_id: {file_id!r}")
     host = get_discovery_engine_host(loc)
@@ -773,7 +779,7 @@ def harvest_session(
     session_name = session_info["session_name"]
     raw_principal = session_info.get("user_iam_principal") or ""
     user_principal = "" if raw_principal == "<elided>" else raw_principal
-    loc, engine_id, session_id = parse_session_resource(session_name)
+    loc, engine_id, session_id = parse_session_resource(session_name, project_id)
 
     print(f"\n=== Harvesting Session {session_id} (Engine: {engine_id}, User: {user_principal or '<elided/probing>'}) ===")
 
@@ -1116,6 +1122,15 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
                   SELECT *, ROW_NUMBER() OVER (PARTITION BY session_id, turn_index ORDER BY harvested_at DESC) AS rn
                   FROM `{project_id}.{BQ_DATASET}.{staging_table}`
                 ) WHERE rn = 1
+              ),
+              existing_files AS (
+                SELECT
+                  session_id,
+                  turn_index,
+                  ARRAY_CONCAT_AGG(files) AS files
+                FROM `{project_id}.{BQ_DATASET}.{BQ_TABLE}`
+                WHERE files IS NOT NULL AND ARRAY_LENGTH(files) > 0
+                GROUP BY session_id, turn_index
               )
               SELECT
                 st.*,
@@ -1143,7 +1158,7 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
                   ORDER BY file_id, file_name
                 ) AS merged_files
               FROM dedup_staging AS st
-              LEFT JOIN `{project_id}.{BQ_DATASET}.{BQ_TABLE}` AS ex
+              LEFT JOIN existing_files AS ex
                 ON ex.session_id = st.session_id AND ex.turn_index = st.turn_index
             ) AS S
             ON T.session_id = S.session_id AND T.turn_index = S.turn_index
@@ -1175,35 +1190,36 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
               S.session_transcript_console_url, S.files, S.event_timestamp, S.harvested_at
             )
         """
-        merge_req = urllib.request.Request(
-            merge_url,
-            data=json.dumps({"query": merge_sql, "useLegacySql": False}).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {gcp_token}",
-                "Content-Type": "application/json",
-                "X-Goog-User-Project": project_id,
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(merge_req, context=SSL_CTX) as resp:
-                merge_resp = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            err_detail = e.read().decode("utf-8", errors="replace")[:1000]
-            raise RuntimeError(f"BigQuery MERGE HTTP {e.code}: {err_detail}") from e
-        m_job_id = merge_resp.get("jobReference", {}).get("jobId")
-        m_job_loc = merge_resp.get("jobReference", {}).get("location", "US")
-        while not merge_resp.get("jobComplete", False) and m_job_id:
-            time.sleep(0.5)
-            poll_req = urllib.request.Request(
-                f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries/{m_job_id}?location={m_job_loc}",
-                headers={"Authorization": f"Bearer {gcp_token}", "X-Goog-User-Project": project_id},
+        with _BQ_MERGE_LOCK:
+            merge_req = urllib.request.Request(
+                merge_url,
+                data=json.dumps({"query": merge_sql, "useLegacySql": False}).encode("utf-8"),
+                headers={
+                    "Authorization": f"Bearer {gcp_token}",
+                    "Content-Type": "application/json",
+                    "X-Goog-User-Project": project_id,
+                },
+                method="POST",
             )
-            with urllib.request.urlopen(poll_req, context=SSL_CTX) as p_resp:
-                merge_resp = json.loads(p_resp.read().decode("utf-8"))
-        merge_errors = merge_resp.get("errors")
-        if merge_errors:
-            raise RuntimeError(f"BigQuery MERGE query failed: {merge_errors}")
+            try:
+                with urllib.request.urlopen(merge_req, context=SSL_CTX) as resp:
+                    merge_resp = json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                err_detail = e.read().decode("utf-8", errors="replace")[:1000]
+                raise RuntimeError(f"BigQuery MERGE HTTP {e.code}: {err_detail}") from e
+            m_job_id = merge_resp.get("jobReference", {}).get("jobId")
+            m_job_loc = merge_resp.get("jobReference", {}).get("location", "US")
+            while not merge_resp.get("jobComplete", False) and m_job_id:
+                time.sleep(0.5)
+                poll_req = urllib.request.Request(
+                    f"https://bigquery.googleapis.com/bigquery/v2/projects/{project_id}/queries/{m_job_id}?location={m_job_loc}",
+                    headers={"Authorization": f"Bearer {gcp_token}", "X-Goog-User-Project": project_id},
+                )
+                with urllib.request.urlopen(poll_req, context=SSL_CTX) as p_resp:
+                    merge_resp = json.loads(p_resp.read().decode("utf-8"))
+            merge_errors = merge_resp.get("errors")
+            if merge_errors:
+                raise RuntimeError(f"BigQuery MERGE query failed: {merge_errors}")
     finally:
         # 3. Clean up per-invocation staging table via BigQuery tables.delete REST API
         try:
