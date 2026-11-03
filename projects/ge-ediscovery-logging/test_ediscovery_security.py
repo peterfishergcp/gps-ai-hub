@@ -284,6 +284,8 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
         self.assertNotIn("/session_transcript.json", setup_src)
         self.assertIn("ARRAY_AGG(session_transcript_gcs_uri IGNORE NULLS", setup_src)
         self.assertIn("v_ediscovery_custodian_export", setup_src)
+        self.assertIn('NOT jsonPayload.logMetadata.methodName="Search"', setup_src)
+        self.assertIn('jsonPayload.logMetadata.methodName="StreamAssist"', setup_src)
 
         # Verify ensure_bq_views_and_functions succeeds on a greenfield project where raw sink table does not exist yet
         executed_queries: list[str] = []
