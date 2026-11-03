@@ -457,6 +457,15 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
             self.assertEqual(hdrs, {"Authorization": "Bearer tok-123"})
             self.assertNotIn("X-Goog-User-Project", hdrs)
 
+    def test_bq_merge_deduplicates_existing_files_cte_and_locks(self) -> None:
+        """Regression test: BigQuery MERGE pre-aggregates existing_files by (session_id, turn_index) so concurrent turns never cause HTTP 400."""
+        harvest_src = (REPO_DIR / "ge_harvest.py").read_text(encoding="utf-8")
+        self.assertIn("existing_files AS (", harvest_src)
+        self.assertIn("GROUP BY session_id, turn_index", harvest_src)
+        self.assertIn("ARRAY_CONCAT_AGG(files) AS files", harvest_src)
+        self.assertIn("LEFT JOIN existing_files AS ex", harvest_src)
+        self.assertIn("_BQ_MERGE_LOCK", harvest_src)
+
 
 if __name__ == "__main__":
     unittest.main()

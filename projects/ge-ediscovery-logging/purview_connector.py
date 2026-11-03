@@ -86,6 +86,28 @@ def resolve_mailbox_target_upn(custodian_upn: str) -> str:
         return journal_upn
     return custodian_upn
 
+
+def _extract_fallback_mailbox_upn(graph_token: str) -> str:
+    """
+    Returns a fallback Exchange Online mailbox UPN when a federated Google WIF email domain
+    differs from the Microsoft 365 Exchange Online tenant domain (HTTP 404 on /users/{upn}/mailFolders).
+    Checks `PURVIEW_FALLBACK_UPN` first, then inspects `upn`/`unique_name` in `graph_token`.
+    """
+    fb = (os.environ.get("PURVIEW_FALLBACK_UPN") or PURVIEW_FALLBACK_UPN).strip()
+    if fb and "@" in fb:
+        return fb
+    if graph_token and "." in graph_token:
+        try:
+            jwt_parts = graph_token.split(".")
+            if len(jwt_parts) >= 2:
+                jwt_claims = json.loads(base64.urlsafe_b64decode(jwt_parts[1] + "===").decode("utf-8"))
+                jwt_upn = str(jwt_claims.get("upn") or jwt_claims.get("unique_name") or "").strip()
+                if jwt_upn and "@" in jwt_upn:
+                    return jwt_upn
+        except Exception:
+            pass
+    return ""
+
 SSL_CTX = (
     ssl.create_default_context(cafile="/etc/ssl/cert.pem")
     if os.path.exists("/etc/ssl/cert.pem")
@@ -661,7 +683,15 @@ def push_turn_to_purview_ediscovery_mailbox(
         event_ts = event_ts.replace(" ", "T").replace(" UTC", "Z")
 
     internet_msg_id = f"<ge-ediscovery-{engine_id}-{session_id}-turn-{turn_idx}@gemini.cloud.google.com>"
-    folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
+    try:
+        folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
+    except urllib.error.HTTPError as e:
+        fallback_mbx = _extract_fallback_mailbox_upn(graph_token)
+        if e.code == 404 and fallback_mbx and fallback_mbx.lower() != mailbox_upn.lower():
+            mailbox_upn = fallback_mbx
+            folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
+        else:
+            raise
 
     existing_id = check_turn_already_ingested(mailbox_upn, folder_id, internet_msg_id, graph_token)
     if existing_id:
