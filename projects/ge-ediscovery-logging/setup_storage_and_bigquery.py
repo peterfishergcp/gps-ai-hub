@@ -145,9 +145,19 @@ def ensure_bq_dataset_and_table() -> None:
 def ensure_logging_sink() -> None:
     print(f"[4/5] Ensuring Cloud Logging sink '{SINK_NAME}' -> BigQuery dataset '{BQ_DATASET}'...")
     destination = f"bigquery.googleapis.com/projects/{PROJECT_ID}/datasets/{BQ_DATASET}"
+    # Exclude SearchService.Search from the BigQuery sink because SearchRequest.query is a plain string
+    # (std::string), whereas StreamAssistRequest.query / AssistRequest.query / AnswerQueryRequest.query
+    # is a structured Query object (RECORD). Routing both into the same BigQuery table causes Cloud Logging
+    # sink error `table_invalid_schema (Cannot convert std::string to a record field ... query = 2)`.
     log_filter = (
-        f'resource.type="consumed_api" AND ('
-        f'logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity" '
+        f'resource.type="consumed_api" AND '
+        f'NOT jsonPayload.logMetadata.methodName="Search" AND ('
+        f'(logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity" '
+        f'AND (jsonPayload.logMetadata.methodName="StreamAssist" '
+        f'OR jsonPayload.logMetadata.methodName="Assist" '
+        f'OR jsonPayload.logMetadata.methodName="AnswerQuery" '
+        f'OR jsonPayload.logMetadata.methodName="UploadSessionFile" '
+        f'OR jsonPayload.logMetadata.methodName="AddContextFile")) '
         f'OR logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity")'
     )
 
