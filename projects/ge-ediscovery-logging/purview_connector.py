@@ -1020,9 +1020,164 @@ def forward_turns_to_purview(
     return summary
 
 
+def verify_compliance_mail_folder(
+    mailbox_upn: str,
+    graph_token: str,
+    folder_name: str = PURVIEW_FOLDER_NAME,
+    *,
+    set_hidden: Optional[bool] = None,
+    max_messages: int = 10,
+) -> dict[str, Any]:
+    """
+    Verifies whether the `Gemini Enterprise eDiscovery` folder exists in `mailbox_upn`
+    (including when `isHidden: true`), computes its 24-byte Hex Folder ID for Purview
+    KQL `folderid:<HEX>` Content Searches, optionally toggles `isHidden` (`--unhide-folder`
+    / `--hide-folder`), and returns the most recent archived compliance items + attachments.
+    """
+    target_upn = mailbox_upn.strip()
+    encoded_upn = urllib.parse.quote(target_upn, safe="")
+    escaped_name = folder_name.replace("'", "''")
+    filter_q = urllib.parse.quote(f"displayName eq '{escaped_name}'")
+    list_url = (
+        f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders"
+        f"?includeHiddenFolders=true&$filter={filter_q}"
+        f"&$select=id,displayName,isHidden,totalItemCount,unreadItemCount,childFolderCount"
+    )
+
+    try:
+        res = graph_api_request("GET", list_url, graph_token)
+    except urllib.error.HTTPError as e:
+        fallback_mbx = _extract_fallback_mailbox_upn(graph_token)
+        if e.code == 404 and fallback_mbx and fallback_mbx.lower() != target_upn.lower():
+            target_upn = fallback_mbx
+            encoded_upn = urllib.parse.quote(target_upn, safe="")
+            list_url = (
+                f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders"
+                f"?includeHiddenFolders=true&$filter={filter_q}"
+                f"&$select=id,displayName,isHidden,totalItemCount,unreadItemCount,childFolderCount"
+            )
+            res = graph_api_request("GET", list_url, graph_token)
+        else:
+            err_body = e.read().decode("utf-8", errors="replace")[:300]
+            return {
+                "requested_mailbox_upn": mailbox_upn,
+                "resolved_mailbox_upn": target_upn,
+                "folder_found": False,
+                "error": f"HTTP {e.code}: {err_body}",
+            }
+
+    folders = res.get("value", [])
+    if not folders:
+        return {
+            "requested_mailbox_upn": mailbox_upn,
+            "resolved_mailbox_upn": target_upn,
+            "folder_name": folder_name,
+            "folder_found": False,
+            "hint": (
+                "Folder has not been created in this mailbox yet. Either no turn has been pushed to Purview "
+                "for this user, or PURVIEW_COMPLIANCE_JOURNAL_UPN routes items to a central mailbox."
+            ),
+        }
+
+    folder_meta = folders[0]
+    folder_id = str(folder_meta.get("id") or "")
+
+    # Optional: toggle folder visibility (e.g. --unhide-folder so admin can view in Outlook on the Web)
+    if set_hidden is not None and folder_id:
+        patch_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders/{urllib.parse.quote(folder_id, safe='')}"
+        try:
+            updated = graph_api_request(
+                "PATCH",
+                patch_url,
+                graph_token,
+                {
+                    "isHidden": bool(set_hidden),
+                    "singleValueExtendedProperties": [
+                        {"id": "Boolean 0x10F4", "value": "true" if set_hidden else "false"}
+                    ],
+                },
+            )
+            folder_meta["isHidden"] = updated.get("isHidden", bool(set_hidden))
+            _FOLDER_ID_CACHE.clear()
+        except Exception as e:
+            folder_meta["visibility_update_warning"] = str(e)
+
+    # Translate Graph REST Folder ID -> Exchange EntryId -> 24-byte (48-char) Hex Folder ID for Purview KQL `folderid:`
+    purview_hex_folder_id = ""
+    if folder_id:
+        try:
+            tx_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/translateExchangeIds"
+            tx_res = graph_api_request(
+                "POST",
+                tx_url,
+                graph_token,
+                {
+                    "inputIds": [folder_id],
+                    "sourceIdType": "restId",
+                    "targetIdType": "entryId",
+                },
+            )
+            tx_vals = tx_res.get("value", [])
+            if tx_vals and tx_vals[0].get("targetId"):
+                entry_b64 = str(tx_vals[0]["targetId"])
+                pad = "=" * ((4 - len(entry_b64) % 4) % 4)
+                entry_bytes = base64.b64decode(entry_b64 + pad)
+                if len(entry_bytes) >= 46:
+                    purview_hex_folder_id = entry_bytes[22:46].hex().upper()
+        except Exception:
+            pass
+
+    # List recent compliance messages inside the folder
+    msgs_url = (
+        f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/mailFolders/{urllib.parse.quote(folder_id, safe='')}/messages"
+        f"?$top={int(max_messages)}"
+        f"&$select=id,subject,receivedDateTime,from,hasAttachments,internetMessageId"
+        f"&$expand=attachments($select=id,name,contentType,size)"
+    )
+    messages_summary: list[dict[str, Any]] = []
+    try:
+        msgs_res = graph_api_request("GET", msgs_url, graph_token)
+        for m in msgs_res.get("value", []):
+            atts = [
+                {
+                    "name": a.get("name"),
+                    "contentType": a.get("contentType"),
+                    "size": a.get("size"),
+                }
+                for a in (m.get("attachments") or [])
+                if isinstance(a, dict)
+            ]
+            messages_summary.append(
+                {
+                    "subject": m.get("subject"),
+                    "receivedDateTime": m.get("receivedDateTime"),
+                    "from": ((m.get("from") or {}).get("emailAddress") or {}).get("address"),
+                    "internetMessageId": m.get("internetMessageId"),
+                    "hasAttachments": m.get("hasAttachments"),
+                    "attachments": atts,
+                }
+            )
+    except Exception as e:
+        folder_meta["messages_fetch_warning"] = str(e)
+
+    return {
+        "requested_mailbox_upn": mailbox_upn,
+        "resolved_mailbox_upn": target_upn,
+        "folder_found": True,
+        "folder_name": folder_meta.get("displayName", folder_name),
+        "is_hidden": folder_meta.get("isHidden"),
+        "total_item_count": folder_meta.get("totalItemCount", 0),
+        "unread_item_count": folder_meta.get("unreadItemCount", 0),
+        "graph_folder_id": folder_id,
+        "purview_kql_folderid_query": f"folderid:{purview_hex_folder_id}" if purview_hex_folder_id else "",
+        "purview_kql_itemclass_query": f'ItemClass:"{PURVIEW_MESSAGE_CLASS}"',
+        "recent_messages": messages_summary,
+    }
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Sync harvested Gemini Enterprise turns & binary attachments to Microsoft Purview eDiscovery."
+        description="Sync or verify harvested Gemini Enterprise turns & hidden Exchange folders in Microsoft Purview eDiscovery."
     )
     parser.add_argument("--project-id", "--project", dest="project_id", default=os.environ.get("GCP_PROJECT_ID", ""), help="Google Cloud Project ID")
     parser.add_argument(
@@ -1039,6 +1194,29 @@ if __name__ == "__main__":
         default=PURVIEW_COMPLIANCE_JOURNAL_UPN,
         help="Dedicated non-custodian Exchange Online compliance mailbox UPN under Legal Hold (recommended)",
     )
+    parser.add_argument(
+        "--verify-mailbox",
+        default="",
+        help=(
+            "Verify that the hidden 'Gemini Enterprise eDiscovery' folder & items exist for a user email "
+            "(pass a user UPN like 'user@domain.com', or 'auto' to check all custodians in BigQuery)"
+        ),
+    )
+    parser.add_argument(
+        "--unhide-folder",
+        action="store_true",
+        help="Temporarily set isHidden=false on the verified folder so an admin can visually inspect it in Outlook on the Web",
+    )
+    parser.add_argument(
+        "--hide-folder",
+        action="store_true",
+        help="Set isHidden=true on the verified folder so it is hidden from standard Outlook folder navigation",
+    )
+    parser.add_argument(
+        "--send-test-item",
+        action="store_true",
+        help="Create the hidden 'Gemini Enterprise eDiscovery' folder (if missing) and deposit a synthetic verification turn + attachment before verifying",
+    )
     parser.add_argument("--device-login", action="store_true", help="Authenticate interactively via https://login.microsoft.com/device")
     parser.add_argument("--limit", type=int, default=25, help="Max turns to sync from BigQuery (default: 25)")
     args = parser.parse_args()
@@ -1048,16 +1226,90 @@ if __name__ == "__main__":
     if args.compliance_journal_upn:
         PURVIEW_COMPLIANCE_JOURNAL_UPN = args.compliance_journal_upn.strip()
 
-    if not args.project_id:
-        print("Error: --project-id (or GCP_PROJECT_ID) is required.")
-        raise SystemExit(1)
-
     graph_tok = ""
     if args.device_login:
         if not args.tenant_id or not args.client_id:
             print("Error: --tenant-id (or MS_TENANT_ID) and --client-id (or MS_CLIENT_ID) are required with --device-login.")
             raise SystemExit(1)
         graph_tok = run_device_code_login(args.tenant_id, args.client_id)
+
+    if args.verify_mailbox:
+        if not graph_tok:
+            graph_tok = get_graph_access_token(tenant_id=args.tenant_id, client_id=args.client_id)
+        vis_toggle: Optional[bool] = None
+        if args.unhide_folder:
+            vis_toggle = False
+        elif args.hide_folder:
+            vis_toggle = True
+
+        target_upns: list[str] = []
+        if args.verify_mailbox.strip().lower() == "auto":
+            if args.project_id:
+                try:
+                    from portal.server import run_bq_query
+                    cust_rows = run_bq_query(
+                        args.project_id,
+                        f"SELECT DISTINCT user_iam_principal FROM `{args.project_id}.ge_ediscovery.conversation_turns` WHERE user_iam_principal IS NOT NULL LIMIT 25",
+                        [],
+                    )
+                    for r in cust_rows:
+                        u = resolve_custodian_upn(str(r.get("user_iam_principal") or ""), graph_token=graph_tok)
+                        if u and u not in target_upns:
+                            target_upns.append(u)
+                except Exception as e:
+                    print(f"[!] Note: Could not query BigQuery custodians ({e}); falling back to configured/Graph mailbox.", flush=True)
+            if PURVIEW_COMPLIANCE_JOURNAL_UPN and PURVIEW_COMPLIANCE_JOURNAL_UPN not in target_upns:
+                target_upns.append(PURVIEW_COMPLIANCE_JOURNAL_UPN)
+            if not target_upns:
+                fb = _extract_fallback_mailbox_upn(graph_tok)
+                if fb:
+                    target_upns.append(fb)
+        else:
+            target_upns = [u.strip() for u in args.verify_mailbox.split(",") if u.strip()]
+
+        if args.send_test_item:
+            now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            test_sess_id = f"verify-{int(time.time())}"
+            for upn in target_upns:
+                synthetic_turn = {
+                    "event_timestamp": now_iso,
+                    "engine_id": args.engine_id or "gemini-enterprise-verify",
+                    "session_id": test_sess_id,
+                    "session_display_name": "Purview Hidden Folder Verification Test",
+                    "turn_index": 1,
+                    "user_iam_principal": f"principal://iam.googleapis.com/locations/global/workforcePools/verify/subject/{upn}",
+                    "model_name": "Gemini Enterprise Verification Probe",
+                    "prompt_text": f"Verify that the hidden '{PURVIEW_FOLDER_NAME}' folder exists and archives custodian turns + binary attachments for {upn}.",
+                    "response_text": f"Confirmed: The hidden '{PURVIEW_FOLDER_NAME}' compliance folder is active and indexed by Microsoft Purview eDiscovery.",
+                    "thought_text": "Executing deterministic Exchange Online hidden folder verification test.",
+                    "session_transcript_gcs_uri": f"gs://{args.project_id or 'verify'}-ge-ediscovery/sessions/verify/{test_sess_id}/session_transcript.json",
+                    "files": [
+                        {
+                            "file_id": "verify-attachment-1",
+                            "file_name": "ediscovery_folder_verification.txt",
+                            "mime_type": "text/plain",
+                            "byte_size": 124,
+                            "file_source": "USER_PROVIDED",
+                            "gcs_uri": "",
+                            "_raw_bytes": (
+                                f"Gemini Enterprise -> Microsoft Purview Hidden Folder Verification\n"
+                                f"Custodian: {upn}\nTimestamp: {now_iso}\nSession: {test_sess_id}\n"
+                            ).encode("utf-8"),
+                        }
+                    ],
+                }
+                push_turn_to_purview_ediscovery_mailbox(synthetic_turn, graph_token=graph_tok)
+
+        reports = [
+            verify_compliance_mail_folder(upn, graph_tok, set_hidden=vis_toggle)
+            for upn in target_upns
+        ]
+        print(json.dumps(reports if len(reports) != 1 else reports[0], indent=2))
+        raise SystemExit(0)
+
+    if not args.project_id:
+        print("Error: --project-id (or GCP_PROJECT_ID) is required.")
+        raise SystemExit(1)
 
     import subprocess
     gcp_tok = subprocess.check_output(

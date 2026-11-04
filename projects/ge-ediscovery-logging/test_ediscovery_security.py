@@ -466,6 +466,55 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
         self.assertIn("LEFT JOIN existing_files AS ex", harvest_src)
         self.assertIn("_BQ_MERGE_LOCK", harvest_src)
 
+    def test_purview_verify_compliance_mail_folder_and_hex_id(self) -> None:
+        """Verify verify_compliance_mail_folder inspects hidden folders, computes 24-byte hex Folder ID, and lists messages."""
+        import base64
+
+        fake_entry_bytes = b"\x00" * 22 + bytes.fromhex("89EC3B872F385144AB16EBBA27EA202F0000234A3AA20000")
+        fake_entry_b64 = base64.b64encode(fake_entry_bytes).decode("ascii")
+
+        def fake_graph_api(method: str, url: str, graph_token: str, payload=None):
+            if "mailFolders?includeHiddenFolders=true" in url:
+                return {
+                    "value": [
+                        {
+                            "id": "folder-rest-123",
+                            "displayName": "Gemini Enterprise eDiscovery",
+                            "isHidden": True,
+                            "totalItemCount": 3,
+                            "unreadItemCount": 0,
+                        }
+                    ]
+                }
+            if "translateExchangeIds" in url:
+                return {"value": [{"sourceId": "folder-rest-123", "targetId": fake_entry_b64}]}
+            if "/messages?" in url:
+                return {
+                    "value": [
+                        {
+                            "subject": "[Gemini Enterprise eDiscovery] Test Turn",
+                            "receivedDateTime": "2026-11-04T20:00:00Z",
+                            "from": {"emailAddress": {"address": "custodian@agency.gov"}},
+                            "internetMessageId": "<test@gemini.cloud.google.com>",
+                            "hasAttachments": True,
+                            "attachments": [{"name": "doc.pdf", "contentType": "application/pdf", "size": 1024}],
+                        }
+                    ]
+                }
+            return {}
+
+        with mock.patch.object(purview_connector, "graph_api_request", side_effect=fake_graph_api):
+            rep = purview_connector.verify_compliance_mail_folder("custodian@agency.gov", "graph_tok")
+            self.assertTrue(rep["folder_found"])
+            self.assertTrue(rep["is_hidden"])
+            self.assertEqual(rep["total_item_count"], 3)
+            self.assertEqual(
+                rep["purview_kql_folderid_query"],
+                "folderid:89EC3B872F385144AB16EBBA27EA202F0000234A3AA20000",
+            )
+            self.assertEqual(len(rep["recent_messages"]), 1)
+            self.assertEqual(rep["recent_messages"][0]["attachments"][0]["name"], "doc.pdf")
+
 
 if __name__ == "__main__":
     unittest.main()
