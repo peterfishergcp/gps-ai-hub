@@ -466,6 +466,157 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
         self.assertIn("LEFT JOIN existing_files AS ex", harvest_src)
         self.assertIn("_BQ_MERGE_LOCK", harvest_src)
 
+    def test_purview_verify_compliance_mail_folder_and_hex_id(self) -> None:
+        """Verify verify_compliance_mail_folder inspects hidden folders, computes 24-byte hex Folder ID, and lists messages."""
+        import base64
+
+        fake_entry_bytes = b"\x00" * 22 + bytes.fromhex("89EC3B872F385144AB16EBBA27EA202F0000234A3AA20000")
+        fake_entry_b64 = base64.b64encode(fake_entry_bytes).decode("ascii")
+
+        def fake_graph_api(method: str, url: str, graph_token: str, payload=None):
+            if "mailFolders?includeHiddenFolders=true" in url:
+                return {
+                    "value": [
+                        {
+                            "id": "folder-rest-123",
+                            "displayName": "Gemini Enterprise eDiscovery",
+                            "isHidden": True,
+                            "totalItemCount": 3,
+                            "unreadItemCount": 0,
+                        }
+                    ]
+                }
+            if "translateExchangeIds" in url:
+                return {"value": [{"sourceId": "folder-rest-123", "targetId": fake_entry_b64}]}
+            if "/messages?" in url:
+                return {
+                    "value": [
+                        {
+                            "subject": "[Gemini Enterprise eDiscovery] Test Turn",
+                            "receivedDateTime": "2026-11-04T20:00:00Z",
+                            "from": {"emailAddress": {"address": "custodian@agency.gov"}},
+                            "internetMessageId": "<test@gemini.cloud.google.com>",
+                            "hasAttachments": True,
+                            "attachments": [{"name": "doc.pdf", "contentType": "application/pdf", "size": 1024}],
+                        }
+                    ]
+                }
+            return {}
+
+        with mock.patch.object(purview_connector, "graph_api_request", side_effect=fake_graph_api):
+            rep = purview_connector.verify_compliance_mail_folder("custodian@agency.gov", "graph_tok")
+            self.assertTrue(rep["folder_found"])
+            self.assertTrue(rep["is_hidden"])
+            self.assertEqual(rep["total_item_count"], 3)
+            self.assertEqual(
+                rep["purview_kql_folderid_query"],
+                "folderid:89EC3B872F385144AB16EBBA27EA202F0000234A3AA20000",
+            )
+            self.assertEqual(len(rep["recent_messages"]), 1)
+            self.assertEqual(rep["recent_messages"][0]["attachments"][0]["name"], "doc.pdf")
+
+    def test_top5_claude_review_remediations(self) -> None:
+        """Verify B1 (fail-closed STS mint), B3 (late attachment append), B5 (fail-closed unresolved OID), B6/B9, C2/B10."""
+        # 1. C2 + B10: Scoped existing_files CTE + fast CRC32C lookup table
+        harvest_src = (REPO_DIR / "ge_harvest.py").read_text(encoding="utf-8")
+        self.assertIn("AND session_id IN (SELECT DISTINCT session_id FROM dedup_staging)", harvest_src)
+        self.assertIn("_CRC32C_TABLE", harvest_src)
+        self.assertEqual(ge_harvest.compute_crc32c_base64(b"123456789"), "4waSgw==")
+
+        # 2. B9: deploy_cloudrun_harvester.py passes all PURVIEW_* and ARCHIVER_* env vars
+        deploy_src = (REPO_DIR / "deploy_cloudrun_harvester.py").read_text(encoding="utf-8")
+        for var_name in (
+            "PURVIEW_HIDE_FOLDER",
+            "PURVIEW_INCLUDE_THOUGHT_TEXT",
+            "PURVIEW_MAX_ATTACHMENT_MB",
+            "PURVIEW_MESSAGE_CLASS",
+            "ARCHIVER_REQUIRE_EMAIL_SUBJECT",
+            "FALLBACK_PRINCIPALS",
+            "DISABLE_STS_ACCESS_BOUNDARY",
+        ):
+            self.assertIn(f'"{var_name}"', deploy_src)
+
+        # 3. B1: get_token_for_principal raises when mint_sts_token fails on a WIF principal instead of falling back to SA token
+        with mock.patch.object(ge_harvest, "mint_sts_token", side_effect=RuntimeError("KMS unavailable")):
+            with self.assertRaises(RuntimeError):
+                ge_harvest.get_token_for_principal(
+                    "principal://iam.googleapis.com/locations/global/workforcePools/p/subject/user@agency.gov",
+                    "proj",
+                    "p",
+                )
+
+        # 4. B5: push_turn_to_purview_ediscovery_mailbox raises RuntimeError when OID cannot be resolved and PURVIEW_FAIL_CLOSED=true
+        with (
+            mock.patch.dict(
+                os.environ,
+                {
+                    "PURVIEW_FAIL_CLOSED": "true",
+                    "PURVIEW_COMPLIANCE_JOURNAL_UPN": "",
+                    "PURVIEW_FALLBACK_UPN": "",
+                },
+                clear=False,
+            ),
+            mock.patch.object(purview_connector, "PURVIEW_COMPLIANCE_JOURNAL_UPN", ""),
+            mock.patch.object(purview_connector, "PURVIEW_FALLBACK_UPN", ""),
+            mock.patch.object(purview_connector, "PURVIEW_TARGET_CUSTODIAN_UPN", ""),
+            mock.patch.object(purview_connector, "graph_api_request", side_effect=RuntimeError("403 Forbidden User.Read.All")),
+        ):
+            with self.assertRaises(RuntimeError):
+                purview_connector.push_turn_to_purview_ediscovery_mailbox(
+                    {
+                        "session_id": "sess-oid",
+                        "turn_index": 1,
+                        "user_iam_principal": (
+                            "principal://iam.googleapis.com/locations/global/workforcePools/p/subject/"
+                            "11111111-2222-3333-4444-555555555555"
+                        ),
+                    },
+                    graph_token="not-a-jwt",
+                )
+
+        # 5. B3: Existing Purview message receives late-arriving attachment via POST /messages/{id}/attachments
+        posted_attachments = []
+
+        def fake_graph_b3(method: str, url: str, graph_token: str, payload=None):
+            if method == "GET" and "/attachments?$select=name" in url:
+                return {"value": [{"name": "first_file.txt"}]}
+            if method == "POST" and url.endswith("/attachments"):
+                posted_attachments.append(payload)
+                return {"id": "att-new"}
+            return {}
+
+        with (
+            mock.patch.object(purview_connector, "ensure_compliance_mail_folder", return_value="fld-1"),
+            mock.patch.object(purview_connector, "check_turn_already_ingested", return_value="msg-existing-1"),
+            mock.patch.object(purview_connector, "graph_api_request", side_effect=fake_graph_b3),
+        ):
+            res_b3 = purview_connector.push_turn_to_purview_ediscovery_mailbox(
+                {
+                    "session_id": "sess-b3",
+                    "turn_index": 1,
+                    "user_iam_principal": "principal://iam.googleapis.com/locations/global/workforcePools/p/subject/u@agency.gov",
+                    "files": [
+                        {
+                            "file_id": "f1",
+                            "file_name": "first_file.txt",
+                            "mime_type": "text/plain",
+                            "_raw_bytes": b"already there",
+                        },
+                        {
+                            "file_id": "f2",
+                            "file_name": "late_arrival.pdf",
+                            "mime_type": "application/pdf",
+                            "_raw_bytes": b"%PDF-1.4 late file",
+                        },
+                    ],
+                },
+                graph_token="graph_tok",
+            )
+            self.assertEqual(res_b3["status"], "updated_attachments")
+            self.assertEqual(res_b3["appended_attachments_count"], 1)
+            self.assertEqual(len(posted_attachments), 1)
+            self.assertEqual(posted_attachments[0]["name"], "late_arrival.pdf")
+
 
 if __name__ == "__main__":
     unittest.main()
