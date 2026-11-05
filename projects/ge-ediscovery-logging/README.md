@@ -342,13 +342,68 @@ For enterprises using **Microsoft Purview eDiscovery (Standard / Premium)** and 
 - **Track 1 — Purview eDiscovery Compliance Journal / Mailbox Substrate**: Writes an immutable, deduplicated item (`internetMessageId: <ge-ediscovery-{engine_id}-{session_id}-turn-{turn_index}@gemini.cloud.google.com>`) with MAPI `PidTagMessageClass` (`0x001A` via `PURVIEW_MESSAGE_CLASS`), searchable `X-GE-*` headers (`X-GE-Custodian-UPN`, `X-GE-Session-ID`, `X-GE-Turn-Index`), a self-contained HTML Legal Brief body, inline binaries `<= 3 MiB` (`#microsoft.graph.fileAttachment`), and chunked Microsoft Graph `createUploadSession` uploads (`3.75 MiB` chunks up to `150 MiB`) for binary attachments `> 3 MiB`.
 - **Track 2 — Microsoft Purview DSPM for AI (`processContent`)**: Calls `POST /v1.0/users/{custodian_upn}/dataSecurityAndGovernance/processContent` with `#microsoft.graph.processConversationMetadata` (`uploadText` for user prompt, `downloadText` for model response, and `accessedResources_v2` for file URIs).
 
-#### Purview Compliance Journal Mailbox (`PURVIEW_COMPLIANCE_JOURNAL_UPN`) vs. Custodian Email — How Installation Works
+#### Purview Compliance Journal Mailbox (`PURVIEW_COMPLIANCE_JOURNAL_UPN`) vs. Custodian Email — And Why Entra ID `Delegated` vs. `Application` Permissions Matter
 
 **Do administrators need to supply two emails per user?** **No.**
-- **Custodian Email (Automatic Per Turn — Zero Manual Per-User Input):** Every turn's custodian UPN (e.g., `alice@example.com` or an Entra Object ID GUID resolved via `/users/{oid}`) is automatically extracted from the federated WIF `user_iam_principal` in BigQuery / Cloud Logging. Track 2 (`processContent`) always attributes activity directly to that custodian, and Track 1 always stamps `From` and `X-GE-Custodian-UPN` with that custodian's email so Purview KQL queries by user (`"alice@example.com"`) continue to work identically.
-- **Target Mailbox for Track 1 Storage (Two Supported Modes):**
-  1. **Recommended Anti-Spoliation Mode (One Tenant-Wide Compliance Journal Mailbox):** Set `PURVIEW_COMPLIANCE_JOURNAL_UPN="ediscovery-journal@example.com"` once at install time to a single dedicated, non-custodian Exchange Online shared/compliance mailbox protected by Microsoft 365 Litigation Hold + Preservation Lock (with zero end-user login or delegate permissions). All custodian turns across the organization are archived into that single locked mailbox, preventing a custodian who is not yet on individual litigation hold from deleting items out of their own mailbox.
-  2. **Backward-Compatible Custodian Folder Mode (Default When Unset):** If `PURVIEW_COMPLIANCE_JOURNAL_UPN` is omitted, `purview_connector.py` defaults to archiving into a hidden folder (`PidTagAttributeHidden` / `isHidden: true`, named `Gemini Enterprise eDiscovery`) inside each custodian's own Exchange mailbox—requiring **zero configuration changes** for existing deployments, while logging a reminder to enforce an org-wide Microsoft Purview retention/hold policy on custodian mailboxes.
+- **Custodian Email (Automatic Per Turn — Zero Manual Per-User Input):** Every turn's custodian UPN (e.g., `alice@example.com` or an Entra Object ID GUID resolved via `/users/{oid}`) is automatically extracted from the federated WIF `user_iam_principal` in BigQuery / Cloud Logging. Track 2 (`processContent`) always attributes activity directly to that custodian, and Track 1 always stamps `From`, `To`, and `X-GE-Custodian-UPN` with that custodian's email so Purview KQL queries by user (`"alice@example.com"`) continue to work identically.
+
+##### Critical Distinction: Microsoft Entra ID `Delegated` (`scp`) vs. `Application` (`roles`) Permissions
+
+Why might a customer not find the hidden `Gemini Enterprise eDiscovery` folder inside other users' individual mailboxes? It comes down to whether their Microsoft Entra ID App Registration uses **Delegated** permissions (`idtyp: user`) or **Application** permissions (`roles`):
+
+1. **What Happens With `Delegated` Permissions (`Mail.ReadWrite` Delegated via `--device-login` / `MS_REFRESH_TOKEN`):**
+   - **Permissions in Token (`scp`):**
+     - `Mail.ReadWrite` *(Delegated)* — Creates the hidden `Gemini Enterprise eDiscovery` folder and writes compliance messages + binary attachments.
+     - `User.Read` / `User.Read.All` *(Delegated)* — Resolves Entra Object IDs (`oid`) to UPNs.
+     - `openid` / `profile` / `email` / `offline_access` *(Delegated)* — Allows `MS_REFRESH_TOKEN` (`--device-login`) to run headlessly without expiring.
+     - `Content.Process.User`, `InformationProtectionPolicy.Read`, `ProtectionScopes.Compute.User` *(Delegated)* — Powers Track 2 Purview DSPM for AI (`processContent`).
+   - **Why Individual Mailboxes Return `403 ErrorAccessDenied` With Delegated Tokens:** Microsoft Graph **Delegated** `Mail.ReadWrite` only grants permission to create folders and write messages inside the mailbox of the **single account that signed in** (unless Exchange `FullAccess` mailbox delegation is manually granted on other mailboxes). If `User B` chats in Gemini Enterprise and the connector calls `POST /v1.0/users/<User-B>/mailFolders` using `User A`'s Delegated token, Exchange Online returns `403 ErrorAccessDenied` unless routed to `User A`'s compliance journal mailbox (`PURVIEW_COMPLIANCE_JOURNAL_UPN` or automatic fallback to the signed-in token's UPN).
+
+2. **Two Supported Ways to Configure Your Microsoft Entra ID App Registration:**
+   - **Option A — Keep `Delegated` Permissions (Single Central Compliance Journal Mailbox — Recommended Anti-Spoliation Mode):**
+     - Sign in once with your dedicated compliance/admin mailbox (`--device-login`) and set `PURVIEW_COMPLIANCE_JOURNAL_UPN="<that-signed-in-mailbox>"` (protected by Microsoft 365 Litigation Hold + Preservation Lock).
+     - All users' Gemini Enterprise turns across the organization are archived into the hidden `Gemini Enterprise eDiscovery` folder inside that **single compliance mailbox**, with each chatting user's email stamped in `From`, `To`, and `X-GE-Custodian-UPN` so Purview Custodian searches still match per user. (Even if `PURVIEW_COMPLIANCE_JOURNAL_UPN` is omitted, `purview_connector.py` automatically falls back to the signed-in Delegated token's mailbox on `403`/`404`.)
+   - **Option B — Create Hidden Folders Inside Each Individual User's Own Mailbox (`Application` Permissions):**
+     - In **Microsoft Entra ID** $\rightarrow$ **App registrations** $\rightarrow$ **API permissions** $\rightarrow$ **Add a permission** $\rightarrow$ **Microsoft Graph** $\rightarrow$ **Application permissions** (next to Delegated permissions), add the permissions in the table below, click **Grant admin consent for `<Tenant>`**, and authenticate using `MS_CLIENT_SECRET` (stored in Google Cloud Secret Manager via `--ms-client-secret-name`). Because Application permissions are tenant-wide (or scoped to a custodian group via Exchange RBAC for Applications), the connector can create the hidden `Gemini Enterprise eDiscovery` folder (`isHidden: true`) inside **every individual user's own Exchange mailbox** automatically.
+
+##### Required Microsoft Entra ID App Registration Permissions Table (`Option B — Individual User Folders`)
+
+| Microsoft Graph Permission | Type | Admin Consent | Why `purview_connector.py` Needs It |
+| :--- | :--- | :--- | :--- |
+| **`Mail.ReadWrite`** | **Application** | **Yes (Required)** | **Core Track 1 (eDiscovery Mailbox Folder):** Creates the hidden `Gemini Enterprise eDiscovery` folder (`isHidden: true`), writes the compliance message + HTML Legal Brief, uploads binary attachments (`<= 3 MiB` inline and `> 3 MiB` via `createUploadSession`), and runs `translateExchangeIds` for Purview `folderid:` lookup. |
+| **`User.Read.All`** | **Application** | **Yes (Required if WIF `google.subject` is an Entra Object ID GUID)** | **Entra `oid` $\rightarrow$ UPN Resolution:** When a Workforce Identity Pool logs the user's Entra Object ID UUID (`f81a69e4-...`) instead of their email address, the connector calls `GET /v1.0/users/{uuid}?$select=userPrincipalName,mail` to resolve which Exchange mailbox owns that turn. |
+| **`Content.Process.All`** | **Application** | **Yes (Optional — Track 2 DSPM for AI)** | **Track 2 (Purview DSPM for AI):** Calls `POST /v1.0/users/{upn}/dataSecurityAndGovernance/processContent` so Gemini Enterprise prompts and responses appear in Purview **DSPM for AI** (Activity Explorer, AI App Interactions, and Communication Compliance). |
+| **`InformationProtectionPolicy.Read.All`** | **Application** | **Yes (Optional — Track 2 DSPM for AI)** | **Track 2 Policy Evaluation:** Allows Microsoft Graph `processContent` to evaluate tenant Purview DLP / sensitivity policies against the ingested AI prompt and response. |
+
+##### 3 Practical Entra ID & Exchange Online FAQs for Customer Admins
+
+1. **When does the hidden `Gemini Enterprise eDiscovery` folder get created in a user's mailbox?**
+   - **On-Demand Only (When a User Chats):** Nothing is pre-created across all employee mailboxes at deployment time. The hidden `Gemini Enterprise eDiscovery` folder is created **on-demand** in a user's Exchange Online mailbox only when that specific user sends their first Gemini Enterprise chat prompt (`StreamAssist`) or uploads a file (`UploadSessionFile`). Employees who never use Gemini Enterprise never have a folder created.
+2. **Why did a 1-user PoC test work with `Delegated` permissions, while other users' chats did not create folders in their own mailboxes?**
+   - If a test user (`userA@example.com`) runs `--device-login` as `userA` and also chats in Gemini Enterprise as `userA`, the `Delegated` token (`idtyp: user`) matches `userA`'s own mailbox, so `Delegated` `Mail.ReadWrite` succeeds for `userA` alone.
+   - However, normal employees (`userB`, `userC`) only log into the Gemini Enterprise web UI (which records their identity in Google Cloud Logging, not an `MS_CLIENT_SECRET`). The backend Cloud Run Harvester holds **one** tenant credential (`MS_CLIENT_ID` + `MS_CLIENT_SECRET`). To create hidden folders inside **every chatting employee's own individual mailbox** (`Option B`), that Entra App Registration must have **`Application`** permissions (`Mail.ReadWrite` + `User.Read.All`) with **Admin Consent** and `MS_CLIENT_SECRET`.
+3. **Can we reuse our existing Gemini Enterprise Workforce Identity (WIF) SSO Entra App Registration (`MS_CLIENT_ID`)?**
+   - **Yes.** You do not need to create a second Entra App Registration. Open the exact same Entra App Registration (`MS_CLIENT_ID`) already used for Gemini Enterprise WIF SSO, go to **API permissions** $\rightarrow$ **Add a permission** $\rightarrow$ **Microsoft Graph** $\rightarrow$ **Application permissions**, add `Mail.ReadWrite` and `User.Read.All` (plus `Content.Process.All` and `InformationProtectionPolicy.Read.All` for Track 2 DSPM for AI), click **Grant admin consent**, and create a client secret under **Certificates & secrets** (`MS_CLIENT_SECRET`).
+
+##### Verifying the Hidden Exchange Folder & Getting the Exact Purview `folderid:` Hex Query (`--verify-mailbox`)
+
+Because `Gemini Enterprise eDiscovery` is created with `isHidden: true` (`PidTagAttributeHidden`), standard Outlook and Graph `/mailFolders` calls without `?includeHiddenFolders=true` do not display it, and Purview's `folderid:` KQL operator requires a **48-character hexadecimal Folder ID** translated from the Exchange `entryId`. Use `--verify-mailbox` to prove the hidden folder exists, deposit a live test turn + attachment (`--send-test-item`), and print the exact `folderid:<HEX>` query:
+
+```bash
+# 1. Verify a specific user's hidden folder and deposit a live test turn + attachment:
+python3 purview_connector.py \
+  --verify-mailbox "user@example.com" \
+  --send-test-item
+
+# 2. Auto-discover all custodians from BigQuery conversation_turns and verify their folders:
+python3 purview_connector.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --verify-mailbox auto
+
+# 3. Optional: Temporarily unhide the folder so an admin can visually see it in Outlook on the Web (OWA), then re-hide it:
+python3 purview_connector.py --verify-mailbox "user@example.com" --unhide-folder
+python3 purview_connector.py --verify-mailbox "user@example.com" --hide-folder
+```
 
 ```bash
 # 1. Recommended Production Mode: Archive all turns into one locked compliance journal mailbox

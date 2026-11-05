@@ -222,19 +222,28 @@ def get_graph_access_token(
     t_id = tenant_id or MS_TENANT_ID or cached_creds.get("tenant_id", "")
     c_id = client_id or MS_CLIENT_ID or cached_creds.get("client_id", "")
     c_sec = client_secret or MS_CLIENT_SECRET
-    r_tok = refresh_token or MS_REFRESH_TOKEN or cached_creds.get("refresh_token", "")
+    # Only fall back to cached refresh_token when no client_secret or explicit refresh_token is supplied
+    r_tok = refresh_token or MS_REFRESH_TOKEN or ("" if c_sec else cached_creds.get("refresh_token", ""))
 
     if not t_id or not c_id:
         raise RuntimeError("MS_TENANT_ID and MS_CLIENT_ID are required for Microsoft Purview integration.")
 
-    cache_key = f"{t_id}:{c_id}:{'refresh' if r_tok else 'app'}"
+    use_client_creds = bool(c_sec and not (refresh_token or MS_REFRESH_TOKEN))
+    cache_key = f"{t_id}:{c_id}:{'app' if use_client_creds else 'refresh'}"
     now = time.time()
     cached = _GRAPH_TOKEN_CACHE.get(cache_key)
     if cached and cached[1] > now + 60:
         return cached[0]
 
     token_url = f"https://login.microsoftonline.com/{t_id}/oauth2/v2.0/token"
-    if r_tok:
+    if use_client_creds:
+        form = {
+            "grant_type": "client_credentials",
+            "client_id": c_id,
+            "client_secret": c_sec,
+            "scope": "https://graph.microsoft.com/.default",
+        }
+    elif r_tok:
         form = {
             "grant_type": "refresh_token",
             "client_id": c_id,
@@ -244,12 +253,10 @@ def get_graph_access_token(
         if c_sec:
             form["client_secret"] = c_sec
     else:
-        form = {
-            "grant_type": "client_credentials",
-            "client_id": c_id,
-            "client_secret": c_sec,
-            "scope": "https://graph.microsoft.com/.default",
-        }
+        raise RuntimeError(
+            "Either MS_CLIENT_SECRET (Application permissions) or MS_REFRESH_TOKEN / --device-login "
+            "(Delegated permissions) is required for Microsoft Purview integration."
+        )
 
     data = urllib.parse.urlencode(form).encode("utf-8")
     req = urllib.request.Request(token_url, data=data, method="POST")
@@ -703,7 +710,7 @@ def push_turn_to_purview_ediscovery_mailbox(
         folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
     except urllib.error.HTTPError as e:
         fallback_mbx = _extract_fallback_mailbox_upn(graph_token)
-        if e.code == 404 and fallback_mbx and fallback_mbx.lower() != mailbox_upn.lower():
+        if e.code in (403, 404) and fallback_mbx and fallback_mbx.lower() != mailbox_upn.lower():
             mailbox_upn = fallback_mbx
             folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
         else:
@@ -1109,7 +1116,7 @@ def verify_compliance_mail_folder(
         res = graph_api_request("GET", list_url, graph_token)
     except urllib.error.HTTPError as e:
         fallback_mbx = _extract_fallback_mailbox_upn(graph_token)
-        if e.code == 404 and fallback_mbx and fallback_mbx.lower() != target_upn.lower():
+        if e.code in (403, 404) and fallback_mbx and fallback_mbx.lower() != target_upn.lower():
             target_upn = fallback_mbx
             encoded_upn = urllib.parse.quote(target_upn, safe="")
             list_url = (
@@ -1182,7 +1189,7 @@ def verify_compliance_mail_folder(
             if tx_vals and tx_vals[0].get("targetId"):
                 entry_b64 = str(tx_vals[0]["targetId"])
                 pad = "=" * ((4 - len(entry_b64) % 4) % 4)
-                entry_bytes = base64.b64decode(entry_b64 + pad)
+                entry_bytes = base64.urlsafe_b64decode(entry_b64 + pad)
                 if len(entry_bytes) >= 46:
                     purview_hex_folder_id = entry_bytes[22:46].hex().upper()
         except Exception:
