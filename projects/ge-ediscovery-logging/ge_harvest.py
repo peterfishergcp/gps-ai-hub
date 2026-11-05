@@ -130,17 +130,30 @@ def get_gcp_access_token() -> str:
     return token
 
 
+_CRC32C_TABLE: tuple[int, ...] = tuple(
+    (
+        lambda b: (
+            lambda c: [
+                c := ((c >> 1) ^ 0x82F63B78) if (c & 1) else (c >> 1)
+                for _ in range(8)
+            ][-1]
+        )(b)
+    )(i)
+    for i in range(256)
+)
+
+
 def compute_crc32c_base64(data: bytes) -> str:
-    """Computes RFC 3720 CRC32C (Castagnoli) and returns standard base64 string."""
-    poly = 0x82F63B78
+    """Computes RFC 3720 CRC32C (Castagnoli) using hardware google_crc32c or 256-entry lookup table."""
+    try:
+        import google_crc32c  # type: ignore
+        return base64.b64encode(google_crc32c.value(data).to_bytes(4, "big")).decode("ascii")
+    except Exception:
+        pass
+    tbl = _CRC32C_TABLE
     crc = 0xFFFFFFFF
     for b in data:
-        crc ^= b
-        for _ in range(8):
-            if crc & 1:
-                crc = (crc >> 1) ^ poly
-            else:
-                crc >>= 1
+        crc = tbl[(crc ^ b) & 0xFF] ^ (crc >> 8)
     crc ^= 0xFFFFFFFF
     return base64.b64encode(struct.pack(">I", crc)).decode("ascii")
 
@@ -795,11 +808,16 @@ def harvest_session(
     resolved_principal = user_principal
     last_err = None
 
-    for candidate in candidates:
+    for idx, candidate in enumerate(candidates):
         try:
-            try:
-                cand_token = get_token_for_principal(candidate, project_id, workforce_pool_id)
-            except Exception:
+            if candidate:
+                try:
+                    cand_token = get_token_for_principal(candidate, project_id, workforce_pool_id)
+                except Exception:
+                    if idx == 0 and user_principal:
+                        raise
+                    cand_token = get_gcp_access_token()
+            else:
                 cand_token = get_gcp_access_token()
             session_data = fetch_session_details(session_name, cand_token, project_id)
             token = cand_token
@@ -1130,6 +1148,7 @@ def load_rows_to_bigquery(rows: list[dict], project_id: str) -> None:
                   ARRAY_CONCAT_AGG(files) AS files
                 FROM `{project_id}.{BQ_DATASET}.{BQ_TABLE}`
                 WHERE files IS NOT NULL AND ARRAY_LENGTH(files) > 0
+                  AND session_id IN (SELECT DISTINCT session_id FROM dedup_staging)
                 GROUP BY session_id, turn_index
               )
               SELECT
@@ -1321,22 +1340,20 @@ def get_token_for_principal(principal: str, project_id: str, workforce_pool_id: 
     Returns an impersonated user token:
       1. WIF STS token via Cloud KMS asymmetricSign (primary path for Workforce Identity Federation).
       2. Optional Google Workspace DWD token if DWD_SA_EMAIL is configured and principal is a Workspace email.
-      3. Harvester GCP access token fallback.
+      3. Harvester GCP access token fallback (only when neither WIF nor DWD applies).
     """
     if not principal:
         return get_gcp_access_token()
+    dwd_sa = os.environ.get("DWD_SA_EMAIL", "").strip()
     if workforce_pool_id:
         try:
             return mint_sts_token(principal, project_id, workforce_pool_id)
         except Exception:
-            pass
-    dwd_sa = os.environ.get("DWD_SA_EMAIL", "").strip()
+            if not (dwd_sa and "@" in principal and "/workforcePools/" not in principal):
+                raise
     if dwd_sa and "@" in principal:
         email = principal.split("/")[-1]
-        try:
-            return mint_dwd_token(email, dwd_sa, project_id)
-        except Exception:
-            pass
+        return mint_dwd_token(email, dwd_sa, project_id)
     return get_gcp_access_token()
 
 

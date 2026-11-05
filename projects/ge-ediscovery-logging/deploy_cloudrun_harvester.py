@@ -213,9 +213,16 @@ def main() -> None:
         "PURVIEW_TARGET_CUSTODIAN_UPN",
         "PURVIEW_FALLBACK_UPN",
         "PURVIEW_EDISCOVERY_FOLDER",
+        "PURVIEW_HIDE_FOLDER",
+        "PURVIEW_INCLUDE_THOUGHT_TEXT",
+        "PURVIEW_MAX_ATTACHMENT_MB",
+        "PURVIEW_MESSAGE_CLASS",
         "PURVIEW_FAIL_CLOSED",
         "ARCHIVER_ALLOWED_SUBJECT_DOMAINS",
         "ARCHIVER_DENIED_SUBJECTS",
+        "ARCHIVER_REQUIRE_EMAIL_SUBJECT",
+        "FALLBACK_PRINCIPALS",
+        "DISABLE_STS_ACCESS_BOUNDARY",
     ):
         val = os.environ.get(passthrough_var, "").strip()
         if val:

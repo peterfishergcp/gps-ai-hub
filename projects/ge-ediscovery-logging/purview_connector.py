@@ -52,7 +52,8 @@ PURVIEW_MESSAGE_CLASS = os.environ.get(
     "IPM.Note.Google.GeminiEnterprise",
 )
 
-INLINE_ATTACHMENT_LIMIT_BYTES = 3 * 1024 * 1024  # 3 MiB inline Graph threshold
+INLINE_ATTACHMENT_LIMIT_BYTES = 3 * 1024 * 1024  # 3 MiB single inline Graph threshold
+MAX_CUMULATIVE_INLINE_BYTES = int(2.5 * 1024 * 1024)  # 2.5 MiB raw (~3.33 MiB base64) keeps POST well under Graph 4 MB limit
 GRAPH_UPLOAD_CHUNK_SIZE = 12 * 320 * 1024  # 3.75 MiB (exact multiple of 320 KiB per Graph spec)
 NOTEBOOK_ARCHIVE_JSON_RE = re.compile(r"/notebook_archive(?:_[0-9a-f]{16})?\.json$")
 
@@ -350,10 +351,18 @@ def resolve_custodian_upn(user_iam_principal: str, graph_token: str = "") -> str
             if upn and "@" in upn:
                 _UPN_RESOLUTION_CACHE[sub] = upn
                 return upn
-        except Exception:
-            pass
+        except Exception as e:
+            print(
+                f"  [!] Could not resolve Entra OID {sub} via /v1.0/users (ensure User.Read.All is granted "
+                f"or set PURVIEW_COMPLIANCE_JOURNAL_UPN): {e}",
+                flush=True,
+            )
 
-    return PURVIEW_FALLBACK_UPN
+    if PURVIEW_COMPLIANCE_JOURNAL_UPN:
+        return PURVIEW_COMPLIANCE_JOURNAL_UPN.strip()
+    if PURVIEW_FALLBACK_UPN:
+        return PURVIEW_FALLBACK_UPN.strip()
+    return _extract_fallback_mailbox_upn(graph_token)
 
 
 def ensure_compliance_mail_folder(
@@ -668,9 +677,16 @@ def push_turn_to_purview_ediscovery_mailbox(
     so it is indexed by Microsoft Purview eDiscovery Content Search, Legal Holds,
     and Review Sets without dropping >3 MiB binaries or allowing custodian deletion.
     """
+    fail_closed = _is_fail_closed()
     custodian_upn = resolve_custodian_upn(str(turn_row.get("user_iam_principal") or ""), graph_token=graph_token)
     if not custodian_upn:
-        return {"status": "skipped", "reason": "No resolved custodian UPN"}
+        msg = (
+            f"Could not resolve custodian UPN for user_iam_principal={turn_row.get('user_iam_principal')!r} "
+            "(grant User.Read.All on the Entra App or set PURVIEW_COMPLIANCE_JOURNAL_UPN / PURVIEW_FALLBACK_UPN)"
+        )
+        if fail_closed:
+            raise RuntimeError(msg)
+        return {"status": "skipped", "reason": msg}
     mailbox_upn = resolve_mailbox_target_upn(custodian_upn)
 
     engine_id = str(turn_row.get("engine_id") or "gemini-enterprise")
@@ -694,22 +710,15 @@ def push_turn_to_purview_ediscovery_mailbox(
             raise
 
     existing_id = check_turn_already_ingested(mailbox_upn, folder_id, internet_msg_id, graph_token)
-    if existing_id:
-        return {
-            "status": "already_exists",
-            "message_id": existing_id,
-            "custodian_upn": custodian_upn,
-            "mailbox_upn": mailbox_upn,
-            "internet_message_id": internet_msg_id,
-        }
 
-    # Build binary attachments: <= 3 MiB inline (`fileAttachment`), > 3 MiB up to 150 MiB via createUploadSession
+    # Build binary attachments: <= 3 MiB inline (`fileAttachment` up to 2.5 MiB cumulative budget),
+    # > 3 MiB (or above cumulative inline budget) up to 150 MiB via createUploadSession
     inline_attachments: list[dict[str, Any]] = []
     large_attachments: list[tuple[str, str, bytes]] = []
+    cumulative_inline_bytes = 0
     files = turn_row.get("files") or []
     seen_file_keys: set[str] = set()
     max_bytes = _max_attachment_bytes()
-    fail_closed = _is_fail_closed()
 
     for f in files:
         if not isinstance(f, dict):
@@ -745,15 +754,67 @@ def push_turn_to_purview_ediscovery_mailbox(
             print(f"  [!] {msg}")
             continue
 
-        if len(f_bytes) <= INLINE_ATTACHMENT_LIMIT_BYTES:
+        if (
+            not existing_id
+            and len(f_bytes) <= INLINE_ATTACHMENT_LIMIT_BYTES
+            and (cumulative_inline_bytes + len(f_bytes)) <= MAX_CUMULATIVE_INLINE_BYTES
+        ):
             inline_attachments.append({
                 "@odata.type": "#microsoft.graph.fileAttachment",
                 "name": f_name,
                 "contentType": f_mime,
                 "contentBytes": base64.b64encode(f_bytes).decode("ascii"),
             })
+            cumulative_inline_bytes += len(f_bytes)
         else:
             large_attachments.append((f_name, f_mime, f_bytes))
+
+    # Fix B3: If message already exists, check if new late-arriving / multi-turn attachments need to be appended
+    if existing_id:
+        appended_count = 0
+        if large_attachments:
+            encoded_upn = urllib.parse.quote(mailbox_upn, safe="")
+            encoded_msg = urllib.parse.quote(existing_id, safe="")
+            existing_names: set[str] = set()
+            try:
+                att_list_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/messages/{encoded_msg}/attachments?$select=name"
+                att_res = graph_api_request("GET", att_list_url, graph_token)
+                existing_names = {
+                    str(a.get("name") or "")
+                    for a in (att_res.get("value") or [])
+                    if isinstance(a, dict) and a.get("name")
+                }
+            except Exception:
+                pass
+
+            for f_name, f_mime, f_bytes in large_attachments:
+                if f_name in existing_names:
+                    continue
+                if len(f_bytes) <= INLINE_ATTACHMENT_LIMIT_BYTES:
+                    att_post_url = f"https://graph.microsoft.com/v1.0/users/{encoded_upn}/messages/{encoded_msg}/attachments"
+                    graph_api_request(
+                        "POST",
+                        att_post_url,
+                        graph_token,
+                        {
+                            "@odata.type": "#microsoft.graph.fileAttachment",
+                            "name": f_name,
+                            "contentType": f_mime,
+                            "contentBytes": base64.b64encode(f_bytes).decode("ascii"),
+                        },
+                    )
+                else:
+                    upload_large_attachment_to_message(mailbox_upn, existing_id, f_name, f_mime, f_bytes, graph_token)
+                appended_count += 1
+
+        return {
+            "status": "updated_attachments" if appended_count else "already_exists",
+            "message_id": existing_id,
+            "custodian_upn": custodian_upn,
+            "mailbox_upn": mailbox_upn,
+            "internet_message_id": internet_msg_id,
+            "appended_attachments_count": appended_count,
+        }
 
     # Custom headers (Max 5 per message creation in Graph API)
     headers_list = [
