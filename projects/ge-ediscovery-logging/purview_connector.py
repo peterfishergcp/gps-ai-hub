@@ -703,7 +703,7 @@ def push_turn_to_purview_ediscovery_mailbox(
         folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
     except urllib.error.HTTPError as e:
         fallback_mbx = _extract_fallback_mailbox_upn(graph_token)
-        if e.code == 404 and fallback_mbx and fallback_mbx.lower() != mailbox_upn.lower():
+        if e.code in (403, 404) and fallback_mbx and fallback_mbx.lower() != mailbox_upn.lower():
             mailbox_upn = fallback_mbx
             folder_id = ensure_compliance_mail_folder(mailbox_upn, graph_token, folder_name=folder_name)
         else:
@@ -1109,7 +1109,7 @@ def verify_compliance_mail_folder(
         res = graph_api_request("GET", list_url, graph_token)
     except urllib.error.HTTPError as e:
         fallback_mbx = _extract_fallback_mailbox_upn(graph_token)
-        if e.code == 404 and fallback_mbx and fallback_mbx.lower() != target_upn.lower():
+        if e.code in (403, 404) and fallback_mbx and fallback_mbx.lower() != target_upn.lower():
             target_upn = fallback_mbx
             encoded_upn = urllib.parse.quote(target_upn, safe="")
             list_url = (
