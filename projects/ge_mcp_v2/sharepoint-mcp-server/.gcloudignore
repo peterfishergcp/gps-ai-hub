@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.git/
+.gitignore
+*.log
+*.pem
+*.key
+README.md
+deploy.sh
+test_local.sh

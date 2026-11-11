@@ -35,16 +35,20 @@ const MAX_ZIP_ENTRIES = 250;
 const MAX_ZIP_ENTRY_UNCOMPRESSED_BYTES = 10 * 1024 * 1024; // 10 MB per XML entry (S-06 zip-bomb cap)
 const MAX_ZIP_TOTAL_UNCOMPRESSED_BYTES = 25 * 1024 * 1024; // 25 MB cumulative inflation cap
 const GRAPH_TIMEOUT_MS = 30_000;
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQ = Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 120;
 const SESSION_TTL_MS = 3600 * 1000;
+const REFRESH_TTL_MS = 24 * 3600 * 1000;
 const AUTH_CODE_TTL_MS = 5 * 60 * 1000;
+const PKCE_VERIFIER_REGEX = /^[A-Za-z0-9._~-]{43,128}$/;
 
 const DEFAULT_REDIRECT_URIS = [
   "https://vertexaisearch.cloud.google.com/console/oauth/default_oauth.html",
   "https://vertexaisearch.cloud.google.com/oauth-redirect",
 ];
 
+const TRUSTED_AUTH_HOSTS = new Set(["graph.microsoft.com", "login.microsoftonline.com"]);
 const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
 
 const graphHttp = axios.create({
@@ -52,7 +56,20 @@ const graphHttp = axios.create({
   timeout: GRAPH_TIMEOUT_MS,
   maxContentLength: DEFAULT_MAX_FILE_BYTES,
   maxBodyLength: DEFAULT_MAX_FILE_BYTES,
+  maxRedirects: 5,
+  beforeRedirect: (options) => {
+    const targetHost = String(options.hostname || "").toLowerCase();
+    if (!TRUSTED_AUTH_HOSTS.has(targetHost) && options.headers) {
+      delete options.headers.Authorization;
+      delete options.headers.authorization;
+      delete options.headers["Proxy-Authorization"];
+    }
+  },
 });
+
+function computePkceS256(verifier) {
+  return crypto.createHash("sha256").update(verifier, "ascii").digest("base64url");
+}
 
 function resolveSigningSecret() {
   if (process.env.MCP_TOKEN_SIGNING_SECRET && process.env.MCP_TOKEN_SIGNING_SECRET.length >= 32) {
@@ -145,14 +162,21 @@ async function mapWithConcurrency(items, concurrency, mapper) {
 
 // --- Bounded Async OOXML ZIP XML Reader (S-06 Zip-Bomb Mitigation) ---
 // Note: XML entities are decoded purely via deterministic string replacement without external DTD/XXE expansion.
+function safeCodePointToChar(cp) {
+  if (!Number.isInteger(cp) || cp < 0x09 || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) {
+    return "\uFFFD";
+  }
+  return String.fromCodePoint(cp);
+}
+
 function decodeXmlEntities(xmlText) {
   return String(xmlText)
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]{1,6});/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-    .replace(/&#([0-9]{1,7});/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-fA-F]{1,6});/g, (_, hex) => safeCodePointToChar(parseInt(hex, 16)))
+    .replace(/&#([0-9]{1,7});/g, (_, dec) => safeCodePointToChar(parseInt(dec, 10)))
     .replace(/&amp;/g, "&");
 }
 
@@ -419,12 +443,17 @@ async function extractDocumentTextAsync(buffer, fileName = "", contentType = "")
   ) {
     const raw = buffer.toString("utf8");
     if (lowerName.endsWith(".html") || lowerName.endsWith(".htm") || lowerMime.includes("text/html")) {
-      return raw
-        .replace(/<style[\s\S]*?<\/style>/gi, "")
-        .replace(/<script[\s\S]*?<\/script>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      let cleaned = raw.slice(0, 1_000_000);
+      let prev;
+      do {
+        prev = cleaned;
+        cleaned = cleaned.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ");
+      } while (cleaned !== prev);
+      do {
+        prev = cleaned;
+        cleaned = cleaned.replace(/<[^>]*>/g, " ");
+      } while (cleaned !== prev);
+      return cleaned.replace(/[<>]/g, " ").replace(/\s+/g, " ").trim();
     }
     return raw;
   }
@@ -603,6 +632,16 @@ function createSharePointHttpServer({
       ? process.env.ALLOW_APP_CREDENTIALS === "true"
       : defaultAllowAppCredentials;
   const allowLocalMockAuth = process.env.ALLOW_LOCAL_MOCK_AUTH === "true";
+  if (
+    process.env.K_SERVICE &&
+    allowAppCredentials &&
+    (!process.env.MCP_TOKEN_SIGNING_SECRET || process.env.MCP_TOKEN_SIGNING_SECRET.length < 32)
+  ) {
+    console.error(
+      "FATAL: MCP_TOKEN_SIGNING_SECRET (>=32 chars) must be configured via Secret Manager on Cloud Run when ALLOW_APP_CREDENTIALS=true."
+    );
+    process.exit(1);
+  }
 
   const allowedRedirectUris = new Set([
     ...DEFAULT_REDIRECT_URIS,
@@ -638,20 +677,31 @@ function createSharePointHttpServer({
   function checkRateLimit(bucketKey) {
     const now = Date.now();
     const existing = rateLimitMap.get(bucketKey);
-    if (!existing || now > existing.resetAt) {
-      rateLimitMap.set(bucketKey, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-      return true;
+    if (existing && now <= existing.resetAt) {
+      existing.count += 1;
+      return existing.count <= RATE_LIMIT_MAX_REQ;
     }
-    existing.count += 1;
-    return existing.count <= RATE_LIMIT_MAX_REQ;
+    if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+      for (const [k, v] of rateLimitMap.entries()) {
+        if (now > v.resetAt) rateLimitMap.delete(k);
+      }
+      if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+        const oldest = rateLimitMap.keys().next().value;
+        if (oldest) rateLimitMap.delete(oldest);
+      }
+    }
+    rateLimitMap.set(bucketKey, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
   }
 
-  function issueSessionToken(subject) {
+  function issueSessionToken(subject, tokenType = "access") {
+    const ttl = tokenType === "refresh" ? REFRESH_TTL_MS : SESSION_TTL_MS;
     const payload = Buffer.from(
       JSON.stringify({
         sub: subject,
+        typ: tokenType,
         svc: serviceName,
-        exp: Date.now() + SESSION_TTL_MS,
+        exp: Date.now() + ttl,
         nonce: crypto.randomBytes(12).toString("base64url"),
       })
     ).toString("base64url");
@@ -659,7 +709,7 @@ function createSharePointHttpServer({
     return `mcp_st_${payload}.${sig}`;
   }
 
-  function verifySessionToken(token) {
+  function verifySessionToken(token, expectedType = "access") {
     if (typeof token !== "string" || !token.startsWith("mcp_st_")) return null;
     const raw = token.slice("mcp_st_".length);
     const dot = raw.indexOf(".");
@@ -670,7 +720,9 @@ function createSharePointHttpServer({
     if (!timingSafeMatch(expectedSig, sig)) return null;
     try {
       const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-      if (!parsed.exp || Date.now() > parsed.exp || parsed.svc !== serviceName) return null;
+      if (!parsed.exp || Date.now() > parsed.exp || parsed.svc !== serviceName || parsed.typ !== expectedType) {
+        return null;
+      }
       return parsed;
     } catch {
       return null;
@@ -821,13 +873,15 @@ function createSharePointHttpServer({
   const httpServer = http.createServer(async (req, res) => {
     applySecurityHeaders(req, res);
 
-    // Rate limit per caller token hash or forwarded client IP (fixes S-10 shared GFE proxy bucket)
+    // Rate limit per caller token hash or rightmost non-spoofable proxy client IP (fixes S-10 & CWE-290)
     const authDigest = req.headers.authorization
       ? crypto.createHash("sha256").update(String(req.headers.authorization)).digest("hex").slice(0, 16)
       : "";
-    const forwardedIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown")
-      .split(",")[0]
-      .trim();
+    const xff = String(req.headers["x-forwarded-for"] || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const forwardedIp = xff.length > 0 ? xff[xff.length - 1] : String(req.socket.remoteAddress || "unknown").trim();
     const bucketKey = authDigest ? `tok:${authDigest}` : `ip:${forwardedIp}`;
 
     if (!checkRateLimit(bucketKey)) {
@@ -883,10 +937,23 @@ function createSharePointHttpServer({
         );
       }
 
-      const expectedClientId = process.env.MCP_OAUTH_CLIENT_ID || process.env.MS_GRAPH_CLIENT_ID || "";
+      const allowSharedFallback = process.env.ALLOW_LEGACY_SHARED_OAUTH_SECRET !== "false" && isLoopbackHost(bindHost);
+      const expectedClientId =
+        process.env.MCP_OAUTH_CLIENT_ID ||
+        (allowSharedFallback || process.env.ALLOW_LEGACY_SHARED_OAUTH_SECRET === "true"
+          ? process.env.MS_GRAPH_CLIENT_ID
+          : "") ||
+        "";
       if (!expectedClientId || !timingSafeMatch(expectedClientId, clientId)) {
         res.writeHead(401, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ error: "Invalid client_id." }));
+        return res.end(JSON.stringify({ error: "Invalid client_id. Set MCP_OAUTH_CLIENT_ID." }));
+      }
+
+      const codeChallenge = (reqUrl.searchParams.get("code_challenge") || "").trim();
+      const codeChallengeMethod = (reqUrl.searchParams.get("code_challenge_method") || "S256").trim().toUpperCase();
+      if (codeChallenge && codeChallengeMethod !== "S256") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "invalid_request", error_description: "Only PKCE S256 is supported." }));
       }
 
       const code = crypto.randomBytes(24).toString("base64url");
@@ -894,7 +961,12 @@ function createSharePointHttpServer({
         const oldest = pendingAuthCodes.keys().next().value;
         if (oldest) pendingAuthCodes.delete(oldest);
       }
-      pendingAuthCodes.set(code, { redirectUri, expiresAt: Date.now() + AUTH_CODE_TTL_MS });
+      pendingAuthCodes.set(code, {
+        clientId,
+        redirectUri,
+        codeChallenge: codeChallenge || null,
+        expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+      });
 
       const target = new URL(redirectUri);
       target.searchParams.set("code", code);
@@ -904,7 +976,7 @@ function createSharePointHttpServer({
       return res.end();
     }
 
-    // 3. Hardened OAuth /token Endpoint (S-01: requires verified client credentials, issues HMAC session token)
+    // 3. Hardened OAuth /token Endpoint (S-01 + CWE-287/384: PKCE S256, redirect_uri binding, refresh_token validation)
     if (req.method === "POST" && pathname === "/token") {
       if (!allowAppCredentials) {
         res.writeHead(403, { "Content-Type": "application/json" });
@@ -941,8 +1013,19 @@ function createSharePointHttpServer({
         }
       }
 
-      const expectedId = process.env.MCP_OAUTH_CLIENT_ID || process.env.MS_GRAPH_CLIENT_ID || "";
-      const expectedSecret = process.env.MCP_OAUTH_CLIENT_SECRET || process.env.MS_GRAPH_CLIENT_SECRET || "";
+      const allowSharedSecret = process.env.ALLOW_LEGACY_SHARED_OAUTH_SECRET !== "false" && isLoopbackHost(bindHost);
+      const expectedId =
+        process.env.MCP_OAUTH_CLIENT_ID ||
+        (allowSharedSecret || process.env.ALLOW_LEGACY_SHARED_OAUTH_SECRET === "true"
+          ? process.env.MS_GRAPH_CLIENT_ID
+          : "") ||
+        "";
+      const expectedSecret =
+        process.env.MCP_OAUTH_CLIENT_SECRET ||
+        (allowSharedSecret || process.env.ALLOW_LEGACY_SHARED_OAUTH_SECRET === "true"
+          ? process.env.MS_GRAPH_CLIENT_SECRET
+          : "") ||
+        "";
       if (!timingSafeMatch(expectedId, clientId) || !timingSafeMatch(expectedSecret, clientSecret)) {
         res.writeHead(401, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "invalid_client" }));
@@ -951,19 +1034,38 @@ function createSharePointHttpServer({
       const grantType = params.get("grant_type") || "authorization_code";
       if (grantType === "authorization_code") {
         const code = params.get("code") || "";
+        const presentedRedirectUri = (params.get("redirect_uri") || "").trim();
+        const codeVerifier = (params.get("code_verifier") || "").trim();
         const meta = pendingAuthCodes.get(code);
         pendingAuthCodes.delete(code);
-        if (!meta || Date.now() > meta.expiresAt) {
+        if (!meta || Date.now() > meta.expiresAt || meta.clientId !== clientId) {
           res.writeHead(400, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({ error: "invalid_grant" }));
         }
-      } else if (grantType !== "refresh_token" && grantType !== "client_credentials") {
+        if (presentedRedirectUri && presentedRedirectUri !== meta.redirectUri) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "invalid_grant", error_description: "redirect_uri mismatch" }));
+        }
+        if (meta.codeChallenge) {
+          if (!PKCE_VERIFIER_REGEX.test(codeVerifier) || !timingSafeMatch(meta.codeChallenge, computePkceS256(codeVerifier))) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "invalid_grant", error_description: "PKCE verification failed" }));
+          }
+        }
+      } else if (grantType === "refresh_token") {
+        const presentedRefresh = (params.get("refresh_token") || "").trim();
+        const verifiedRefresh = verifySessionToken(presentedRefresh, "refresh");
+        if (!verifiedRefresh || verifiedRefresh.sub !== clientId) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "invalid_grant", error_description: "Invalid or expired refresh_token" }));
+        }
+      } else if (grantType !== "client_credentials") {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "unsupported_grant_type" }));
       }
 
-      const sessionToken = issueSessionToken(clientId);
-      const refreshToken = issueSessionToken(`${clientId}:refresh`);
+      const sessionToken = issueSessionToken(clientId, "access");
+      const refreshToken = issueSessionToken(clientId, "refresh");
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(
         JSON.stringify({
@@ -1244,37 +1346,113 @@ function buildStandardSharePointTools({ includeWriteTools = true, includeSearchF
   return tools;
 }
 
-// Smart Graph Drive & Item Resolver with OData single-quote escaping (S-08)
-async function resolveTenantDriveAndItem(rawDriveId, rawItemId, headers) {
+// Extract canonical SharePoint site root URL & slug from a drive or item webUrl for site-boundary checks
+function extractSiteDescriptorFromWebUrl(rawWebUrl, fallbackName = "") {
+  try {
+    const u = new URL(String(rawWebUrl || ""));
+    const m = /^\/(sites|teams)\/([^/]+)/i.exec(u.pathname);
+    if (m) {
+      return {
+        webUrl: `${u.protocol}//${u.host}/${m[1]}/${m[2]}`,
+        name: decodeURIComponent(m[2]),
+      };
+    }
+    return { webUrl: `${u.protocol}//${u.host}`, name: fallbackName };
+  } catch {
+    return { webUrl: String(rawWebUrl || ""), name: fallbackName };
+  }
+}
+
+const verifiedDriveSiteCache = new Map();
+
+async function assertDriveAllowedBySiteFilter(driveId, headers, allowedSiteFilter) {
+  if (typeof allowedSiteFilter !== "function") return;
+  if (!driveId) {
+    throw new Error("Site-Boundary Access Denied: Unable to resolve an approved SharePoint drive.");
+  }
+  const now = Date.now();
+  const cached = verifiedDriveSiteCache.get(driveId);
+  let descriptor = cached && now < cached.exp ? cached.descriptor : null;
+
+  if (!descriptor) {
+    const drvRes = await graphHttp.get(
+      `https://graph.microsoft.com/v1.0/drives/${encodeGraphSegment(driveId, "driveId")}?$select=id,name,webUrl,driveType`,
+      { headers }
+    );
+    const drv = drvRes.data || {};
+    if (drv.driveType === "personal") {
+      throw new Error("Site-Boundary Access Denied: Personal OneDrive is excluded when ALLOWED_SHAREPOINT_SITES is active.");
+    }
+    descriptor = extractSiteDescriptorFromWebUrl(drv.webUrl, drv.name || "");
+    if (verifiedDriveSiteCache.size > 1000) verifiedDriveSiteCache.clear();
+    verifiedDriveSiteCache.set(driveId, { descriptor, exp: now + 300_000 });
+  }
+
+  if (!allowedSiteFilter(descriptor)) {
+    throw new Error(
+      `Site-Boundary Access Denied: Drive '${driveId}' (${descriptor.webUrl}) is outside ALLOWED_SHAREPOINT_SITES.`
+    );
+  }
+}
+
+// Smart Graph Drive & Item Resolver with OData single-quote escaping (S-08) & Site-Boundary Enforcement (CWE-863)
+async function resolveTenantDriveAndItem(rawDriveId, rawItemId, headers, allowedSiteFilter = null) {
   const cleanDrive = validateSafeString(rawDriveId, "driveId", 512);
   const cleanItem = validateSafeString(rawItemId, "itemId", 512);
+  const hasSiteFilter = typeof allowedSiteFilter === "function";
 
   let resolvedDriveId = cleanDrive;
   if (!resolvedDriveId || (!resolvedDriveId.includes("b!") && resolvedDriveId.length <= 24)) {
-    try {
-      const meDrive = await graphHttp.get("https://graph.microsoft.com/v1.0/me/drive", { headers });
-      if (
-        !resolvedDriveId ||
-        (meDrive.data?.name && meDrive.data.name.toLowerCase() === resolvedDriveId.toLowerCase())
-      ) {
-        resolvedDriveId = meDrive.data.id;
-      }
-    } catch {
-      // Fallback to root SharePoint site drives
-    }
-
-    if (!resolvedDriveId || (!resolvedDriveId.includes("b!") && resolvedDriveId.length <= 24)) {
+    if (!hasSiteFilter) {
       try {
-        const rootDrives = await graphHttp.get("https://graph.microsoft.com/v1.0/sites/root/drives", { headers });
-        const drives = rootDrives.data?.value || [];
-        const matched = resolvedDriveId
-          ? drives.find((d) => (d.name || "").toLowerCase() === resolvedDriveId.toLowerCase()) || drives[0]
-          : drives[0];
-        if (matched?.id) resolvedDriveId = matched.id;
+        const meDrive = await graphHttp.get("https://graph.microsoft.com/v1.0/me/drive", { headers });
+        if (
+          !resolvedDriveId ||
+          (meDrive.data?.name && meDrive.data.name.toLowerCase() === resolvedDriveId.toLowerCase())
+        ) {
+          resolvedDriveId = meDrive.data.id;
+        }
       } catch {
-        // Search across accessible SharePoint sites
+        // Fallback to root SharePoint site drives
+      }
+
+      if (!resolvedDriveId || (!resolvedDriveId.includes("b!") && resolvedDriveId.length <= 24)) {
+        try {
+          const rootDrives = await graphHttp.get("https://graph.microsoft.com/v1.0/sites/root/drives", { headers });
+          const drives = rootDrives.data?.value || [];
+          const matched = resolvedDriveId
+            ? drives.find((d) => (d.name || "").toLowerCase() === resolvedDriveId.toLowerCase()) || drives[0]
+            : drives[0];
+          if (matched?.id) resolvedDriveId = matched.id;
+        } catch {
+          // Search across accessible SharePoint sites
+        }
+      }
+    } else {
+      // When ALLOWED_SHAREPOINT_SITES is active, resolve default drive strictly from approved sites
+      const sitesRes = await graphHttp.get("https://graph.microsoft.com/v1.0/sites?search=*", { headers });
+      const approvedSites = (sitesRes.data?.value || [])
+        .map((s) => ({ id: s.id, name: s.displayName || s.name || "", webUrl: s.webUrl || "" }))
+        .filter(allowedSiteFilter);
+      for (const site of approvedSites) {
+        const drivesRes = await graphHttp.get(
+          `https://graph.microsoft.com/v1.0/sites/${encodeGraphSegment(site.id, "siteId")}/drives`,
+          { headers }
+        );
+        const drives = drivesRes.data?.value || [];
+        const matched = resolvedDriveId
+          ? drives.find((d) => (d.name || "").toLowerCase() === resolvedDriveId.toLowerCase())
+          : drives[0];
+        if (matched?.id) {
+          resolvedDriveId = matched.id;
+          break;
+        }
       }
     }
+  }
+
+  if (resolvedDriveId && hasSiteFilter) {
+    await assertDriveAllowedBySiteFilter(resolvedDriveId, headers, allowedSiteFilter);
   }
 
   if (!cleanItem || cleanItem === "root") {
@@ -1298,19 +1476,28 @@ async function resolveTenantDriveAndItem(rawDriveId, rawItemId, headers) {
       const candidates = res.data?.value || [];
       const exact = candidates.find((c) => (c.name || "").toLowerCase() === cleanItem.toLowerCase()) || candidates[0];
       if (exact?.id) {
+        const effectiveDrive = exact.parentReference?.driveId || resolvedDriveId;
+        if (hasSiteFilter) {
+          await assertDriveAllowedBySiteFilter(effectiveDrive, headers, allowedSiteFilter);
+        }
         return {
-          driveId: exact.parentReference?.driveId || resolvedDriveId,
+          driveId: effectiveDrive,
           itemId: exact.id,
         };
       }
-    } catch {
+    } catch (searchErr) {
+      if (String(searchErr.message || "").includes("Site-Boundary Access Denied")) throw searchErr;
       // Continue to cross-site search fallback if needed
     }
   }
 
   try {
     const sitesRes = await graphHttp.get("https://graph.microsoft.com/v1.0/sites?search=*", { headers });
-    for (const site of (sitesRes.data?.value || []).slice(0, 10)) {
+    const candidateSites = (sitesRes.data?.value || [])
+      .map((s) => ({ id: s.id, name: s.displayName || s.name || "", webUrl: s.webUrl || "" }))
+      .filter((s) => (hasSiteFilter ? allowedSiteFilter(s) : true))
+      .slice(0, 10);
+    for (const site of candidateSites) {
       const drivesRes = await graphHttp.get(
         `https://graph.microsoft.com/v1.0/sites/${encodeGraphSegment(site.id, "siteId")}/drives`,
         { headers }
@@ -1334,6 +1521,10 @@ async function resolveTenantDriveAndItem(rawDriveId, rawItemId, headers) {
     // Fallback to raw IDs
   }
 
+  if (hasSiteFilter && !resolvedDriveId) {
+    throw new Error("Site-Boundary Access Denied: Item not found in ALLOWED_SHAREPOINT_SITES.");
+  }
+
   return { driveId: resolvedDriveId, itemId: cleanItem };
 }
 
@@ -1352,17 +1543,30 @@ async function executeStandardSharePointTool({
 
   // Deterministic loopback mock fixtures for offline CI & test_local.sh verification
   if (isLocalMock) {
+    if (typeof allowedSiteFilter === "function" && args.siteId) {
+      const reqSite = validateSafeString(args.siteId, "siteId", 512);
+      const mockSiteDesc = reqSite.startsWith("http")
+        ? extractSiteDescriptorFromWebUrl(reqSite, reqSite)
+        : { webUrl: `https://example.sharepoint.com/sites/${reqSite}`, name: reqSite };
+      if (!allowedSiteFilter(mockSiteDesc)) {
+        throw new Error(`Site-Boundary Access Denied: Site '${reqSite}' is outside ALLOWED_SHAREPOINT_SITES.`);
+      }
+    }
+    if (typeof allowedSiteFilter === "function" && args.driveId && String(args.driveId).toLowerCase().includes("unapproved")) {
+      throw new Error(`Site-Boundary Access Denied: Drive '${args.driveId}' is outside ALLOWED_SHAREPOINT_SITES.`);
+    }
     if (name === "query_sharepoint_sites_lookup") {
       const q = escapeODataString(args.query || "");
+      const baseSites = [
+        {
+          id: "example.sharepoint.com,00000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000002",
+          name: "Finance",
+          webUrl: "https://example.sharepoint.com/sites/Finance",
+          mockQuery: q,
+        },
+      ];
       return {
-        sites: [
-          {
-            id: "example.sharepoint.com,00000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000002",
-            name: "Finance",
-            webUrl: "https://example.sharepoint.com/sites/Finance",
-            mockQuery: q,
-          },
-        ],
+        sites: typeof allowedSiteFilter === "function" ? baseSites.filter(allowedSiteFilter) : baseSites,
       };
     }
     if (name === "query_document_libraries_lookup") {
@@ -1412,7 +1616,41 @@ async function executeStandardSharePointTool({
         ...(enablePurviewLabels ? formatPurviewLabelFields(effectiveLabel, true) : {}),
       };
     }
+    if (
+      (name === "query_delete_item_action_lookup" ||
+        name === "query_update_file_action_lookup" ||
+        name === "query_rename_item_action_lookup" ||
+        name === "query_move_item_action_lookup") &&
+      enablePurviewLabels &&
+      String(args.itemId || "").toLowerCase().includes("restricted")
+    ) {
+      throw new Error(
+        "Blocked by Sensitive Data Protection policy: cannot modify or delete a BLOCK-classified SharePoint item."
+      );
+    }
     return { mock: true, tool: name, args };
+  }
+
+  async function assertNotPurviewBlockedBeforeMutation(safeDrive, safeItem) {
+    if (!enablePurviewLabels) return;
+    const itemRes = await graphHttp.get(
+      `https://graph.microsoft.com/v1.0/drives/${safeDrive}/items/${safeItem}`,
+      { headers }
+    );
+    const labelInfo = await extractPurviewLabelAsync(itemRes.data, null, guidToInfoTypeMap);
+    if (labelInfo?.returnVerdict === "BLOCK") {
+      throw new Error(
+        `Blocked by Sensitive Data Protection policy (${labelInfo.displayName}): cannot modify or delete a BLOCK-classified SharePoint item.`
+      );
+    }
+    if (typeof evaluateSdpVerdict === "function") {
+      const v = evaluateSdpVerdict({ itemData: itemRes.data, extractedText: "", labelInfo });
+      if (v.blocked) {
+        throw new Error(
+          "Blocked by Sensitive Data Protection policy: cannot modify or delete a BLOCK-classified SharePoint item."
+        );
+      }
+    }
   }
 
   // 1. Search SharePoint Sites
@@ -1437,6 +1675,15 @@ async function executeStandardSharePointTool({
   // 2. List Document Libraries
   if (name === "query_document_libraries_lookup") {
     const rawSiteId = validateSafeString(args.siteId, "siteId", 512);
+    if (typeof allowedSiteFilter === "function") {
+      const siteLookupUrl = rawSiteId
+        ? `https://graph.microsoft.com/v1.0/sites/${encodeGraphSegment(rawSiteId, "siteId")}?$select=id,displayName,name,webUrl`
+        : "https://graph.microsoft.com/v1.0/sites/root?$select=id,displayName,name,webUrl";
+      const siteMeta = (await graphHttp.get(siteLookupUrl, { headers })).data || {};
+      if (!allowedSiteFilter({ webUrl: siteMeta.webUrl || "", name: siteMeta.displayName || siteMeta.name || "" })) {
+        throw new Error(`Site-Boundary Access Denied: Site '${rawSiteId || "root"}' is outside ALLOWED_SHAREPOINT_SITES.`);
+      }
+    }
     const endpoint = rawSiteId
       ? `https://graph.microsoft.com/v1.0/sites/${encodeGraphSegment(rawSiteId, "siteId")}/drives`
       : "https://graph.microsoft.com/v1.0/sites/root/drives";
@@ -1452,13 +1699,13 @@ async function executeStandardSharePointTool({
 
   // 3. List Library Items (Bounded 5-way concurrency when enriching Purview labels — S-06)
   if (name === "query_library_items_lookup") {
-    const { driveId } = await resolveTenantDriveAndItem(args.driveId, "root", headers);
+    const { driveId } = await resolveTenantDriveAndItem(args.driveId, "root", headers, allowedSiteFilter);
     if (!driveId) throw new Error("Unable to resolve SharePoint driveId.");
     const safeDrive = encodeGraphSegment(driveId, "driveId");
     const rawFolder = validateSafeString(args.folderId, "folderId", 512);
     const resolvedFolder =
       rawFolder && rawFolder !== "root"
-        ? (await resolveTenantDriveAndItem(driveId, rawFolder, headers)).itemId
+        ? (await resolveTenantDriveAndItem(driveId, rawFolder, headers, allowedSiteFilter)).itemId
         : "root";
     const safeFolder = resolvedFolder === "root" ? "root" : encodeGraphSegment(resolvedFolder, "folderId");
 
@@ -1525,7 +1772,7 @@ async function executeStandardSharePointTool({
   if (name === "query_file_metadata_lookup") {
     const rawItem = validateSafeString(args.itemId, "itemId", 512);
     if (!rawItem) throw new Error("Parameter 'itemId' is required.");
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
     const safeDrive = encodeGraphSegment(driveId, "driveId");
     const safeItem = encodeGraphSegment(itemId, "itemId");
 
@@ -1581,7 +1828,7 @@ async function executeStandardSharePointTool({
   if (name === "query_file_content_lookup") {
     const rawItem = validateSafeString(args.itemId, "itemId", 512);
     if (!rawItem) throw new Error("Parameter 'itemId' is required.");
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
     const safeDrive = encodeGraphSegment(driveId, "driveId");
     const safeItem = encodeGraphSegment(itemId, "itemId");
 
@@ -1642,7 +1889,7 @@ async function executeStandardSharePointTool({
   if (name === "query_file_download_url_lookup") {
     const rawItem = validateSafeString(args.itemId, "itemId", 512);
     if (!rawItem) throw new Error("Parameter 'itemId' is required.");
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
     const safeDrive = encodeGraphSegment(driveId, "driveId");
     const safeItem = encodeGraphSegment(itemId, "itemId");
 
@@ -1686,7 +1933,8 @@ async function executeStandardSharePointTool({
     const { driveId, itemId: parentId } = await resolveTenantDriveAndItem(
       args.driveId,
       args.parentId || "root",
-      headers
+      headers,
+      allowedSiteFilter
     );
     const safeDrive = encodeGraphSegment(driveId, "driveId");
     const uploadUrl =
@@ -1716,12 +1964,12 @@ async function executeStandardSharePointTool({
     if (Buffer.byteLength(contentText, "utf8") > 5 * 1024 * 1024) {
       throw new Error("File content exceeds 5 MB write limit.");
     }
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
+    const safeDrive = encodeGraphSegment(driveId, "driveId");
+    const safeItem = encodeGraphSegment(itemId, "itemId");
+    await assertNotPurviewBlockedBeforeMutation(safeDrive, safeItem);
     const resp = await graphHttp.put(
-      `https://graph.microsoft.com/v1.0/drives/${encodeGraphSegment(driveId, "driveId")}/items/${encodeGraphSegment(
-        itemId,
-        "itemId"
-      )}/content`,
+      `https://graph.microsoft.com/v1.0/drives/${safeDrive}/items/${safeItem}/content`,
       Buffer.from(contentText, "utf8"),
       { headers: { ...headers, "Content-Type": "text/plain; charset=utf-8" } }
     );
@@ -1739,7 +1987,8 @@ async function executeStandardSharePointTool({
     const { driveId, itemId: parentId } = await resolveTenantDriveAndItem(
       args.driveId,
       args.parentId || "root",
-      headers
+      headers,
+      allowedSiteFilter
     );
     const safeDrive = encodeGraphSegment(driveId, "driveId");
     const endpoint =
@@ -1767,12 +2016,12 @@ async function executeStandardSharePointTool({
     const rawItem = validateSafeString(args.itemId, "itemId", 512);
     if (!rawItem) throw new Error("Parameter 'itemId' is required.");
     const newName = sanitizeFileName(args.newName);
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
+    const safeDrive = encodeGraphSegment(driveId, "driveId");
+    const safeItem = encodeGraphSegment(itemId, "itemId");
+    await assertNotPurviewBlockedBeforeMutation(safeDrive, safeItem);
     const resp = await graphHttp.patch(
-      `https://graph.microsoft.com/v1.0/drives/${encodeGraphSegment(driveId, "driveId")}/items/${encodeGraphSegment(
-        itemId,
-        "itemId"
-      )}`,
+      `https://graph.microsoft.com/v1.0/drives/${safeDrive}/items/${safeItem}`,
       { name: newName },
       { headers }
     );
@@ -1789,13 +2038,13 @@ async function executeStandardSharePointTool({
     const rawItem = validateSafeString(args.itemId, "itemId", 512);
     const rawDest = validateSafeString(args.destinationFolderId, "destinationFolderId", 512);
     if (!rawItem || !rawDest) throw new Error("Parameters 'itemId' and 'destinationFolderId' are required.");
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
-    const { itemId: destId } = await resolveTenantDriveAndItem(driveId, rawDest, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
+    const { itemId: destId } = await resolveTenantDriveAndItem(driveId, rawDest, headers, allowedSiteFilter);
+    const safeDrive = encodeGraphSegment(driveId, "driveId");
+    const safeItem = encodeGraphSegment(itemId, "itemId");
+    await assertNotPurviewBlockedBeforeMutation(safeDrive, safeItem);
     const resp = await graphHttp.patch(
-      `https://graph.microsoft.com/v1.0/drives/${encodeGraphSegment(driveId, "driveId")}/items/${encodeGraphSegment(
-        itemId,
-        "itemId"
-      )}`,
+      `https://graph.microsoft.com/v1.0/drives/${safeDrive}/items/${safeItem}`,
       { parentReference: { id: destId } },
       { headers }
     );
@@ -1811,12 +2060,12 @@ async function executeStandardSharePointTool({
   if (name === "query_delete_item_action_lookup") {
     const rawItem = validateSafeString(args.itemId, "itemId", 512);
     if (!rawItem) throw new Error("Parameter 'itemId' is required.");
-    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers);
+    const { driveId, itemId } = await resolveTenantDriveAndItem(args.driveId, rawItem, headers, allowedSiteFilter);
+    const safeDrive = encodeGraphSegment(driveId, "driveId");
+    const safeItem = encodeGraphSegment(itemId, "itemId");
+    await assertNotPurviewBlockedBeforeMutation(safeDrive, safeItem);
     await graphHttp.delete(
-      `https://graph.microsoft.com/v1.0/drives/${encodeGraphSegment(driveId, "driveId")}/items/${encodeGraphSegment(
-        itemId,
-        "itemId"
-      )}`,
+      `https://graph.microsoft.com/v1.0/drives/${safeDrive}/items/${safeItem}`,
       { headers }
     );
     return {

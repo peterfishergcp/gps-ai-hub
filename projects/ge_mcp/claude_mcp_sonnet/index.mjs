@@ -28,6 +28,8 @@ const MAX_TOKENS_DEFAULT = 4096;
 const MAX_TOKENS_HARD_CAP = 8192;
 const MAX_PROMPT_CHARS = 200_000;
 const MAX_SSE_CLIENTS = 100;
+const SSE_SESSION_TTL_MS = 15 * 60_000;
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQ = 120;
 
@@ -69,22 +71,47 @@ function isLoopbackHost(host) {
   return host === "127.0.0.1" || host === "localhost" || host === "::1";
 }
 
-// --- Per-IP Rate Limiter with Expired Entry Eviction ---
+// --- Per-Caller / Rightmost-Proxy-IP Rate Limiter with Hard Entry Cap ---
 const rateLimitMap = new Map();
-function checkRateLimit(ip) {
+function resolveRateLimitBucket(req) {
+  const authHeader = String(req.headers.authorization || "").trim();
+  if (authHeader) {
+    const digest = crypto.createHash("sha256").update(authHeader).digest("hex").slice(0, 16);
+    return `tok:${digest}`;
+  }
+  const xff = String(req.headers["x-forwarded-for"] || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const clientIp = xff.length > 0 ? xff[xff.length - 1] : String(req.socket.remoteAddress || "unknown").trim();
+  return `ip:${clientIp}`;
+}
+
+function checkRateLimit(bucketKey) {
   const now = Date.now();
-  if (rateLimitMap.size > 5000) {
+  const existing = rateLimitMap.get(bucketKey);
+  if (existing && now <= existing.resetAt) {
+    existing.count += 1;
+    return existing.count <= RATE_LIMIT_MAX_REQ;
+  }
+  if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
     for (const [key, entry] of rateLimitMap.entries()) {
       if (now > entry.resetAt) rateLimitMap.delete(key);
     }
+    if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldestKey = rateLimitMap.keys().next().value;
+      if (oldestKey) rateLimitMap.delete(oldestKey);
+    }
   }
-  const existing = rateLimitMap.get(ip);
-  if (!existing || now > existing.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  existing.count += 1;
-  return existing.count <= RATE_LIMIT_MAX_REQ;
+  rateLimitMap.set(bucketKey, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+  return true;
+}
+
+function hashCallerIdentity(bearerToken) {
+  return crypto
+    .createHash("sha256")
+    .update(bearerToken ? `bearer:${bearerToken}` : "adc-fallback")
+    .digest();
 }
 
 const evictionTimer = setInterval(() => {
@@ -402,10 +429,7 @@ function resolveSafeBaseUrl(req) {
 const server = http.createServer(async (req, res) => {
   applySecurityHeaders(req, res);
 
-  const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown")
-    .split(",")[0]
-    .trim();
-  if (!checkRateLimit(clientIp)) {
+  if (!checkRateLimit(resolveRateLimitBucket(req))) {
     res.writeHead(429, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Too many requests" }));
   }
@@ -446,13 +470,19 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ error: "Unauthorized: Valid Authorization Bearer token required." }));
   }
 
-  // 2. Legacy SSE Transport Discovery (GET /sse or GET /mcp)
-  if (req.method === "GET" && (url.pathname === "/sse" || url.pathname === "/mcp")) {
+  // 2. Streamable HTTP GET /mcp probe returns 405 cleanly; Legacy SSE strictly on GET /sse
+  if (req.method === "GET" && url.pathname === "/mcp") {
+    res.writeHead(405, { "Content-Type": "application/json", Allow: "POST, OPTIONS" });
+    return res.end(JSON.stringify({ error: "SSE stream not used on /mcp in stateless JSON mode; use POST /mcp or GET /sse." }));
+  }
+
+  if (req.method === "GET" && url.pathname === "/sse") {
     if (sseClients.size >= MAX_SSE_CLIENTS) {
       res.writeHead(503, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Too many active SSE sessions" }));
     }
     const sessionId = crypto.randomUUID();
+    const ownerDigest = hashCallerIdentity(bearerToken);
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-store",
@@ -462,9 +492,15 @@ const server = http.createServer(async (req, res) => {
 
     const endpointUrl = `${resolveSafeBaseUrl(req)}/messages?sessionId=${encodeURIComponent(sessionId)}`;
     res.write(`event: endpoint\ndata: ${endpointUrl}\n\n`);
-    sseClients.set(sessionId, res);
+    const ttlTimer = setTimeout(() => {
+      sseClients.delete(sessionId);
+      res.end();
+    }, SSE_SESSION_TTL_MS);
+    ttlTimer.unref();
+    sseClients.set(sessionId, { res, ownerDigest, expiresAt: Date.now() + SSE_SESSION_TTL_MS });
 
     req.on("close", () => {
+      clearTimeout(ttlTimer);
       sseClients.delete(sessionId);
     });
     return;
@@ -490,6 +526,22 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ error: "Batch limit exceeded" }));
       }
 
+      const sessionId = url.searchParams.get("sessionId");
+      let activeSseEntry = null;
+      if (sessionId) {
+        activeSseEntry = sseClients.get(sessionId);
+        if (!activeSseEntry || Date.now() > activeSseEntry.expiresAt) {
+          sseClients.delete(sessionId);
+          res.writeHead(404, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "Unknown or expired SSE sessionId" }));
+        }
+        const callerDigest = hashCallerIdentity(bearerToken);
+        if (!crypto.timingSafeEqual(activeSseEntry.ownerDigest, callerDigest)) {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "Forbidden: SSE session belongs to a different principal" }));
+        }
+      }
+
       const authContext = { bearerToken, allowMock };
       const responses = [];
       for (const msg of messages) {
@@ -497,11 +549,9 @@ const server = http.createServer(async (req, res) => {
         if (reply) responses.push(reply);
       }
 
-      const sessionId = url.searchParams.get("sessionId");
-      if (sessionId && sseClients.has(sessionId)) {
-        const sseRes = sseClients.get(sessionId);
+      if (activeSseEntry) {
         for (const r of responses) {
-          sseRes.write(`event: message\ndata: ${JSON.stringify(r)}\n\n`);
+          activeSseEntry.res.write(`event: message\ndata: ${JSON.stringify(r)}\n\n`);
         }
         res.writeHead(202, { "Content-Type": "text/plain" });
         return res.end("Accepted");

@@ -73,7 +73,7 @@ inner = json.loads(outer["result"]["content"][0]["text"])
 assert inner["clamped_max_tokens"] == 8192, inner
 PY
 
-echo "[5/5] Verifying model path-traversal rejection..."
+echo "[5/6] Verifying model path-traversal rejection..."
 BAD_MODEL_JSON="$(curl -fsS -X POST "${BASE_URL}/mcp" \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer local-test-token-0000' \
@@ -83,5 +83,23 @@ import json, sys
 outer = json.loads(sys.argv[1])
 assert outer["result"]["isError"] is True, outer
 PY
+
+echo "[6/6] Verifying GET /mcp returns 405 and cross-caller SSE session hijack returns 403..."
+GET_MCP_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer local-test-token-0000' "${BASE_URL}/mcp")"
+[ "${GET_MCP_CODE}" = "405" ] || { echo "Expected 405 on GET /mcp, got ${GET_MCP_CODE}"; exit 1; }
+
+SSE_TMP="$(mktemp)"
+curl -sN -H 'Authorization: Bearer local-test-token-0000' "${BASE_URL}/sse" > "${SSE_TMP}" &
+SSE_CURL_PID=$!
+sleep 0.3
+SESSION_ID="$(python3 -c 'import re, sys; txt=open(sys.argv[1]).read(); m=re.search(r"sessionId=([a-f0-9-]+)", txt); print(m.group(1) if m else "")' "${SSE_TMP}")"
+[ -n "${SESSION_ID}" ] || { echo "Failed to obtain SSE sessionId"; kill "${SSE_CURL_PID}" || true; rm -f "${SSE_TMP}"; exit 1; }
+HIJACK_CODE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE_URL}/messages?sessionId=${SESSION_ID}" \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer different-caller-token-9999' \
+  -d '{"jsonrpc":"2.0","id":9,"method":"ping"}')"
+kill "${SSE_CURL_PID}" >/dev/null 2>&1 || true
+rm -f "${SSE_TMP}"
+[ "${HIJACK_CODE}" = "403" ] || { echo "Expected 403 on cross-caller SSE hijack, got ${HIJACK_CODE}"; exit 1; }
 
 echo "claude_mcp_sonnet smoke tests passed."

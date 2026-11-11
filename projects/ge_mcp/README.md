@@ -2,7 +2,10 @@
 
 > **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is **NOT** an official Google product or officially supported Google software. Provided under the [Apache License 2.0](../../LICENSE).
 
-This directory contains **7 hardened Streamable HTTP Model Context Protocol (MCP) servers** for **Google Cloud Run** and **Gemini Enterprise**, plus **1 Microsoft Purview / Azure RMS verification harness** (`workiq-mcp-purview`).
+This directory contains **7 hardened Streamable HTTP Model Context Protocol (MCP) servers** for **Google Cloud Run** and **Gemini Enterprise**, plus **1 Microsoft Purview / Azure RMS verification harness** (`workiq-mcp-purview`) — available in both:
+
+- **`v1` (This Directory — `./ge_mcp`):** Production-hardened Streamable HTTP MCP connectors with full security remediations (`CWE-863` cross-tool site-boundary enforcement, PKCE `S256` + `redirect_uri` + `refresh_token` validation, SSE session binding, full-window fail-closed DLP + ReDoS protection, `follow-redirects >= 1.16.2`, and `--no-allow-unauthenticated` Cloud Run defaults).
+- **[`ge_mcp_v2` (`v2.0.0` — MCP Skills + MCP Apps)](../ge_mcp_v2):** Next-generation sibling suite under `projects/ge_mcp_v2/` implementing **MCP Skills (`io.modelcontextprotocol/skills`, SEP-2640)** with SHA-256 verified `SKILL.md` manifests AND **MCP Apps (`io.modelcontextprotocol/ui`, SEP-1865)** interactive `ui://` (`text/html;profile=mcp-app`) workbenches!
 
 ---
 

@@ -44,11 +44,27 @@ gcloud secrets add-iam-policy-binding "${MS_GRAPH_SECRET_NAME}" \
 # NOTE: --allow-unauthenticated is retained for quick evaluation with signed OAuth Bearer validation.
 # For production deployments, switch to --no-allow-unauthenticated and grant roles/run.invoker (see README.md).
 # Note: ALLOWED_SHAREPOINT_SITES may contain commas, so use ^|^ custom gcloud delimiter.
+INGRESS_AUTH_FLAG="--no-allow-unauthenticated"
+if [ "${ALLOW_UNAUTHENTICATED:-false}" = "true" ]; then
+  INGRESS_AUTH_FLAG="--allow-unauthenticated"
+fi
+
+MCP_SIGNING_SECRET_NAME="${MCP_SIGNING_SECRET_NAME:-}"
+SECRETS_ARG="MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_SECRET_NAME}:latest"
+if [ -n "${MCP_SIGNING_SECRET_NAME}" ]; then
+  gcloud secrets add-iam-policy-binding "${MCP_SIGNING_SECRET_NAME}" \
+    --project="${GCP_PROJECT}" \
+    --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --quiet >/dev/null
+  SECRETS_ARG="${SECRETS_ARG},MCP_TOKEN_SIGNING_SECRET=${MCP_SIGNING_SECRET_NAME}:latest"
+fi
+
 gcloud run deploy "${SERVICE_NAME}" \
   --source . \
   --project "${GCP_PROJECT}" \
   --region "${GCP_REGION}" \
   --service-account "${SERVICE_ACCOUNT_EMAIL}" \
-  --allow-unauthenticated \
+  "${INGRESS_AUTH_FLAG}" \
   --set-env-vars="^|^MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID}|MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID}|SHAREPOINT_HOSTNAME=${SHAREPOINT_HOSTNAME:-}|ALLOWED_SHAREPOINT_SITES=${ALLOWED_SHAREPOINT_SITES}|ALLOW_APP_CREDENTIALS=true" \
-  --set-secrets="MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_SECRET_NAME}:latest"
+  --set-secrets="${SECRETS_ARG}"

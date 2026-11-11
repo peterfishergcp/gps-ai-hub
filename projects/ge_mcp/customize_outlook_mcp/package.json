@@ -15,6 +15,7 @@
   "license": "Apache-2.0",
   "overrides": {
     "fast-uri": "^3.1.9",
-    "zod": "^4.6.6"
+    "zod": "^4.6.6",
+    "follow-redirects": "^1.16.2"
   }
 }

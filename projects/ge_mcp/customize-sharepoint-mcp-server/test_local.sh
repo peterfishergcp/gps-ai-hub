@@ -10,6 +10,7 @@ BASE_URL="http://127.0.0.1:${PORT}"
 DOTENV_CONFIG_PATH=/dev/null \
 HOST=127.0.0.1 \
 PORT="${PORT}" \
+ALLOWED_SHAREPOINT_SITES="https://example.sharepoint.com/sites/Finance" \
 ALLOW_LOCAL_MOCK_AUTH="true" \
 ALLOW_APP_CREDENTIALS="false" \
 node index.js >/tmp/customize_sharepoint_mcp_test.log 2>&1 &
@@ -59,7 +60,7 @@ for wname in ("query_create_file_action_lookup", "query_update_file_action_looku
     assert tools[wname]["annotations"]["destructiveHint"] is True, wname
 PY
 
-echo "[5/5] Verifying webUrl formatting (?web=1 for Office, stripped for PDF)..."
+echo "[5/6] Verifying webUrl formatting (?web=1 for Office, stripped for PDF)..."
 DOC_JSON="$(curl -fsS -X POST "${BASE_URL}/mcp" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
@@ -70,6 +71,19 @@ import json, sys
 outer = json.loads(sys.argv[1])
 inner = json.loads(outer["result"]["content"][0]["text"])
 assert inner["webUrl"].endswith("?web=1"), inner
+PY
+
+echo "[6/6] Verifying ALLOWED_SHAREPOINT_SITES blocks cross-site library/drive bypass (CWE-863)..."
+BYPASS_JSON="$(curl -fsS -X POST "${BASE_URL}/mcp" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'Authorization: Bearer local-test-token-0000' \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"query_document_libraries_lookup","arguments":{"siteId":"https://example.sharepoint.com/sites/ExecutiveBoard"}}}')"
+python3 - "${BYPASS_JSON}" << 'PY'
+import json, sys
+outer = json.loads(sys.argv[1])
+assert outer["result"]["isError"] is True, outer
+assert "Site-Boundary Access Denied" in outer["result"]["content"][0]["text"], outer
 PY
 
 echo "customize-sharepoint-mcp-server smoke tests passed."

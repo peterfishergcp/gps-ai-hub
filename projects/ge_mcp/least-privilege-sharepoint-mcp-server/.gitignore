@@ -1,15 +1,10 @@
-# Ignore local environment and credential files
+node_modules
 .env
 .env.*
 !.env.example
-*.env
-*.key
+__pycache__/
+*.py[cod]
 *.pem
-*credential*.json
-*credentials*.json
-*service_account*.json
-
-# Dependencies and logs
-node_modules/
+*.key
 *.log
-.DS_Store
+.msal_token_cache.bin

@@ -77,15 +77,19 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --condition=None \
   --quiet >/dev/null
 
-# NOTE: --allow-unauthenticated is retained here for quick evaluation with app-layer Bearer token enforcement.
-# For production deployments, switch to --no-allow-unauthenticated and grant roles/run.invoker (see README.md).
-echo "[4/4] Building and deploying ${SERVICE_NAME} to Cloud Run..."
+# Secure-by-default Cloud Run ingress (--no-allow-unauthenticated unless ALLOW_UNAUTHENTICATED=true).
+INGRESS_AUTH_FLAG="--no-allow-unauthenticated"
+if [ "${ALLOW_UNAUTHENTICATED:-false}" = "true" ]; then
+  INGRESS_AUTH_FLAG="--allow-unauthenticated"
+fi
+
+echo "[4/4] Building and deploying ${SERVICE_NAME} to Cloud Run (${INGRESS_AUTH_FLAG})..."
 gcloud run deploy "${SERVICE_NAME}" \
   --source . \
   --project "${PROJECT_ID}" \
   --region "${DEPLOY_REGION}" \
   --service-account "${SERVICE_ACCOUNT_EMAIL}" \
-  --allow-unauthenticated \
+  "${INGRESS_AUTH_FLAG}" \
   --set-env-vars="PROJECT_ID=${PROJECT_ID},REGION=${VERTEX_REGION},DEFAULT_MODEL=${DEFAULT_MODEL}"
 
 SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT_ID}" --region="${DEPLOY_REGION}" --format='value(status.url)')"

@@ -10,7 +10,19 @@ BASE_URL="http://127.0.0.1:${PORT}"
 echo "[1/6] Unit-testing CWE-918 SDP_CONTENT_POLICY URL allowlist & MASK redaction..."
 DOTENV_CONFIG_PATH=/dev/null node - << 'JS'
 const assert = require("assert");
-const { resolveAllowedPolicyUrl, evaluateSdpVerdict } = require("./index.js");
+const { isSafeRegexPattern, resolveAllowedPolicyUrl, evaluateSdpVerdict } = require("./index.js");
+
+assert.strictEqual(isSafeRegexPattern("(a+)+$"), false, "Nested quantifier ReDoS must be rejected");
+assert.strictEqual(isSafeRegexPattern("\\b\\d{3}-\\d{2}-\\d{4}\\b"), true, "Flat linear pattern must pass");
+
+// Verify >500k char truncation bypass is closed (SSN at char 600,000 MUST still trigger BLOCK!)
+const lateSsn = "A".repeat(600_000) + " Employee SSN: 123-45-6789";
+const lateBlocked = evaluateSdpVerdict({
+  itemData: { name: "LargeDump.txt" },
+  extractedText: lateSsn,
+  labelInfo: null,
+});
+assert.strictEqual(lateBlocked.blocked, true, "SSN beyond 500k chars bypassed DLP!");
 
 assert.strictEqual(
   resolveAllowedPolicyUrl("projects/my-proj/locations/us/contentPolicies/pol1"),
