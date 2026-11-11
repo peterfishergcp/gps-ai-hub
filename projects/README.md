@@ -64,6 +64,18 @@ Domain-specific **Gemini Enterprise Skills (`SKILL.md`)** and companion connecto
 
 ---
 
+## 🚀 Gemini Enterprise MCP Connectors `v2.0` — Skills + MCP Apps (`./ge_mcp_v2`)
+
+Next-generation `v2.0.0` suite of all 7 Cloud Run Streamable HTTP MCP connectors plus the Microsoft WorkIQ + Purview RMS harness, implementing both **MCP Skills (`io.modelcontextprotocol/skills`, SEP-2640)** with SHA-256 verified `SKILL.md` manifests and **MCP Apps (`io.modelcontextprotocol/ui`, SEP-1865)** Dual-Delivery `ui://` (`text/html;profile=mcp-app`) interactive workbenches (`0` `innerHTML` DOM sinks):
+
+- 🧠 **[Vertex AI Claude Reasoning & Critique Studio (`v2.0`)](./ge_mcp_v2/claude_mcp_sonnet)** — `skill://vertex-claude-reasoning/SKILL.md` + `ui://vertex-claude-mcp/reasoning-workbench.html` (`open_claude_reasoning_workbench`).
+- ✉️ **[Microsoft Outlook Executive Triage & Comms Hub (`v2.0`)](./ge_mcp_v2/customize_outlook_mcp)** — `skill://outlook-executive-triage/SKILL.md` + `ui://microsoft-outlook-mcp/comms-hub.html` (`open_outlook_comms_hub`).
+- 🔒 **[Least-Privilege SharePoint `Sites.Selected` Scope Auditor (`v2.0`)](./ge_mcp_v2/least-privilege-sharepoint-mcp-server)** — `skill://sharepoint-sites-selected-governance/SKILL.md` + `ui://least-privilege-sharepoint-mcp/scope-auditor.html` (`open_sites_selected_scope_auditor`).
+- 🏷️ **[SharePoint Purview Label Inspector (`v2.0`)](./ge_mcp_v2/sharepoint-mcp-server-purview-label)** & **[Purview + Cloud SDP Governance Matrix (`v2.0`)](./ge_mcp_v2/sharepoint-mcp-server-purview-sdp)** — `open_purview_label_inspector` & `open_purview_sdp_governance_matrix`.
+- 📁 **[SharePoint Document Explorer (`v2.0`)](./ge_mcp_v2/sharepoint-mcp-server)**, **[Calibrated Citation Workbench (`v2.0`)](./ge_mcp_v2/customize-sharepoint-mcp-server)** & **[WorkIQ Purview RMS Audit App (`v2.0`)](./ge_mcp_v2/workiq-mcp-purview)**.
+
+---
+
 ## 🔌 Gemini Enterprise MCP Connectors (`./ge_mcp`)
 
 Enterprise-grade Model Context Protocol (MCP) servers and integrations that bridge enterprise systems and specialized models directly into **Gemini Enterprise**.

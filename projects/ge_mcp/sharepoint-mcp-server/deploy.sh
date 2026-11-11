@@ -43,11 +43,16 @@ gcloud secrets add-iam-policy-binding "${MS_GRAPH_SECRET_NAME}" \
 
 # NOTE: --allow-unauthenticated is retained for quick evaluation with app-layer OAuth Bearer validation.
 # For production deployments, switch to --no-allow-unauthenticated and grant roles/run.invoker (see README.md).
+INGRESS_AUTH_FLAG="--no-allow-unauthenticated"
+if [ "${ALLOW_UNAUTHENTICATED:-false}" = "true" ]; then
+  INGRESS_AUTH_FLAG="--allow-unauthenticated"
+fi
+
 gcloud run deploy "${SERVICE_NAME}" \
   --source . \
   --project "${GCP_PROJECT}" \
   --region "${GCP_REGION}" \
   --service-account "${SERVICE_ACCOUNT_EMAIL}" \
-  --allow-unauthenticated \
+  "${INGRESS_AUTH_FLAG}" \
   --set-env-vars="MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID},MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID}" \
   --set-secrets="MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_SECRET_NAME}:latest"

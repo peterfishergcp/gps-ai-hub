@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - "projects/ge_mcp/**"
+      - "projects/ge_mcp_v2/**"
       - ".github/workflows/ge-mcp-ci.yml"
   pull_request:
     paths:
       - "projects/ge_mcp/**"
+      - "projects/ge_mcp_v2/**"
       - ".github/workflows/ge-mcp-ci.yml"
 
 permissions:
@@ -20,24 +22,31 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - claude_mcp_sonnet
-          - customize_outlook_mcp
-          - sharepoint-mcp-server
-          - customize-sharepoint-mcp-server
-          - least-privilege-sharepoint-mcp-server
-          - sharepoint-mcp-server-purview-label
-          - sharepoint-mcp-server-purview-sdp
+          - ge_mcp/claude_mcp_sonnet
+          - ge_mcp/customize_outlook_mcp
+          - ge_mcp/sharepoint-mcp-server
+          - ge_mcp/customize-sharepoint-mcp-server
+          - ge_mcp/least-privilege-sharepoint-mcp-server
+          - ge_mcp/sharepoint-mcp-server-purview-label
+          - ge_mcp/sharepoint-mcp-server-purview-sdp
+          - ge_mcp_v2/claude_mcp_sonnet
+          - ge_mcp_v2/customize_outlook_mcp
+          - ge_mcp_v2/sharepoint-mcp-server
+          - ge_mcp_v2/customize-sharepoint-mcp-server
+          - ge_mcp_v2/least-privilege-sharepoint-mcp-server
+          - ge_mcp_v2/sharepoint-mcp-server-purview-label
+          - ge_mcp_v2/sharepoint-mcp-server-purview-sdp
     defaults:
       run:
-        working-directory: projects/ge_mcp/${{ matrix.service }}
+        working-directory: projects/${{ matrix.service }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: projects/ge_mcp/${{ matrix.service }}/package-lock.json
+          cache-dependency-path: projects/${{ matrix.service }}/package-lock.json
 
       - name: Install production dependencies & audit advisories
         run: |
@@ -52,13 +61,19 @@ jobs:
 
   verify-workiq-purview-python:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pydir:
+          - projects/ge_mcp/workiq-mcp-purview
+          - projects/ge_mcp_v2/workiq-mcp-purview
     defaults:
       run:
-        working-directory: projects/ge_mcp/workiq-mcp-purview
+        working-directory: ${{ matrix.pydir }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -67,3 +82,4 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
           python3 -m py_compile *.py
+          if [ -f test_local.sh ]; then chmod +x test_local.sh && ./test_local.sh; fi

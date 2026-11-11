@@ -161,7 +161,8 @@ def main() -> None:
             resp = urllib.request.urlopen(req, context=SSL_CTX, timeout=30)
             op_loc = resp.headers.get("Location")
             print("  assignSensitivityLabel accepted (HTTP 202). Polling operation status...")
-            if op_loc and op_loc.startswith("https://graph.microsoft.com/"):
+            parsed_op = urllib.parse.urlparse(op_loc or "")
+            if parsed_op.scheme == "https" and parsed_op.hostname == "graph.microsoft.com":
                 for _ in range(8):
                     time.sleep(3)
                     op_res = json.loads(urllib.request.urlopen(op_loc, context=SSL_CTX, timeout=30).read())

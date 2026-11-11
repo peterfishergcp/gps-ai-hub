@@ -25,8 +25,59 @@ const {
   executeStandardSharePointTool,
 } = require("./sharepoint_common.js");
 
-const MAX_REGEX_SCAN_CHARS = 500_000;
+const MAX_REGEX_WINDOW_CHARS = 250_000;
+const REGEX_WINDOW_OVERLAP_CHARS = 512;
+const MAX_TOTAL_INSPECTABLE_CHARS = 2_000_000;
 const ALLOWED_POLICY_HOSTS = new Set(["dlp.googleapis.com", "storage.googleapis.com"]);
+
+/**
+ * Rejects regex patterns vulnerable to catastrophic backtracking (ReDoS, CWE-1333):
+ * blocks nested quantifiers such as `(a+)+`, `(.+)*`, backreferences `\1`, and lookbehinds.
+ */
+function isSafeRegexPattern(rawPattern) {
+  if (typeof rawPattern !== "string" || rawPattern.length === 0 || rawPattern.length > 512) {
+    return false;
+  }
+  // Reject backreferences and lookbehinds which are non-linear in V8 RegExp
+  if (/\\[1-9]/.test(rawPattern) || /\(\?<[=!]/.test(rawPattern)) {
+    return false;
+  }
+  // Track quantifier depth inside parenthesized groups to block star-height > 1
+  let groupDepth = 0;
+  const groupHasQuantifier = [];
+  for (let i = 0; i < rawPattern.length; i++) {
+    const ch = rawPattern[i];
+    if (ch === "\\") {
+      i += 1;
+      continue;
+    }
+    if (ch === "[") {
+      while (i + 1 < rawPattern.length && rawPattern[i + 1] !== "]") {
+        if (rawPattern[i + 1] === "\\") i += 1;
+        i += 1;
+      }
+      continue;
+    }
+    if (ch === "(") {
+      groupDepth += 1;
+      groupHasQuantifier.push(false);
+    } else if (ch === ")" && groupDepth > 0) {
+      const innerHadQuant = groupHasQuantifier.pop();
+      groupDepth -= 1;
+      const next = rawPattern[i + 1] || "";
+      const outerQuant = next === "+" || next === "*" || next === "{";
+      if (innerHadQuant && outerQuant) {
+        return false;
+      }
+      if ((innerHadQuant || outerQuant) && groupDepth > 0) {
+        groupHasQuantifier[groupDepth - 1] = true;
+      }
+    } else if ((ch === "+" || ch === "*" || ch === "{") && groupDepth > 0) {
+      groupHasQuantifier[groupDepth - 1] = true;
+    }
+  }
+  return true;
+}
 
 // Built-in fail-closed fallback detectors (active alongside dynamic Cloud SDP rules unless disabled)
 const BUILTIN_SDP_RULES = [
@@ -203,15 +254,20 @@ async function refreshSdpContentPolicy(force = false) {
       }
 
       const rawPattern = customInfo.regex?.pattern;
-      if (rawPattern && String(rawPattern).length <= 512) {
-        try {
-          newRegexRules.push({
-            name: infoName,
-            regex: new RegExp(String(rawPattern).replace(/^\(\?i\)/, ""), "gi"),
-            returnVerdict: verdict,
-          });
-        } catch (reErr) {
-          console.error(JSON.stringify({ event: "sdp_regex_compile_warning", rule: infoName, message: reErr.message }));
+      if (rawPattern) {
+        const cleanedPattern = String(rawPattern).replace(/^\(\?i\)/, "");
+        if (!isSafeRegexPattern(cleanedPattern)) {
+          console.warn(JSON.stringify({ event: "sdp_unsafe_redos_regex_skipped", rule: infoName }));
+        } else {
+          try {
+            newRegexRules.push({
+              name: infoName,
+              regex: new RegExp(cleanedPattern, "gi"),
+              returnVerdict: verdict,
+            });
+          } catch (reErr) {
+            console.error(JSON.stringify({ event: "sdp_regex_compile_warning", rule: infoName, message: reErr.message }));
+          }
         }
       }
     }
@@ -260,14 +316,39 @@ function evaluateSdpVerdict({ itemData, extractedText, labelInfo }) {
     matchedBlockReasons.push(effectiveLabel.infoTypeName || effectiveLabel.displayName || "SENSITIVITY_LABEL");
   }
 
-  // 2. Evaluate Content & Filename Regex Rules on bounded text slice
-  const boundedText = String(extractedText || "").slice(0, MAX_REGEX_SCAN_CHARS);
+  // 2. Fail-Closed Inspection Bounds: Never silently skip content beyond a scan slice (fixes CWE-693 truncation bypass)
+  const fullText = String(extractedText || "");
+  if (fullText.length > MAX_TOTAL_INSPECTABLE_CHARS) {
+    return {
+      blocked: true,
+      labelInfo: effectiveLabel,
+      content: `[ACCESS BLOCKED BY SENSITIVE DATA PROTECTION POLICY: Extracted document length (${fullText.length} chars) exceeds maximum fail-closed DLP inspection limit (${MAX_TOTAL_INSPECTABLE_CHARS} chars). Content withheld.]`,
+    };
+  }
+
   const itemName = String(itemData?.name || "").slice(0, 512);
+  const textWindows = [];
+  if (fullText.length <= MAX_REGEX_WINDOW_CHARS) {
+    textWindows.push(fullText);
+  } else {
+    const step = MAX_REGEX_WINDOW_CHARS - REGEX_WINDOW_OVERLAP_CHARS;
+    for (let offset = 0; offset < fullText.length; offset += step) {
+      textWindows.push(fullText.slice(offset, offset + MAX_REGEX_WINDOW_CHARS));
+    }
+  }
 
   for (const rule of activeRules) {
     const flags = rule.regex.flags.includes("g") ? rule.regex.flags : `${rule.regex.flags}g`;
-    const tester = new RegExp(rule.regex.source, flags);
-    if (tester.test(itemName) || new RegExp(rule.regex.source, flags).test(boundedText)) {
+    let matched = new RegExp(rule.regex.source, flags).test(itemName);
+    if (!matched) {
+      for (const win of textWindows) {
+        if (new RegExp(rule.regex.source, flags).test(win)) {
+          matched = true;
+          break;
+        }
+      }
+    }
+    if (matched) {
       if (String(rule.returnVerdict).toUpperCase() === "MASK" || String(rule.returnVerdict).toUpperCase() === "REDACT") {
         matchedMaskRules.push(rule);
       } else {
@@ -393,6 +474,7 @@ if (require.main === module) {
 
 module.exports = {
   app,
+  isSafeRegexPattern,
   resolveAllowedPolicyUrl,
   evaluateSdpVerdict,
 };

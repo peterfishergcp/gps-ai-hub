@@ -48,8 +48,8 @@ SharePoint & Microsoft Graph MCP Connector Guidelines & Citation Rules:
    *Note: Microsoft SharePoint Graph API search results may be paginated or partial. If you suspect missing results, retry with a more specific query or document title.*
 `.trim();
 
-function buildAllowedSiteFilter() {
-  const raw = (process.env.ALLOWED_SHAREPOINT_SITES || "").trim();
+function buildAllowedSiteFilter(rawEnv = process.env.ALLOWED_SHAREPOINT_SITES || "") {
+  const raw = String(rawEnv).trim();
   if (!raw) return null;
   const allowPatterns = raw
     .split(",")
@@ -59,12 +59,18 @@ function buildAllowedSiteFilter() {
   return (site) => {
     const url = String(site.webUrl || "").toLowerCase().replace(/\/+$/, "");
     const name = String(site.name || "").toLowerCase();
-    return allowPatterns.some((p) => url === p || url.endsWith(`/${p}`) || name === p);
+    return allowPatterns.some(
+      (p) =>
+        url === p ||
+        (url && p.startsWith("http") && url.startsWith(`${p}/`)) ||
+        url.endsWith(`/sites/${p}`) ||
+        url.endsWith(`/teams/${p}`) ||
+        name === p
+    );
   };
 }
 
 const TOOLS = buildStandardSharePointTools({ includeWriteTools: true });
-const allowedSiteFilter = buildAllowedSiteFilter();
 
 const app = createSharePointHttpServer({
   serviceName: "customize-sharepoint-mcp-server",
@@ -87,7 +93,7 @@ const app = createSharePointHttpServer({
           authContext,
           enableWriteTools: process.env.ENABLE_WRITE_TOOLS !== "false",
           enablePurviewLabels: false,
-          allowedSiteFilter,
+          allowedSiteFilter: buildAllowedSiteFilter(),
         });
 
         const hasNoResults =

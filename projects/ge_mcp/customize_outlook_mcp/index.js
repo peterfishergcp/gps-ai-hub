@@ -31,10 +31,13 @@ const OUTLOOK_USER_ID = (process.env.OUTLOOK_USER_ID || "").trim();
 const MAX_BODY_BYTES = 1024 * 1024; // 1 MB JSON-RPC cap
 const GRAPH_MAX_BYTES = 10 * 1024 * 1024; // 10 MB Graph response cap
 const GRAPH_TIMEOUT_MS = 30_000;
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQ = 120;
 const SESSION_TTL_MS = 3600 * 1000;
+const REFRESH_TTL_MS = 24 * 3600 * 1000;
 const AUTH_CODE_TTL_MS = 5 * 60 * 1000;
+const PKCE_VERIFIER_REGEX = /^[A-Za-z0-9._~-]{43,128}$/;
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?(?:Z|[+-]\d{2}:\d{2})$/;
 const EMAIL_REGEX = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
@@ -63,8 +66,12 @@ function resolveSigningSecret() {
   if (process.env.MCP_TOKEN_SIGNING_SECRET && process.env.MCP_TOKEN_SIGNING_SECRET.length >= 32) {
     return process.env.MCP_TOKEN_SIGNING_SECRET;
   }
+  if (process.env.K_SERVICE && ALLOW_APP_CREDENTIALS) {
+    console.error("FATAL: MCP_TOKEN_SIGNING_SECRET (>=32 chars) is required on Cloud Run when ALLOW_APP_CREDENTIALS=true.");
+    process.exit(1);
+  }
   console.warn(
-    "WARNING: MCP_TOKEN_SIGNING_SECRET not set; generating ephemeral per-instance signing key. Configure Secret Manager for multi-instance Cloud Run."
+    "WARNING: MCP_TOKEN_SIGNING_SECRET not set; generating ephemeral per-instance signing key for local/delegated mode."
   );
   return crypto.randomBytes(32).toString("hex");
 }
@@ -87,11 +94,14 @@ function timingSafeMatch(expected, actual) {
 // --- Signed Session Tokens & Single-Use Auth Codes (when ALLOW_APP_CREDENTIALS=true) ---
 const pendingAuthCodes = new Map();
 
-function issueSessionToken(subject) {
+function issueSessionToken(subject, tokenType = "access") {
+  const ttl = tokenType === "refresh" ? REFRESH_TTL_MS : SESSION_TTL_MS;
   const payload = Buffer.from(
     JSON.stringify({
       sub: subject,
-      exp: Date.now() + SESSION_TTL_MS,
+      typ: tokenType,
+      svc: "microsoft-outlook-mcp",
+      exp: Date.now() + ttl,
       nonce: crypto.randomBytes(12).toString("base64url"),
     })
   ).toString("base64url");
@@ -99,7 +109,7 @@ function issueSessionToken(subject) {
   return `mcp_st_${payload}.${sig}`;
 }
 
-function verifySessionToken(token) {
+function verifySessionToken(token, expectedType = "access") {
   if (typeof token !== "string" || !token.startsWith("mcp_st_")) return null;
   const raw = token.slice("mcp_st_".length);
   const dotIdx = raw.indexOf(".");
@@ -111,32 +121,69 @@ function verifySessionToken(token) {
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     if (!parsed.exp || Date.now() > parsed.exp) return null;
+    if (parsed.typ !== expectedType || parsed.svc !== "microsoft-outlook-mcp") return null;
     return parsed;
   } catch {
     return null;
   }
 }
 
-// --- Connection Pooling & Bounded Axios Instance ---
+function computePkceS256(verifier) {
+  return crypto.createHash("sha256").update(verifier, "ascii").digest("base64url");
+}
+
+// --- Connection Pooling & Bounded Axios Instance (with Cross-Origin Redirect Credential Scrubbing) ---
+const TRUSTED_AUTH_HOSTS = new Set(["graph.microsoft.com", "login.microsoftonline.com"]);
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
 const graphHttp = axios.create({
   httpsAgent,
   timeout: GRAPH_TIMEOUT_MS,
   maxContentLength: GRAPH_MAX_BYTES,
   maxBodyLength: GRAPH_MAX_BYTES,
+  maxRedirects: 5,
+  beforeRedirect: (options) => {
+    const targetHost = String(options.hostname || "").toLowerCase();
+    if (!TRUSTED_AUTH_HOSTS.has(targetHost) && options.headers) {
+      delete options.headers.Authorization;
+      delete options.headers.authorization;
+      delete options.headers["Proxy-Authorization"];
+    }
+  },
 });
 
-// --- Rate Limiting with Periodic Eviction ---
+// --- Rate Limiting with Token/Rightmost-IP Bucketing & Hard Entry Cap ---
 const rateLimitMap = new Map();
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
+function resolveRateLimitBucket(req) {
+  const authHeader = String(req.headers.authorization || "").trim();
+  if (authHeader) {
+    return `tok:${crypto.createHash("sha256").update(authHeader).digest("hex").slice(0, 16)}`;
   }
-  entry.count += 1;
-  return entry.count <= RATE_LIMIT_MAX_REQ;
+  const xff = String(req.headers["x-forwarded-for"] || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const ip = xff.length > 0 ? xff[xff.length - 1] : String(req.socket.remoteAddress || "unknown").trim();
+  return `ip:${ip}`;
+}
+
+function checkRateLimit(bucketKey) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(bucketKey);
+  if (entry && now <= entry.resetAt) {
+    entry.count += 1;
+    return entry.count <= RATE_LIMIT_MAX_REQ;
+  }
+  if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+    for (const [k, v] of rateLimitMap.entries()) {
+      if (now > v.resetAt) rateLimitMap.delete(k);
+    }
+    if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldest = rateLimitMap.keys().next().value;
+      if (oldest) rateLimitMap.delete(oldest);
+    }
+  }
+  rateLimitMap.set(bucketKey, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+  return true;
 }
 
 const cleanupInterval = setInterval(() => {
@@ -292,16 +339,26 @@ async function resolveAuthContext(reqAuthHeader) {
 function stripHtmlTags(html) {
   if (!html) return "";
   let text = String(html).slice(0, 500_000);
-  text = text.replace(/<style[\s\S]*?<\/style>/gi, "");
-  text = text.replace(/<script[\s\S]*?<\/script>/gi, "");
-  text = text.replace(/<\/(p|div|tr|li|h[1-6]|br)>/gi, "\n");
-  text = text.replace(/<[^>]+>/g, " ");
+  // Iteratively strip script/style blocks until stable (prevents nested/spaced closing-tag bypasses, CWE-116)
+  let prev;
+  do {
+    prev = text;
+    text = text.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ");
+  } while (text !== prev);
+  text = text.replace(/<\/(p|div|tr|li|h[1-6]|br)\s*>/gi, "\n");
+  do {
+    prev = text;
+    text = text.replace(/<[^>]*>/g, " ");
+  } while (text !== prev);
+  // Remove any dangling angle brackets before decoding safe character entities (never decode &lt;/&gt; back into raw tags)
+  text = text.replace(/[<>]/g, " ");
   text = text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"');
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "[")
+    .replace(/&gt;/gi, "]")
+    .replace(/&amp;/gi, "&");
   return text.replace(/[ \t]+/g, " ").replace(/\n\s*\n/g, "\n\n").trim();
 }
 
@@ -886,10 +943,7 @@ function readBoundedBody(req, maxBytes = MAX_BODY_BYTES) {
 const httpServer = http.createServer(async (req, res) => {
   applySecurityHeaders(req, res);
 
-  const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown")
-    .split(",")[0]
-    .trim();
-  if (!checkRateLimit(clientIp)) {
+  if (!checkRateLimit(resolveRateLimitBucket(req))) {
     res.writeHead(429, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Too many requests" }));
   }
@@ -946,12 +1000,24 @@ const httpServer = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ error: "Invalid client_id." }));
     }
 
+    const codeChallenge = (reqUrl.searchParams.get("code_challenge") || "").trim();
+    const codeChallengeMethod = (reqUrl.searchParams.get("code_challenge_method") || "S256").trim().toUpperCase();
+    if (codeChallenge && codeChallengeMethod !== "S256") {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "invalid_request", error_description: "Only PKCE S256 is supported." }));
+    }
+
     const code = crypto.randomBytes(24).toString("base64url");
     if (pendingAuthCodes.size >= 500) {
       const oldestKey = pendingAuthCodes.keys().next().value;
       if (oldestKey) pendingAuthCodes.delete(oldestKey);
     }
-    pendingAuthCodes.set(code, { redirectUri, expiresAt: Date.now() + AUTH_CODE_TTL_MS });
+    pendingAuthCodes.set(code, {
+      clientId,
+      redirectUri,
+      codeChallenge: codeChallenge || null,
+      expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+    });
 
     const target = new URL(redirectUri);
     target.searchParams.set("code", code);
@@ -961,7 +1027,7 @@ const httpServer = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  // Hardened OAuth /token endpoint (requires MCP_OAUTH_CLIENT_ID + MCP_OAUTH_CLIENT_SECRET)
+  // Hardened OAuth /token endpoint (requires MCP_OAUTH_CLIENT_ID + MCP_OAUTH_CLIENT_SECRET + PKCE/redirect_uri/refresh_token validation)
   if (req.method === "POST" && pathname === "/token") {
     if (!ALLOW_APP_CREDENTIALS) {
       res.writeHead(403, { "Content-Type": "application/json" });
@@ -1009,19 +1075,38 @@ const httpServer = http.createServer(async (req, res) => {
     const grantType = params.get("grant_type") || "authorization_code";
     if (grantType === "authorization_code") {
       const code = params.get("code") || "";
+      const presentedRedirectUri = (params.get("redirect_uri") || "").trim();
+      const codeVerifier = (params.get("code_verifier") || "").trim();
       const codeMeta = pendingAuthCodes.get(code);
       pendingAuthCodes.delete(code);
-      if (!codeMeta || Date.now() > codeMeta.expiresAt) {
+      if (!codeMeta || Date.now() > codeMeta.expiresAt || codeMeta.clientId !== clientId) {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "invalid_grant" }));
       }
-    } else if (grantType !== "refresh_token" && grantType !== "client_credentials") {
+      if (presentedRedirectUri && presentedRedirectUri !== codeMeta.redirectUri) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "invalid_grant", error_description: "redirect_uri mismatch" }));
+      }
+      if (codeMeta.codeChallenge) {
+        if (!PKCE_VERIFIER_REGEX.test(codeVerifier) || !timingSafeMatch(codeMeta.codeChallenge, computePkceS256(codeVerifier))) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "invalid_grant", error_description: "PKCE verification failed" }));
+        }
+      }
+    } else if (grantType === "refresh_token") {
+      const presentedRefresh = (params.get("refresh_token") || "").trim();
+      const verifiedRefresh = verifySessionToken(presentedRefresh, "refresh");
+      if (!verifiedRefresh || verifiedRefresh.sub !== clientId) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "invalid_grant", error_description: "Invalid or expired refresh_token" }));
+      }
+    } else if (grantType !== "client_credentials") {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "unsupported_grant_type" }));
     }
 
-    const accessToken = issueSessionToken(clientId);
-    const refreshToken = issueSessionToken(`${clientId}:refresh`);
+    const accessToken = issueSessionToken(clientId, "access");
+    const refreshToken = issueSessionToken(clientId, "refresh");
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(
       JSON.stringify({
@@ -1058,8 +1143,13 @@ const httpServer = http.createServer(async (req, res) => {
         parsedBody = JSON.parse(rawBody);
       }
 
+      if (!req.headers.accept || !req.headers.accept.includes("text/event-stream")) {
+        req.headers.accept = "application/json, text/event-stream";
+      }
+
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
+        enableJsonResponse: true,
       });
       const mcpServer = createMcpServer(() => req.headers.authorization);
       await mcpServer.connect(transport);
