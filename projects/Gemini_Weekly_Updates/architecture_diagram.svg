@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800" width="100%" height="100%" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="col1Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.88"/>
+    </linearGradient>
+    <linearGradient id="col2Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9a3412" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.88"/>
+    </linearGradient>
+    <linearGradient id="col3Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#065f46" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.88"/>
+    </linearGradient>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34d399"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="800" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- Header Banner -->
+  <text x="700" y="44" text-anchor="middle" fill="#f8fafc" font-size="23" font-weight="700">
+    🍂 Gemini Weekly &amp; Monthly Updates — Per-Customer Briefing Architecture
+  </text>
+  <text x="700" y="70" text-anchor="middle" fill="#cbd5e1" font-size="13.5">
+    Automated Release &amp; Telemetry Synthesis  •  Customer-Aware Relevance Filtering  •  Seasonal Jinja2 HTML Rendering  •  CE Human-in-the-Loop (HITL) Gate
+  </text>
+
+  <!-- ==================== COLUMN 1: TELEMETRY & CUSTOMER INPUTS ==================== -->
+  <rect x="28" y="96" width="410" height="670" rx="14" fill="url(#col1Grad)" stroke="#3b82f6" stroke-width="2"/>
+  <text x="233" y="128" text-anchor="middle" fill="#60a5fa" font-size="16.5" font-weight="700">
+    1. Global Feeds &amp; Customer Context
+  </text>
+  <text x="233" y="148" text-anchor="middle" fill="#93c5fd" font-size="12">
+    Public Documentation + Account-Specific Telemetry
+  </text>
+
+  <!-- Box 1A: Global Release Notes & Blogs -->
+  <rect x="50" y="168" width="366" height="150" rx="10" fill="#1e293b" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="233" y="194" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="700">🌐 Global Gemini Enterprise Feeds</text>
+  <text x="68" y="218" fill="#e2e8f0" font-size="11.5">• Gemini Enterprise Release Notes (GA / Preview)</text>
+  <text x="68" y="238" fill="#e2e8f0" font-size="11.5">• Google Antigravity 2.0 IDE / CLI Changelog</text>
+  <text x="68" y="258" fill="#e2e8f0" font-size="11.5">• Google Cloud Public Sector &amp; Enterprise AI Blogs</text>
+  <text x="68" y="278" fill="#94a3b8" font-size="11">• Curated Prompt Templates &amp; Reference Architectures</text>
+  <text x="68" y="298" fill="#38bdf8" font-size="11" font-weight="600">Source: docs.cloud.google.com/gemini/enterprise/docs/release-notes</text>
+
+  <!-- Box 1B: Behavior & Breaking Change Advisories -->
+  <rect x="50" y="336" width="366" height="145" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="233" y="362" text-anchor="middle" fill="#fbbf24" font-size="14" font-weight="700">⚠️ Behavior &amp; Permission Change Advisories</text>
+  <text x="68" y="386" fill="#e2e8f0" font-size="11.5">• Connector OAuth / IAM Scope Changes</text>
+  <text x="80" y="404" fill="#cbd5e1" font-size="11">(e.g., SharePoint Sites.Selected vs. AllSites.Read)</text>
+  <text x="68" y="424" fill="#e2e8f0" font-size="11.5">• Federated vs. Data Ingestion Connector Behavior Shifts</text>
+  <text x="68" y="444" fill="#e2e8f0" font-size="11.5">• API Deprecation Windows &amp; Token Quota Adjustments</text>
+  <text x="68" y="464" fill="#fbbf24" font-size="11" font-weight="600">Solves: Catching operational changes before customer impact</text>
+
+  <!-- Box 1C: Customer Architecture & Support Profile -->
+  <rect x="50" y="499" width="366" height="242" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="233" y="525" text-anchor="middle" fill="#60a5fa" font-size="14" font-weight="700">🏛️ Per-Customer Profile &amp; Support Telemetry</text>
+  <text x="233" y="544" text-anchor="middle" fill="#cbd5e1" font-size="11.5">Payload: sample_customer_profile.json</text>
+  <rect x="66" y="556" width="334" height="168" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="80" y="578" fill="#38bdf8" font-size="11.5" font-weight="700">Customer Footprint &amp; Active Cases:</text>
+  <text x="80" y="598" fill="#e2e8f0" font-size="11">• Customer Metadata &amp; Compliance (StateRAMP / FedRAMP / HIPAA)</text>
+  <text x="80" y="618" fill="#e2e8f0" font-size="11">• Deployed Connectors (SharePoint, BigQuery, Work IQ MCP, WIF)</text>
+  <text x="80" y="638" fill="#e2e8f0" font-size="11">• Active Support Tickets &amp; Bugs (CS-xxxxx / FE-xxxxx)</text>
+  <text x="80" y="658" fill="#e2e8f0" font-size="11">• Account Team Roster (AE / FSR, CE, AI Specialist)</text>
+  <text x="80" y="678" fill="#e2e8f0" font-size="11">• Bi-Weekly Office Hours &amp; Enablement Booking Links</text>
+  <text x="80" y="698" fill="#94a3b8" font-size="10.5">• Selected Theme: October Autumn Harvest 🍂 (#C05621)</text>
+
+  <!-- ==================== COLUMN 2: FASTAPI + GEMINI SYNTHESIS ENGINE ==================== -->
+  <rect x="492" y="96" width="416" height="670" rx="14" fill="url(#col2Grad)" stroke="#ea580c" stroke-width="2"/>
+  <text x="700" y="128" text-anchor="middle" fill="#fb923c" font-size="16.5" font-weight="700">
+    2. Customer-Aware Synthesis Engine
+  </text>
+  <text x="700" y="148" text-anchor="middle" fill="#fdba74" font-size="12">
+    FastAPI Microservice + Vertex AI (Gemini) + Jinja2
+  </text>
+
+  <!-- Box 2A: Customer-Aware Relevance & Impact Filter -->
+  <rect x="514" y="168" width="372" height="175" rx="10" fill="#1e293b" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="700" y="194" text-anchor="middle" fill="#fb923c" font-size="14" font-weight="700">🧠 Step 1: Customer Relevance &amp; Impact Matcher</text>
+  <text x="700" y="214" text-anchor="middle" fill="#f8fafc" font-size="11.5">Vertex AI Gemini Grounded Synthesis</text>
+  <text x="532" y="238" fill="#e2e8f0" font-size="11.5">• Filters global release notes to match customer's stack</text>
+  <text x="532" y="258" fill="#e2e8f0" font-size="11.5">• Flags connector/permission advisories affecting deployed</text>
+  <text x="544" y="275" fill="#cbd5e1" font-size="11">workloads (e.g., Entra ID / SharePoint / Purview RMS)</text>
+  <text x="532" y="295" fill="#e2e8f0" font-size="11.5">• Generates domain-tailored "Best Practice Idea 💡"</text>
+  <text x="532" y="315" fill="#e2e8f0" font-size="11.5">• Tailors Antigravity 2.0 developer example to agency tech stack</text>
+  <text x="532" y="333" fill="#fdba74" font-size="10.5" font-weight="600">API: POST /api/v1/generate-briefing</text>
+
+  <!-- Box 2B: Modular Pydantic v2 Schema Validation -->
+  <rect x="514" y="362" width="372" height="190" rx="10" fill="#1e293b" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="700" y="388" text-anchor="middle" fill="#fdba74" font-size="14" font-weight="700">📐 Step 2: Modular Briefing Schema (Pydantic v2)</text>
+  <rect x="530" y="400" width="340" height="138" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="544" y="420" fill="#e2e8f0" font-size="11">1. <tspan fill="#fb923c" font-weight="600">HeaderBanner:</tspan> Agency Name, Seasonal Theme, Account Team</text>
+  <text x="544" y="440" fill="#e2e8f0" font-size="11">2. <tspan fill="#fb923c" font-weight="600">ReleaseHighlights:</tspan> GA Features, Blogs &amp; Adoption Idea 💡</text>
+  <text x="544" y="460" fill="#e2e8f0" font-size="11">3. <tspan fill="#fbbf24" font-weight="600">OperationalAdvisories:</tspan> Permission &amp; Behavior Change Alerts</text>
+  <text x="544" y="480" fill="#e2e8f0" font-size="11">4. <tspan fill="#fb923c" font-weight="600">SupportTelemetry:</tspan> Open Cases, Bugs &amp; Feature Requests Table</text>
+  <text x="544" y="500" fill="#e2e8f0" font-size="11">5. <tspan fill="#fb923c" font-weight="600">Enablement &amp; Antigravity:</tspan> Webinars, Office Hours &amp; IDE Tips</text>
+  <text x="544" y="520" fill="#e2e8f0" font-size="11">6. <tspan fill="#fb923c" font-weight="600">StrategicTrends:</tspan> Long-Running Agents, Agent Gateway, ZDR</text>
+
+  <!-- Box 2C: Jinja2 Seasonal HTML & Markdown Renderer -->
+  <rect x="514" y="570" width="372" height="171" rx="10" fill="#1e293b" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="700" y="596" text-anchor="middle" fill="#fb923c" font-size="14" font-weight="700">🍂 Step 3: Jinja2 Seasonal Theme Renderer</text>
+  <text x="532" y="620" fill="#e2e8f0" font-size="11.5">• Themes: Autumn Fall 🍂, Winter Frost ❄️, Spring 🌸, Core 🎨</text>
+  <text x="532" y="640" fill="#e2e8f0" font-size="11.5">• Compiles explicit Inline-CSS HTML (&lt;table&gt;, &lt;th&gt;, &lt;td&gt;)</text>
+  <text x="544" y="658" fill="#cbd5e1" font-size="11">so tables &amp; borders render cleanly in Gmail &amp; Outlook</text>
+  <text x="532" y="678" fill="#e2e8f0" font-size="11.5">• Palette: Harvest Amber (#C05621) • Russet (#DD6B20)</text>
+  <text x="544" y="696" fill="#cbd5e1" font-size="11">Goldenrod (#D69E2E) • Warm Cream (#FFFAF0)</text>
+  <text x="532" y="720" fill="#34d399" font-size="11" font-weight="600">Outputs: Inline-Styled HTML + Clean Markdown Fallback</text>
+
+  <!-- ==================== COLUMN 3: HITL GATE & CUSTOMER DELIVERY ==================== -->
+  <rect x="962" y="96" width="410" height="670" rx="14" fill="url(#col3Grad)" stroke="#10b981" stroke-width="2"/>
+  <text x="1167" y="128" text-anchor="middle" fill="#34d399" font-size="16.5" font-weight="700">
+    3. CE HITL Curation &amp; Delivery
+  </text>
+  <text x="1167" y="148" text-anchor="middle" fill="#6ee7b7" font-size="12">
+    Gmail Draft Staging + Account Team Verification
+  </text>
+
+  <!-- Box 3A: Workspace Gmail API Draft Creation -->
+  <rect x="984" y="168" width="366" height="140" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+  <text x="1167" y="194" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">📝 Workspace Gmail API Draft Staging</text>
+  <text x="1002" y="218" fill="#e2e8f0" font-size="11.5">• Invokes gmail.users().drafts().create() via OAuth 2.0</text>
+  <text x="1002" y="238" fill="#e2e8f0" font-size="11.5">• Never auto-sends directly to external customers</text>
+  <text x="1002" y="258" fill="#e2e8f0" font-size="11.5">• Populates recipient list, CC account team, and</text>
+  <text x="1014" y="276" fill="#cbd5e1" font-size="11">pre-styled seasonal HTML body in CE's Drafts folder</text>
+  <text x="1002" y="296" fill="#6ee7b7" font-size="11" font-weight="600">Guardrail: Zero unattended external email dispatch</text>
+
+  <!-- Box 3B: Human-in-the-Loop (HITL) CE Review Gate -->
+  <rect x="984" y="328" width="366" height="190" rx="10" fill="#1e293b" stroke="#fbbf24" stroke-width="1.8"/>
+  <text x="1167" y="354" text-anchor="middle" fill="#fbbf24" font-size="14" font-weight="700">🛡️ Mandatory CE / Specialist HITL Review</text>
+  <text x="1167" y="373" text-anchor="middle" fill="#fde68a" font-size="11.5">Bridging Automation with Field Engineering Judgment</text>
+  <text x="1002" y="396" fill="#e2e8f0" font-size="11.5">1. Verify Active Support Case &amp; Bug Statuses</text>
+  <text x="1002" y="418" fill="#e2e8f0" font-size="11.5">2. Inject Bespoke Operational / Architecture Notes</text>
+  <text x="1014" y="436" fill="#cbd5e1" font-size="11">(e.g., highlighting a connector permission shift from</text>
+  <text x="1014" y="452" fill="#cbd5e1" font-size="11">AllSites.Read to Sites.Selected or custom MCP guidance)</text>
+  <text x="1002" y="474" fill="#e2e8f0" font-size="11.5">3. Confirm Google Drive / Doc Link Sharing Permissions</text>
+  <text x="1002" y="498" fill="#34d399" font-size="11" font-weight="600">Result: High-trust, context-accurate customer communication</text>
+
+  <!-- Box 3C: Customer Leadership Delivery -->
+  <rect x="984" y="538" width="366" height="203" rx="10" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+  <text x="1167" y="564" text-anchor="middle" fill="#f8fafc" font-size="14.5" font-weight="700">📬 Customer Technology Leadership Inbox</text>
+  <text x="1167" y="584" text-anchor="middle" fill="#6ee7b7" font-size="11.5">Cross-Client Rendering: Outlook • Gmail • Apple Mail</text>
+  <rect x="1000" y="596" width="334" height="130" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1"/>
+  <text x="1014" y="616" fill="#fb923c" font-size="11.5" font-weight="700">🍂 Gemini Enterprise Executive Update — Oct 2026</text>
+  <text x="1014" y="636" fill="#e2e8f0" font-size="11">✓ Sec 1: Release Highlights, Blogs &amp; Operational Advisories</text>
+  <text x="1014" y="654" fill="#e2e8f0" font-size="11">✓ Sec 2: Account Health &amp; Support Telemetry Table</text>
+  <text x="1014" y="672" fill="#e2e8f0" font-size="11">✓ Sec 3: Enablement Sessions &amp; 1-Click Office Hours</text>
+  <text x="1014" y="690" fill="#e2e8f0" font-size="11">✓ Sec 4: Google Antigravity 2.0 Developer Spotlight</text>
+  <text x="1014" y="708" fill="#e2e8f0" font-size="11">✓ Sec 5: What's Next (Long-Running Agents &amp; Zero Trust)</text>
+
+  <!-- ==================== CONNECTING ARROWS ==================== -->
+  <!-- Column 1 -> Column 2 -->
+  <line x1="416" y1="240" x2="508" y2="240" stroke="#60a5fa" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+  <line x1="416" y1="408" x2="508" y2="290" stroke="#fb923c" stroke-width="2.2" marker-end="url(#arrowAmber)"/>
+  <line x1="416" y1="600" x2="508" y2="460" stroke="#60a5fa" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+
+  <!-- Internal Column 2 Flow -->
+  <line x1="700" y1="343" x2="700" y2="358" stroke="#fb923c" stroke-width="2" marker-end="url(#arrowAmber)"/>
+  <line x1="700" y1="552" x2="700" y2="566" stroke="#fb923c" stroke-width="2" marker-end="url(#arrowAmber)"/>
+
+  <!-- Column 2 -> Column 3 -->
+  <path d="M 886 655 L 925 655 L 925 238 L 978 238" fill="none" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+
+  <!-- Internal Column 3 Flow -->
+  <line x1="1167" y1="308" x2="1167" y2="324" stroke="#34d399" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <line x1="1167" y1="518" x2="1167" y2="534" stroke="#34d399" stroke-width="2" marker-end="url(#arrowGreen)"/>
+</svg>

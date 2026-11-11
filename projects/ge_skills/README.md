@@ -1,0 +1,18 @@
+# Gemini Enterprise Skills Catalog (`/ge_skills`)
+
+Production-ready **Gemini Enterprise Skills (`SKILL.md`)** and companion **BYO MCP Connectors** designed to elevate retrieval precision, citation quality, domain-specific auditing, and deterministic PII governance.
+
+> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is not an official Google product or officially supported Google Cloud project. This code is provided as-is for demonstration purposes and is NOT intended or supported for production workloads. The views, code, and opinions expressed in this repository are those of the author(s) and do not necessarily reflect the position, opinions, or official policy of Google LLC or Google Cloud Platform.
+
+---
+
+## 📁 Featured Skills
+
+### 1. 📄 **[Microsoft 365 SharePoint & Outlook Quality Enhancer Suite (`ge_m365_connector_skill`)](ge_m365_connector_skill/)**
+- **Subfolders**:
+  - **[`m365_combined_skill/`](ge_m365_connector_skill/m365_combined_skill/)**: Unified SharePoint & Outlook Federated/MCP Quality Skill (`m365-sharepoint-outlook-quality`).
+  - **[`sharepoint_federated_skill/`](ge_m365_connector_skill/sharepoint_federated_skill/)**: Zero-infrastructure upgrade for the **Out-of-the-Box (OOTB) Standard SharePoint Federated Connector** (`sharepoint-federated-quality-enhancer`).
+  - **[`outlook_connector_skill/`](ge_m365_connector_skill/outlook_connector_skill/)**: Standalone Microsoft Outlook temporal search & conversation thread synthesis skill (`outlook-connector-temporal-enhancer`).
+- **Capabilities**:
+  - **File-Type-Aware URL Formatting**: Strips `?web=1` on `.pdf` files and applies the `+1` Cover Page / 0-index rule so `#page=N` jumps to the exact physical page in the browser PDF reader, while **enforcing `?web=1` on `.docx`/`.pptx`/`.xlsx` files** so clicking links opens Word/PowerPoint/Excel Online in the browser instead of downloading files to disk.
+  - **Temporal Date Reasoning & Thread Synthesis**: Anchors relative Outlook queries (`today`, `latest`, `oldest`, `last week`) to system time and reconstructs chronological email conversation threads with clickable `webLink` citations.

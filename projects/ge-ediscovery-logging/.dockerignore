@@ -1,0 +1,20 @@
+# Prevent local secrets, token caches, keys, and sibling subprojects from entering Cloud Build / Docker layers
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.purview_token_cache.json
+archiver_jwks.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+portal/
+sites-search-agent/

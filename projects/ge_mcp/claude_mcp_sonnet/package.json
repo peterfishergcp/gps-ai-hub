@@ -1,0 +1,21 @@
+{
+  "name": "vertex-claude-mcp",
+  "version": "2.1.0",
+  "description": "Custom Cloud Run MCP Server bridging Gemini Enterprise to Anthropic Claude on Vertex AI",
+  "main": "index.mjs",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node index.mjs",
+    "test": "bash test_local.sh"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.15.1"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
+}

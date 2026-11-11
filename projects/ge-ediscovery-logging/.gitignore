@@ -1,0 +1,14 @@
+# Never commit private keys, JWKS files, or environment credentials
+.env
+.archiver_private_key.pem
+archiver_jwks.json
+*.pem
+*.key
+*.jsonl
+.tmp*
+.purview_token_cache.json
+iam-policy-*.backup.json
+__pycache__/
+*.pyc
+portal/node_modules/
+portal/dist/

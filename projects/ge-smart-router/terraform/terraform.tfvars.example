@@ -1,0 +1,6 @@
+project_id        = "your-gcp-project-id"
+region            = "us-central1"
+domain_name       = "gemini.example.com"
+service_name      = "ge-smart-router"
+iap_client_id     = ""
+iap_client_secret = ""

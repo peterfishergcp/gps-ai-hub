@@ -1,0 +1,15 @@
+.env
+.env.*
+.archiver_private_key.pem
+archiver_jwks.json
+.purview_token_cache.json
+*.pem
+*.key
+*.jsonl
+.tmp*
+*.backup.json
+node_modules/
+__pycache__/
+*.pyc
+.git/
+
