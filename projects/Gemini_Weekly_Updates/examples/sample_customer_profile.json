@@ -1,0 +1,102 @@
+{
+  "customer_profile": {
+    "agency_name": "State Department of Health & Human Services (State DHHS)",
+    "agency_short_name": "State DHHS",
+    "segment": "Public Sector — State & Local Government (SLED)",
+    "primary_recipient_salutation": "Enterprise Architecture & Technology Leadership Team",
+    "compliance_frameworks": [
+      "StateRAMP",
+      "FedRAMP High",
+      "HIPAA"
+    ],
+    "deployed_workloads": [
+      "Gemini Enterprise Standard (Workforce Identity Federation with Microsoft Entra ID)",
+      "SharePoint Online Data Ingestion & Federated Search Connectors",
+      "Microsoft Work IQ BYO MCP Connector (Purview Sensitivity Labels & RMS Encryption)",
+      "Google Antigravity 2.0 (PayGo GCP Project Binding)"
+    ],
+    "account_team": [
+      {
+        "role": "Sr. Account Executive",
+        "name": "Alex Rivera",
+        "email": "alexrivera@example.com",
+        "phone": "(555) 019-2831"
+      },
+      {
+        "role": "Customer Engineer",
+        "name": "Jordan Taylor",
+        "email": "jordantaylor@example.com"
+      },
+      {
+        "role": "Public Sector AI Specialist",
+        "name": "Sam Morgan",
+        "email": "sammorgan@example.com"
+      }
+    ]
+  },
+  "theme_selection": {
+    "theme_id": "autumn_fall_2026",
+    "display_name": "October Autumn Harvest",
+    "header_emoji": "🍂🍁",
+    "palette": {
+      "primary_accent": "#C05621",
+      "secondary_accent": "#DD6B20",
+      "border_accent": "#D69E2E",
+      "text_primary": "#2D3748",
+      "background_tint": "#FFFAF0"
+    }
+  },
+  "operational_advisories": [
+    {
+      "advisory_id": "ADV-2026-10-SPO",
+      "title": "SharePoint Connector Permission Scope Guidance (Sites.Selected vs. AllSites.Read)",
+      "impact": "High — Affects Microsoft Entra ID & SharePoint Online Connector Deployments",
+      "summary": "When transitioning from broad federated search permissions (AllSites.Read) to least-privilege site-scoped access, we recommend deploying the SharePoint Data Ingestion Connector with explicit Sites.Selected permissions granted per target site collection. This keeps document indexing scoped strictly to authorized policy libraries without requiring tenant-wide read consent."
+    }
+  ],
+  "support_telemetry": [
+    {
+      "case_id": "CS-0048291",
+      "workload": "Antigravity Project Binding",
+      "description": "Linking Antigravity 2.0 to dedicated agency PayGo GCP backend project",
+      "status": "Resolved / Verified",
+      "target_date": "Completed 10/02",
+      "google_lead": "Sam Morgan"
+    },
+    {
+      "case_id": "CS-0049102",
+      "workload": "SharePoint Connector Indexing",
+      "description": "Entra ID Sites.Selected OAuth permission scopes for policy document library ingestion",
+      "status": "In Progress",
+      "target_date": "Target 10/16",
+      "google_lead": "Jordan Taylor"
+    },
+    {
+      "case_id": "FE-520736",
+      "workload": "Public Sector Token Quotas",
+      "description": "Clarification on pooled weekly token quotas vs. project-isolated consumption",
+      "status": "Documented / Closed",
+      "target_date": "Completed 10/04",
+      "google_lead": "Sam Morgan"
+    },
+    {
+      "case_id": "CS-0050114",
+      "workload": "Purview Sensitivity Labels",
+      "description": "Testing automated RMS encryption decryption via Microsoft Work IQ MCP connector",
+      "status": "Testing in Lab",
+      "target_date": "Target 10/23",
+      "google_lead": "Sam Morgan"
+    }
+  ],
+  "enablement_connect": {
+    "featured_session": {
+      "title": "Building Safe Public Sector AI Agents with ADK and Model Armor",
+      "date_time": "Thursday, October 22, 2026 | 10:00 AM – 11:30 AM CT",
+      "audience": "Enterprise Architects, Cloud Engineers, and Security Reviewers"
+    },
+    "office_hours": {
+      "cadence": "Every other Tuesday at 2:00 PM CT",
+      "booking_url": "https://calendar.google.com/calendar/appointments/schedules/example-architecture-office-hours"
+    }
+  }
+}

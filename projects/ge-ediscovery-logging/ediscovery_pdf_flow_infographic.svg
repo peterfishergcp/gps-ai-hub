@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 940" width="1440" height="940" font-family="'Google Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1120"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.65"/>
+      <stop offset="50%" stop-color="#0f172a" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#312e81" stop-opacity="0.65"/>
+    </linearGradient>
+    <linearGradient id="gcpLane" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="msLane" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="112%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrowEmerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#34d399"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#a78bfa"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#fbbf24"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1440" height="940" fill="url(#bgGrad)"/>
+
+  <!-- Header Banner -->
+  <rect x="28" y="22" width="1384" height="92" rx="14" fill="url(#headerGrad)" stroke="#334155" stroke-width="1.5" filter="url(#cardShadow)"/>
+  <text x="54" y="58" fill="#f8fafc" font-size="23" font-weight="800" letter-spacing="0.3">GEMINI ENTERPRISE TO MICROSOFT PURVIEW eDISCOVERY — END-TO-END AI PDF &amp; TURN CAPTURE</text>
+  <text x="54" y="84" fill="#94a3b8" font-size="13.5">Zero-Browser-Plugin Server-Side Chain of Custody: WIF Impersonation via Cloud KMS, Binary PDF Extraction, SHA-256 Verification &amp; Purview Review Set Family Ingestion</text>
+  <rect x="1185" y="42" width="202" height="48" rx="10" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+  <text x="1286" y="62" text-anchor="middle" fill="#6ee7b7" font-size="11.5" font-weight="700">END-TO-END LATENCY</text>
+  <text x="1286" y="80" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">&lt; 10 Seconds Real-Time</text>
+
+  <!-- Swimlane 1: Google Cloud -->
+  <rect x="28" y="130" width="905" height="690" rx="14" fill="url(#gcpLane)" stroke="#1e40af" stroke-width="1.5"/>
+  <rect x="46" y="146" width="380" height="32" rx="8" fill="#1e3a8a"/>
+  <text x="62" y="167" fill="#93c5fd" font-size="13" font-weight="800" letter-spacing="0.8">SWIMLANE A · GOOGLE CLOUD PLATFORM (GEMINI ENTERPRISE)</text>
+
+  <!-- Swimlane 2: Microsoft 365 & Purview -->
+  <rect x="953" y="130" width="459" height="690" rx="14" fill="url(#msLane)" stroke="#5b21b6" stroke-width="1.5"/>
+  <rect x="971" y="146" width="420" height="32" rx="8" fill="#312e81"/>
+  <text x="987" y="167" fill="#c4b5fd" font-size="13" font-weight="800" letter-spacing="0.8">SWIMLANE B · MICROSOFT 365 &amp; PURVIEW eDISCOVERY</text>
+
+  <!-- ==================== STEP 1 ==================== -->
+  <g filter="url(#cardShadow)">
+    <rect x="48" y="196" width="415" height="175" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <circle cx="78" cy="226" r="16" fill="#0284c7"/>
+    <text x="78" y="231" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">1</text>
+    <text x="104" y="224" fill="#f8fafc" font-size="15.5" font-weight="800">User Query &amp; AI PDF Generation</text>
+    <text x="104" y="242" fill="#38bdf8" font-size="12" font-weight="700">Gemini Enterprise UI / Custom ADK or No-Code Agent</text>
+    <line x1="64" y1="254" x2="445" y2="254" stroke="#334155" stroke-width="1"/>
+    <text x="64" y="275" fill="#e2e8f0" font-size="12.5">• Federated user (Entra ID WIF) prompts GE to create a PDF.</text>
+    <text x="64" y="296" fill="#e2e8f0" font-size="12.5">• Model generates reasoning trace (thought_text) + text reply.</text>
+    <text x="64" y="317" fill="#e2e8f0" font-size="12.5">• Agent writes binary PDF to session (AddContextFile: fileId).</text>
+    <rect x="64" y="330" width="381" height="28" rx="6" fill="#450a0a" stroke="#ef4444" stroke-width="1"/>
+    <text x="76" y="348" fill="#fca5a5" font-size="11.5" font-weight="700">🛡️ Spoliation Guard: Custom role geUserNoDelete blocks DeleteSession (403)</text>
+  </g>
+
+  <!-- ==================== STEP 2 ==================== -->
+  <g filter="url(#cardShadow)">
+    <rect x="498" y="196" width="415" height="175" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <circle cx="528" cy="226" r="16" fill="#0284c7"/>
+    <text x="528" y="231" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">2</text>
+    <text x="554" y="224" fill="#f8fafc" font-size="15.5" font-weight="800">Real-Time Audit Telemetry &amp; Pub/Sub Push</text>
+    <text x="554" y="242" fill="#38bdf8" font-size="12" font-weight="700">Cloud Logging Router + Pub/Sub (&lt; 1–2s Latency)</text>
+    <line x1="514" y1="254" x2="895" y2="254" stroke="#334155" stroke-width="1"/>
+    <text x="514" y="275" fill="#e2e8f0" font-size="12.5">• Stream: gemini_enterprise_user_activity</text>
+    <text x="514" y="296" fill="#e2e8f0" font-size="12.5">• Logs AddContextFile (fileId, fileName) + StreamAssist (session_id).</text>
+    <text x="514" y="317" fill="#e2e8f0" font-size="12.5">• Sink ge-ediscovery-pubsub-sink routes to Pub/Sub topic.</text>
+    <rect x="514" y="330" width="381" height="28" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+    <text x="526" y="348" fill="#93c5fd" font-size="11.5" font-weight="700">📨 OIDC Push to Cloud Run + 7-Day DLQ Hold (ge-ediscovery-dlq)</text>
+  </g>
+
+  <!-- ==================== STEP 3 ==================== -->
+  <g filter="url(#cardShadow)">
+    <rect x="498" y="408" width="415" height="175" rx="12" fill="#1e293b" stroke="#fbbf24" stroke-width="2"/>
+    <circle cx="528" cy="438" r="16" fill="#d97706"/>
+    <text x="528" y="443" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">3</text>
+    <text x="554" y="436" fill="#f8fafc" font-size="15.5" font-weight="800">Keyless Cloud KMS WIF Token Exchange</text>
+    <text x="554" y="454" fill="#fbbf24" font-size="12" font-weight="700">Cloud Run Harvester + Cloud KMS asymmetricSign</text>
+    <line x1="514" y1="466" x2="895" y2="466" stroke="#334155" stroke-width="1"/>
+    <text x="514" y="487" fill="#e2e8f0" font-size="12.5">• Solves Admin 403 Barrier ("Session is not owned by user").</text>
+    <text x="514" y="508" fill="#e2e8f0" font-size="12.5">• Extracts session owner's WIF subject from audit log.</text>
+    <text x="514" y="529" fill="#e2e8f0" font-size="12.5">• Calls Cloud KMS RSA-2048 asymmetricSign (zero keys on disk).</text>
+    <rect x="514" y="542" width="381" height="28" rx="6" fill="#422006" stroke="#f59e0b" stroke-width="1"/>
+    <text x="526" y="560" fill="#fde68a" font-size="11.5" font-weight="700">🔑 Exchanges JWT via STS (ediscovery-archiver) for User WIF Token</text>
+  </g>
+
+  <!-- ==================== STEP 4 ==================== -->
+  <g filter="url(#cardShadow)">
+    <rect x="48" y="408" width="415" height="175" rx="12" fill="#1e293b" stroke="#34d399" stroke-width="2"/>
+    <circle cx="78" cy="438" r="16" fill="#059669"/>
+    <text x="78" y="443" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">4</text>
+    <text x="104" y="436" fill="#f8fafc" font-size="15.5" font-weight="800">Full Transcript &amp; Binary PDF Extraction</text>
+    <text x="104" y="454" fill="#34d399" font-size="12" font-weight="700">Discovery Engine GetSession &amp; :downloadFile APIs</text>
+    <line x1="64" y1="466" x2="445" y2="466" stroke="#334155" stroke-width="1"/>
+    <text x="64" y="487" fill="#e2e8f0" font-size="12.5">• Calls GetSession?includeAnswerDetails=true (untruncated).</text>
+    <text x="64" y="508" fill="#e2e8f0" font-size="12.5">• Calls :downloadFile?file_id=...&amp;alt=media for raw PDF bytes.</text>
+    <text x="64" y="529" fill="#e2e8f0" font-size="12.5">• Verifies %PDF- magic header &amp; upgrades MIME to application/pdf.</text>
+    <rect x="64" y="542" width="381" height="28" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+    <text x="76" y="560" fill="#a7f3d0" font-size="11.5" font-weight="700">#️⃣ Computes Cryptographic SHA-256 (Hex) &amp; CRC32C (Base64) Hashes</text>
+  </g>
+
+  <!-- ==================== STEP 5 ==================== -->
+  <g filter="url(#cardShadow)">
+    <rect x="48" y="620" width="865" height="178" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <circle cx="78" cy="650" r="16" fill="#0284c7"/>
+    <text x="78" y="655" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">5</text>
+    <text x="104" y="648" fill="#f8fafc" font-size="15.5" font-weight="800">Google Cloud Immutable WORM Archive, BigQuery Forensics &amp; IAP Review Portal</text>
+    <text x="104" y="666" fill="#38bdf8" font-size="12" font-weight="700">Cloud Storage (Versioned + UBLA) · BigQuery (conversation_turns) · Cloud Run Portal (Google IAP)</text>
+    <line x1="64" y1="678" x2="895" y2="678" stroke="#334155" stroke-width="1"/>
+
+    <!-- Sub-box 5A: GCS -->
+    <rect x="64" y="690" width="265" height="92" rx="8" fill="#0f172a" stroke="#334155"/>
+    <text x="78" y="712" fill="#38bdf8" font-size="12.5" font-weight="800">🗄️ Cloud Storage Archive</text>
+    <text x="78" y="732" fill="#cbd5e1" font-size="11.5">• session_transcript_&lt;sha256&gt;.json</text>
+    <text x="78" y="750" fill="#cbd5e1" font-size="11.5">• files/.../AI_GENERATED/*.pdf</text>
+    <text x="78" y="768" fill="#94a3b8" font-size="11">Object Versioning + Retention Lock</text>
+
+    <!-- Sub-box 5B: BigQuery -->
+    <rect x="346" y="690" width="265" height="92" rx="8" fill="#0f172a" stroke="#334155"/>
+    <text x="360" y="712" fill="#34d399" font-size="12.5" font-weight="800">📊 BigQuery Forensic Dataset</text>
+    <text x="360" y="732" fill="#cbd5e1" font-size="11.5">• conversation_turns + files[] array</text>
+    <text x="360" y="750" fill="#cbd5e1" font-size="11.5">• v_ediscovery_file_audit (SHA-256)</text>
+    <text x="360" y="768" fill="#94a3b8" font-size="11">v_jailbreak_and_security_detections</text>
+
+    <!-- Sub-box 5C: Cloud Run Portal -->
+    <rect x="628" y="690" width="267" height="92" rx="8" fill="#0f172a" stroke="#38bdf8"/>
+    <text x="642" y="712" fill="#f8fafc" font-size="12.5" font-weight="800">🖥️ Cloud Run Review Portal (IAP)</text>
+    <text x="642" y="732" fill="#cbd5e1" font-size="11.5">• Legal Brief Narrative UI</text>
+    <text x="642" y="750" fill="#cbd5e1" font-size="11.5">• Inline PDF Viewer &amp; Provenance</text>
+    <text x="642" y="768" fill="#6ee7b7" font-size="11" font-weight="700">Direct Browser Google Sign-In (--iap)</text>
+  </g>
+
+  <!-- ==================== STEP 6 (MICROSOFT PURVIEW) ==================== -->
+  <g filter="url(#cardShadow)">
+    <rect x="971" y="196" width="422" height="602" rx="12" fill="#1e1b4b" stroke="#a78bfa" stroke-width="2"/>
+    <circle cx="1001" cy="226" r="16" fill="#7c3aed"/>
+    <text x="1001" y="231" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">6</text>
+    <text x="1027" y="224" fill="#f8fafc" font-size="15.5" font-weight="800">Microsoft Purview eDiscovery Sync</text>
+    <text x="1027" y="242" fill="#c4b5fd" font-size="12" font-weight="700">purview_connector.py · Dual-Track Microsoft Graph API</text>
+    <line x1="987" y1="254" x2="1375" y2="254" stroke="#4c1d95" stroke-width="1"/>
+
+    <!-- Track 1 Box -->
+    <rect x="987" y="268" width="390" height="190" rx="10" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="1003" y="292" fill="#c4b5fd" font-size="13" font-weight="800">📬 Track 1: Custodian Mailbox Substrate (Exchange Online)</text>
+    <text x="1003" y="313" fill="#e2e8f0" font-size="12">• Resolves WIF Subject / Entra Object ID GUID to M365 UPN</text>
+    <text x="1003" y="333" fill="#e2e8f0" font-size="12">• Folder: "Gemini Enterprise eDiscovery" (Idempotent Dedup)</text>
+    <text x="1003" y="353" fill="#e2e8f0" font-size="12">• MAPI Class: IPM.Note.Google.GeminiEnterprise + X-GE-* Headers</text>
+    <text x="1003" y="373" fill="#e2e8f0" font-size="12">• Body: Self-Contained HTML Legal Brief + SHA-256 Table</text>
+    <rect x="1003" y="386" width="358" height="58" rx="6" fill="#2e1065" stroke="#a78bfa" stroke-width="1"/>
+    <text x="1015" y="406" fill="#ddd6fe" font-size="11.5" font-weight="700">📎 Native Binary Attachment (#microsoft.graph.fileAttachment)</text>
+    <text x="1015" y="424" fill="#e9d5ff" font-size="11">Raw PDF bytes fetched from GCS &amp; attached directly to item</text>
+    <text x="1015" y="439" fill="#6ee7b7" font-size="11" font-weight="700">(No GCS link click required by M365 legal reviewers!)</text>
+
+    <!-- Track 2 Box -->
+    <rect x="987" y="472" width="390" height="106" rx="10" fill="#0f172a" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="1003" y="496" fill="#a5b4fc" font-size="13" font-weight="800">🛡️ Track 2: Purview DSPM for AI (processContent API)</text>
+    <text x="1003" y="517" fill="#e2e8f0" font-size="12">• POST /v1.0/users/{upn}/dataSecurityAndGovernance/processContent</text>
+    <text x="1003" y="537" fill="#e2e8f0" font-size="12">• Logs uploadText (Prompt) &amp; downloadText (Response)</text>
+    <text x="1003" y="557" fill="#e2e8f0" font-size="12">• Populates Purview AI Activity Explorer &amp; Communication DLP</text>
+
+    <!-- Review Set Box -->
+    <rect x="987" y="592" width="390" height="190" rx="10" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+    <text x="1003" y="616" fill="#6ee7b7" font-size="13.5" font-weight="800">⚖️ Purview eDiscovery Case &amp; Review Set Viewer</text>
+    <text x="1003" y="638" fill="#ecfdf5" font-size="12">1. KQL Search: "Gemini Enterprise eDiscovery" AND HasAttachment:true</text>
+    <text x="1003" y="658" fill="#ecfdf5" font-size="12">2. Commit search hits to Review Set (e.g. GE Attachmentsv1)</text>
+    <text x="1003" y="678" fill="#ecfdf5" font-size="12">3. Parent Item: Renders HTML Legal Brief + Thought Trace</text>
+    <rect x="1003" y="692" width="358" height="76" rx="6" fill="#022c22" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1015" y="713" fill="#34d399" font-size="12" font-weight="800">📂 Click "Group by families (2)" in Purview Review Set:</text>
+    <text x="1015" y="732" fill="#d1fae5" font-size="11.5">• Family Member 1: HTML Legal Brief (Prompt, Thoughts, Reply)</text>
+    <text x="1015" y="750" fill="#d1fae5" font-size="11.5">• Family Member 2: Native AI-Generated PDF (Preview/Redact/Export)</text>
+  </g>
+
+  <!-- ==================== CONNECTING ARROWS ==================== -->
+  <!-- Step 1 -> Step 2 -->
+  <line x1="463" y1="283" x2="494" y2="283" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <!-- Step 2 -> Step 3 -->
+  <line x1="705" y1="371" x2="705" y2="404" stroke="#fbbf24" stroke-width="3" marker-end="url(#arrowAmber)"/>
+  <!-- Step 3 -> Step 4 -->
+  <line x1="498" y1="495" x2="467" y2="495" stroke="#34d399" stroke-width="3" marker-end="url(#arrowEmerald)"/>
+  <!-- Step 4 -> Step 5 -->
+  <line x1="255" y1="583" x2="255" y2="616" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <!-- Step 5 -> Step 6 -->
+  <path d="M 913 709 L 942 709 L 942 360 L 967 360" fill="none" stroke="#a78bfa" stroke-width="3.5" marker-end="url(#arrowPurple)"/>
+
+  <!-- Footer Summary Bar -->
+  <rect x="28" y="836" width="1384" height="80" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+  <text x="54" y="864" fill="#38bdf8" font-size="13" font-weight="800">KEY COMPLIANCE GUARANTEES FOR REGULATED ENTERPRISES:</text>
+  <text x="54" y="886" fill="#cbd5e1" font-size="12">1. Zero Spoliation: geUserNoDelete blocks chat/file deletion before harvest.   2. Zero Private Keys on Disk: Cloud KMS hardware-backed RSA-2048 signing.</text>
+  <text x="54" y="904" fill="#cbd5e1" font-size="12">3. Cryptographic Integrity: SHA-256 &amp; CRC32C verified across GCS, BigQuery &amp; Purview.   4. Native Purview Review Set Families: Actual PDF/PNG binaries attached via Graph API.</text>
+</svg>

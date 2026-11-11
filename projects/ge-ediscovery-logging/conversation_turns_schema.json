@@ -1,0 +1,151 @@
+[
+  {
+    "name": "session_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Discovery Engine Session ID"
+  },
+  {
+    "name": "turn_index",
+    "type": "INTEGER",
+    "mode": "REQUIRED",
+    "description": "1-based index of the conversation turn within the session"
+  },
+  {
+    "name": "query_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Unique queryId for this turn"
+  },
+  {
+    "name": "assist_answer_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "AssistAnswer resource ID for this turn"
+  },
+  {
+    "name": "engine_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Gemini Enterprise Engine/App ID"
+  },
+  {
+    "name": "location",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Discovery Engine location (us, global, eu)"
+  },
+  {
+    "name": "user_iam_principal",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Authenticated userIamPrincipal (Workforce Pool subject or Workspace email)"
+  },
+  {
+    "name": "session_display_name",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Session display title"
+  },
+  {
+    "name": "prompt_text",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Full untruncated user prompt text"
+  },
+  {
+    "name": "response_text",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Full untruncated user-visible assistant response (thought=true stripped)"
+  },
+  {
+    "name": "thought_text",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Internal model reasoning / thought chain (thought=true)"
+  },
+  {
+    "name": "model_name",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Model used to serve the turn if logged in Cloud Logging"
+  },
+  {
+    "name": "session_transcript_gcs_uri",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "gs:// URI of the full GetSession JSON transcript"
+  },
+  {
+    "name": "session_transcript_console_url",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Authenticated Cloud Console URL for the session transcript JSON"
+  },
+  {
+    "name": "files",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "description": "User-uploaded (USER_PROVIDED) and AI-generated (AI_GENERATED) files archived to GCS",
+    "fields": [
+      {
+        "name": "file_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "file_source",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "file_name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "mime_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "byte_size",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "sha256",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "crc32c",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "gcs_uri",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "console_url",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      }
+    ]
+  },
+  {
+    "name": "event_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Timestamp of the turn or session activity"
+  },
+  {
+    "name": "harvested_at",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Timestamp when ge_harvest.py archived this turn"
+  }
+]

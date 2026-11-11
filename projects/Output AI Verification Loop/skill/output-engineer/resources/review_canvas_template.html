@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Output Engineering Review Canvas — Enterprise Security Architecture Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #3c4043;
+      font-family: 'Google Sans Text', 'Google Sans', Roboto, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top bar */
+    .g3doc-topbar {
+      height: 52px;
+      border-bottom: 1px solid #e8eaed;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .g3doc-topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 15.5px;
+      font-weight: 500;
+      color: #202124;
+    }
+    .g3doc-topbar-left img {
+      width: 24px;
+      height: 24px;
+    }
+    .g3doc-crumb {
+      color: #5f6368;
+      font-weight: 400;
+      font-size: 14.5px;
+    }
+
+    /* Hero Band */
+    .gc-band-wrap {
+      background: #f8f9fa;
+      border-bottom: 1px solid #e8eaed;
+    }
+    .gc-band {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .gc-eyebrow {
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #1a73e8;
+      margin: 0 0 4px 0;
+    }
+    .gc-tagline {
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.3;
+      color: #202124;
+      margin: 0 0 6px 0;
+    }
+    .gc-band-sub {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #5f6368;
+      margin: 0 0 16px 0;
+    }
+    .gc-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 860px) {
+      .gc-kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .gc-kpi-card {
+      background: #ffffff;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      padding: 11px 14px;
+    }
+    .gc-kpi-label {
+      font-size: 12px;
+      color: #5f6368;
+      margin: 0 0 4px 0;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-weight: 500;
+    }
+    .gc-kpi-val {
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: #202124;
+      margin: 0 0 3px 0;
+    }
+    .gc-kpi-sub {
+      font-size: 12px;
+      color: #5f6368;
+      margin: 0;
+    }
+
+    /* Main Container */
+    .gc-page {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 0 32px 64px 32px;
+    }
+    .gc-body {
+      display: block;
+      padding: 22px 0 0 0;
+    }
+    .gc-main {
+      min-width: 0;
+    }
+    .gc-stripe {
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(to right, #4285f4 0 25%, #ea4335 25% 50%, #fbbc04 50% 75%, #34a853 75% 100%);
+      margin: 0 0 20px 0;
+    }
+    .gc-main h2.gc-h2 {
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 18.5px;
+      font-weight: 400;
+      line-height: 1.3;
+      color: #202124;
+      margin: 26px 0 10px 0;
+      padding: 0;
+    }
+    .gc-main h2.gc-h2:first-of-type {
+      margin-top: 0;
+    }
+
+    /* Filter Bar */
+    .gc-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 10px 0;
+    }
+    .gc-filter-btn {
+      background: #ffffff;
+      border: 1px solid #dadce0;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #5f6368;
+      cursor: pointer;
+    }
+    .gc-filter-btn.active {
+      background: #e8f0fe;
+      border-color: #d2e3fc;
+      color: #1967d2;
+    }
+
+    /* Tables */
+    .gc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      line-height: 1.45;
+      margin: 4px 0 16px 0;
+    }
+    .gc-table th {
+      text-align: left;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: #5f6368;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dadce0;
+      padding: 8px 12px;
+    }
+    .gc-table td {
+      color: #3c4043;
+      border-bottom: 1px solid #e8eaed;
+      padding: 10px 12px;
+      vertical-align: top;
+    }
+    .gc-code {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11.5px;
+      background: #f1f3f4;
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #202124;
+    }
+
+    .pill-pass {
+      display: inline-block;
+      background: #e6f4ea;
+      color: #137333;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .pill-fail {
+      display: inline-block;
+      background: #fce8e6;
+      color: #c5221f;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .pill-info {
+      display: inline-block;
+      background: #e8f0fe;
+      color: #1967d2;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .pill-warn {
+      display: inline-block;
+      background: #fef7e0;
+      color: #b06000;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .gc-details {
+      margin: 12px 0 0 0;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+    .gc-details summary {
+      padding: 10px 16px;
+      font-family: 'Google Sans', Roboto, sans-serif;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #202124;
+      cursor: pointer;
+      user-select: none;
+    }
+    .gc-details-body {
+      padding: 10px 16px 14px 16px;
+      border-top: 1px solid #f1f3f4;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header class="g3doc-topbar">
+    <div class="g3doc-topbar-left">
+      <img src="https://www.gstatic.com/images/branding/productlogos/google_cloud/v8/192px.svg" alt="Google Cloud">
+      <span>Output AI Verification Loop (v2)</span>
+      <span class="g3doc-crumb" id="top-project-crumb">/ Public Sector Agency Security Architecture Review</span>
+    </div>
+  </header>
+
+  <div class="gc-band-wrap">
+    <div class="gc-band">
+      <div class="gc-eyebrow" id="hero-eyebrow">Output-Engineer v2 &middot; 3-Stage Council Audit Report</div>
+      <div class="gc-tagline" id="hero-title">Public Sector Agency Security Review — Pre-Send Audit</div>
+      <div class="gc-band-sub" id="hero-sub">
+        <b>Target Audited:</b> 15-page customer security response (13-point cover email + 10 architecture OQs) &middot; <b>Council:</b> Gemini 3.8 Flash, Claude Opus 4.6 &amp; Gemini 3.5 Flash-Lite
+      </div>
+      <div class="gc-kpi-row" id="kpi-row"></div>
+    </div>
+  </div>
+
+  <div class="gc-page">
+    <div class="gc-body">
+      <main class="gc-main">
+        <div class="gc-stripe"></div>
+
+        <!-- Section 1: 3-Stage Council Scorecard -->
+        <section id="panel-models">
+          <h2 class="gc-h2">1. Council Seats: Stage 1 Independent Verdict vs. Stage 2 Blind Peer Ranking</h2>
+          <table class="gc-table">
+            <thead>
+              <tr>
+                <th style="width: 20%;">Council Seat</th>
+                <th style="width: 17%;">Stage 1 Verdict</th>
+                <th style="width: 19%;">Stage 2 Blind Rank</th>
+                <th>Stage 2 Blind Review Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="models-tbody"></tbody>
+          </table>
+        </section>
+
+        <!-- Section 2: Side-by-Side Verified Contradictions Table -->
+        <section id="panel-claims">
+          <h2 class="gc-h2">2. Verified Contradictions &amp; Fixes (<span id="claims-count">14</span>)</h2>
+          <div class="gc-filter-bar" id="filter-bar"></div>
+          <table class="gc-table">
+            <thead>
+              <tr>
+                <th style="width: 15%;">Section &amp; Vote</th>
+                <th style="width: 27%;">v1 Draft Claim (Flawed)</th>
+                <th style="width: 31%;">Verified Ground Truth</th>
+                <th style="width: 27%;">Actionable Fix</th>
+              </tr>
+            </thead>
+            <tbody id="claims-tbody"></tbody>
+          </table>
+        </section>
+
+        <!-- Section 3: Collapsible Secondary Modalities -->
+        <details class="gc-details" id="panel-ste100">
+          <summary>3. ASD-STE100 Controlled Rewrite Samples (50 / 50 Sentences Compliant &middot; Avg 11.5w)</summary>
+          <div class="gc-details-body">
+            <table class="gc-table" style="margin:0;">
+              <thead>
+                <tr>
+                  <th style="width: 44%;">Original v1 Draft (Avg 39.9w/sentence &middot; 22% Pass)</th>
+                  <th>ASD-STE100 Rewrite (&le;20w Procedural / &le;25w Descriptive &middot; 100% Pass)</th>
+                </tr>
+              </thead>
+              <tbody id="ste100-tbody"></tbody>
+            </table>
+          </div>
+        </details>
+
+        <details class="gc-details" id="panel-diagrams">
+          <summary>4. Verified Security Zone Boundaries (Zone 1 Ingress &rarr; Zone 2 Orchestration &rarr; Zone 3 Vertex AI)</summary>
+          <div class="gc-details-body" id="panel-video">
+            <table class="gc-table" style="margin:0;">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Security Zone</th>
+                  <th style="width: 38%;">Verified Control Behavior</th>
+                  <th>Key Correction vs. v1 Draft</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Zone 1: Ingress &amp; Auth</b></td>
+                  <td>GFE TLS 1.3 termination; Workforce Identity / OIDC auth stripped at ingress.</td>
+                  <td><code class="gc-code">user_email</code> and <code class="gc-code">user_full_name</code> travel in <code class="gc-code">system_instruction</code>; <code class="gc-code">caller_principal_id</code> travels in <code class="gc-code">stream_attribution_id</code>.</td>
+                </tr>
+                <tr>
+                  <td><b>Zone 2: Orchestration &amp; Screening</b></td>
+                  <td>Model Armor screens prompt/response (4 MB); Cloud SDP de-identifies connector/upload payloads (50 MB PDF).</td>
+                  <td><code class="gc-code">UploadSessionFile</code> hard-blocks files matching SSNs rather than masking inline as <code class="gc-code">[SSN-MASKED]</code>.</td>
+                </tr>
+                <tr>
+                  <td><b>Zone 3: Model Serving &amp; UI</b></td>
+                  <td>Zero-data-retention Vertex AI inference; client-side image blocking in the Gemini Enterprise web UI.</td>
+                  <td>Backend Markdown image sanitization stays off by default for chat; DRZ/CMEK require the <code class="gc-code">us</code> or <code class="gc-code">eu</code> multi-region.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+
+        <details class="gc-details" id="panel-gatekeeper">
+          <summary>5. Pre-Flight Submission Gatekeeper Scan (<code class="gc-code">--scan-submission</code>)</summary>
+          <div class="gc-details-body">
+            <table class="gc-table" style="margin:0;">
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Automated Gate</th>
+                  <th style="width: 16%;">Status</th>
+                  <th>Verification Result</th>
+                </tr>
+              </thead>
+              <tbody id="gatekeeper-tbody"></tbody>
+            </table>
+          </div>
+        </details>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /*__COUNCIL_REVIEW_JSON_START__*/
+const COUNCIL_REVIEW_DATA = {};
+    /*__COUNCIL_REVIEW_JSON_END__*/
+
+    const CODE_TOKEN_RE = /(\[SSN-MASKED\]|\b[a-zA-Z0-9]+_[a-zA-Z0-9_.]+(?:=[a-zA-Z0-9_.-]+)?\b|\b(?:GenerateContentRequest|UploadSessionFile|StreamAssist|SanitizeUserPrompt|SanitizeModelResponse|SanitizeFileContent|ApplyContentPolicy|userPromptTemplate|responseTemplate|CheckFileContent|SearchRequestsPerMinutePerProjectPerRegion|AssistRequestsPerMinutePerProjectPerRegion|us-central1|readOnlyHint)\b)/g;
+
+    function el(tag, attrs, children) {
+      const node = document.createElement(tag);
+      if (attrs) {
+        Object.keys(attrs).forEach((k) => {
+          if (k === "className") {
+            node.className = attrs[k];
+          } else if (k === "style") {
+            node.setAttribute("style", attrs[k]);
+          } else if (k === "textContent") {
+            node.textContent = String(attrs[k]);
+          } else {
+            node.setAttribute(k, String(attrs[k]));
+          }
+        });
+      }
+      if (Array.isArray(children)) {
+        children.forEach((child) => {
+          if (child == null) return;
+          if (typeof child === "string") {
+            node.appendChild(document.createTextNode(child));
+          } else {
+            node.appendChild(child);
+          }
+        });
+      }
+      return node;
+    }
+
+    function buildFormattedFragment(raw) {
+      const frag = document.createDocumentFragment();
+      if (!raw) return frag;
+      const text = String(raw);
+      let lastIndex = 0;
+      CODE_TOKEN_RE.lastIndex = 0;
+      let match;
+      while ((match = CODE_TOKEN_RE.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        }
+        frag.appendChild(el("code", { className: "gc-code", textContent: match[0] }));
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+      return frag;
+    }
+
+    (function renderReport() {
+      const data = COUNCIL_REVIEW_DATA || {};
+      if (data.project_name) {
+        document.getElementById("top-project-crumb").textContent = "/ " + String(data.project_name);
+      }
+      if (data.header && data.header.title) {
+        document.getElementById("hero-title").textContent = String(data.header.title);
+      }
+
+      // Render 4 Document-Level KPI Cards using safe DOM APIs
+      const kpiRow = document.getElementById("kpi-row");
+      const kpis = [
+        { label: "Release Readiness", val: "HOLD (4.5 / 10)", pill: "pill-fail", sub: "Do not send v1 draft to customer" },
+        { label: "Send-Blocking Contradictions", val: "14 Verified", pill: "pill-pass", sub: "7 in cover email \u00b7 7 in QA responses" },
+        { label: "Peer-Filtered False Alarms", val: "1 Rejected", pill: "pill-info", sub: "Unverified TLS 1.3 nitpick dropped (0/2)" },
+        { label: "ASD-STE100 Readability", val: "50 / 50 Pass", pill: "pill-pass", sub: "11.5w avg sentence (down from 39.9w)" }
+      ];
+      kpiRow.replaceChildren(
+        ...kpis.map((k) =>
+          el("div", { className: "gc-kpi-card" }, [
+            el("div", { className: "gc-kpi-label", textContent: k.label }),
+            el("div", { className: "gc-kpi-val" }, [
+              el("span", { className: k.pill, style: "font-size:13.5px; padding:3px 9px;", textContent: k.val })
+            ]),
+            el("div", { className: "gc-kpi-sub", style: "margin-top:4px;", textContent: k.sub })
+          ])
+        )
+      );
+
+      // Render 3-Seat Council Table
+      const modelsTbody = document.getElementById("models-tbody");
+      const seats = [
+        {
+          seat: "Seat 1: Gemini 3.8 Flash",
+          s1Pill: "pill-fail",
+          s1Text: "90 / 100 (False Pass)",
+          s2Pill: null,
+          s2Text: "Rank #2 (5 Borda pts)",
+          note: "Caught 7 core architecture issues; missed 7 cover-email contradictions until reviewing Response B in Stage 2."
+        },
+        {
+          seat: "Seat 2: Claude Opus 4.6",
+          s1Pill: "pill-pass",
+          s1Text: "4.5 / 10 (True Fail)",
+          s2Pill: "pill-pass",
+          s2Text: "Rank #1 (9/9 Borda pts)",
+          note: "Caught all 14 contradictions across the cover email and QA draft; ranked #1 unanimously in blind peer vote."
+        },
+        {
+          seat: "Seat 3: Gemini 3.5 Flash-Lite",
+          s1Pill: "pill-warn",
+          s1Text: "7.2 / 10 (Conditional)",
+          s2Pill: null,
+          s2Text: "Rank #3 (4 Borda pts)",
+          note: "Verified 50/50 STE100 sentences; raised 1 TLS 1.3 cipher nitpick that both peers voted down (0/2)."
+        }
+      ];
+      modelsTbody.replaceChildren(
+        ...seats.map((r) =>
+          el("tr", null, [
+            el("td", null, [el("b", { textContent: r.seat })]),
+            el("td", null, [el("span", { className: r.s1Pill, textContent: r.s1Text })]),
+            el("td", null, [
+              r.s2Pill
+                ? el("span", { className: r.s2Pill, textContent: r.s2Text })
+                : document.createTextNode(r.s2Text)
+            ]),
+            el("td", { textContent: r.note })
+          ])
+        )
+      );
+
+      // Render Side-by-Side Claims Table
+      const claims = Array.isArray(data.claims) ? data.claims : [];
+      document.getElementById("claims-count").textContent = String(claims.length);
+      const filterBar = document.getElementById("filter-bar");
+      const groups = [
+        { id: "ALL", label: "All Verified Findings (" + claims.length + ")" },
+        { id: "NEW_OPUS", label: "Caught via Stage 2 Blind Review (" + claims.filter((c) => c.group === "NEW_OPUS").length + ")" },
+        { id: "CORE_ENG", label: "Caught by All Models (" + claims.filter((c) => c.group === "CORE_ENG").length + ")" },
+        { id: "NUANCE", label: "Quota & Fail-Open Nuances (" + claims.filter((c) => c.group === "NUANCE").length + ")" }
+      ];
+      let activeGroup = "ALL";
+
+      function drawClaims() {
+        const filtered = activeGroup === "ALL" ? claims : claims.filter((c) => c.group === activeGroup);
+        const tbody = document.getElementById("claims-tbody");
+        tbody.replaceChildren(
+          ...filtered.map((c) => {
+            const isFlipped = c.group === "NEW_OPUS";
+            const voteNode = isFlipped
+              ? el("span", { className: "pill-info", textContent: "Seat 1 flipped in Stage 2" })
+              : el("span", { className: "pill-pass", textContent: "3/3 Unanimous" });
+
+            const td1 = el("td", null, [
+              el("div", { style: "margin-bottom:4px;" }, [
+                el("span", { className: "gc-code", textContent: c.id || "" })
+              ]),
+              el("div", { style: "font-size:12px; color:#5f6368; margin-bottom:5px;", textContent: c.source || "" }),
+              el("div", null, [voteNode])
+            ]);
+            const td2 = el("td");
+            td2.appendChild(buildFormattedFragment(c.v1Claim || ""));
+            const td3 = el("td");
+            td3.appendChild(buildFormattedFragment(c.reality || ""));
+            const td4 = el("td");
+            td4.appendChild(buildFormattedFragment(c.fix || ""));
+            return el("tr", null, [td1, td2, td3, td4]);
+          })
+        );
+      }
+
+      function drawFilters() {
+        filterBar.replaceChildren(
+          ...groups.map((g) => {
+            const btn = el("button", {
+              type: "button",
+              className: "gc-filter-btn" + (g.id === activeGroup ? " active" : ""),
+              textContent: g.label
+            });
+            btn.addEventListener("click", () => {
+              activeGroup = g.id;
+              drawFilters();
+              drawClaims();
+            });
+            return btn;
+          })
+        );
+      }
+      drawFilters();
+      drawClaims();
+
+      // Render STE100 Before/After Samples (supports both canonical s.v1Text + s.lines and legacy s.v1_text + s.v2_bullets)
+      const steRows = (Array.isArray(data.ste100_rewrites) ? data.ste100_rewrites : []).slice(0, 5);
+      const steTbody = document.getElementById("ste100-tbody");
+      if (steRows.length > 0) {
+        steTbody.replaceChildren(
+          ...steRows.map((s) => {
+            const headerBadgeText = s.v1Stats
+              ? String(s.v1Stats)
+              : String(s.v1_words || "42w") + " \u00b7 " + String(s.title || s.section || "Draft");
+            const originalText = s.v1Text || s.v1_text || "";
+            const bulletItems = Array.isArray(s.lines)
+              ? s.lines.map((ln) => "[" + String(ln.type || "D") + "] (" + String(ln.words || 0) + "w) " + String(ln.text || ""))
+              : Array.isArray(s.v2_bullets)
+                ? s.v2_bullets.map((b) => String(b))
+                : [];
+
+            const leftTd = el("td", null, [
+              el("div", { style: "margin-bottom:4px;" }, [
+                el("span", { className: "pill-fail", textContent: headerBadgeText })
+              ]),
+              s.title ? el("div", { style: "font-weight:500; margin-bottom:4px;", textContent: s.title }) : null,
+              el("div", { style: "color:#5f6368;" }, [buildFormattedFragment(originalText)])
+            ]);
+
+            const rightTd = el("td", null, [
+              el("div", { style: "margin-bottom:4px;" }, [
+                el("span", { className: "pill-pass", textContent: s.steStats || "STE100 Compliant" })
+              ]),
+              el(
+                "div",
+                null,
+                bulletItems.map((bText) => {
+                  const rowDiv = el("div", { style: "margin-bottom:3px;" }, ["\u2022 "]);
+                  rowDiv.appendChild(buildFormattedFragment(bText));
+                  return rowDiv;
+                })
+              )
+            ]);
+            return el("tr", null, [leftTd, rightTd]);
+          })
+        );
+      } else {
+        steTbody.replaceChildren(
+          el("tr", null, [
+            el("td", null, [
+              el("span", { className: "pill-fail", textContent: "68 words \u00b7 Email \u00a713" }),
+              el("div", {
+                style: "color:#5f6368; margin-top:4px;",
+                textContent: "When a claims adjuster uploads a PDF containing an SSN, Cloud SDP masks the SSN inline as [SSN-MASKED] and forwards the sanitized file to the model."
+              })
+            ]),
+            el("td", null, [
+              el("span", { className: "pill-pass", textContent: "2 sentences \u00b7 14w & 12w" }),
+              el("div", { style: "margin-top:4px;" }, [
+                buildFormattedFragment("\u2022 [D] (14w) UploadSessionFile blocks the entire file upload when Cloud SDP detects a configured InfoType.")
+              ]),
+              el("div", { style: "margin-top:3px;" }, [
+                buildFormattedFragment("\u2022 [P] (12w) Remove sensitive fields from session files before uploading them to Gemini Enterprise.")
+              ])
+            ])
+          ])
+        );
+      }
+
+      // Render Gatekeeper Checks
+      const gkTbody = document.getElementById("gatekeeper-tbody");
+      const gates = [
+        { name: "1. Secret & Internal URL Scanner", pill: "pill-pass", status: "PASS", detail: "0 API keys, private keys, or internal-only hostnames detected." },
+        { name: "2. ASD-STE100 Readability Linter", pill: "pill-pass", status: "PASS (50/50)", detail: "All 50 rewritten sentences pass active-voice and word-cap checks (avg 11.5w)." },
+        { name: "3. Code-to-README Consistency", pill: "pill-pass", status: "PASS", detail: "All CLI flags and script paths in SKILL.md match scripts/*.py." },
+        { name: "4. Stage 2 Council Consensus Gate", pill: "pill-fail", status: "HOLD (4.5/10)", detail: "14 send-blocking contradictions require fixes before sending to customer." }
+      ];
+      gkTbody.replaceChildren(
+        ...gates.map((g) =>
+          el("tr", null, [
+            el("td", null, [el("b", { textContent: g.name })]),
+            el("td", null, [el("span", { className: g.pill, textContent: g.status })]),
+            el("td", { textContent: g.detail })
+          ])
+        )
+      );
+    })();
+  </script>
+</body>
+</html>

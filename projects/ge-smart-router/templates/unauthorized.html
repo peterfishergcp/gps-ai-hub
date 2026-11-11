@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Gemini Enterprise Smart Router</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 24px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            max-width: 520px;
+            width: 100%;
+            padding: 36px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 500;
+            margin: 0 0 8px 0;
+            color: #202124;
+        }
+        p.subtitle {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 0 0 28px 0;
+        }
+        .account-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            box-sizing: border-box;
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            text-decoration: none;
+            color: #202124;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .account-btn:hover {
+            background-color: #f8f9fa;
+            border-color: #1a73e8;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.15);
+        }
+        .account-info {
+            text-align: left;
+        }
+        .account-email {
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+        }
+        .account-badge {
+            font-size: 12px;
+            color: #1a73e8;
+            margin-top: 2px;
+        }
+        .arrow {
+            color: #5f6368;
+            font-size: 18px;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #80868b;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #dadce0;
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+        .custom-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .custom-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .custom-input:focus {
+            border-color: #1a73e8;
+        }
+        .submit-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 18px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #1557b0;
+        }
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #1a73e8;
+            color: #ffffff;
+            border: 1px solid #1a73e8;
+            border-radius: 8px;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+            transition: background-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 24px;
+        }
+        .google-btn:hover {
+            background-color: #1557b0;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+        }
+        .google-icon-wrapper {
+            background: #ffffff;
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .google-icon {
+            width: 18px;
+            height: 18px;
+        }
+        .info-box {
+            background-color: #e8f0fe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #1967d2;
+            text-align: left;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">✨</div>
+        <h1>Gemini Enterprise Smart Router</h1>
+        <p class="subtitle">Authenticate with your organization credentials:</p>
+
+        <!-- Real Google Account Sign-In -->
+        <a href="/auth/login" class="google-btn">
+            <div class="google-icon-wrapper">
+                <svg class="google-icon" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+            </div>
+            <span>Sign in with Google Workspace</span>
+        </a>
+
+        <div class="divider">or test simulated roles (Demo Mode)</div>
+
+        <!-- Pre-configured demo accounts -->
+        <a href="/login?email=user@example.com" class="account-btn">
+            <div class="account-info">
+                <div class="account-email">user@example.com</div>
+                <div class="account-badge">⚡ Auto-Redirect → Instance 1 (Operations & General Hub)</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <a href="/login?email=admin@example.com" class="account-btn" style="border-color: #1a73e8; background-color: #f8fbff;">
+            <div class="account-info">
+                <div class="account-email">admin@example.com</div>
+                <div class="account-badge" style="color: #1557b0; font-weight: 500;">✨ Multi-App Access → Opens Enterprise Launchpad</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <a href="/login?email=exec-admin@example.com" class="account-btn">
+            <div class="account-info">
+                <div class="account-email">exec-admin@example.com</div>
+                <div class="account-badge">⚡ Auto-Redirect → Instance 2 (Restricted Exec & Finance)</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <a href="/login?email=unauthorized-contractor@partner.com" class="account-btn" style="border-color: #fad2cf; background-color: #fffbfa;">
+            <div class="account-info">
+                <div class="account-email">unauthorized-contractor@partner.com</div>
+                <div class="account-badge" style="color: #c5221f;">⛔ Denied → Triggers 403 Forbidden Access Denied</div>
+            </div>
+            <span class="arrow">➔</span>
+        </a>
+
+        <div class="divider">or test any custom email</div>
+
+        <form action="/login" method="GET" class="custom-form">
+            <input type="email" name="email" class="custom-input" placeholder="user@example.com" required>
+            <button type="submit" class="submit-btn">Continue</button>
+        </form>
+
+        <div class="info-box">
+            💡 <strong>Architecture Note:</strong> When accessed behind a <strong>Google Cloud Application Load Balancer with Identity-Aware Proxy (IAP)</strong>, this screen is bypassed automatically. IAP authenticates the user via Google Workspace / Cloud Identity SSO and the router seamlessly forwards to the authorized instance.
+        </div>
+    </div>
+</body>
+</html>

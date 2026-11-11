@@ -1,0 +1,17 @@
+#!include:.gitignore
+.env
+.archiver_private_key.pem
+archiver_jwks.json
+.purview_token_cache.json
+*.pem
+*.key
+*.jsonl
+.tmp*
+*.backup.json
+.git
+__pycache__/
+*.pyc
+.DS_Store
+portal/
+sites-search-agent/
+

@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.git/
+.gitignore
+*.log
+*.pem
+*.key
+README.md
+deploy.sh
+grant_site_permissions.sh
+test_local.sh

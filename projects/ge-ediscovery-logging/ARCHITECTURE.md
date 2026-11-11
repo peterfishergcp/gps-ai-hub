@@ -1,0 +1,278 @@
+# Technical Architecture & Production Hardening Guide
+
+> **Disclaimer**: This repository and its contents are provided for illustration and educational purposes only as example code. This is not an official Google product or officially supported Google Cloud project. This code is provided as-is for demonstration purposes and is NOT intended or supported for production workloads. The views, code, and opinions expressed in this repository are those of the author(s) and do not necessarily reflect the position, opinions, or official policy of Google LLC or Google Cloud Platform.
+
+---
+
+## 1. Discovery Engine Session & File API Contracts
+
+### 1.1 Per-User Session Ownership Enforcement
+In Gemini Enterprise engines backed by **Workforce Identity Federation (WIF)**, every session (`projects/{project}/locations/{location}/collections/default_collection/engines/{engine}/sessions/{session}`) stores the creating user's federated principal (`userIamPrincipal`).
+
+When any caller invokes:
+- `GET /v1alpha/{session_name}?includeAnswerDetails=true`
+- `GET /v1/{session_name}:downloadFile?file_id={file_id}&alt=media`
+
+Discovery Engine compares the OAuth 2.0 Bearer token's identity against the session's owner. If a Google Cloud IAM Administrator or Service Account calls these endpoints directly, Discovery Engine returns:
+```json
+{
+  "error": {
+    "code": 403,
+    "message": "Session is not owned by the provided user.",
+    "status": "PERMISSION_DENIED"
+  }
+}
+```
+
+### 1.2 Server-Side WIF STS Token Exchange Backed by Google Cloud KMS (`ediscovery-archiver`) & Optional DWD Fallback
+Because Workforce Identity Pools map external assertions to Google Cloud federated principals based on the pool-level subject (`google.subject`), any OIDC provider within the **same** Workforce Identity Pool (`locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>`) that maps `google.subject = assertion.sub` produces the **exact same federated principal** (`principal://iam.googleapis.com/locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>/subject/<USER_SUBJECT>`).
+
+`setup_ediscovery_archiver_provider.py` provisions:
+1. A **Google Cloud KMS Asymmetric Signing Key** (`projects/<YOUR_GCP_PROJECT_ID>/locations/us-central1/keyRings/ge-ediscovery-kr/cryptoKeys/ediscovery-archiver-jwt-key`, algorithm `RSA_SIGN_PKCS1_2048_SHA256`).
+2. An offline JWKS (`archiver_jwks.json`, `kid: "archiver-kms-key-1"`) extracted from the Cloud KMS public key and registered on the `ediscovery-archiver` OIDC provider.
+
+At runtime, `ge_harvest.py` computes the SHA-256 digest of the JWT signing input (`header.payload`), calls `projects.locations.keyRings.cryptoKeys.cryptoKeyVersions.asymmetricSign` via IAM-authenticated HTTPS, and performs an RFC 8693 OAuth 2.0 Token Exchange against `https://sts.googleapis.com/v1/token` for each session owner discovered in Cloud Logging. **No private key ever exists on disk or inside the Cloud Run container.**
+
+For hybrid environments that also run Google Workspace / Cloud Identity engines (`user:alice@corp.com`), `ge_harvest.py` includes an automatic keyless **Google Workspace Domain-Wide Delegation (DWD)** fallback (`mint_dwd_token()`) via `iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/{DWD_SA_EMAIL}:signJwt` when `DWD_SA_EMAIL` is configured.
+
+### 1.3 Session File Upload (`:uploadFile`), Download (`:downloadFile`), Magic-Byte Inspection & Interactive Canvas Slide Deck Compilation
+- **Upload (`USER_PROVIDED`)**:
+  ```http
+  POST https://{location}-discoveryengine.googleapis.com/upload/v1alpha/{session_name}:uploadFile
+  Authorization: Bearer <WIF_STS_TOKEN>
+  X-Goog-User-Project: <YOUR_GCP_PROJECT_ID>
+  X-Goog-Upload-Protocol: raw
+  X-Goog-Upload-File-Name: <FILENAME>
+  X-Goog-Upload-Header-Content-Type: <MIME_TYPE>
+  Content-Type: <MIME_TYPE>
+  ```
+- **Download (`USER_PROVIDED` & `AI_GENERATED`)**:
+  ```http
+  GET https://{location}-discoveryengine.googleapis.com/v1/{session_name}:downloadFile?file_id={file_id}&alt=media
+  Authorization: Bearer <WIF_STS_TOKEN>
+  X-Goog-User-Project: <YOUR_GCP_PROJECT_ID>
+  ```
+- **Magic-Byte MIME & Extension Detection (`detect_mime_and_extension`)**:
+  Discovery Engine frequently returns `application/octet-stream` for AI-generated artifacts or extensionless file IDs. Before uploading to Cloud Storage or writing to BigQuery, `ge_harvest.py` inspects the leading magic bytes of every downloaded binary payload to automatically classify `.pdf` (`%PDF-`), `.png` (`\x89PNG`), `.jpg` (`\xff\xd8\xff`), `.webp` (`RIFF....WEBP`), `.gif` (`GIF8`), `.wav` (`RIFF....WAVE`), `.mp3` (`ID3` / `\xff\xfb`), `.mp4` (`ftyp`), `.docx` / `.xlsx` / `.pptx` (PK ZIP headers + internal Office XML paths), and `.html`.
+- **Interactive Canvas Slide Deck Compilation (`extract_canvas_slides`)**:
+  When a user creates a presentation inside Gemini Enterprise Canvas, Discovery Engine records a `save_slides_to_artifact` tool call inside `detailedAssistAnswer.replies[]` rather than storing a binary file in `:listFiles`. `ge_harvest.py` extracts all slides from `save_slides_to_artifact`, compiles them into a standalone, self-contained HTML presentation (`text/html` with keyboard navigation and print/PDF styling), computes `SHA-256` and `CRC32C` digests, and archives the presentation under `AI_GENERATED`.
+
+### 1.4 NotebookLM Enterprise Observability, 12-Modality Studio Harvesting & Scotty Media Download Contracts
+Unlike standard Gemini Enterprise chat engines (`engines/*`), **NotebookLM Enterprise** is configured at the **Project level** and uses a dedicated Cloud Logging stream and `v1alpha` REST resource hierarchy:
+
+1. **Project-Level Sensitive Logging Configuration**:
+   `enable_ge_sensitive_logging.py` patches `projects/{project}/locations/{location}` (`global`, `us`, `eu`) with `updateMask=customerProvidedConfig.notebooklmConfig.observabilityConfig`:
+   ```http
+   PATCH https://{location}-discoveryengine.googleapis.com/v1alpha/projects/<YOUR_GCP_PROJECT_ID>
+   Content-Type: application/json
+
+   {
+     "customerProvidedConfig": {
+       "notebooklmConfig": {
+         "observabilityConfig": {
+           "observabilityEnabled": true,
+           "sensitiveLoggingEnabled": true
+         }
+       }
+     }
+   }
+   ```
+2. **Cloud Logging Stream (`discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity`)**:
+   - `NotebookService.GenerateFreeFormStreamed`: Captures `userIamPrincipal`, `request.name` (`projects/{num}/locations/{loc}/notebooks/{id}`), `request.userQuery` (the exact user prompt), and cumulative streamed chunks in `serviceTextReply` (which `ge_harvest.py` deduplicates and reassembles via `clean_notebooklm_streamed_reply()`).
+   - `NotebookService.CreateNotebook` / `GetNotebook`: Captures `response.name` and `response.title`.
+   - `SourceService.BatchCreateSources`: Captures `response.sources[]` (`name`, `sourceId.id`, `title`, `settings.status`) and `status.message` (which records attempted external `web_content.url` values when URL ingestion fails).
+   - `AudioOverviewService.*` / `NotebookService.CreateNote` / `NotebookService.MutateNote`: Captures NotebookLM Studio artifact creation and studio note updates.
+3. **Per-User WIF STS Notebook, Source & 12-Modality Studio Discovery**:
+   Because private notebooks (`isShared: false`) are owned by the creating WIF user, `ge_harvest.py` mints a short-lived WIF STS token via `ediscovery-archiver` for each active user and calls:
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks:listRecentlyViewed`
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}`
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}/sources/{source_id}` (returning `title`, `metadata.wordCount`, `metadata.tokenCount`, `metadata.sourceAddedTimestamp`, and origin metadata for PDFs, Markdown/text, Google Drive docs, YouTube videos, web URLs, and Agentspace sources).
+   - `GET https://{location}-discoveryengine.googleapis.com/v1alpha/projects/{project}/locations/{location}/notebooks/{notebook_id}/audioOverviews` and `/notes`
+   - **Scotty Media Download (`download_notebook_scotty_media`)**: Downloads binary Studio artifacts (`AUDIO_OVERVIEW` `.mp3`, `VIDEO_OVERVIEW` `.mp4`, `SLIDE_DECK` `.pdf`, `INFOGRAPHIC` `.png`) via:
+     ```http
+     GET https://{location}-discoveryengine.googleapis.com/download/v1alpha/{resource_name}:download?alt=media
+     Authorization: Bearer <WIF_STS_TOKEN>
+     X-Goog-User-Project: <YOUR_GCP_PROJECT_ID>
+     ```
+     and captures structured JSON/Markdown Studio artifacts across all 12 modalities (`AUDIO_OVERVIEW`, `VIDEO_OVERVIEW`, `SLIDE_DECK`, `INFOGRAPHIC`, `REPORT`, `FLASHCARDS`, `QUIZ`, `MIND_MAP`, `STUDY_GUIDE`, `FAQ`, `TIMELINE`, `BRIEFING_DOC`, `STUDIO_NOTE`).
+
+### 1.5 Custom Agent Observability: No-Code Agents vs. ADK Agents
+Enabling `observabilityConfig` on a Gemini Enterprise **Engine** (`engines/{engine_id}`) only enables logging for the default core assistant (`core_assistant`). Each custom agent registered under `engines/{engine_id}/assistants/default_assistant/agents/{agent_id}` has its own independent `observabilityConfig` field:
+
+1. **Per-Agent `observabilityConfig` (`enable_ge_sensitive_logging.py`)**:
+   ```http
+   PATCH https://{location}-discoveryengine.googleapis.com/v1alpha/projects/<YOUR_GCP_PROJECT_ID>/locations/{location}/collections/default_collection/engines/{engine_id}/assistants/default_assistant/agents/{agent_id}?updateMask=observabilityConfig
+   Content-Type: application/json
+
+   {
+     "displayName": "<EXISTING_AGENT_DISPLAY_NAME>",
+     "description": "<EXISTING_AGENT_DESCRIPTION>",
+     "observabilityConfig": {
+       "observabilityEnabled": true,
+       "sensitiveLoggingEnabled": true
+     }
+   }
+   ```
+   - **No-Code Agents (`lowCodeAgentDefinition`)**:
+     - Emits outer user activity logs (`StreamAssist` with `response.agentInfo.spiffeId` and `request.query.parts[0].text`) to `discoveryengine.googleapis.com/gemini_enterprise_user_activity`.
+     - Emits full OpenTelemetry GenAI inference details to `discoveryengine.googleapis.com/gen_ai.client.inference.operation.details` (`resource.type="discoveryengine.googleapis.com/Agent"`), including full system instructions, tool declarations (`transfer_to_agent`, `docgen_agent`), `gen_ai.input.messages`, `gen_ai.output.messages`, and exact token counts (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.reasoning.output_tokens`).
+     - When a No-Code Agent delegates PDF creation to `docgen_agent`, Discovery Engine writes an `AddContextFile` entry against the **Session** (`sessions/{session_id}`) containing `fileId`, `fileName`, `mimeType`, and `byteCount` ~2ms before the `StreamAssist` entry. Both `ge_harvest.py` (which downloads the PDF binary via `:downloadFile` to GCS) and the real-time BigQuery view `v_realtime_agent_and_file_activity` correlate these two events by `session_id`.
+   - **ADK Agents (`adkAgentDefinition` -> Vertex AI Agent Engine `ReasoningEngine`)**:
+     - Enabling `observabilityConfig` on the Gemini Enterprise Agent registration captures the outer user prompt and final response returned to Gemini Enterprise in `gemini_enterprise_user_activity` and `GetSession`.
+     - To also capture **un-redacted internal LLM prompts, tool calls, and sub-agent steps** inside `aiplatform.googleapis.com/reasoning_engine_stdout` (`gen_ai.user.message` / `gen_ai.choice`), the Vertex AI `ReasoningEngine` deployment must set **both** environment variables in `deploymentSpec.env`:
+       - `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"`
+       - `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"` *(if omitted, internal ADK logs scrub message text to `{"content": "<elided>"}`)*.
+
+---
+
+## 2. Cloud Storage Archive Layout & Self-Contained Compliance Review Portal (`portal/`)
+
+### 2.1 Cloud Storage Archive Hierarchy
+All harvested artifacts are stored in `gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery` with **Uniform Bucket-Level Access (UBLA)** and **Object Versioning** enabled:
+
+```text
+gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery/
+├── sessions/
+│   └── <ENGINE_ID>/
+│       └── <SESSION_ID>/
+│           └── session_transcript_<SHA256_PREFIX>.json  # Content-addressed GetSession?includeAnswerDetails=true JSON
+├── files/
+│   └── <ENGINE_ID>/
+│       └── <SESSION_ID>/
+│           ├── USER_PROVIDED/
+│           │   └── <FILE_ID>_<SANITIZED_FILENAME>
+│           └── AI_GENERATED/
+│               ├── <FILE_ID>_<SANITIZED_FILENAME>
+│               └── canvas_slides_<ANSWER_ID>_canvas_presentation.html
+└── notebooks/
+    └── <LOCATION>/
+        └── <NOTEBOOK_ID>/
+            ├── notebook_archive_<SHA256_PREFIX>.json    # Content-addressed Notebook metadata, enriched sources[], studio_artifacts[], and turns
+            └── studio/
+                └── <ARTIFACT_ID>.(mp3|mp4|pdf|png|json|md)
+```
+
+Each file record written into `conversation_turns.files` in BigQuery includes both **SHA-256** (hex) and **RFC 3720 CRC32C** (base64, matching Google Cloud Storage's native object checksum) to guarantee cryptographic chain-of-custody verification.
+
+### 2.2 Self-Contained Compliance & Legal Brief Narrative Review Portal (`ge-ediscovery-portal`)
+`portal/` and `deploy_portal.py` package the React 18 Legal Brief Narrative UI (`portal/src/`) and a lightweight Python HTTP API server (`portal/server.py`) into a single multi-stage container (`portal/Dockerfile`) deployed to Cloud Run (`ge-ediscovery-portal`, `--no-allow-unauthenticated`):
+- `GET /api/logs`: Queries `<PROJECT_ID>.ge_ediscovery.conversation_turns` and returns structured `processed_logs`, `notebook_sources`, `notebook_chat`, and `notebook_studio` arrays mapped to the Legal Brief Narrative schema (including `sha256` and `crc32c` integrity checksums on every input/output asset).
+- `GET /api/search?q=<QUERY>&source=all|ge_core|notebooks`: Executes parameterized BigQuery `UNNEST(files)` / substring searches across prompts, responses, reasoning traces, and file names without SQL injection risk.
+- `GET /api/media?uri=gs://<BUCKET>/<OBJECT>`: Enforces strict bucket allowlisting (`gs://<PROJECT_ID>-ge-ediscovery/`), resolves missing file extensions, and streams binary PDFs, images, HTML slide decks, audio overviews, and video overviews directly from Cloud Storage with HTTP `Range` (`206 Partial Content`) support for browser media scrubbing.
+
+### 2.3 Microsoft Purview eDiscovery & DSPM for AI Integration (`purview_connector.py`)
+When `purview_connector.py` is configured (either via Entra App Registration `MS_TENANT_ID` + `MS_CLIENT_ID` + `MS_CLIENT_SECRET` or OAuth 2.0 Device Code refresh token), `ge_harvest.py` (or standalone `python3 purview_connector.py`) forwards every harvested turn to Microsoft 365 via two Graph tracks:
+
+1. **Track 1 — Exchange Online Custodian Substrate (`push_turn_to_purview_ediscovery_mailbox`)**:
+   - **UUID-to-UPN Resolution (`resolve_custodian_upn`)**: Automatically resolves Workforce Identity `user_iam_principal` values whether the OIDC provider maps `google.subject` to an email UPN (`assertion.upn`) or an Entra Object ID GUID (`assertion.oid`, resolved via `/v1.0/users/{uuid}` or `PURVIEW_TARGET_CUSTODIAN_UPN`).
+   - **Dedicated Compliance Folder & Idempotent Deduplication**: Ensures a `Gemini Enterprise eDiscovery` folder exists in the custodian's mailbox (`GET/POST /v1.0/users/{upn}/mailFolders`) and checks `internetMessageId eq '<ge-ediscovery-{engine_id}-{session_id}-turn-{turn_index}@gemini.cloud.google.com>'` before inserting so repeated sweeps never create duplicate items.
+   - **MAPI Extended Properties & Custom Headers**: Stamps `singleValueExtendedProperties` (`String 0x001A` = `IPM.Note.Google.GeminiEnterprise`, `SystemTime 0x0E06` = `event_timestamp`, `Integer 0x0E07` = `1` sent/read state) and `internetMessageHeaders` (`X-GE-Engine-ID`, `X-GE-Session-ID`, `X-GE-Turn-Index`, `X-GE-Custodian-Principal`, `X-GE-Model-Name`, `X-GE-GCS-Transcript-URI`).
+   - **HTML Legal Brief + Native Binary `#microsoft.graph.fileAttachment` Payloads**: Renders the full prompt, internal reasoning trace (`thought_text`), model response, and SHA-256/CRC32C chain-of-custody table into the HTML body, and downloads each `USER_PROVIDED` and `AI_GENERATED` binary file from Cloud Storage to attach directly as a `#microsoft.graph.fileAttachment` (`contentBytes`, `contentType`, `name`). In **Purview eDiscovery Review Sets**, reviewers can inspect the HTML Legal Brief and preview/download attached PDFs and images side-by-side.
+2. **Track 2 — Purview DSPM for AI & Audit (`push_turn_to_purview_process_content`)**:
+   - Invokes `POST https://graph.microsoft.com/v1.0/users/{upn}/dataSecurityAndGovernance/processContent` with `#microsoft.graph.processConversationMetadata`, submitting the user prompt (`activity: "uploadText"`), model response (`activity: "downloadText"`), `sequenceNumber`, `isTruncated: false`, and `accessedResources_v2` (mapping every attached GCS file URI, status, and policy action).
+
+---
+
+## 3. Architectural Considerations, Edge Cases & Production Hardening
+
+When deploying this reference architecture into a regulated enterprise environment, review the following operational considerations and hardening recommendations:
+
+### 3.1 Real-Time Event-Driven Cloud Run Pipeline (`<10s` Latency)
+- **Scenario**: A user uploads a sensitive file or generates a PDF/image and immediately deletes the chat session in the Gemini Enterprise UI.
+- **Architecture (`deploy_cloudrun_harvester.py` + `cloudrun_harvester_server.py`)**:
+  - **Cloud Logging Sink (`ge-ediscovery-pubsub-sink`)** routes matching `StreamAssist`, `UploadSessionFile`, `AddContextFile`, `GenerateFreeFormStreamed`, `BatchCreateSources`, and `CreateNotebook` log entries in real time to **Cloud Pub/Sub (`ge-ediscovery-events`)**. *(Note: `GetNotebook` is intentionally excluded from the Pub/Sub sink filter to prevent recursive harvesting loops).*
+  - **Authenticated Pub/Sub Push (`ge-ediscovery-push-sub`)** pushes each log entry with an OIDC Bearer token (`ge-ediscovery-harvester-sa@<YOUR_GCP_PROJECT_ID>.iam.gserviceaccount.com`) to `POST https://ge-ediscovery-harvester-...run.app/pubsub`.
+  - **Targeted Single-Session Harvest (`harvest_single_event`)**: Instead of scanning all historical logs, the Cloud Run service extracts the exact `session_id` or `notebook_id` from the Pub/Sub event, signs a WIF JWT via Cloud KMS `:asymmetricSign`, downloads the session transcript and binary files via `:downloadFile` to GCS, and runs a parameterized BigQuery `DELETE` + multipart `LOAD` job in **~6–10 seconds**.
+
+### 3.2 Identity Scope: Workforce Identity (`WIF`) vs. Google Workspace / Cloud Identity Users
+- **Scenario**: An engine uses **Google Workspace / Cloud Identity** (`user:alice@corp.com`) instead of Workforce Identity Federation (`principal://iam.googleapis.com/locations/global/workforcePools/...`).
+- **Impact**: The `ediscovery-archiver` custom OIDC provider can only mint STS tokens for subjects inside its Workforce Identity Pool (`<YOUR_WORKFORCE_POOL_ID>`). It cannot impersonate native Google Workspace accounts.
+- **Mitigation**: Keep all compliance-regulated Gemini Enterprise engines bound to Workforce Identity Federation, or use Google Workspace Domain-Wide Delegation (DWD) if Workspace users must be harvested.
+
+### 3.3 Hardware-Backed Key Custody via Google Cloud KMS (`asymmetricSign`)
+- **Scenario**: The `ediscovery-archiver` OIDC provider trusts JWTs signed by its registered RSA keypair to mint WIF tokens for Workforce Pool subjects.
+- **Mitigation Implemented**:
+  1. `setup_ediscovery_archiver_provider.py` provisions an asymmetric signing key (`ediscovery-archiver-jwt-key`, `RSA_SIGN_PKCS1_2048_SHA256`) inside **Google Cloud KMS** (`ge-ediscovery-kr`).
+  2. The private key material never leaves Google Cloud KMS hardware/software modules and is never written to disk or packaged into the Cloud Run container image (`.gcloudignore` also explicitly blocks `*.pem`).
+  3. Only the dedicated `ge-ediscovery-harvester-sa` service account holds `roles/cloudkms.signerVerifier` on `ediscovery-archiver-jwt-key`, and every `asymmetricSign` call is recorded in Cloud Audit Logs.
+
+### 3.4 Third-Party / Federated Connector Citations (SharePoint, Jira, Outlook, WorkIQ MCP)
+- **Scenario**: A user asks Gemini Enterprise a question grounded in a federated connector (e.g., SharePoint Online, Outlook, or a custom MCP server) rather than uploading a local file via the `+` button.
+- **Impact**:
+  - `:uploadFile` / `:downloadFile` only stores **session-scoped binary files** (files uploaded directly into the chat session or generated by tools like Imagen).
+  - Documents retrieved via a connector are returned as **grounded citations / text chunks** inside `detailedAssistAnswer.replies[].groundedContent`—not as downloadable session `fileId` binaries.
+- **Mitigation**: `ge_harvest.py` archives the **entire raw `GetSession` JSON** (`session_transcript_<SHA256_PREFIX>.json`) to GCS, which preserves the exact grounded text snippets and source URLs cited during that turn.
+
+### 3.5 Streaming Interruptions or Partial/Failed Turns
+- **Scenario**: A user clicks "Stop generating" mid-response, or an upload fails (e.g., unsupported file type or network drop).
+- **Impact**:
+  - Failed uploads emit an `UploadSessionFile` log entry with `severity=ERROR` or a non-zero `status.code` and no valid `fileId` (which `ge_harvest.py` filters out).
+  - Aborted streaming turns may appear in the raw Cloud Logging table without a final `serviceTextReply`.
+
+### 3.6 Multi-Turn File Attribution in `GetSession`
+- **Scenario**: A user uploads 3 files in Turn 1, and then uploads 1 more file in Turn 4 of the same session.
+- **Impact**: Discovery Engine's `UploadSessionFile` log records that the file was uploaded to `sessions/{sessionId}` at timestamp $T$, rather than explicitly binding it to a `queryId`.
+- **Mitigation**: If exact turn-level file attribution is required for multi-upload sessions, correlate `UploadSessionFile.timestamp` against each turn's `createTime` in `detailedAssistAnswer.replies[]`.
+
+### 3.7 Cloud Storage WORM Retention (SEC 17a-4 / FINRA Compliance)
+- **Scenario**: A regulatory audit requires proof that neither users nor administrators could alter or delete archived files in `gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery`.
+- **Mitigation**: Configure a **Bucket Retention Policy** (`gcloud storage buckets update gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery --no-versioning --retention-period=7y`) and optionally apply an irreversible WORM lock (`gcloud storage buckets update gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery --lock-retention-period`) via `setup_storage_and_bigquery.py --retention-period=7y --lock-retention-period` for strict SEC Rule 17a-4(f) / FINRA WORM compliance.
+
+### 3.8 Bidirectional Live Voice / Audio (`bi-directional-audio`) Governance
+- **Scenario**: Unlike text/multimodal chat (`StreamAssist`) and NotebookLM Enterprise (`GenerateFreeFormStreamed`), real-time WebRTC/WebSocket **Bidirectional Live Voice** (`features.bi-directional-audio`) streams raw PCM audio frames directly to the model without persisting a downloadable `.wav` or text transcript inside `GetSession`.
+- **Mitigation**: For regulated user populations subject to strict 100% communication retention (e.g., SEC Rule 17a-4 / FINRA), disable the `bi-directional-audio` feature flag on the Gemini Enterprise engine (`features: {"bi-directional-audio": "FEATURE_STATE_OFF"}`) so all interactions are forced through auditable text/file `StreamAssist` turns and NotebookLM Enterprise logs.
+
+### 3.9 Handling `<elided>` User Principals (Engines Created Before `sensitiveLoggingEnabled: true`)
+- **Scenario**: A new Gemini Enterprise engine is created with `observabilityEnabled: true` while `sensitiveLoggingEnabled` is initially `false`. Any `StreamAssist` turn executed before `sensitiveLoggingEnabled` is enabled emits `"userIamPrincipal": "<elided>"` and `"serviceTextReply": "<elided>"` in Cloud Logging.
+- **Mitigation Implemented in `ge_harvest.py`**:
+  1. Even when Cloud Logging records `"<elided>"`, Discovery Engine's `GetSession?includeAnswerDetails=true` endpoint still retains the full unredacted conversation turns under the owning user's Workforce Identity subject.
+  2. `ge_harvest.py` automatically strips `"<elided>"` and probes candidate principals (`FALLBACK_PRINCIPALS` / recent non-elided principals) against `GetSession` to resolve the real session owner and harvest the complete unredacted session.
+  3. If a session remains permanently unowned or deleted (`HTTP 403` / `404` across all candidate principals), `harvest_session()` logs a warning and returns `200 OK` so the Pub/Sub push subscription (`ge-ediscovery-push-sub`) acknowledges the message instead of entering a `500` retry loop.
+
+### 3.10 Preventing Spoliation: Custom No-Delete Role (`geUserNoDelete`), Two-Layer Delete-Guard Sync & Dead-Letter Queue (`ge-ediscovery-dlq`)
+- **Scenario**: Even with a `<10s` event-driven Cloud Run harvester, raw file bytes (`:downloadFile`) and $>64\text{ KiB}$ untruncated conversation turns (`GetSession`) exist only inside the user's Discovery Engine session until harvested. A user granted the standard `roles/discoveryengine.user` predefined role could call `DeleteSession` or delete a chat in the Gemini Enterprise UI within 1–2 seconds of sending a prompt. Furthermore, because `roles/discoveryengine.user` is a Google-managed predefined role, Google periodically adds new permissions to it as new Gemini Enterprise and NotebookLM features launch.
+- **Mitigation Implemented (`setup_no_delete_role.py`, `sync_no_delete_role.py`, `scripts/swap-user-role.sh`, `scripts/sync-custom-role.sh`, `scripts/verify.sh`, `scripts/replay-dlq.sh`)**:
+
+```mermaid
+flowchart TD
+    subgraph Predefined["Google-Managed Predefined Role"]
+        P["roles/discoveryengine.user\n(Periodically updated by Google)"]
+        T["Project Testable Permissions\n(permissions:queryTestablePermissions)"]
+    end
+
+    subgraph Guard["Two-Layer Delete-Guard (sync_no_delete_role.py)"]
+        L1["Layer 1: Explicit Denylist\n• discoveryengine.sessions.delete\n• discoveryengine.sessions.removeContextFile\n• discoveryengine.conversations.delete"]
+        L2["Layer 2: Heuristic Regex Guard\nBlocks any new *.delete / *.remove* / *.purge*\non sessions, conversations, turns, files, or messages\n(unless --allow-heuristic-deletes is passed)"]
+    end
+
+    subgraph Custom["Project Custom Role & Non-Authoritative Swap"]
+        CR["projects/<PROJECT_ID>/roles/geUserNoDelete\n(All safe user permissions, 0 session/file delete perms)"]
+        SWAP["scripts/swap-user-role.sh\n1. Additively bind geUserNoDelete to WIF Pool\n2. Backup IAM Policy JSON\n3. Remove roles/discoveryengine.user ONLY from WIF Pool"]
+        RB["1-Command Rollback (--rollback)\nRestores roles/discoveryengine.user"]
+    end
+
+    P --> Guard
+    T --> Guard
+    L1 --> L2
+    L2 -->|"Safe Candidate Permissions\n(--apply to patch)"| CR
+    CR --> SWAP
+    SWAP -.->|"Reversible"| RB
+```
+
+  1. **Dynamic Custom Role (`projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete`)**: Queries `iam.googleapis.com/v1/roles/discoveryengine.user` and intersects its permissions with `permissions:queryTestablePermissions` for the project, removing:
+     - `discoveryengine.sessions.delete`
+     - `discoveryengine.sessions.removeContextFile`
+  2. **Two-Layer Delete-Guard Drift Detection & Synchronization (`sync_no_delete_role.py` & `scripts/sync-custom-role.sh`)**:
+     - Compares the live `roles/discoveryengine.user` permission set against `projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete`.
+     - **Layer 1 (Explicit Denylist)**: Always blocks `discoveryengine.sessions.delete`, `discoveryengine.sessions.removeContextFile`, and `discoveryengine.conversations.delete`.
+     - **Layer 2 (Heuristic Regex Guard)**: Automatically flags and blocks any newly introduced permission matching `(delete|remove|purge|destroy|erase|expunge)` on `(session|conversation|converse|assist|turn|contextfile|file|message|chat|history)` so Google cannot inadvertently re-enable chat deletion under a new permission name.
+     - Safe new permissions are surfaced in dry-run mode (or `--check` CI mode in `scripts/verify.sh`) and patched into `geUserNoDelete` when invoked with `--apply`.
+  3. **Non-Authoritative Single-Principal Role Swap (`scripts/swap-user-role.sh`)**:
+     - Never uses an authoritative role binding that would strip other members of `roles/discoveryengine.user`, and never deletes custom roles.
+     - First additively grants `projects/<YOUR_GCP_PROJECT_ID>/roles/geUserNoDelete` to the Workforce Identity Pool principal (`principalSet://iam.googleapis.com/locations/global/workforcePools/<YOUR_WORKFORCE_POOL_ID>/*`).
+     - Saves a timestamped JSON backup of the project IAM policy (`iam-policy-<PROJECT_ID>-<TIMESTAMP>.backup.json`) and removes `roles/discoveryengine.user` **only** from that target member (`--apply`), with 1-command restoration via `--rollback`.
+     - Because `ge_harvest.py` only requires read permissions (`discoveryengine.sessions.get`, `discoveryengine.sessions.downloadFile`, `discoveryengine.notebooks.get`) when impersonating a WIF user via `mint_sts_token()`, removing the two delete permissions has zero impact on harvesting while blocking user-initiated session deletion with `HTTP 403 PERMISSION_DENIED`.
+  4. **Pub/Sub Dead-Letter Topic (`ge-ediscovery-dlq` + `ge-ediscovery-dlq-hold`)**:
+     - `ge-ediscovery-push-sub` routes any event that fails 10 delivery attempts to `ge-ediscovery-dlq` (retained for 7 days in `ge-ediscovery-dlq-hold`), where operators can inspect or replay messages via `scripts/replay-dlq.sh <PROJECT_ID> --peek|--replay`.
+
+
