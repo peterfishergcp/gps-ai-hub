@@ -28,6 +28,15 @@ Welcome to the **Google Cloud Public Sector AI Hub** reference architecture cata
 
 ---
 
+## 🛠️ Google Antigravity Hands-On Workshop Starter (`./AGY Website Workshop`)
+
+- 🚀 **[Enterprise & Public Sector Hands-On Workshop Starter (`AGENTS.md` + `agy` CLI + Vertex AI ADC)](./AGY%20Website%20Workshop)**:
+  - Turnkey 90-minute customer cohort starter replacing brittle manual setup scripts and static API keys with a repository-root **[`AGENTS.md`](./AGY%20Website%20Workshop/AGENTS.md)** (and [`GEMINI.md`](./AGY%20Website%20Workshop/GEMINI.md)) deployment playbook designed for **Google Cloud Workstations**, **Cloud Shell**, and managed workstations.
+  - Executes a read-only preflight (`scripts/preflight.sh`) on Turn 1 to auto-discover `GOOGLE_CLOUD_PROJECT`, active `gcloud` identity, `aiplatform.googleapis.com` status, `testIamPermissions`, and keyless **Vertex AI Application Default Credentials (ADC)**, then installs workspace-scoped ADK skills (`--workspace`) without global `~/.gemini` symlink races.
+  - Guides participants through **Lab 1** (3-file Mission Web Portal served via a realpath-jailed `127.0.0.1` server with strict CSP headers and zero `innerHTML` sinks), **Lab 2** (keyless `gemini-3.8-flash` ADK agent built with `agents-cli` and tested in `adk web`), and **Lab 3** (multi-agent coordinator + specialist `transfer_to_agent` handoffs).
+
+---
+
 ## 📊 Gemini Enterprise Token Consumption & WIF Usage Telemetry (`./ge-token-tracking`)
 
 - 📈 **[Gemini Enterprise Token Consumption, Model Breakdown & Workforce Identity (WIF) Usage Dashboard](./ge-token-tracking)**:
