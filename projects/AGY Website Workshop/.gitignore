@@ -14,10 +14,12 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Participant-generated workshop lab folders (keep starters/ tracked)
-lab1-mission-portal/
-briefing-coach/
-setup-check/
+# Participant-generated workshop lab folders at root (keep starters/ tracked)
+/lab1-mission-portal/
+/briefing-coach/
+/setup-check/
+/.agents/
+/.agents-cli-spec.md
 
 # OS & editor artifacts
 .DS_Store
