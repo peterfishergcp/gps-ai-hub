@@ -49,9 +49,10 @@ flowchart LR
 | :--- | :--- |
 | [`AGENTS.md`](./AGENTS.md) | Master turnkey bootstrap, security guardrails, and Lab 1–3 execution playbook loaded automatically by Antigravity |
 | [`GEMINI.md`](./GEMINI.md) | Companion entrypoint mirroring `AGENTS.md` across all Antigravity CLI and IDE surfaces |
+| [`guide/`](./guide/) | **Interactive Participant & Facilitator Lab Portal (`127.0.0.1:8082`)** — sticky Core + Bonus `<progress>` tracker, 2-state Light/Dark theme toggle, hidden `?review` Facilitator Mode, CSS `.hl` screenshot callouts + zoom lightbox, `"What good looks like"` verification drawers, Live Synthetic PII Trap (`Test A` → `Test B`), ARIA Role Chooser tabs, 4 packaged `.zip` / `SKILL.md` skills, and Monday-Morning Tool Decision Matrix |
 | [`scripts/preflight.sh`](./scripts/preflight.sh) | Read-only environment, binary, Vertex AI API, IAM (`testIamPermissions`), and ADC discovery check |
 | [`scripts/bootstrap_tools.sh`](./scripts/bootstrap_tools.sh) | Idempotent `agents-cli` check and `--workspace` ADK skills installer (`./.agents/skills/`) |
-| [`scripts/preview_lab1.py`](./scripts/preview_lab1.py) | Hardened `127.0.0.1` loopback static server for Lab 1 (realpath sandbox boundary, dotfile block, strict CSP headers) |
+| [`scripts/preview_lab1.py`](./scripts/preview_lab1.py) | Hardened `127.0.0.1` loopback static server for both `./guide` (`--guide` on port `8082`) and Lab 1 (`--port 8081`) with realpath sandbox boundary, dotfile block, and zero-`'unsafe-inline'` CSP headers |
 | [`templates/briefing-coach.agents-cli-spec.md`](./templates/briefing-coach.agents-cli-spec.md) | Pre-validated Phase 0 ADK specification preventing live-workshop planning stalls |
 | [`starters/lab1-mission-portal/`](./starters/lab1-mission-portal/) | Catch-up reference build for Lab 1 (`index.html`, `styles.css`, `script.js` with zero `innerHTML` DOM sinks) |
 | [`.env.example`](./.env.example) | Keyless Vertex AI configuration template (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `gemini-3.8-flash`) |
@@ -70,8 +71,9 @@ No local laptop installs required: `gcloud` and Python are pre-installed, and br
    git clone git@github.com:cloud-gtm/gps-ai-hub.git
    cd "gps-ai-hub/projects/AGY Website Workshop"
    ```
-3. Launch **Antigravity CLI (`agy`)** (or open this folder in **Antigravity IDE**):
+3. Launch the **Interactive Lab Portal** on `http://127.0.0.1:8082/` (append `?review` for Facilitator Mode) and start **Antigravity CLI (`agy`)** (or open this folder in **Antigravity IDE**):
    ```bash
+   python3 scripts/preview_lab1.py --guide &
    agy
    ```
 

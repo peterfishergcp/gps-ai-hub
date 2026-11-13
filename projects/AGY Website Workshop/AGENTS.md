@@ -60,6 +60,13 @@ cp templates/briefing-coach.agents-cli-spec.md .agents-cli-spec.md
 ```
 *Why `.agents-cli-spec.md` is copied*: Pre-seeding the validated agent spec satisfies Phase 0 of `google-agents-cli-workflow` immediately, preventing multi-minute planning stalls during live workshops while preserving `/plan` review cards.
 
+*Optional — Launch the Interactive Visual Lab Portal (`127.0.0.1:8082`)*:
+If the participant or facilitator asks to open the visual step-by-step lab guide (with screenshot callouts, 1-click Copy buttons, Role Chooser tabs, and `?review` facilitator notes), run:
+```bash
+python3 scripts/preview_lab1.py --guide --port 8082
+```
+and share `http://127.0.0.1:8082/` (or `http://127.0.0.1:8082/?review` for facilitators).
+
 ---
 
 ### Lab 1: Plan, Review & Build a Mission Web Portal (`./lab1-mission-portal/`)
@@ -100,8 +107,9 @@ cp templates/briefing-coach.agents-cli-spec.md .agents-cli-spec.md
    ```
 3. **Implement `briefing_coach` (`./briefing-coach/app/agent.py`)**:
    - Keep `MODEL = "gemini-3.8-flash"`.
+   - Include a **Mandatory Sensitive Data & PII Guardrail** in `root_agent`'s `instruction`: if user input contains personal identifiers or case-level PII (such as names/initials paired with a Case ID, SSN, DOB, or address), halt immediately before calling any tool, list the detected identifiers, and ask the user to replace them with `[REDACTED]`.
    - Replace sample placeholder tools with a deterministic Python tool `build_prep_schedule(minutes: int) -> dict` with a clear docstring explaining that it divides available preparation time into 25-minute focus blocks and 5-minute review breaks.
-   - Configure `root_agent` (`name="briefing_coach"`) as a concise executive & operational briefing coach: explain any topic in plain language in under 150 words, give one actionable briefing tip, and call `build_prep_schedule` whenever the user shares how much prep time they have.
+   - Configure `root_agent` (`name="briefing_coach"`) as a concise executive & operational briefing coach: once clean of PII, explain any topic in plain language in under 150 words, give one actionable briefing tip, and call `build_prep_schedule` whenever the user shares how much prep time they have.
 4. **Terminal Smoke Test + `adk web` Playground**:
    ```bash
    export PATH="$HOME/.local/bin:$PATH"
