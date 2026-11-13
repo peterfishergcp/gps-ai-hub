@@ -175,6 +175,65 @@ def enable_agent_sensitive_logging(token: str, loc: str, prefix: str, engine_id:
     return agents_updated
 
 
+def enable_devtools_compliance_logging(token: str) -> int:
+    """Checks (and where API visibility permits, enables) AI Developer Tools (Antigravity) compliance logging (`devToolsConfig.loggingConfig`)."""
+    print("\n=== Checking / Enabling AI Developer Tools (Antigravity) Compliance Logging ===")
+    enabled_count = 0
+    for loc in LOCATIONS:
+        prefix = f"{loc}-" if loc != "global" else ""
+        url = f"https://{prefix}discoveryengine.googleapis.com/v1alpha/projects/{PROJECT_ID}/locations/{loc}/devToolsConfig"
+        get_req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-Goog-User-Project": PROJECT_ID,
+            },
+        )
+        try:
+            cfg = json.loads(urllib.request.urlopen(get_req, context=SSL_CTX).read().decode())
+        except urllib.error.HTTPError as e:
+            err_msg = e.read().decode("utf-8", errors="ignore")
+            print(f"  [AI Dev Tools {loc}] Skipping ({e.code}): {err_msg[:150]}")
+            continue
+
+        log_cfg = cfg.get("loggingConfig", {})
+        if log_cfg.get("promptAndResponseLoggingEnabled") and log_cfg.get("metadataLoggingEnabled"):
+            enabled_count += 1
+            print(f"  [AI Dev Tools {loc}] Already Enabled: {json.dumps(log_cfg)}")
+            continue
+
+        patch_url = (
+            f"{url}?updateMask=logging_config.prompt_and_response_logging_enabled,"
+            "logging_config.metadata_logging_enabled"
+        )
+        patch_body = json.dumps({
+            "loggingConfig": {
+                "promptAndResponseLoggingEnabled": True,
+                "metadataLoggingEnabled": True,
+            }
+        }).encode("utf-8")
+        patch_req = urllib.request.Request(
+            patch_url,
+            data=patch_body,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-Goog-User-Project": PROJECT_ID,
+                "Content-Type": "application/json",
+            },
+            method="PATCH",
+        )
+        try:
+            after = json.loads(urllib.request.urlopen(patch_req, context=SSL_CTX).read().decode())
+            enabled_count += 1
+            print(f"  [AI Dev Tools {loc}] Before: {json.dumps(log_cfg)} -> After: {json.dumps(after.get('loggingConfig', {}))}")
+        except urllib.error.HTTPError:
+            print(
+                f"  [AI Dev Tools {loc}] Current: {json.dumps(log_cfg)} "
+                "(Toggle 'Prompts and responses logging' + 'Metadata logging' in Console -> Gemini Enterprise -> Settings -> AI developer tools -> Compliance)"
+            )
+    return enabled_count
+
+
 def main() -> None:
     global PROJECT_ID
     parser = argparse.ArgumentParser(
@@ -256,9 +315,11 @@ def main() -> None:
                 print(f"\n  App Display Name : {display_name} ({engine_id}) -> ERROR {e.code}: {err_msg[:200]}")
 
     nb_locations = enable_notebooklm_sensitive_logging(token)
+    devtools_locations = enable_devtools_compliance_logging(token)
     print(
         f"\nDone! Successfully enabled sensitive logging on {total_updated} Gemini Enterprise engine(s), "
-        f"{total_agents_updated} Agent(s), and {nb_locations} NotebookLM Enterprise location(s) in {PROJECT_ID}."
+        f"{total_agents_updated} Agent(s), {nb_locations} NotebookLM Enterprise location(s), "
+        f"and verified {devtools_locations} AI Developer Tools location(s) in {PROJECT_ID}."
     )
 
 

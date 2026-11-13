@@ -694,6 +694,9 @@ def _transform_bq_rows_to_dataset(rows: list[dict], project_id: str, allowed_buc
         if "deep_research" in model_lower:
             surface = "DEEP_RESEARCH"
             agent_name = model_name or "Deep Research Agent"
+        elif engine_id.startswith("antigravity-devtools") or model_lower.startswith("antigravity:"):
+            surface = "HIGH_CODE_AGENT"
+            agent_name = model_name or "Antigravity AI Dev Tool"
         elif "agent:adk" in model_lower or any(a["mime_type"] == "application/pdf" for a in output_artifacts):
             surface = "HIGH_CODE_AGENT"
             agent_name = model_name or "ADK Custom Agent"
@@ -704,6 +707,7 @@ def _transform_bq_rows_to_dataset(rows: list[dict], project_id: str, allowed_buc
             surface = "REGULAR_CHAT_AGENT"
             agent_name = model_name or "Gemini Enterprise Assistant"
 
+        is_antigravity = engine_id.startswith("antigravity-devtools") or model_lower.startswith("antigravity:")
         processed_logs.append({
             "insert_id": f"{session_id}_turn_{turn_index}",
             "timestamp": event_ts,
@@ -714,8 +718,8 @@ def _transform_bq_rows_to_dataset(rows: list[dict], project_id: str, allowed_buc
             "user_email": user_email,
             "user_id": principal,
             "principal_type": "WORKFORCE_IDENTITY" if "workforcePools" in principal else "IAM_USER",
-            "service_name": "discoveryengine.googleapis.com",
-            "method_name": "StreamAssist",
+            "service_name": "businessaicode.googleapis.com" if is_antigravity else "discoveryengine.googleapis.com",
+            "method_name": "GenerateContent" if is_antigravity else "StreamAssist",
             "interaction_surface": surface,
             "agent_id": model_name,
             "agent_name": agent_name,
