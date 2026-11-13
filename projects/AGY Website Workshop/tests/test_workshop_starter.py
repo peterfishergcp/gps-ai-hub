@@ -46,19 +46,33 @@ class PreviewServerSecurityTests(unittest.TestCase):
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
 
+        cls.guide_dir = os.path.realpath(WORKSHOP_ROOT / "guide")
+        cls.guide_server = ThreadingHTTPServer(
+            ("127.0.0.1", 0),
+            preview_lab1.make_handler(cls.guide_dir),
+        )
+        cls.guide_host, cls.guide_port = cls.guide_server.server_address
+        cls.guide_thread = threading.Thread(target=cls.guide_server.serve_forever, daemon=True)
+        cls.guide_thread.start()
+
     @classmethod
     def tearDownClass(cls) -> None:
         cls.server.shutdown()
         cls.server.server_close()
+        cls.guide_server.shutdown()
+        cls.guide_server.server_close()
 
     def test_binds_strictly_to_loopback(self) -> None:
         self.assertEqual(self.host, "127.0.0.1")
+        self.assertEqual(self.guide_host, "127.0.0.1")
 
     def test_serves_index_with_security_headers(self) -> None:
         url = f"http://127.0.0.1:{self.port}/"
         with urllib.request.urlopen(url, timeout=5) as resp:
             self.assertEqual(resp.status, 200)
-            self.assertIn("default-src 'self'", resp.headers.get("Content-Security-Policy", ""))
+            csp = resp.headers.get("Content-Security-Policy", "")
+            self.assertIn("default-src 'self'", csp)
+            self.assertNotIn("unsafe-inline", csp)
             self.assertEqual(resp.headers.get("X-Content-Type-Options"), "nosniff")
             self.assertEqual(resp.headers.get("X-Frame-Options"), "DENY")
             body = resp.read().decode("utf-8")
@@ -74,28 +88,55 @@ class PreviewServerSecurityTests(unittest.TestCase):
             "/../../README.md",
             "/scripts/preflight.sh",
         ]
-        for path in attack_paths:
-            with self.subTest(path=path):
-                url = f"http://127.0.0.1:{self.port}{path}"
-                with self.assertRaises(urllib.error.HTTPError) as ctx:
-                    urllib.request.urlopen(url, timeout=5)
-                self.assertEqual(ctx.exception.code, 404)
-                ctx.exception.close()
+        for port in (self.port, self.guide_port):
+            for path in attack_paths:
+                with self.subTest(port=port, path=path):
+                    url = f"http://127.0.0.1:{port}{path}"
+                    with self.assertRaises(urllib.error.HTTPError) as ctx:
+                        urllib.request.urlopen(url, timeout=5)
+                    self.assertEqual(ctx.exception.code, 404)
+                    ctx.exception.close()
 
-    def test_starter_js_contains_zero_unsafe_dom_sinks(self) -> None:
-        js_path = Path(self.starter_dir) / "script.js"
-        source = js_path.read_text(encoding="utf-8")
-        # Strip comments before checking executable sinks
-        code_only = "\n".join(
-            line for line in source.splitlines() if not line.strip().startswith("//")
-        )
+    def test_interactive_guide_assets_and_strict_csp_compliance(self) -> None:
+        guide_html = (Path(self.guide_dir) / "index.html").read_text(encoding="utf-8")
+        # Must not contain inline style="" or inline <script> bodies so strict CSP works
+        self.assertIsNone(re.search(r"\bstyle\s*=", guide_html))
+        self.assertIsNone(re.search(r"<script(?![^>]*\bsrc=)[^>]*>", guide_html))
+
+        for rel_asset in (
+            "/",
+            "/styles.css",
+            "/guide.js",
+            "/theme-init.js",
+            "/img/l1-04-permissions-menu.webp",
+            "/skills/mission-notes-to-action-items.zip",
+            "/skills/mission-notes-to-action-items/SKILL.md",
+        ):
+            with self.subTest(asset=rel_asset):
+                url = f"http://127.0.0.1:{self.guide_port}{rel_asset}"
+                with urllib.request.urlopen(url, timeout=5) as resp:
+                    self.assertEqual(resp.status, 200)
+                    self.assertGreater(len(resp.read()), 100)
+
+    def test_javascript_files_contain_zero_unsafe_dom_sinks(self) -> None:
+        js_files = [
+            Path(self.starter_dir) / "script.js",
+            Path(self.guide_dir) / "guide.js",
+            Path(self.guide_dir) / "theme-init.js",
+        ]
         unsafe_pattern = re.compile(
             r"\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write)\b"
         )
-        self.assertIsNone(
-            unsafe_pattern.search(code_only),
-            "Starter JavaScript must not contain unsafe HTML DOM sinks.",
-        )
+        for js_path in js_files:
+            with self.subTest(js=js_path.name):
+                source = js_path.read_text(encoding="utf-8")
+                code_only = "\n".join(
+                    line for line in source.splitlines() if not line.strip().startswith("//")
+                )
+                self.assertIsNone(
+                    unsafe_pattern.search(code_only),
+                    f"{js_path} must not contain unsafe HTML DOM sinks.",
+                )
 
 
 if __name__ == "__main__":

@@ -12,16 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Hardened loopback-only static preview server for Lab 1.
+"""Hardened loopback-only static server for Lab 1 and the Interactive Lab Portal.
 
 Why this exists instead of `python3 -m http.server`:
 1. Binds strictly to `127.0.0.1` (never `0.0.0.0`).
-2. Enforces canonical realpath sandboxing inside the Lab 1 folder with a
+2. Enforces canonical realpath sandboxing inside the target folder with a
    trailing directory separator check, preventing path traversal (`../`) or
    accidental exposure of repository `.env` / configuration files.
-3. Allow-lists static web asset extensions, blocks all dotfiles (`.env*`,
-   `.git*`), disables directory listings, and sets strict security headers
-   (`Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`).
+3. Allow-lists static web & skill-download extensions, blocks all dotfiles
+   (`.env*`, `.git*`), disables directory listings, and sets strict security
+   headers (`Content-Security-Policy` with zero `'unsafe-inline'`,
+   `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`).
 """
 
 from __future__ import annotations
@@ -47,6 +48,9 @@ ALLOWED_EXTENSIONS = frozenset({
     ".ico",
     ".json",
     ".woff2",
+    ".md",
+    ".zip",
+    ".pdf",
 })
 
 CSP_HEADER = (
@@ -58,6 +62,7 @@ CSP_HEADER = (
     "connect-src 'self'; "
     "object-src 'none'; "
     "base-uri 'self'; "
+    "form-action 'none'; "
     "frame-ancestors 'none'"
 )
 
@@ -92,7 +97,7 @@ def make_handler(sandbox_root: str):
     """Build a request handler bound to a single canonical static asset root."""
 
     class SafeStaticHandler(BaseHTTPRequestHandler):
-        server_version = "WorkshopPreview/1.0"
+        server_version = "WorkshopPreview/1.1"
         sys_version = ""
 
         def _send_security_headers(self) -> None:
@@ -100,6 +105,7 @@ def make_handler(sandbox_root: str):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
             self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
             self.send_header("Cache-Control", "no-store")
 
         def do_GET(self) -> None:  # noqa: N802
@@ -131,7 +137,9 @@ def make_handler(sandbox_root: str):
                 return
 
             ctype, _ = mimetypes.guess_type(asset_path)
-            if not ctype:
+            if asset_path.lower().endswith(".md"):
+                ctype = "text/markdown"
+            elif not ctype:
                 ctype = "application/octet-stream"
             if ctype.startswith(("text/", "application/javascript", "application/json")):
                 ctype = f"{ctype}; charset=utf-8"
@@ -152,35 +160,46 @@ def make_handler(sandbox_root: str):
 
 def main() -> int:
     workshop_root = Path(__file__).resolve().parent.parent
-    default_dir = workshop_root / "lab1-mission-portal"
+    default_lab1_dir = workshop_root / "lab1-mission-portal"
+    guide_dir = workshop_root / "guide"
 
     parser = argparse.ArgumentParser(
-        description="Serve Lab 1 static files strictly on 127.0.0.1."
+        description="Serve Lab 1 or the Interactive Lab Portal strictly on 127.0.0.1."
+    )
+    parser.add_argument(
+        "--guide",
+        action="store_true",
+        help="Serve the Interactive Participant & Facilitator Lab Portal (./guide) on port 8082",
     )
     parser.add_argument(
         "--dir",
-        default=str(default_dir),
-        help="Static directory to serve (default: ./lab1-mission-portal)",
+        default=None,
+        help="Static directory to serve (default: ./lab1-mission-portal, or ./guide with --guide)",
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=8081,
-        help="Loopback TCP port on 127.0.0.1 (default: 8081; 8080 reserved for adk web)",
+        default=None,
+        help="Loopback TCP port on 127.0.0.1 (default: 8082 for --guide, 8081 for Lab 1; 8080 reserved for adk web)",
     )
     args = parser.parse_args()
 
-    target_dir = os.path.realpath(args.dir)
+    chosen_dir = args.dir or (str(guide_dir) if args.guide else str(default_lab1_dir))
+    chosen_port = args.port if args.port is not None else (8082 if args.guide else 8081)
+
+    target_dir = os.path.realpath(chosen_dir)
     if not os.path.isdir(target_dir):
         sys.stderr.write(
             f"[ERROR] Directory not found: {target_dir}\n"
-            "Build Lab 1 first or pass --dir starters/lab1-mission-portal\n"
+            "Build Lab 1 first, pass --guide, or pass --dir starters/lab1-mission-portal\n"
         )
         return 1
 
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(target_dir))
+    server = ThreadingHTTPServer(("127.0.0.1", chosen_port), make_handler(target_dir))
     actual_port = server.server_address[1]
     print(f"Serving {target_dir} strictly at http://127.0.0.1:{actual_port}/")
+    if args.guide:
+        print(f"Facilitator Review Mode: http://127.0.0.1:{actual_port}/?review")
     sys.stdout.flush()
     try:
         server.serve_forever()
