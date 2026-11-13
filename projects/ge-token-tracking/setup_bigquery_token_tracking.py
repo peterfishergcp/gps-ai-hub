@@ -70,9 +70,14 @@ def ensure_logging_sink(project_id: str, dataset_id: str, sink_name: str) -> Non
     print(f"[2/4] Ensuring Cloud Logging sink '{sink_name}' -> BigQuery dataset '{dataset_id}'...")
     destination = f"bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}"
     log_filter = (
+        f'('
         f'resource.type="consumed_api" AND ('
         f'logName="projects/{project_id}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity" '
         f'OR logName="projects/{project_id}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity")'
+        f') OR ('
+        f'protoPayload.serviceName="modelarmor.googleapis.com" '
+        f'OR protoPayload.serviceName="dlp.googleapis.com"'
+        f')'
     )
 
     sink_check = subprocess.run(
@@ -286,7 +291,21 @@ def ensure_token_views(project_id: str, dataset_id: str, trace_dataset: str, cre
           REGEXP_EXTRACT(JSON_VALUE(json_str, '$.logmetadata.name'), r'/engines/([^/]+)'),
           REGEXP_EXTRACT(JSON_VALUE(json_str, '$.logMetadata.name'), r'/engines/([^/]+)'),
           REGEXP_EXTRACT(JSON_VALUE(json_str, '$.response.name'), r'/engines/([^/]+)')
-        ) AS engine_id
+        ) AS engine_id,
+        COALESCE(
+          JSON_VALUE(json_str, '$.modelArmorResult.sanitizationVerdict'),
+          JSON_VALUE(json_str, '$.response.modelArmorResult.sanitizationVerdict'),
+          JSON_VALUE(json_str, '$.safetyResult.verdict')
+        ) AS model_armor_verdict,
+        COALESCE(
+          JSON_VALUE(json_str, '$.sdpResult.verdict'),
+          JSON_VALUE(json_str, '$.dlpResult.action'),
+          JSON_VALUE(json_str, '$.sdpFilterResult.matchState')
+        ) AS sdp_verdict,
+        COALESCE(
+          JSON_VALUE(json_str, '$.sdpResult.infoType'),
+          JSON_VALUE(json_str, '$.dlpResult.infoType')
+        ) AS sdp_info_type
       FROM base_logs
     )
     SELECT
@@ -402,12 +421,100 @@ def ensure_token_views(project_id: str, dataset_id: str, trace_dataset: str, cre
     FROM `{project_id}.{dataset_id}.v_gemini_token_usage_by_user`
     GROUP BY user_principal
     ORDER BY total_tokens DESC;
+
+    -- 4. Security, Jailbreak, Model Armor & PII SDP Block Alerts View (Masked Principals, Zero Cleartext PII)
+    CREATE OR REPLACE VIEW `{project_id}.{dataset_id}.v_security_and_sdp_alerts` AS
+    WITH evaluated AS (
+      SELECT
+        timestamp AS event_timestamp,
+        COALESCE(engine_id, 'default-ge-engine') AS engine_id,
+        session_id,
+        CASE
+          WHEN userIamPrincipal IS NULL OR userIamPrincipal = '' THEN 'masked-principal'
+          WHEN STRPOS(userIamPrincipal, '@') > 0 THEN CONCAT(SUBSTR(userIamPrincipal, 1, 3), '***@', SPLIT(userIamPrincipal, '@')[SAFE_OFFSET(1)])
+          ELSE CONCAT(SUBSTR(userIamPrincipal, 1, 18), '***')
+        END AS masked_principal,
+        methodName,
+        UPPER(COALESCE(model_armor_verdict, '')) AS ma_verdict,
+        UPPER(COALESCE(sdp_verdict, '')) AS sdp_state,
+        COALESCE(sdp_info_type, 'SENSITIVE_INFO_TYPE') AS sdp_info_type,
+        REGEXP_CONTAINS(LOWER(IFNULL(userQuery, '')), r'ignore (all )?(previous|prior) instructions|system prompt|dan mode|jailbreak|bypass|override policy|authorized security test') AS flag_jailbreak_probe,
+        REGEXP_CONTAINS(LOWER(IFNULL(userQuery, '')), r'external network callback|payload_b64|base64\.b64decode|exfiltrate') AS flag_exfil_probe,
+        REGEXP_CONTAINS(LOWER(IFNULL(serviceTextReply, '')), r'i cannot fulfill|i cannot generate|blocked by safety|policy violation|cannot be read, summarized') AS flag_policy_refusal
+      FROM `{project_id}.{dataset_id}.v_ge_activity_logs`
+    )
+    SELECT
+      event_timestamp,
+      engine_id,
+      session_id,
+      masked_principal,
+      CASE
+        WHEN sdp_state IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND') THEN 'SDP_PII_BLOCK'
+        WHEN ma_verdict IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND') THEN 'MODEL_ARMOR_BLOCK'
+        WHEN flag_exfil_probe THEN 'EXFIL_OR_MALICIOUS_URI'
+        WHEN flag_jailbreak_probe THEN 'JAILBREAK_ATTEMPT'
+        ELSE 'POLICY_REFUSAL'
+      END AS alert_category,
+      CASE
+        WHEN sdp_state IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND') OR flag_exfil_probe THEN 'CRITICAL'
+        WHEN ma_verdict IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND') OR (flag_jailbreak_probe AND flag_policy_refusal) THEN 'HIGH'
+        ELSE 'MEDIUM'
+      END AS severity,
+      CASE
+        WHEN sdp_state IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND') THEN CONCAT('SDP Fail-Closed Block (', sdp_info_type, ')')
+        WHEN ma_verdict IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND') THEN 'Model Armor Guardrail Sanitization Block'
+        WHEN flag_exfil_probe THEN 'Model Armor / Callback Exfiltration Probe Blocked'
+        WHEN flag_jailbreak_probe THEN 'Adversarial Prompt Injection / Jailbreak Probe Blocked'
+        ELSE 'Safety / Policy Guardrail Refusal'
+      END AS summary,
+      'BLOCKED' AS action_taken
+    FROM evaluated
+    WHERE sdp_state IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND')
+       OR ma_verdict IN ('BLOCK', 'BLOCKED', 'MATCH_FOUND')
+       OR flag_jailbreak_probe
+       OR flag_exfil_probe
+       OR flag_policy_refusal;
+
+    -- 5. Deployment Onboarding, Peak QPS & Governance KPI Rollup View
+    CREATE OR REPLACE VIEW `{project_id}.{dataset_id}.v_deployment_and_governance_kpis` AS
+    WITH per_sec AS (
+      SELECT
+        COALESCE(engine_id, 'default-ge-engine') AS engine_id,
+        TIMESTAMP_TRUNC(timestamp, SECOND) AS sec_bucket,
+        COUNT(*) AS qps,
+        MAX(timestamp) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) AS is_7d
+      FROM `{project_id}.{dataset_id}.v_ge_activity_logs`
+      WHERE timestamp IS NOT NULL
+      GROUP BY engine_id, sec_bucket
+    ),
+    qps_rollup AS (
+      SELECT
+        MAX(IF(is_7d, qps, 0)) AS peak_qps_7d,
+        MAX(qps) AS peak_qps_all_time
+      FROM per_sec
+    )
+    SELECT
+      COUNT(DISTINCT IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY), userIamPrincipal, NULL)) AS unique_users_7d,
+      COUNT(DISTINCT userIamPrincipal) AS unique_users_all_time,
+      COUNTIF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) AND methodName IN ('StreamAssist', 'Assist', 'GenerateFreeFormStreamed')) AS prompts_7d,
+      COUNTIF(methodName IN ('StreamAssist', 'Assist', 'GenerateFreeFormStreamed') OR methodName IS NULL) AS prompts_all_time,
+      COALESCE((SELECT peak_qps_7d FROM qps_rollup), 0) AS peak_qps_7d,
+      COALESCE((SELECT peak_qps_all_time FROM qps_rollup), 0) AS peak_qps_all_time,
+      COUNTIF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) AND methodName IN ('UploadSessionFile', 'AddContextFile', 'BatchCreateSources')) AS documents_7d,
+      COUNTIF(methodName IN ('UploadSessionFile', 'AddContextFile', 'BatchCreateSources')) AS documents_all_time,
+      COUNT(DISTINCT IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY), session_id, NULL)) AS agent_sessions_7d,
+      COUNT(DISTINCT session_id) AS agent_sessions_all_time,
+      COUNTIF(methodName = 'CreateAgent') AS agents_created_all_time
+    FROM `{project_id}.{dataset_id}.v_ge_activity_logs`;
     """
     subprocess.run(
         ["bq", f"--project_id={project_id}", "query", "--use_legacy_sql=false", ddl],
         check=True,
     )
-    print(f"      Created views: v_ge_activity_logs, ge_logs, v_gemini_token_usage_by_user, v_token_usage_summary_by_principal.")
+    print(
+        "      Created views: v_ge_activity_logs, ge_logs, v_gemini_token_usage_by_user, "
+        "v_token_usage_summary_by_principal, v_security_and_sdp_alerts, v_deployment_and_governance_kpis."
+    )
 
     if create_legacy_alias:
         print(f"      Also creating compatibility view `{project_id}.agent_analytics.gemini_token_usage_by_user`...")
