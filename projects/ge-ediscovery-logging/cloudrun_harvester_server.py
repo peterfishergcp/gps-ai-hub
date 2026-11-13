@@ -270,6 +270,16 @@ class HarvesterRequestHandler(http.server.BaseHTTPRequestHandler):
                     )
                 except Exception as err:
                     print(f"[!] NotebookLM sweep error: {err}")
+                try:
+                    all_rows.extend(
+                        ge_harvest.harvest_antigravity_devtools(
+                            project_id=project_id,
+                            bucket_name=bucket_name,
+                            hours=max(hours, 168),
+                        )
+                    )
+                except Exception as err:
+                    print(f"[!] Antigravity DevTools sweep error: {err}")
                 ge_harvest.load_rows_to_bigquery(all_rows, project_id)
                 self._send_json(
                     200,

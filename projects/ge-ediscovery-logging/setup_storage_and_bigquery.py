@@ -150,7 +150,7 @@ def ensure_logging_sink() -> None:
     # is a structured Query object (RECORD). Routing both into the same BigQuery table causes Cloud Logging
     # sink error `table_invalid_schema (Cannot convert std::string to a record field ... query = 2)`.
     log_filter = (
-        f'resource.type="consumed_api" AND '
+        f'(resource.type="consumed_api" AND '
         f'NOT jsonPayload.logMetadata.methodName="Search" AND ('
         f'(logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity" '
         f'AND (jsonPayload.logMetadata.methodName="StreamAssist" '
@@ -158,7 +158,11 @@ def ensure_logging_sink() -> None:
         f'OR jsonPayload.logMetadata.methodName="AnswerQuery" '
         f'OR jsonPayload.logMetadata.methodName="UploadSessionFile" '
         f'OR jsonPayload.logMetadata.methodName="AddContextFile")) '
-        f'OR logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity")'
+        f'OR logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fnotebooklm_enterprise_user_activity")) '
+        f'OR (resource.type="businessaicode.googleapis.com/BAICInstance" AND ('
+        f'logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Finference_request" '
+        f'OR logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Finference_response" '
+        f'OR logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Fclient_telemetry"))'
     )
 
     sink_check = subprocess.run(
