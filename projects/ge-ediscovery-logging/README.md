@@ -132,7 +132,8 @@ Enabling `observabilityConfig` on a Gemini Enterprise **Engine** only enables lo
 | **3. ADK Agent (Full Logging)**<br>(`adkAgentDefinition` $\rightarrow$ Vertex AI Agent Engine) | **Both Layers Enabled:**<br>1. **GE Agent (`.../agents/{id}`):** `observabilityEnabled: true` + `sensitiveLoggingEnabled: true`<br>2. **Vertex AI Reasoning Engine:**<br>• `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"`<br>• `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"` | **Yes** — Captures both the outer prompt/response in Gemini Enterprise **and** all inner LLM prompts/outputs inside the ADK container. | **Yes** — Captures every internal Python tool call, sub-agent step, and internal LLM prompt/response in un-redacted plaintext. | **Yes (Outer GE Session)** — Files attached to or saved in the GE session (`tool_context.save_artifact`) are captured via `:downloadFile`. | **Yes (Exact)** — Logged in Vertex AI Agent Engine OpenTelemetry events & Cloud Trace spans (`gen_ai.usage.*`). | • **Outer Log:** `gemini_enterprise_user_activity`<br>• **Inner Logs:** `aiplatform.googleapis.com/reasoning_engine_stdout`, `gen_ai.user.message`, `gen_ai.choice`<br>• **BQ Views:** `conversation_turns`, `v_realtime_agent_and_file_activity` |
 | **4. ADK Agent (Partial — Missing Env Var)**<br>(`adkAgentDefinition` without `CAPTURE_MESSAGE_CONTENT`) | **GE Agent On, but Vertex Reasoning Engine only has:**<br>• `GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"`<br>*(Missing `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"`)* | **Outer Only** — GE still captures the user's prompt and final response, **but** inner ADK LLM logs show `{"content": "<elided>"}`. | **Structure Only** — You see trace spans and tool names in Cloud Trace, but internal prompt/tool payloads are `<elided>`. | **Yes (Outer GE Session)** — Outer session files still captured by GE. | **Yes** — Token counts and span latencies are still recorded on Cloud Trace spans. | • **Outer Log:** `gemini_enterprise_user_activity` (Full text)<br>• **Inner Log:** `reasoning_engine_stdout` (`<elided>`) |
 | **5. NotebookLM Enterprise (Chat, Sources & 12-Modality Studio)** | **Project/Location Level (`locations/{loc}/observabilityConfig`):**<br>• `observabilityEnabled: true`<br>• `sensitiveLoggingEnabled: true` | **Yes** — `GenerateFreeFormStreamed` logs the full user prompt (`userQuery`) and full grounded markdown answer (`serviceTextReply`). | **Yes (Grounding Summary)** — Logs the grounded answer with `[1]`, `[2]` source citations and source inventory. | **Sources Inventory + Full Studio Binaries (`.mp3`, `.mp4`, `.pdf`, `.png`, `.json`)** — Captures source `title`, `sourceId`, `wordCount`, `tokenCount`, plus all 12 Studio modalities (Audio/Video Overviews, Slide Decks, Infographics, Flashcards, Quizzes, Mind Maps, Study Guides, FAQs, Timelines, Briefing Docs, Notes) downloaded via Scotty `:download?alt=media`. | **Source Token Count** — Captures `tokenCount` per uploaded source document. | • **Log:** `notebooklm_enterprise_user_activity`<br>• **BQ View:** `v_notebooklm_forensic_audit` (plus `gs://.../notebooks/.../studio/...`) |
-| **6. Live Voice / Bidirectional Audio** | Engine `observabilityConfig` | **No** — Does not run through `StreamAssist` text turns or store downloadable audio blobs in `:downloadFile`. | **No** | **No** — Raw voice/audio streams are not persisted in Discovery Engine sessions. | **No** | • **Log:** Connection-level Data Access audit logs only. |
+| **6. AI Developer Tools — Antigravity (`AGY`) & Gemini CLI**<br>(`businessaicode.googleapis.com` / `BAICInstance`) | **Console (`Settings` $\rightarrow$ `AI developer tools` $\rightarrow$ `Compliance`) or `devToolsConfig.loggingConfig`:**<br>• `promptAndResponseLoggingEnabled: true`<br>• `metadataLoggingEnabled: true` | **Yes** — `inference_request` logs `jsonPayload.input.messages` (full prompt & context) and `inference_response` logs `jsonPayload.output.candidates` (full model response), paired by `labels.request_id` and grouped by `labels.trajectory_id`. | **Yes (Telemetry & Client Interaction Metadata)** — Logs `client_name` (`antigravity_cli`, `antigravity_vscode`, `antigravity_acp`, etc.), `client_version`, `model`, `experience`, `thoughtsTokenCount`, and `client_telemetry` (`InferenceResolved` / `InferenceInteraction` acceptance outcomes). | **Inline Code & File Context** — File context sent in the developer prompt is captured inside `input.messages` and archived to `gs://<BUCKET>/devtools/{location}/{trajectory_id}/antigravity_transcript_<sha256>.json`. | **Yes (Exact)** — Logs `promptTokenCount`, `candidatesTokenCount`, `thoughtsTokenCount`, `cachedContentTokenCount`, `totalTokenCount`, and `quotaType` (`REGULAR_QUOTA` / `OVERAGE_QUOTA`). | • **Logs:** `businessaicode.googleapis.com/inference_request`, `inference_response`, `client_telemetry`<br>• **BQ Table:** `conversation_turns` (`engine_id = 'antigravity-devtools-...'`) |
+| **7. Live Voice / Bidirectional Audio** | Engine `observabilityConfig` | **No** — Does not run through `StreamAssist` text turns or store downloadable audio blobs in `:downloadFile`. | **No** | **No** — Raw voice/audio streams are not persisted in Discovery Engine sessions. | **No** | • **Log:** Connection-level Data Access audit logs only. |
 
 ---
 
@@ -315,7 +316,7 @@ It takes ~1–2 minutes for IAM changes to propagate. Afterward, users can chat,
 
 ---
 
-### Step 8: Verify Deployment Health & Run the 8-Check E2E Verification Suite
+### Step 8: Verify Deployment Health & Run the 9-Check E2E Verification Suite (Including Antigravity AI Dev Tools)
 
 Run the read-only health check script to verify engines, sinks, Cloud Run harvester & portal, dead-letter queue, `geUserNoDelete` permissions/bindings, and recent BigQuery turns:
 
@@ -323,7 +324,7 @@ Run the read-only health check script to verify engines, sinks, Cloud Run harves
 scripts/verify.sh "$GCP_PROJECT_ID"
 ```
 
-To run the full 8-check automated E2E verification suite (including creating a synthetic multi-turn session, uploading a `USER_PROVIDED` document, generating an `AI_GENERATED` image, verifying the `403` admin ownership barrier, harvesting to GCS & BigQuery, and verifying that `DeleteSession` is blocked with `HTTP 403` for the WIF user):
+To run the full 9-check automated E2E verification suite (including creating a synthetic multi-turn session, uploading a `USER_PROVIDED` document, generating an `AI_GENERATED` image, verifying the `403` admin ownership barrier, harvesting to GCS & BigQuery, verifying that `DeleteSession` is blocked with `HTTP 403` for the WIF user, and executing + harvesting a live multi-turn **Antigravity AI Developer Tools** `businessaicode.googleapis.com` trajectory):
 
 ```bash
 python3 test_ge_ediscovery_e2e.py \
@@ -332,6 +333,11 @@ python3 test_ge_ediscovery_e2e.py \
   --location "$GE_LOCATION" \
   --engine-id "$GE_ENGINE_ID" \
   --user-subject "$TEST_WIF_USER_SUBJECT"
+
+# Or run only Check 9 (Antigravity AI Developer Tools eDiscovery capture) in ~10 seconds:
+python3 test_ge_ediscovery_e2e.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --antigravity-only
 ```
 
 ---

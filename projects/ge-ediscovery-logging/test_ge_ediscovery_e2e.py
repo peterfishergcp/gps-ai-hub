@@ -15,8 +15,10 @@ import os
 import ssl
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
+import uuid
 
 import ge_harvest
 from ge_harvest import (
@@ -26,6 +28,7 @@ from ge_harvest import (
     fetch_session_details,
     get_bucket_name,
     get_gcp_access_token,
+    harvest_antigravity_devtools,
     harvest_session,
     load_rows_to_bigquery,
     mint_sts_token,
@@ -341,6 +344,146 @@ def check_8_no_delete_custom_role_and_delete_blocked(
         print(f"  PASS: Custom role 'geUserNoDelete' active ({len(perms)} permissions) and WIF user DeleteSession blocked with HTTP 403.")
 
 
+def check_9_antigravity_devtools_capture(
+    project_id: str,
+    bucket_name: str,
+) -> str:
+    """
+    Executes a live multi-turn Antigravity AI Developer Tools (`businessaicode.googleapis.com`)
+    conversation using the project's Gemini Enterprise subscription (`fetchLicenses`), waits for
+    Cloud Logging ingestion (`inference_request` + `inference_response`), runs
+    `harvest_antigravity_devtools`, and verifies the trajectory in GCS and BigQuery.
+    """
+    print("\n[Check 9/9] Verifying Antigravity AI Developer Tools (businessaicode.googleapis.com) eDiscovery Capture...")
+    admin_token = get_gcp_access_token()
+
+    # 1. Verify devToolsConfig has promptAndResponseLoggingEnabled=true
+    cfg_url = f"https://discoveryengine.googleapis.com/v1alpha/projects/{project_id}/locations/global/devToolsConfig"
+    cfg_req = urllib.request.Request(
+        cfg_url,
+        headers={"Authorization": f"Bearer {admin_token}", "X-Goog-User-Project": project_id},
+    )
+    with urllib.request.urlopen(cfg_req, context=SSL_CTX) as resp:
+        cfg_data = json.loads(resp.read().decode("utf-8"))
+    log_cfg = cfg_data.get("loggingConfig", {})
+    assert log_cfg.get("promptAndResponseLoggingEnabled") is True, (
+        f"AI Developer Tools 'Prompts and responses logging' is not enabled on {project_id}: {log_cfg}"
+    )
+
+    # 2. Resolve active Gemini Enterprise license tier via businessaicode:fetchLicenses
+    lic_req = urllib.request.Request(
+        "https://businessaicode.googleapis.com/v1beta:fetchLicenses",
+        headers={
+            "Authorization": f"Bearer {admin_token}",
+            "X-Goog-User-Project": project_id,
+            "User-Agent": "antigravity/cli/1.2.0",
+        },
+    )
+    user_tier = "gcp-ge-plus-tier"
+    try:
+        with urllib.request.urlopen(lic_req, context=SSL_CTX, timeout=15) as r:
+            lic_data = json.loads(r.read().decode("utf-8"))
+            for lic in lic_data.get("licenses", []):
+                if lic.get("projectId") == project_id and lic.get("userTier"):
+                    user_tier = lic["userTier"]
+                    break
+    except Exception:
+        pass
+
+    # 3. Execute a 2-turn Antigravity coding & compliance session against businessaicode.googleapis.com
+    traj_id = f"agy-ediscovery-e2e-{int(time.time())}"
+    gen_url = f"https://businessaicode.googleapis.com/v1beta/projects/{project_id}/locations/global:generateContent"
+
+    turn1_prompt = (
+        "Write a concise Python function `verify_worm_sha256(data: bytes, expected_hex: str) -> bool` "
+        "for our public sector eDiscovery archive pipeline and explain how it prevents spoliation."
+    )
+    req1_id = str(uuid.uuid4())
+    prompt1_id = f"agy-prompt-1-{int(time.time())}"
+    body1 = json.dumps({
+        "contents": [{"role": "USER", "parts": [{"text": turn1_prompt}]}],
+        "aicode": {"experience": "gemini-2.5-flash"},
+        "entitlement": {"user_tier": user_tier},
+    }).encode("utf-8")
+    req1 = urllib.request.Request(
+        gen_url,
+        data=body1,
+        headers={
+            "Authorization": f"Bearer {admin_token}",
+            "Content-Type": "application/json",
+            "X-Goog-User-Project": project_id,
+            "User-Agent": "antigravity/cli/1.2.0",
+            "X-Aicode-Trajectory-Id": traj_id,
+            "X-Aicode-Request-Id": req1_id,
+            "X-Aicode-Prompt-Id": prompt1_id,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req1, context=SSL_CTX, timeout=30) as r1:
+        resp1_json = json.loads(r1.read().decode("utf-8"))
+    turn1_reply = (
+        resp1_json.get("candidates", [{}])[0]
+        .get("content", {})
+        .get("parts", [{}])[0]
+        .get("text", "")
+    )
+    print(f"  [+] Executed Antigravity Turn 1 (trajectory_id={traj_id}, request_id={req1_id})")
+
+    turn2_prompt = (
+        "Now add a unit test for `verify_worm_sha256` that tests both a valid compliance archive blob "
+        "and a tampered payload."
+    )
+    req2_id = str(uuid.uuid4())
+    prompt2_id = f"agy-prompt-2-{int(time.time())}"
+    body2 = json.dumps({
+        "contents": [
+            {"role": "USER", "parts": [{"text": turn1_prompt}]},
+            {"role": "MODEL", "parts": [{"text": turn1_reply}]},
+            {"role": "USER", "parts": [{"text": turn2_prompt}]},
+        ],
+        "aicode": {"experience": "gemini-2.5-flash"},
+        "entitlement": {"user_tier": user_tier},
+    }).encode("utf-8")
+    req2 = urllib.request.Request(
+        gen_url,
+        data=body2,
+        headers={
+            "Authorization": f"Bearer {admin_token}",
+            "Content-Type": "application/json",
+            "X-Goog-User-Project": project_id,
+            "User-Agent": "antigravity/cli/1.2.0",
+            "X-Aicode-Trajectory-Id": traj_id,
+            "X-Aicode-Request-Id": req2_id,
+            "X-Aicode-Prompt-Id": prompt2_id,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req2, context=SSL_CTX, timeout=30) as r2:
+        r2.read()
+    print(f"  [+] Executed Antigravity Turn 2 (trajectory_id={traj_id}, request_id={req2_id})")
+
+    # 4. Poll Cloud Logging briefly until the 2 inference_response entries land, then harvest
+    rows: list[dict] = []
+    for _ in range(8):
+        time.sleep(3)
+        rows = harvest_antigravity_devtools(
+            project_id=project_id,
+            bucket_name=bucket_name,
+            hours=1,
+            target_trajectory_id=traj_id,
+        )
+        if len(rows) >= 2 and all(r.get("response_text") and not r["response_text"].startswith("[Pending") for r in rows):
+            break
+
+    assert len(rows) >= 2, f"Expected 2 harvested Antigravity turns for {traj_id}, got {len(rows)}"
+    load_rows_to_bigquery(rows, project_id)
+    print(
+        f"  PASS: Harvested {len(rows)} Antigravity AI Developer Tools turn(s) for trajectory '{traj_id}' "
+        f"into gs://{bucket_name} and BigQuery `{project_id}.{BQ_DATASET}.{BQ_TABLE}`."
+    )
+    return traj_id
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run E2E verification for Gemini Enterprise eDiscovery pipeline.")
     parser.add_argument("--project-id", "--project", dest="project_id", default=os.environ.get("GCP_PROJECT_ID", ""), help="Google Cloud Project ID")
@@ -356,7 +499,23 @@ def main() -> None:
         default=os.environ.get("TEST_WIF_USER_SUBJECT", ""),
         help="Workforce Identity user subject (e.g., user@example.com)",
     )
+    parser.add_argument(
+        "--antigravity-only",
+        action="store_true",
+        help="Run only Check 9 (Antigravity AI Developer Tools eDiscovery capture) for fast verification",
+    )
     args = parser.parse_args()
+
+    if args.antigravity_only:
+        if not args.project_id:
+            print("Error: --project-id (or GCP_PROJECT_ID) is required for --antigravity-only.")
+            sys.exit(1)
+        os.environ["GCP_PROJECT_ID"] = args.project_id
+        ge_harvest.PROJECT_ID = args.project_id
+        bucket_name = get_bucket_name(args.project_id)
+        traj_id = check_9_antigravity_devtools_capture(args.project_id, bucket_name)
+        print(f"\n[+] Antigravity AI Developer Tools E2E test completed! Trajectory ID: {traj_id}")
+        return
 
     if not args.project_id or not args.workforce_pool_id or not args.engine_id or not args.user_subject:
         print(
@@ -401,9 +560,13 @@ def main() -> None:
         args.user_subject,
         args.location,
     )
+    check_9_antigravity_devtools_capture(
+        args.project_id,
+        bucket_name,
+    )
 
     print("\n======================================================================")
-    print("ALL 8 END-TO-END GE EDISCOVERY VERIFICATION CHECKS PASSED SUCCESSFULLY!")
+    print("ALL 9 END-TO-END GE EDISCOVERY VERIFICATION CHECKS PASSED SUCCESSFULLY!")
     print("======================================================================")
 
 

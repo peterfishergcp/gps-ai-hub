@@ -312,7 +312,7 @@ def main() -> None:
 
     print(f"\n=== [5/6] Configuring Cloud Logging -> Pub/Sub Sink '{LOGGING_SINK}' ===")
     sink_filter = (
-        f'resource.type="consumed_api" AND '
+        f'(resource.type="consumed_api" AND '
         f'NOT jsonPayload.userIamPrincipal:"gserviceaccount.com" AND ('
         f'(logName="projects/{PROJECT_ID}/logs/discoveryengine.googleapis.com%2Fgemini_enterprise_user_activity" '
         f'AND (jsonPayload.logMetadata.methodName="StreamAssist" '
@@ -327,7 +327,11 @@ def main() -> None:
         f'OR jsonPayload.logMetadata.methodName="CreateArtifact" '
         f'OR jsonPayload.logMetadata.methodName="CreateAudioOverview" '
         f'OR jsonPayload.logMetadata.methodName="CreateNote" '
-        f'OR jsonPayload.logMetadata.methodName="MutateNote")))'
+        f'OR jsonPayload.logMetadata.methodName="MutateNote")))) '
+        f'OR (resource.type="businessaicode.googleapis.com/BAICInstance" AND '
+        f'NOT labels.user_id:"gserviceaccount.com" AND ('
+        f'logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Finference_response" '
+        f'OR logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Fclient_telemetry"))'
     )
     topic_dest = f"pubsub.googleapis.com/projects/{PROJECT_ID}/topics/{PUBSUB_TOPIC}"
     sink_desc = run_cmd(

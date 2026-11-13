@@ -2014,6 +2014,288 @@ def harvest_notebooklm_enterprise(
     return bq_rows
 
 
+def harvest_antigravity_devtools(
+    project_id: str,
+    bucket_name: str,
+    hours: int = 720,
+    target_trajectory_id: str | None = None,
+    seed_entries: list[dict] | None = None,
+) -> list[dict]:
+    """
+    Harvests AI Developer Tools (Antigravity / Business AI Code `businessaicode.googleapis.com`)
+    compliance logs (`inference_request`, `inference_response`, `client_telemetry`) from Cloud Logging,
+    pairs requests and responses by `labels.request_id`, groups conversations by `labels.trajectory_id`,
+    archives the full JSON trajectory transcript to GCS (`devtools/{location}/{trajectory_id}/...`),
+    and emits normalized `conversation_turns` rows for BigQuery, the Compliance Review Portal,
+    and Microsoft Purview eDiscovery.
+    """
+    print("\n======================================================================")
+    print("Harvesting AI Developer Tools / Antigravity (businessaicode.googleapis.com)")
+    print("======================================================================")
+    cutoff = (
+        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    log_filter = (
+        f'resource.type="businessaicode.googleapis.com/BAICInstance" '
+        f'AND (logName="projects/{project_id}/logs/businessaicode.googleapis.com%2Finference_request" '
+        f'OR logName="projects/{project_id}/logs/businessaicode.googleapis.com%2Finference_response" '
+        f'OR logName="projects/{project_id}/logs/businessaicode.googleapis.com%2Fclient_telemetry") '
+        f'AND timestamp>="{cutoff}"'
+    )
+    if target_trajectory_id and re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", target_trajectory_id):
+        log_filter += f' AND labels.trajectory_id="{target_trajectory_id}"'
+
+    entries = read_cloud_logging_entries(project_id, log_filter, page_size=500)
+    if target_trajectory_id and len(entries) < 2:
+        time.sleep(2.5)
+        entries = read_cloud_logging_entries(project_id, log_filter, page_size=500)
+    if seed_entries:
+        seen_insert_ids = {e.get("insertId") for e in entries if isinstance(e, dict) and e.get("insertId")}
+        for se in seed_entries:
+            if isinstance(se, dict) and se.get("insertId") not in seen_insert_ids:
+                entries.append(se)
+    print(f"Found {len(entries)} log entries in businessaicode.googleapis.com.")
+    if not entries:
+        return []
+
+    trajectories: dict[str, dict] = {}
+
+    for entry in reversed(entries):
+        log_name = entry.get("logName", "")
+        labels = entry.get("labels") if isinstance(entry.get("labels"), dict) else {}
+        res_labels = (
+            entry.get("resource", {}).get("labels", {})
+            if isinstance(entry.get("resource"), dict)
+            else {}
+        )
+        jp = entry.get("jsonPayload") if isinstance(entry.get("jsonPayload"), dict) else {}
+        ts = entry.get("timestamp") or entry.get("receiveTimestamp") or ""
+        insert_id = entry.get("insertId", "")
+
+        req_id = str(labels.get("request_id") or insert_id or "").strip()
+        prompt_id = str(labels.get("prompt_id") or req_id).strip()
+        raw_traj_id = str(labels.get("trajectory_id") or req_id or insert_id).strip()
+        traj_id = re.sub(r"[^A-Za-z0-9._-]", "_", raw_traj_id)[:128] or "antigravity-session"
+        if target_trajectory_id and raw_traj_id != target_trajectory_id and traj_id != target_trajectory_id:
+            continue
+
+        loc = str(res_labels.get("location") or "global").strip()
+        user_id = str(labels.get("user_id") or "").strip()
+        if user_id.startswith("user:"):
+            user_principal = user_id[5:].strip()
+        elif user_id == "unknown":
+            user_principal = ""
+        else:
+            user_principal = user_id
+
+        client_name = str(labels.get("client_name") or "antigravity_cli").strip()
+        client_version = str(labels.get("client_version") or "unknown").strip()
+        model_label = str(labels.get("model") or jp.get("experience") or "gemini").strip()
+        model_provider = str(labels.get("model_provider") or "Google").strip()
+        experience = str(jp.get("experience") or model_label).strip()
+
+        t_info = trajectories.setdefault(traj_id, {
+            "trajectory_id": traj_id,
+            "location": loc,
+            "user_iam_principal": user_principal,
+            "client_name": client_name,
+            "client_version": client_version,
+            "requests": {},
+            "client_events": [],
+            "raw_entries": [],
+            "latest_timestamp": ts,
+        })
+        if user_principal and not t_info["user_iam_principal"]:
+            t_info["user_iam_principal"] = user_principal
+        if client_name and client_name != "unknown":
+            t_info["client_name"] = client_name
+        if client_version and client_version != "unknown":
+            t_info["client_version"] = client_version
+        if ts:
+            t_info["latest_timestamp"] = ts
+
+        t_info["raw_entries"].append(entry)
+
+        if log_name.endswith("%2Fclient_telemetry"):
+            t_info["client_events"].append({
+                "insert_id": insert_id,
+                "timestamp": ts,
+                "request_id": req_id,
+                "prompt_id": prompt_id,
+                "event_type": jp.get("eventType", ""),
+                "metadata": jp.get("metadata", {}),
+            })
+            continue
+
+        if not req_id:
+            continue
+
+        turn_rec = t_info["requests"].setdefault(req_id, {
+            "request_id": req_id,
+            "prompt_id": prompt_id,
+            "timestamp": ts,
+            "user_principal": user_principal or t_info["user_iam_principal"],
+            "client_name": client_name,
+            "client_version": client_version,
+            "model": model_label,
+            "model_provider": model_provider,
+            "experience": experience,
+            "prompt_text": "",
+            "conversation_history": [],
+            "response_text": "",
+            "metadata": {},
+            "request_insert_id": "",
+            "response_insert_id": "",
+        })
+        if ts and (not turn_rec["timestamp"] or ts < turn_rec["timestamp"]):
+            turn_rec["timestamp"] = ts
+        if user_principal and not turn_rec["user_principal"]:
+            turn_rec["user_principal"] = user_principal
+        if model_label and model_label != "unknown":
+            turn_rec["model"] = model_label
+        if experience:
+            turn_rec["experience"] = experience
+
+        if log_name.endswith("%2Finference_request"):
+            turn_rec["request_insert_id"] = insert_id
+            msgs = jp.get("input", {}).get("messages", [])
+            if isinstance(msgs, list):
+                turn_rec["conversation_history"] = msgs
+                user_msgs = [
+                    str(m.get("content") or "").strip()
+                    for m in msgs
+                    if isinstance(m, dict)
+                    and str(m.get("author") or "").upper() == "USER"
+                    and str(m.get("content") or "").strip()
+                ]
+                if user_msgs:
+                    turn_rec["prompt_text"] = user_msgs[-1]
+                elif msgs:
+                    last_m = msgs[-1]
+                    if isinstance(last_m, dict):
+                        turn_rec["prompt_text"] = str(last_m.get("content") or "").strip()
+            if jp.get("metadata") and not turn_rec["metadata"]:
+                turn_rec["metadata"] = jp.get("metadata", {})
+
+        elif log_name.endswith("%2Finference_response"):
+            turn_rec["response_insert_id"] = insert_id
+            if jp.get("metadata"):
+                turn_rec["metadata"] = jp.get("metadata", {})
+            cands = jp.get("output", {}).get("candidates", [])
+            resp_parts: list[str] = []
+            if isinstance(cands, list):
+                for cand in cands:
+                    if not isinstance(cand, dict):
+                        continue
+                    for m in cand.get("messages", []) or []:
+                        if isinstance(m, dict) and m.get("content"):
+                            resp_parts.append(str(m["content"]))
+            if resp_parts:
+                turn_rec["response_text"] = "\n".join(resp_parts).strip()
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    bq_rows: list[dict] = []
+
+    for traj_id, t_info in trajectories.items():
+        loc = t_info["location"]
+        principal = t_info["user_iam_principal"] or "unknown"
+        client_name = t_info["client_name"]
+        client_version = t_info["client_version"]
+
+        sorted_turns = sorted(
+            t_info["requests"].values(),
+            key=lambda r: (r.get("timestamp") or "", r.get("request_id") or ""),
+        )
+        if not sorted_turns:
+            continue
+
+        first_prompt = next(
+            (t["prompt_text"] for t in sorted_turns if t.get("prompt_text")),
+            traj_id,
+        )
+        short_title = first_prompt.splitlines()[0][:72].strip() if first_prompt else traj_id
+        display_name = f"[Antigravity] {short_title}"
+        engine_id = f"antigravity-devtools-{loc}"
+
+        archive_payload = {
+            "trajectory_id": traj_id,
+            "location": loc,
+            "user_iam_principal": principal,
+            "client_name": client_name,
+            "client_version": client_version,
+            "turns": sorted_turns,
+            "client_telemetry_events": t_info["client_events"],
+            "harvested_at": now_iso,
+        }
+        archive_bytes = json.dumps(archive_payload, indent=2).encode("utf-8")
+        archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
+        gcs_path = f"devtools/{loc}/{traj_id}/antigravity_transcript_{archive_sha256[:16]}.json"
+        archive_gcs_uri, archive_console_url = upload_bytes_to_gcs(
+            archive_bytes, gcs_path, bucket_name, project_id, "application/json"
+        )
+        print(
+            f"  [+] Archived Antigravity Trajectory '{short_title}' ({traj_id}, {loc}, "
+            f"User: {principal}, Client: {client_name}@{client_version}, "
+            f"{len(sorted_turns)} inference turn(s)) -> {archive_gcs_uri}"
+        )
+
+        used_indices: set[int] = set()
+        for idx, t in enumerate(sorted_turns, start=1):
+            turn_ts = t.get("timestamp") or t_info["latest_timestamp"] or now_iso
+            req_id = t.get("request_id") or f"{traj_id}-turn-{idx}"
+            immutable_idx = compute_immutable_notebook_turn_index(turn_ts, req_id)
+            while immutable_idx in used_indices:
+                immutable_idx += 1
+            used_indices.add(immutable_idx)
+
+            meta = t.get("metadata") if isinstance(t.get("metadata"), dict) else {}
+            prompt_toks = meta.get("promptTokenCount") or "0"
+            cand_toks = meta.get("candidatesTokenCount") or "0"
+            thought_toks = meta.get("thoughtsTokenCount") or "0"
+            cached_toks = meta.get("cachedContentTokenCount") or "0"
+            total_toks = meta.get("totalTokenCount") or "0"
+            quota_type = meta.get("quotaType") or "REGULAR_QUOTA"
+
+            telemetry_summary = (
+                f"Antigravity AI Developer Tools Telemetry\n"
+                f"• Client: {t.get('client_name')} (v{t.get('client_version')})\n"
+                f"• Experience / Model: {t.get('experience')} -> {t.get('model')} ({t.get('model_provider')})\n"
+                f"• Trajectory ID: {traj_id} | Prompt ID: {t.get('prompt_id')} | Request ID: {req_id}\n"
+                f"• Token Breakdown: total={total_toks} (prompt={prompt_toks}, output={cand_toks}, "
+                f"thoughts={thought_toks}, cached={cached_toks}) | Quota Pool: {quota_type}"
+            )
+            if t_info["client_events"]:
+                ev_types = [
+                    f"{ev.get('event_type')} ({ev.get('metadata', {}).get('interactionOutcome', 'RECORDED')})"
+                    for ev in t_info["client_events"]
+                ]
+                telemetry_summary += f"\n• Client Telemetry Events: {', '.join(ev_types)}"
+
+            model_tag = f"antigravity:{t.get('client_name')}:{t.get('model')}"
+            bq_rows.append({
+                "session_id": traj_id,
+                "turn_index": immutable_idx,
+                "query_id": t.get("prompt_id") or req_id,
+                "assist_answer_id": req_id,
+                "engine_id": engine_id,
+                "location": loc,
+                "user_iam_principal": t.get("user_principal") or principal,
+                "session_display_name": display_name,
+                "prompt_text": t.get("prompt_text") or f"[Antigravity Request {req_id}]",
+                "response_text": t.get("response_text") or "[Pending or empty model response]",
+                "thought_text": telemetry_summary,
+                "model_name": model_tag,
+                "session_transcript_gcs_uri": archive_gcs_uri,
+                "session_transcript_console_url": archive_console_url,
+                "files": [],
+                "event_timestamp": turn_ts,
+                "harvested_at": now_iso,
+            })
+
+    return bq_rows
+
+
 def harvest_single_event(log_entry: dict) -> dict:
     """
     Real-time event handler invoked by the Cloud Run Pub/Sub push endpoint.
@@ -2125,12 +2407,30 @@ def harvest_single_event(log_entry: dict) -> dict:
             "rows_loaded": len(rows),
         }
 
+    elif "businessaicode.googleapis.com" in log_name:
+        labels = log_entry.get("labels") if isinstance(log_entry.get("labels"), dict) else {}
+        traj_id = str(labels.get("trajectory_id") or labels.get("request_id") or "").strip()
+        rows = harvest_antigravity_devtools(
+            project_id=project_id,
+            bucket_name=bucket_name,
+            hours=168,
+            target_trajectory_id=traj_id if traj_id else None,
+            seed_entries=[log_entry],
+        )
+        load_rows_to_bigquery(rows, project_id)
+        return {
+            "status": "harvested",
+            "type": "antigravity_devtools_trajectory",
+            "trajectory_id": traj_id or "all",
+            "rows_loaded": len(rows),
+        }
+
     return {"status": "skipped", "reason": f"Unhandled logName: {log_name}"}
 
 
 def main() -> None:
     global PROJECT_ID, WORKFORCE_POOL_ID
-    parser = argparse.ArgumentParser(description="Harvest Gemini Enterprise sessions, NotebookLM notebooks, and files to GCS & BigQuery.")
+    parser = argparse.ArgumentParser(description="Harvest Gemini Enterprise sessions, NotebookLM notebooks, Antigravity DevTools trajectories, and files to GCS & BigQuery.")
     parser.add_argument("--project-id", "--project", dest="project_id", default=PROJECT_ID, help="Google Cloud Project ID")
     parser.add_argument("--workforce-pool-id", default=WORKFORCE_POOL_ID, help="Workforce Identity Pool ID")
     parser.add_argument("--bucket-name", default="", help="Cloud Storage bucket name (default: <project_id>-ge-ediscovery)")
@@ -2190,6 +2490,16 @@ def main() -> None:
         all_rows.extend(nb_rows)
     except Exception as e:
         print(f"  [!] Error harvesting NotebookLM Enterprise: {e}")
+
+    try:
+        agy_rows = harvest_antigravity_devtools(
+            project_id=args.project_id,
+            bucket_name=bucket_name,
+            hours=max(args.hours, 720),
+        )
+        all_rows.extend(agy_rows)
+    except Exception as e:
+        print(f"  [!] Error harvesting Antigravity DevTools: {e}")
 
     load_rows_to_bigquery(all_rows, args.project_id)
 

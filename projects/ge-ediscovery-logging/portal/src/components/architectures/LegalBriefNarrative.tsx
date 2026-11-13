@@ -156,6 +156,19 @@ function getAgentBadge(item: UnifiedReviewItem) {
   if (item.surface === 'NOTEBOOK_LM') {
     return null;
   }
+  const isAntigravity =
+    item.chat_turns &&
+    item.chat_turns.some(
+      (t) =>
+        (t.engine_id && t.engine_id.startsWith('antigravity-devtools')) ||
+        (t.agent_id && t.agent_id.toLowerCase().startsWith('antigravity:'))
+    );
+  if (isAntigravity) {
+    return {
+      label: 'Antigravity',
+      classes: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+    };
+  }
   const isDeepResearch =
     item.agent_type === 'DEEP_RESEARCH' ||
     (item.chat_turns &&
