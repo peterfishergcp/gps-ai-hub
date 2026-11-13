@@ -439,7 +439,7 @@ def ensure_token_views(project_id: str, dataset_id: str, trace_dataset: str, cre
         UPPER(COALESCE(sdp_verdict, '')) AS sdp_state,
         COALESCE(sdp_info_type, 'SENSITIVE_INFO_TYPE') AS sdp_info_type,
         REGEXP_CONTAINS(LOWER(IFNULL(userQuery, '')), r'ignore (all )?(previous|prior) instructions|system prompt|dan mode|jailbreak|bypass|override policy|authorized security test') AS flag_jailbreak_probe,
-        REGEXP_CONTAINS(LOWER(IFNULL(userQuery, '')), r'external network callback|payload_b64|base64\.b64decode|exfiltrate') AS flag_exfil_probe,
+        REGEXP_CONTAINS(LOWER(IFNULL(userQuery, '')), r'external network callback|payload_b64|base64\\.b64decode|exfiltrate') AS flag_exfil_probe,
         REGEXP_CONTAINS(LOWER(IFNULL(serviceTextReply, '')), r'i cannot fulfill|i cannot generate|blocked by safety|policy violation|cannot be read, summarized') AS flag_policy_refusal
       FROM `{project_id}.{dataset_id}.v_ge_activity_logs`
     )
