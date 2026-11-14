@@ -1,0 +1,17 @@
+.git
+.gitignore
+.dockerignore
+__pycache__/
+*.py[cod]
+.pytest_cache/
+test_*.py
+*_test.py
+requirements-dev.txt
+.env
+.env.*
+*.pem
+*.key
+*credentials*.json
+*.tmp.json
+venv/
+.venv/
