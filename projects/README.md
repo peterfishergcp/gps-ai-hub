@@ -37,6 +37,15 @@ Welcome to the **Google Cloud Public Sector AI Hub** reference architecture cata
 
 ---
 
+## 📈 Google Antigravity Dashboard Studio Plugin & BI Workshop (`./agy-dashboard-studio`)
+
+- 🎨 **[Antigravity Dashboard Studio Plugin (`dashboard-studio`), Zero-Prompt Visual Layout Editor & Hands-On Workshop](./agy-dashboard-studio)**:
+  - Strict-validated **Google Antigravity Plugin** (`plugin.json` v1 schema, `/dashboard` skill, `dashboard-designer` multimodal subagent, and `rules/AGENTS.md` spec-preservation guardrails) enabling business analysts and agency leaders to spin up interactive dashboards without writing code or burning prompts on CSS tweaks.
+  - Pairs **Multimodal Screenshot Style Emulation** (extracting background, surface, primary/accent/secondary hex palettes, corner radius, and density from a user-provided screenshot or brand flyer) with an in-browser **Customize Layout** drawer (drag-and-drop card ordering, `1/3` · `1/2` · `2/3` · `Full` column resizing, 1-click `Bar` / `H-Bar` / `Line` / `Donut` / `Table` switching, inline heading edits, and synchronizer CSRF-protected writes back to `dashboard.config.json` on `127.0.0.1`).
+  - Defaults to **Google BigQuery** via keyless Application Default Credentials (`jobs.query` REST API with typed `queryParameters` and `maximumBytesBilled` cost caps + automatic offline `data/snapshot.json` fallback), alongside native read-only connectors for **PostgreSQL / Cloud SQL / AlloyDB**, **MySQL**, **DuckDB**, and **CSV**, bundled with a 60-minute **State of West Virginia** participant guide (`workshop/`) and standalone `live-demo/`.
+
+---
+
 ## 📊 Gemini Enterprise Token Consumption & WIF Usage Telemetry (`./ge-token-tracking`)
 
 - 📈 **[Gemini Enterprise Token Consumption, Model Breakdown & Workforce Identity (WIF) Usage Dashboard](./ge-token-tracking)**:

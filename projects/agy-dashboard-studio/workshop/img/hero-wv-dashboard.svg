@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" fill="none">
+  <rect width="1200" height="720" rx="14" fill="#F4F6F8"/>
+  <!-- Browser bar -->
+  <rect width="1200" height="40" rx="14" fill="#E2E8F0"/>
+  <rect y="24" width="1200" height="16" fill="#E2E8F0"/>
+  <circle cx="24" cy="20" r="6" fill="#EF4444"/>
+  <circle cx="44" cy="20" r="6" fill="#F59E0B"/>
+  <circle cx="64" cy="20" r="6" fill="#10B981"/>
+  <rect x="96" y="9" width="460" height="22" rx="6" fill="#FFFFFF"/>
+  <text x="112" y="24" fill="#475569" font-family="monospace" font-size="12">http://127.0.0.1:4173 · Mountain State Ready Portfolio</text>
+
+  <!-- WV Navy Header -->
+  <rect y="40" width="1200" height="96" fill="#053254"/>
+  <rect y="132" width="1200" height="4" fill="#D5A245"/>
+  <text x="40" y="68" fill="#D5A245" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="1.4">STATE OF WEST VIRGINIA · ECONOMIC DEVELOPMENT (WVEDA &amp; IJDC)</text>
+  <rect x="462" y="55" width="136" height="18" rx="9" fill="#0D4773" stroke="#D5A245" stroke-opacity="0.5"/>
+  <text x="476" y="68" fill="#FFFFFF" font-family="monospace" font-size="10" font-weight="600">BIGQUERY · LIVE</text>
+  <text x="40" y="98" fill="#FFFFFF" font-family="sans-serif" font-size="24" font-weight="800">Mountain State Ready: $40M Site Readiness Portfolio</text>
+  <text x="40" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="13">$25M Shell Building Loans &amp; $15M Tier 1–3 Site Readiness Grants · First-Round Window Closes Dec 31, 2026</text>
+
+  <!-- Header buttons -->
+  <rect x="850" y="70" width="110" height="34" rx="17" fill="#0D4773" stroke="#94A3B8"/>
+  <text x="872" y="91" fill="#FFFFFF" font-family="sans-serif" font-size="12" font-weight="700">Refresh Data</text>
+  <rect x="972" y="70" width="188" height="34" rx="17" fill="#D5A245"/>
+  <text x="1008" y="91" fill="#1E252B" font-family="sans-serif" font-size="12" font-weight="800">Customize Layout</text>
+
+  <!-- Filter Bar -->
+  <rect x="40" y="154" width="1120" height="44" rx="10" fill="#FFFFFF" stroke="#D8E0E6"/>
+  <text x="58" y="180" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">PROGRAM:</text>
+  <rect x="130" y="164" width="46" height="24" rx="12" fill="#053254"/>
+  <text x="145" y="180" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">All</text>
+  <rect x="184" y="164" width="166" height="24" rx="12" fill="#F4F6F8" stroke="#D8E0E6"/>
+  <text x="198" y="180" fill="#1E252B" font-family="sans-serif" font-size="11" font-weight="600">Shell Building Loan ($25M)</text>
+  <rect x="358" y="164" width="170" height="24" rx="12" fill="#F4F6F8" stroke="#D8E0E6"/>
+  <text x="372" y="180" fill="#1E252B" font-family="sans-serif" font-size="11" font-weight="600">Site Readiness Grant ($15M)</text>
+  <rect x="910" y="163" width="232" height="26" rx="6" fill="#F4F6F8" stroke="#D8E0E6"/>
+  <text x="924" y="180" fill="#64748B" font-family="sans-serif" font-size="11">Filter counties, agencies, status...</text>
+
+  <!-- 4 KPI Cards -->
+  <g transform="translate(40, 214)">
+    <rect width="265" height="98" rx="10" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <rect width="265" height="5" rx="2" fill="#C1452C"/>
+    <text x="18" y="28" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">AUTHORIZED STATE FUNDING</text>
+    <text x="18" y="64" fill="#C1452C" font-family="sans-serif" font-size="30" font-weight="800">$40.0M</text>
+    <text x="18" y="84" fill="#5A6772" font-family="sans-serif" font-size="12">$25M WVEDA Loans · $15M IJDC Grants</text>
+  </g>
+  <g transform="translate(325, 214)">
+    <rect width="265" height="98" rx="10" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <rect width="265" height="5" rx="2" fill="#053254"/>
+    <text x="18" y="28" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">ACTIVE PIPELINE REQUESTED</text>
+    <text x="18" y="64" fill="#053254" font-family="sans-serif" font-size="30" font-weight="800">$37.0M</text>
+    <text x="18" y="84" fill="#5A6772" font-family="sans-serif" font-size="12">Across 10 WV county applications</text>
+  </g>
+  <g transform="translate(610, 214)">
+    <rect width="265" height="98" rx="10" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <rect width="265" height="5" rx="2" fill="#053254"/>
+    <text x="18" y="28" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">QUALIFYING INDUSTRIAL ACREAGE</text>
+    <text x="18" y="64" fill="#053254" font-family="sans-serif" font-size="30" font-weight="800">1,215 ac</text>
+    <text x="18" y="84" fill="#5A6772" font-family="sans-serif" font-size="12">5+ acre industrial minimum verified</text>
+  </g>
+  <g transform="translate(895, 214)">
+    <rect width="265" height="98" rx="10" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <rect width="265" height="5" rx="2" fill="#D5A245"/>
+    <text x="18" y="28" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">PROJECTED JOBS TARGET</text>
+    <text x="18" y="64" fill="#053254" font-family="sans-serif" font-size="30" font-weight="800">1,380</text>
+    <text x="18" y="84" fill="#5A6772" font-family="sans-serif" font-size="12">&gt;=120% county median wage floor</text>
+  </g>
+
+  <!-- Left Chart Card: County Bar Chart -->
+  <g transform="translate(40, 330)">
+    <rect width="550" height="236" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <text x="20" y="30" fill="#1E252B" font-family="sans-serif" font-size="15" font-weight="700">Requested Investment by WV County ($M)</text>
+    <text x="20" y="48" fill="#5A6772" font-family="sans-serif" font-size="12">Top county economic development authority proposals in Round 1</text>
+    <line x1="48" y1="196" x2="524" y2="196" stroke="#D8E0E6"/>
+    <!-- Bars -->
+    <rect x="68" y="80" width="38" height="116" rx="5" fill="#C1452C"/>
+    <text x="87" y="73" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$5.0M</text>
+    <text x="87" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Kanawha</text>
+
+    <rect x="134" y="80" width="38" height="116" rx="5" fill="#053254"/>
+    <text x="153" y="73" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$5.0M</text>
+    <text x="153" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Berkeley</text>
+
+    <rect x="200" y="80" width="38" height="116" rx="5" fill="#053254"/>
+    <text x="219" y="73" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$5.0M</text>
+    <text x="219" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Monongalia</text>
+
+    <rect x="266" y="85" width="38" height="111" rx="5" fill="#D5A245"/>
+    <text x="285" y="78" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$4.8M</text>
+    <text x="285" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Putnam</text>
+
+    <rect x="332" y="94" width="38" height="102" rx="5" fill="#2E7FA1"/>
+    <text x="351" y="87" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$4.4M</text>
+    <text x="351" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Marion</text>
+
+    <rect x="398" y="108" width="38" height="88" rx="5" fill="#053254"/>
+    <text x="417" y="101" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$3.8M</text>
+    <text x="417" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Mason</text>
+
+    <rect x="464" y="124" width="38" height="72" rx="5" fill="#053254"/>
+    <text x="483" y="117" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="10" font-weight="700">$3.1M</text>
+    <text x="483" y="214" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Harrison</text>
+  </g>
+
+  <!-- Right Chart Card: Tier Donut -->
+  <g transform="translate(610, 330)">
+    <rect width="550" height="236" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <text x="20" y="30" fill="#1E252B" font-family="sans-serif" font-size="15" font-weight="700">Funding Mix by Readiness Tier ($M)</text>
+    <text x="20" y="48" fill="#5A6772" font-family="sans-serif" font-size="12">Balance across WVEDA shell buildings and IJDC Tier 1–3 site prep</text>
+    <circle cx="118" cy="144" r="56" stroke="#053254" stroke-width="22" stroke-dasharray="230 130" transform="rotate(-90 118 144)"/>
+    <circle cx="118" cy="144" r="56" stroke="#C1452C" stroke-width="22" stroke-dasharray="55 305" stroke-dashoffset="-230" transform="rotate(-90 118 144)"/>
+    <circle cx="118" cy="144" r="56" stroke="#D5A245" stroke-width="22" stroke-dasharray="45 315" stroke-dashoffset="-285" transform="rotate(-90 118 144)"/>
+    <circle cx="118" cy="144" r="56" stroke="#2E7FA1" stroke-width="22" stroke-dasharray="28 332" stroke-dashoffset="-330" transform="rotate(-90 118 144)"/>
+    <text x="118" y="142" text-anchor="middle" fill="#1E252B" font-family="sans-serif" font-size="15" font-weight="800">$37.0M</text>
+    <text x="118" y="157" text-anchor="middle" fill="#5A6772" font-family="sans-serif" font-size="10">Total</text>
+
+    <rect x="220" y="92" width="11" height="11" rx="3" fill="#053254"/>
+    <text x="240" y="102" fill="#1E252B" font-family="sans-serif" font-size="12">Shell Vertical (30k–50k sq ft)</text>
+    <text x="462" y="102" fill="#1E252B" font-family="monospace" font-size="12" font-weight="700">$24.2M (65%)</text>
+
+    <rect x="220" y="122" width="11" height="11" rx="3" fill="#C1452C"/>
+    <text x="240" y="132" fill="#1E252B" font-family="sans-serif" font-size="12">Tier 2 (Utility Main Extension)</text>
+    <text x="462" y="132" fill="#1E252B" font-family="monospace" font-size="12" font-weight="700">$5.7M (15%)</text>
+
+    <rect x="220" y="152" width="11" height="11" rx="3" fill="#D5A245"/>
+    <text x="240" y="162" fill="#1E252B" font-family="sans-serif" font-size="12">Tier 1 (Turnkey Site Boundary)</text>
+    <text x="462" y="162" fill="#1E252B" font-family="monospace" font-size="12" font-weight="700">$4.3M (12%)</text>
+
+    <rect x="220" y="182" width="11" height="11" rx="3" fill="#2E7FA1"/>
+    <text x="240" y="192" fill="#1E252B" font-family="sans-serif" font-size="12">Tier 3 (High-Potential Acreage)</text>
+    <text x="462" y="192" fill="#1E252B" font-family="monospace" font-size="12" font-weight="700">$3.8M (8%)</text>
+  </g>
+
+  <!-- Bottom Table Preview -->
+  <g transform="translate(40, 582)">
+    <rect width="1120" height="116" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+    <rect x="16" y="16" width="1088" height="30" rx="6" fill="#053254"/>
+    <text x="32" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">County ↓</text>
+    <text x="160" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Facilitating Agent</text>
+    <text x="430" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Program</text>
+    <text x="665" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Acres</text>
+    <text x="755" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Requested</text>
+    <text x="870" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Wage Floor</text>
+    <text x="990" y="35" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Status</text>
+
+    <text x="32" y="66" fill="#1E252B" font-family="sans-serif" font-size="12" font-weight="600">Kanawha</text>
+    <text x="160" y="66" fill="#1E252B" font-family="sans-serif" font-size="12">Charleston Area Alliance EDA</text>
+    <text x="430" y="66" fill="#1E252B" font-family="sans-serif" font-size="12">Shell Building Loan ($25M)</text>
+    <text x="665" y="66" fill="#1E252B" font-family="monospace" font-size="12">42</text>
+    <text x="755" y="66" fill="#1E252B" font-family="monospace" font-size="12" font-weight="700">$5.0M</text>
+    <text x="870" y="66" fill="#1E252B" font-family="sans-serif" font-size="12">125% Median</text>
+    <rect x="984" y="52" width="102" height="20" rx="10" fill="#E6EEF4"/>
+    <text x="1000" y="66" fill="#053254" font-family="sans-serif" font-size="11" font-weight="700">WVDED Review</text>
+
+    <line x1="16" y1="78" x2="1104" y2="78" stroke="#E2E8F0"/>
+    <text x="32" y="98" fill="#1E252B" font-family="sans-serif" font-size="12" font-weight="600">Berkeley</text>
+    <text x="160" y="98" fill="#1E252B" font-family="sans-serif" font-size="12">Berkeley County Dev. Authority</text>
+    <text x="430" y="98" fill="#1E252B" font-family="sans-serif" font-size="12">Shell Building Loan ($25M)</text>
+    <text x="665" y="98" fill="#1E252B" font-family="monospace" font-size="12">55</text>
+    <text x="755" y="98" fill="#1E252B" font-family="monospace" font-size="12" font-weight="700">$5.0M</text>
+    <text x="870" y="98" fill="#1E252B" font-family="sans-serif" font-size="12">130% Median</text>
+    <rect x="984" y="84" width="88" height="20" rx="10" fill="#DCF5D0"/>
+    <text x="998" y="98" fill="#1E5631" font-family="sans-serif" font-size="11" font-weight="700">Board Ready</text>
+  </g>
+</svg>
