@@ -1,0 +1,28 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "dashboard-studio",
+  "displayName": "Dashboard Studio",
+  "version": "1.0.2",
+  "description": "Create clean, dynamic business dashboards with visual no-prompt layout editing, screenshot style emulation, and BigQuery-first database connectors.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Create a new BigQuery dashboard and ask me if I have a reference screenshot to emulate",
+    "Spin up a Mountain State Ready $40M Site Readiness & Grants dashboard for West Virginia",
+    "Spin up a Mine and Corrections Incident Triage dashboard with live visual layout editing"
+  ],
+  "author": {
+    "name": "Public Sector Cloud AI Practice",
+    "url": "https://cloud.google.com/bigquery"
+  },
+  "homepage": "https://antigravity.google/docs/plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "dashboard",
+    "bigquery",
+    "analytics",
+    "charts",
+    "postgres",
+    "duckdb",
+    "business-intelligence"
+  ]
+}

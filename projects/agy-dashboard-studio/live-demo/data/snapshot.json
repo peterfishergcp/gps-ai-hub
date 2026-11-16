@@ -1,0 +1,147 @@
+{
+  "sourceMode": "snapshot",
+  "connector": "bigquery",
+  "generatedAt": "2026-11-16T16:00:00Z",
+  "weeklyTimeline": [
+    {
+      "label": "Nov 10 (Launch)",
+      "value": 6.5
+    },
+    {
+      "label": "Nov 17",
+      "value": 14.2
+    },
+    {
+      "label": "Nov 24",
+      "value": 21.8
+    },
+    {
+      "label": "Dec 01",
+      "value": 27.4
+    },
+    {
+      "label": "Dec 08",
+      "value": 32.9
+    },
+    {
+      "label": "Dec 15 (Proj.)",
+      "value": 36.8
+    },
+    {
+      "label": "Dec 31 (Close)",
+      "value": 40
+    }
+  ],
+  "records": [
+    {
+      "county": "Kanawha",
+      "authority": "Charleston Area Alliance EDA",
+      "program": "Shell Building Loan ($25M)",
+      "tier": "Shell Vertical (30k-50k sq ft)",
+      "acres": 42,
+      "requestedMillions": 5,
+      "projectedJobs": 165,
+      "wagePct": "125% Median",
+      "status": "Joint WVDED Review"
+    },
+    {
+      "county": "Berkeley",
+      "authority": "Berkeley County Dev. Authority",
+      "program": "Shell Building Loan ($25M)",
+      "tier": "Shell Vertical (30k-50k sq ft)",
+      "acres": 55,
+      "requestedMillions": 5,
+      "projectedJobs": 180,
+      "wagePct": "130% Median",
+      "status": "Board Ready"
+    },
+    {
+      "county": "Putnam",
+      "authority": "Putnam County Dev. Authority",
+      "program": "Shell Building Loan ($25M)",
+      "tier": "Shell Vertical (30k-50k sq ft)",
+      "acres": 38,
+      "requestedMillions": 4.8,
+      "projectedJobs": 140,
+      "wagePct": "122% Median",
+      "status": "Board Ready"
+    },
+    {
+      "county": "Monongalia",
+      "authority": "Morgantown Area Partnership",
+      "program": "Shell Building Loan ($25M)",
+      "tier": "Shell Vertical (30k-50k sq ft)",
+      "acres": 34,
+      "requestedMillions": 5,
+      "projectedJobs": 155,
+      "wagePct": "128% Median",
+      "status": "Joint WVDED Review"
+    },
+    {
+      "county": "Cabell",
+      "authority": "Huntington Area Dev. Council",
+      "program": "Site Readiness Grant ($15M)",
+      "tier": "Tier 1 (Turnkey Boundary)",
+      "acres": 120,
+      "requestedMillions": 2.4,
+      "projectedJobs": 110,
+      "wagePct": "120% Median",
+      "status": "Board Ready"
+    },
+    {
+      "county": "Harrison",
+      "authority": "Harrison County Econ. Dev. Corp.",
+      "program": "Site Readiness Grant ($15M)",
+      "tier": "Tier 2 (Utility Extension)",
+      "acres": 210,
+      "requestedMillions": 3.1,
+      "projectedJobs": 135,
+      "wagePct": "120% Median",
+      "status": "Engineering Check"
+    },
+    {
+      "county": "Mason",
+      "authority": "Mason County Dev. Authority",
+      "program": "Site Readiness Grant ($15M)",
+      "tier": "Tier 3 (High-Potential Acreage)",
+      "acres": 410,
+      "requestedMillions": 3.8,
+      "projectedJobs": 190,
+      "wagePct": "125% Median",
+      "status": "Phase I/II ESA Review"
+    },
+    {
+      "county": "Wood",
+      "authority": "Wood County Development",
+      "program": "Site Readiness Grant ($15M)",
+      "tier": "Tier 2 (Utility Extension)",
+      "acres": 165,
+      "requestedMillions": 2.6,
+      "projectedJobs": 95,
+      "wagePct": "120% Median",
+      "status": "Joint WVDED Review"
+    },
+    {
+      "county": "Raleigh",
+      "authority": "New River Gorge Regional Dev.",
+      "program": "Site Readiness Grant ($15M)",
+      "tier": "Tier 1 (Turnkey Boundary)",
+      "acres": 95,
+      "requestedMillions": 1.9,
+      "projectedJobs": 85,
+      "wagePct": "120% Median",
+      "status": "Board Ready"
+    },
+    {
+      "county": "Marion",
+      "authority": "Marion Regional Dev. Corp.",
+      "program": "Shell Building Loan ($25M)",
+      "tier": "Shell Vertical (30k-50k sq ft)",
+      "acres": 46,
+      "requestedMillions": 4.4,
+      "projectedJobs": 125,
+      "wagePct": "120% Median",
+      "status": "Intake Complete"
+    }
+  ]
+}
