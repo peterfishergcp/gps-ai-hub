@@ -34,6 +34,14 @@ const SKILL_CATALOG = [
         starterPrompt: '/wv-onboard Help me set up my West Virginia agency role, Digital Twin voice, and Gemini Enterprise connection.'
       },
       {
+        id: 'model-guide',
+        title: 'Model Selection & Using Claude in AGY',
+        subtitle: 'Switch between Gemini & Anthropic Claude, tune effort & Dual-Model reviews',
+        command: '/model-guide',
+        badge: 'Claude + Gemini',
+        starterPrompt: '/model-guide Show me how to use Anthropic Claude alongside Google Gemini in Antigravity, when to pick each model, and our West Virginia quota & compliance guardrails.'
+      },
+      {
         id: 'daily-brief',
         title: 'Daily Executive Brief & Meeting Prep',
         subtitle: 'Morning priorities, calendar prep & action items via Federated GE',

@@ -1,11 +1,11 @@
 ---
 name: wv-dashboard
-description: Creates, connects, styles, and updates interactive executive and operational dashboards with Zero-Node Browser Mode (runs directly over file:// in Chrome/Edge with zero installs), visual drag-and-drop Customize Layout editing, screenshot style emulation, federated Gemini Enterprise data pulls, and optional BigQuery/SQL live queries. Trigger on /wv-dashboard, "build a dashboard", "create a KPI tracker", or "emulate this dashboard screenshot".
+description: Creates, connects, styles, and updates interactive executive and operational dashboards with automatic rendered Side-Pane Artifact preview, 1-click Browser Launch URL cards (via the built-in WV Preview sidecar on 127.0.0.1:4175), Zero-Node Browser Mode, visual drag-and-drop Customize Layout editing, screenshot style emulation, federated Gemini Enterprise data pulls, and optional BigQuery/SQL live queries. Trigger on /wv-dashboard, "build a dashboard", "create a KPI tracker", or "emulate this dashboard screenshot".
 ---
 
 # WV Dashboard Studio (`/wv-dashboard`)
 
-Create clean, dynamic business dashboards that work on **every State of West Virginia corporate laptop with zero extra software installs** (*Zero-Node `file://` Browser Mode*), while automatically unlocking live local `127.0.0.1:4173` BigQuery/SQL previews whenever `node` is available.
+Create clean, dynamic business dashboards that **render visually right inside Antigravity AND open in Chrome/Edge with 1 click**—never showing raw HTML source code (`</> index.html`) and never requiring terminal `Allow open...` confirmation popups.
 
 ## Step 1: Align on Style & Data Source (1 Concise Question If Unspecified)
 1. **Visual Style:** Ask whether the user has a **screenshot / brand PDF** to emulate, or wants one of the built-in presets:
@@ -17,15 +17,45 @@ Create clean, dynamic business dashboards that work on **every State of West Vir
    - **Google BigQuery (Default Database Connector)** or secondary read-only SQL/CSV (`postgres`, `mysql`, `duckdb`, `csv`) — see `./references/database_and_ge_connectors.md`.
    - **Uploaded CSV / Excel / JSON or Starter Template** (`wv-mountain-state-ready`, `wv-incident-triage`, `executive-kpi`).
 
-## Step 2: Scaffold or Hydrate the Dashboard (With OR Without `node` on `$PATH`!)
-Check whether `node` is on `$PATH`:
-- **If `node` IS on `$PATH`:**
-  Run `node <skill_dir>/scripts/scaffold_dashboard.mjs --target <target_dir> --template <wv-mountain-state-ready|wv-incident-triage|executive-kpi>`, customize `dashboard.config.json` + `data/snapshot.json`, re-sync `<script id="initial-data" type="application/json">` in `index.html`, and optionally start `node server.mjs` on `http://127.0.0.1:4173`.
-- **If `node` is NOT on `$PATH` (Standard Locked-Down WV Laptop — Zero-Node Mode!):**
-  1. Copy `styles.css`, `app.js`, `index.html`, and `server.mjs` from `<skill_dir>/assets/runtime/` into `<target_dir>/`.
-  2. Write `<target_dir>/dashboard.config.json` and `<target_dir>/data/snapshot.json` directly using `write_file` (starting from `<skill_dir>/assets/templates/wv-mountain-state-ready.json` or the user's metrics).
-  3. Inject `{"config": <config>, "snapshot": <snapshot>}` (with `<` escaped as `\u003c`) into `<script id="initial-data" type="application/json">` inside `<target_dir>/index.html`.
-  4. Give the user a clickable `[index.html](file:///.../index.html)` link—they simply open it in **Chrome or Microsoft Edge**, click **Customize Layout** to drag cards, resize widths (`1/3`, `1/2`, `2/3`, `Full`), swap chart types, or tweak colors, and click **Save Changes** (which writes directly back to `dashboard.config.json` via `window.showSaveFilePicker()` with **zero Node.js installed**)!
+## Step 2: Scaffold & Sync the Dashboard (`dashboard-standalone.html` + `index.html`)
+1. Run the scaffolder using Antigravity's built-in Node runtime (or `node` on `$PATH`):
+   ```bash
+   node <skill_dir>/scripts/scaffold_dashboard.mjs --target <target_dir> --template <wv-mountain-state-ready|wv-incident-triage|executive-kpi>
+   ```
+2. Edit `<target_dir>/dashboard.config.json` and `<target_dir>/data/snapshot.json` to match the user's metrics, KPIs, and West Virginia theme.
+3. Re-run with `--sync` so `index.html`, the self-contained single-file `dashboard-standalone.html`, and the `WV Preview` sidecar registry (`~/.gemini/config/plugin_data/wv-design-studio/deliverables.json`) are all updated:
+   ```bash
+   node <skill_dir>/scripts/scaffold_dashboard.mjs --target <target_dir> --sync
+   ```
+   Note the `STANDALONE_ARTIFACT_HTML=` path and `LIVE_PREVIEW_URL=http://127.0.0.1:4175/view/<id>` printed by the script.
 
-## Step 3: Standing Preservation Rule
-Always read `dashboard.config.json` from disk immediately before making follow-up edits so visual layout changes saved by the user in Chrome/Edge are preserved.
+## Step 3: Mandatory Visual Rendering & 1-Click Browser Launch (NEVER Link Raw Workspace `index.html` as the Preview!)
+> **CRITICAL UX RULE:** In Antigravity, clicking a workspace file link like `[index.html](file:///.../dashboard/index.html)` opens the **Code Editor** (`</> index.html` raw source code), NOT a rendered dashboard! And running `open index.html` via `run_command` triggers a terminal confirmation popup.
+
+Instead, you **MUST** always complete both of these native artifact steps before replying:
+1. **Write the Rendered Visual HTML Artifact to `<appDataDir>/brain/<conversation-id>/`:**
+   - Read `<target_dir>/dashboard-standalone.html` (which has all CSS, JS, config, and snapshot data inlined into a single file) and write it to `<appDataDir>/brain/<conversation-id>/<dashboard_name>_preview.html` using `write_file` with:
+     ```json
+     "ArtifactMetadata": {
+       "Summary": "Interactive rendered preview of the West Virginia Dashboard (click to view & customize visually in the Side Pane)",
+       "UserFacing": true,
+       "RequestFeedback": false
+     }
+     ```
+   - Clicking this Artifact Card in chat opens the **rendered visual dashboard** directly in Antigravity's right-hand Side Pane!
+2. **Write the 1-Click Browser Launch URL Artifact (`.url.json`):**
+   - Using the `LIVE_PREVIEW_URL` printed by `scaffold_dashboard.mjs` (for example, `http://127.0.0.1:4175/view/dash-...`), use `write_file` to create `<appDataDir>/brain/<conversation-id>/Launch Dashboard in Browser.url.json` with `ArtifactMetadata: { "Summary": "1-click browser launch", "UserFacing": true, "RequestFeedback": false }`:
+     ```json
+     {
+       "url": "http://127.0.0.1:4175/view/<id>",
+       "title": "Launch Interactive Dashboard in Browser (Chrome / Edge)",
+       "description": "Opens the live rendered dashboard with Customize Layout & Save Changes enabled—zero terminal prompts."
+     }
+     ```
+3. **In Your Reply (Inline `<agent-embed>` + Rendered Links Only — ZERO `</> index.html` Code Links!):**
+   - Embed `<agent-embed src="file:///<appDataDir>/brain/<conversation-id>/<dashboard_name>_preview.html"></agent-embed>` directly in your chat response so the dashboard renders visually inline.
+   - For clickable links in your bullet list, link **ONLY** to `[Open Rendered Dashboard in Side Pane](file:///<appDataDir>/brain/<conversation-id>/<dashboard_name>_preview.html)` and `[Launch Interactive Dashboard in Browser](http://127.0.0.1:4175/view/<id>)`.
+   - **NEVER** create a `file://` markdown link to the workspace `index.html`, `styles.css`, or `app.js` (because clicking `</> index.html` opens raw source code in the Code Editor!). Write workspace filenames in plain backticks (`dashboard.config.json`) only.
+
+## Step 4: Standing Preservation Rule
+Always read `dashboard.config.json` from disk immediately before making follow-up edits so visual layout changes saved by the user are preserved.
