@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="410" viewBox="0 0 960 410" fill="none">
+  <rect width="960" height="410" rx="12" fill="#0F172A"/>
+  <!-- Agent question bubble -->
+  <rect x="36" y="28" width="888" height="148" rx="12" fill="#1E293B" stroke="#334155"/>
+  <text x="60" y="58" fill="#D5A245" font-family="sans-serif" font-size="12" font-weight="700">ANTIGRAVITY · /dashboard SKILL ACTIVE</text>
+  <text x="60" y="88" fill="#F8FAFC" font-family="sans-serif" font-size="15" font-weight="700">Before I scaffold your West Virginia BigQuery dashboard:</text>
+  <text x="60" y="116" fill="#CBD5E1" font-family="sans-serif" font-size="14">1. Do you have a screenshot (or brand flyer) of a good dashboard whose colors and layout you want to emulate?</text>
+  <text x="60" y="140" fill="#94A3B8" font-family="sans-serif" font-size="13">   Drop an image right into the prompt box below, or reply "Use West Virginia Official" to use Navy #053254, Rust #C1452C &amp; Gold #D5A245.</text>
+
+  <!-- User prompt box with attached screenshot -->
+  <rect x="36" y="202" width="888" height="178" rx="12" fill="#1E293B" stroke="#D5A245" stroke-width="2.5"/>
+  <!-- Attached image chip -->
+  <rect x="60" y="222" width="256" height="54" rx="8" fill="#053254" stroke="#D5A245"/>
+  <rect x="74" y="234" width="30" height="30" rx="5" fill="#FFFFFF"/>
+  <rect x="80" y="248" width="6" height="10" fill="#053254"/>
+  <rect x="88" y="242" width="6" height="16" fill="#C1452C"/>
+  <rect x="96" y="238" width="6" height="20" fill="#D5A245"/>
+  <text x="116" y="246" fill="#FFFFFF" font-family="sans-serif" font-size="12" font-weight="700">wv-style-reference.svg</text>
+  <text x="116" y="263" fill="#D5A245" font-family="monospace" font-size="10">Attached style reference</text>
+
+  <text x="60" y="308" fill="#F8FAFC" font-family="sans-serif" font-size="14">Emulate the colors, clean white cards, bold rust hero numbers, and navy table header from this reference.</text>
+  <text x="60" y="332" fill="#F8FAFC" font-family="sans-serif" font-size="14">Connect to BigQuery (with local WV snapshot fallback) and start the local preview server.</text>
+
+  <circle cx="888" cy="344" r="18" fill="#C1452C"/>
+  <path d="M888 335 L881 344 H886 V353 H890 V344 H895 Z" fill="#FFFFFF"/>
+</svg>

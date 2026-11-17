@@ -1,0 +1,12 @@
+{
+  "name": "wv-engineering-cloud",
+  "displayName": "WV Engineering — Refactoring, Cloud Run & BigQuery",
+  "version": "1.0.0",
+  "description": "Stage-gated legacy application refactoring (adapted from Google's migrate-to-rust Crucible), zero-Docker Cloud Run source deployments, BigQuery SQL migration & cost optimization, and on-demand Google Cloud skill loading.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /modernize-refactor on this legacy application to build a 6-section modernization blueprint and verify A/B output parity",
+    "Run /deploy-cloudrun to prepare and deploy this service to Cloud Run from source with a least-privilege service account and Secret Manager",
+    "Run /bigquery-architect to translate this legacy SQL query to BigQuery Standard SQL with dry-run cost caps and partitioning"
+  ]
+}

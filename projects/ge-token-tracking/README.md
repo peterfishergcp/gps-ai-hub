@@ -17,14 +17,18 @@ This project provides a streamlined, zero-KMS, zero-Cloud-Storage token tracking
    - Creates a single partitioned Cloud Logging sink (`ge-token-tracking-bq-sink`) streaming `discoveryengine.googleapis.com/gemini_enterprise_user_activity` and `discoveryengine.googleapis.com/notebooklm_enterprise_user_activity` into BigQuery (`ge_token_analytics`).
    - Links the Cloud Trace `_Trace` bucket directly to BigQuery (`trace_link._AllSpans`) via `gcloud logging links create`.
    - Deploys three pre-built BigQuery analytical views (`v_ge_activity_logs`, `v_gemini_token_usage_by_user`, and `v_token_usage_summary_by_principal`) that join OpenTelemetry model execution spans (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.request.model`, `gen_ai.conversation.id`) with WIF user principals (`userIamPrincipal`) and Gemini Enterprise instances (`engine_id`).
-3. **Focused Cloud Run Token Consumption & WIF Usage Dashboard (`dashboard/`, `deploy_dashboard.py`)**:
-   - **Instance Selector Dropdown**: View a **Global Rollup (`ALL`)** across all Gemini Enterprise and NotebookLM instances, or filter metrics down to a single `engine_id`.
-   - **4 Executive KPI Cards**: **Total Queries**, **Unique Active Users** (verified WIF & IAM principals), **Total Sessions**, and **Active Engine Scope**.
-   - **3 Interactive Chart.js Visualizations**:
-     - **Token Usage by Model** (`Input Tokens` vs. `Output Tokens` across `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.5-flash`, `gemini-3.1-pro-preview`, etc.)
-     - **Token Usage by WIF Principal** (`Input Tokens` vs. `Output Tokens` attributed per Workforce Identity Principal or Workspace user)
-     - **Daily Token Consumption Trend** (Daily token volume over time)
-   - **WIF Identity Attribution Table (`v_gemini_token_usage_by_user`)**: Per-user breakdown of Identity Pool/Type (`WIF OIDC Pool`, `Entra ID WIF (OIDC)`, `Cloud Identity / Workspace`), GE Engines Used, Models, Sessions/Calls, Input Tokens, Output Tokens, Total Tokens, and Average Tokens per Call, plus **1-click CSV Export** (`/api/export-csv`) and **Printable HTML Briefing Export** (`/api/export-html`).
+3. **Two-Tab Cloud Run Security, Governance, Deployment Readiness & WIF Token Dashboard (`dashboard/`, `deploy_dashboard.py`, `install_deployment_dashboard.py`)**:
+   - **Tab 1 — Security, Policy Adherence, Governance & Phased Deployment Readiness**:
+     - **6 Executive Security & Onboarding Scorecards**: Policy Adherence (`8/8` controls), Jailbreak & Model Armor Blocks, Fail-Closed PII / FERPA SDP Blocks, Registered Users & Portal Policy Gate (`%`), Documents Grounded & Peak `QPS`, and Vetted Agents/Skills & API Builders.
+     - **Continuous Governance & Policy Drift Matrix**: Monitors 8 institutional governance controls continuously—Observability Coverage (`100%` engines/agents/NotebookLM), SIEM Metadata Separation (`99.4%` volume reduction), `1 Project : 1 App` + Separate Entra Graph App Registrations, Group-Only Sharing (`<1,500` direct-principal ceiling), 3-Min Portal Policy Gate, 3P Model Lock, Gallery Sprawl Guard, and Cloud Run MCP Pre-Warming & Least-Privilege SA compliance.
+     - **Real-Time Jailbreak, Model Armor & Fail-Closed PII SDP Alert Feed (`v_security_and_sdp_alerts`)**: Surfaces adversarial prompt-injection probes, `US_SSN` / `FERPA_STUDENT_ID` SDP blocks, and Purview sensitivity-label denials using **masked identities (`cra***@example.edu`)** with zero cleartext PII stored.
+     - **4-Wave Zero-Big-Bang Feature Rollout (Dual Readiness Stoplights)** & **Weekly vs. All-Time Domain Adoption Table (`v_deployment_and_governance_kpis`)**.
+   - **Tab 2 — Usage & WIF Principal Token Telemetry**:
+     - **Instance Selector Dropdown**: View a **Global Rollup (`ALL`)** or filter down to a single `engine_id`.
+     - **3 Interactive Chart.js Visualizations**: **Token Usage by Model**, **Token Usage by WIF Principal**, and **Daily Token Consumption Trend**.
+     - **Searchable WIF Identity Attribution Table (`v_gemini_token_usage_by_user`)**, **1-click CSV Export** (`/api/export-csv`), and **Printable Executive Governance & Token HTML Report** (`/api/export-html`).
+4. **1-Command Antigravity CLI Installer & MCP Pre-Warming Auditor (`.agents/skills/install-ge-deployment-dashboard/SKILL.md` + `install_deployment_dashboard.py`)**:
+   - Audits existing Cloud Run MCP and custom agent services (`--audit-only`) for Default Compute SA drift, `minScale >= 2`, `startup-cpu-boost`, and `--no-cpu-throttling` before provisioning observability, BigQuery security/token views, and the IAP-protected Cloud Run dashboard.
 
 ---
 

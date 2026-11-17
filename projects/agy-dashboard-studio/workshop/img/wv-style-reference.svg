@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="540" viewBox="0 0 900 540" fill="none">
+  <rect width="900" height="540" rx="16" fill="#F4F6F8"/>
+  <rect width="900" height="92" rx="16" fill="#053254"/>
+  <rect y="76" width="900" height="16" fill="#053254"/>
+  <rect y="88" width="900" height="4" fill="#D5A245"/>
+  <text x="36" y="38" fill="#D5A245" font-family="sans-serif" font-size="12" font-weight="700" letter-spacing="1.6">2026 MOUNTAIN STATE READY · EXECUTIVE STYLE REFERENCE</text>
+  <text x="36" y="68" fill="#FFFFFF" font-family="sans-serif" font-size="24" font-weight="800">West Virginia Economic Development Brand &amp; KPI System</text>
+
+  <rect x="36" y="116" width="260" height="110" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+  <rect x="36" y="116" width="260" height="5" fill="#C1452C"/>
+  <text x="56" y="146" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">TOTAL INVESTMENT</text>
+  <text x="56" y="190" fill="#C1452C" font-family="sans-serif" font-size="38" font-weight="800">$40M</text>
+  <text x="56" y="212" fill="#5A6772" font-family="sans-serif" font-size="12">Headline KPI in Rust #C1452C</text>
+
+  <rect x="320" y="116" width="260" height="110" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+  <rect x="320" y="116" width="260" height="5" fill="#053254"/>
+  <text x="340" y="146" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">SHELL BUILDING LOANS</text>
+  <text x="340" y="190" fill="#053254" font-family="sans-serif" font-size="38" font-weight="800">$25M</text>
+  <text x="340" y="212" fill="#5A6772" font-family="sans-serif" font-size="12">Primary Series in Navy #053254</text>
+
+  <rect x="604" y="116" width="260" height="110" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+  <rect x="604" y="116" width="260" height="5" fill="#D5A245"/>
+  <text x="624" y="146" fill="#5A6772" font-family="sans-serif" font-size="11" font-weight="700">SITE READINESS GRANTS</text>
+  <text x="624" y="190" fill="#053254" font-family="sans-serif" font-size="38" font-weight="800">$15M</text>
+  <text x="624" y="212" fill="#5A6772" font-family="sans-serif" font-size="12">Connector Accent in Gold #D5A245</text>
+
+  <rect x="36" y="248" width="828" height="256" rx="12" fill="#FFFFFF" stroke="#D8E0E6"/>
+  <rect x="36" y="248" width="828" height="42" rx="12" fill="#053254"/>
+  <rect x="36" y="276" width="828" height="14" fill="#053254"/>
+  <text x="58" y="274" fill="#FFFFFF" font-family="sans-serif" font-size="13" font-weight="700" letter-spacing="1">DESIGN TOKENS · FIRA SANS · CLEAN WHITE CARDS ON #F4F6F8</text>
+
+  <rect x="62" y="316" width="160" height="156" rx="10" fill="#053254"/>
+  <text x="82" y="432" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="700">WV Navy</text>
+  <text x="82" y="454" fill="#D5A245" font-family="monospace" font-size="13">#053254</text>
+
+  <rect x="246" y="316" width="160" height="156" rx="10" fill="#C1452C"/>
+  <text x="266" y="432" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="700">WV Rust</text>
+  <text x="266" y="454" fill="#FFFFFF" font-family="monospace" font-size="13">#C1452C</text>
+
+  <rect x="430" y="316" width="160" height="156" rx="10" fill="#D5A245"/>
+  <text x="450" y="432" fill="#1E252B" font-family="sans-serif" font-size="14" font-weight="700">WV Gold</text>
+  <text x="450" y="454" fill="#1E252B" font-family="monospace" font-size="13">#D5A245</text>
+
+  <rect x="614" y="316" width="224" height="156" rx="10" fill="#F4F6F8" stroke="#D8E0E6"/>
+  <text x="634" y="352" fill="#1E252B" font-family="sans-serif" font-size="14" font-weight="700">Layout Principles</text>
+  <text x="634" y="380" fill="#5A6772" font-family="sans-serif" font-size="12">• 4-KPI top summary strip</text>
+  <text x="634" y="404" fill="#5A6772" font-family="sans-serif" font-size="12">• 2-up chart comparison row</text>
+  <text x="634" y="428" fill="#5A6772" font-family="sans-serif" font-size="12">• Full-width navy header table</text>
+  <text x="634" y="452" fill="#5A6772" font-family="sans-serif" font-size="12">• Tabular numbers &amp; 12px radius</text>
+</svg>

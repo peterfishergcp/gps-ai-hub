@@ -28,6 +28,32 @@ Welcome to the **Google Cloud Public Sector AI Hub** reference architecture cata
 
 ---
 
+## 🛠️ Google Antigravity Hands-On Workshop Starter (`./AGY Website Workshop`)
+
+- 🚀 **[Enterprise & Public Sector Hands-On Workshop Starter (`AGENTS.md` + `agy` CLI + Vertex AI ADC)](./AGY%20Website%20Workshop)**:
+  - Turnkey 90-minute customer cohort starter replacing brittle manual setup scripts and static API keys with a repository-root **[`AGENTS.md`](./AGY%20Website%20Workshop/AGENTS.md)** (and [`GEMINI.md`](./AGY%20Website%20Workshop/GEMINI.md)) deployment playbook designed for **Google Cloud Workstations**, **Cloud Shell**, and managed workstations.
+  - Executes a read-only preflight (`scripts/preflight.sh`) on Turn 1 to auto-discover `GOOGLE_CLOUD_PROJECT`, active `gcloud` identity, `aiplatform.googleapis.com` status, `testIamPermissions`, and keyless **Vertex AI Application Default Credentials (ADC)**, then installs workspace-scoped ADK skills (`--workspace`) without global `~/.gemini` symlink races.
+  - Guides participants through **Lab 1** (3-file Mission Web Portal served via a realpath-jailed `127.0.0.1` server with strict CSP headers and zero `innerHTML` sinks), **Lab 2** (keyless `gemini-3.8-flash` ADK agent built with `agents-cli` and tested in `adk web`), and **Lab 3** (multi-agent coordinator + specialist `transfer_to_agent` handoffs).
+
+---
+
+## 🏔️ State of West Virginia — Antigravity Skill & Federated Connector Suite (`./wv-antigravity-suite`)
+
+- ⚡ **[State of West Virginia Antigravity Onboarding, Federated GE Connector Bridge, Claude/Gemini Model Guide & Visual Design Suite (`v1.2.0`)](./wv-antigravity-suite)**:
+  - Complete `< 2-second` onboarding suite (`dist/wv-antigravity-suite.zip` + 1-line `agy plugin install`) packaging **6 modular Antigravity plugins** (`wv-onboarding`, `wv-connectors`, `wv-design-studio`, `wv-state-workflows`, `wv-engineering-cloud`, `wv-security`) and **21 slash-command skills** requiring **zero extra local software** on state corporate laptops.
+  - Includes **`/model-guide`** (switching between **Anthropic Claude Sonnet / Opus** and **Google Gemini** in Desktop & CLI, 2-Pass Dual-Model Cross-Review, and WV IT Vertex AI Model Garden enablement in `us-east5`), **`wv-ge-bridge` MCP** (connecting Azure/Entra-synced Google Identity to federated Outlook, SharePoint, OneDrive, Teams, Drive & GitHub through the user's default Gemini Enterprise instance), **`WV Skills`** live toggle UI sidecar, and **`WV Preview`** live visual design preview sidecar (`127.0.0.1:4175`) + [7 Guided Test Prompts (`docs/TEST_PROMPTS.md`)](./wv-antigravity-suite/docs/TEST_PROMPTS.md).
+
+---
+
+## 📈 Google Antigravity Dashboard Studio Plugin & BI Workshop (`./agy-dashboard-studio`)
+
+- 🎨 **[Antigravity Dashboard Studio Plugin (`dashboard-studio`), Zero-Prompt Visual Layout Editor & Hands-On Workshop](./agy-dashboard-studio)**:
+  - Strict-validated **Google Antigravity Plugin** (`plugin.json` v1 schema, `/dashboard` skill, `dashboard-designer` multimodal subagent, and `rules/AGENTS.md` spec-preservation guardrails) enabling business analysts and agency leaders to spin up interactive dashboards without writing code or burning prompts on CSS tweaks.
+  - Pairs **Multimodal Screenshot Style Emulation** (extracting background, surface, primary/accent/secondary hex palettes, corner radius, and density from a user-provided screenshot or brand flyer) with an in-browser **Customize Layout** drawer (drag-and-drop card ordering, `1/3` · `1/2` · `2/3` · `Full` column resizing, 1-click `Bar` / `H-Bar` / `Line` / `Donut` / `Table` switching, inline heading edits, and synchronizer CSRF-protected writes back to `dashboard.config.json` on `127.0.0.1`).
+  - Defaults to **Google BigQuery** via keyless Application Default Credentials (`jobs.query` REST API with typed `queryParameters` and `maximumBytesBilled` cost caps + automatic offline `data/snapshot.json` fallback), alongside native read-only connectors for **PostgreSQL / Cloud SQL / AlloyDB**, **MySQL**, **DuckDB**, and **CSV**, bundled with a 60-minute **State of West Virginia** participant guide (`workshop/`) and standalone `live-demo/`.
+
+---
+
 ## 📊 Gemini Enterprise Token Consumption & WIF Usage Telemetry (`./ge-token-tracking`)
 
 - 📈 **[Gemini Enterprise Token Consumption, Model Breakdown & Workforce Identity (WIF) Usage Dashboard](./ge-token-tracking)**:

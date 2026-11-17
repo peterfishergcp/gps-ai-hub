@@ -1,0 +1,12 @@
+{
+  "name": "wv-state-workflows",
+  "displayName": "WV State Workflows — FOIA, Legal & Policy Review",
+  "version": "1.0.0",
+  "description": "West Virginia FOIA & federal public records discovery/redaction (Google Vault, Microsoft Purview KQL, Federated GE, Vaughn Index), state legal/procurement contract review, and legislative/program policy audits.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /foia-expert to translate this public records request into Google Vault and Purview queries and generate a Vaughn Index redaction report",
+    "Run /legal-procurement-review on this vendor contract to check West Virginia sovereign immunity, fiscal non-appropriation, and AI data terms",
+    "Run /policy-program-audit to check consistency across our program rules, stakeholder flyer, and web copy"
+  ]
+}

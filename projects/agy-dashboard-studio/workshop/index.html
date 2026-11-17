@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Hands-on participant guide for State of West Virginia business and operations leaders: install the Dashboard Studio plugin in Google Antigravity, emulate a reference screenshot, connect to BigQuery, and customize layouts visually without excessive prompting.">
+  <title>Build Executive Dashboards with Antigravity · State of West Virginia</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23053254' stroke='%23D5A245' stroke-width='2'/%3E%3Crect x='8' y='17' width='4' height='7' rx='1' fill='%23ffffff'/%3E%3Crect x='14' y='13' width='4' height='11' rx='1' fill='%23C1452C'/%3E%3Crect x='20' y='9' width='4' height='15' rx='1' fill='%23D5A245'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fira+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="hide-notes">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true">WV</span>
+      <span class="brand-text">Dashboard Studio · Antigravity Workshop</span>
+    </a>
+    <div class="progress" aria-live="polite">
+      <span id="progressText">0 of 10 steps</span>
+      <div class="bar"><span id="progressBar"></span></div>
+    </div>
+    <button class="notes-toggle" type="button" id="notesToggle" aria-pressed="false" hidden>Review notes: off</button>
+  </div>
+  <nav class="chips" aria-label="Jump to a workshop section">
+    <a class="chip" href="#arrive">Before</a>
+    <a class="chip" href="#setup">Setup</a>
+    <a class="chip" data-step-link="1" href="#lab1">Lab 1 · Plugin</a>
+    <a class="chip" data-step-link="3" href="#lab2">Lab 2 · WV Dashboard</a>
+    <a class="chip" data-step-link="7" href="#lab3">Lab 3 · Visual Edit &amp; DBs</a>
+    <a class="chip" href="#stretch">Level-ups</a>
+    <a class="chip" href="#help">Help</a>
+  </nav>
+</header>
+
+<div class="shell" id="top">
+  <aside class="rail" aria-label="Workshop sections">
+    <nav>
+      <div class="label">Workshop</div>
+      <a href="#overview"><span class="dot">·</span>Overview &amp; agenda</a>
+      <a href="#arrive"><span class="dot">·</span>Before you arrive</a>
+      <a href="#setup"><span class="dot">✓</span>Setup check</a>
+
+      <div class="label">Lab 1 · Install the plugin</div>
+      <a data-step-link="1" href="#step-1"><span class="dot">1</span>Install Dashboard Studio</a>
+      <a data-step-link="2" href="#step-2"><span class="dot">2</span>Create your project</a>
+
+      <div class="label">Lab 2 · Spin up WV dashboard</div>
+      <a data-step-link="3" href="#step-3"><span class="dot">3</span>Pick your WV track</a>
+      <a data-step-link="4" href="#step-4"><span class="dot">4</span>Emulate a screenshot</a>
+      <a data-step-link="5" href="#step-5"><span class="dot">5</span>Connect BigQuery</a>
+      <a data-step-link="6" href="#step-6"><span class="dot">6</span>Launch in Chrome</a>
+
+      <div class="label">Lab 3 · Edit without prompts</div>
+      <a class="l2" data-step-link="7" href="#step-7"><span class="dot">7</span>Customize layout visually</a>
+      <a class="l2" data-step-link="8" href="#step-8"><span class="dot">8</span>Add a BigQuery metric</a>
+      <a class="l2" data-step-link="9" href="#step-9"><span class="dot">9</span>Connect other databases</a>
+      <a class="l2" data-step-link="10" href="#step-10"><span class="dot">10</span>Verify before sharing</a>
+
+      <div class="label">After</div>
+      <a href="#stretch"><span class="dot">+</span>Make it your own</a>
+      <a href="#showcase"><span class="dot">★</span>Showcase</a>
+      <a href="#next"><span class="dot">→</span>After today</a>
+      <a href="#help"><span class="dot">?</span>Troubleshooting &amp; ZIPs</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="banner" role="note">
+      <h2>Facilitator review notes (?review mode)</h2>
+      <ul>
+        <li><b>Hidden for participants:</b> Dashed blue boxes like this appear only when <code>?review</code> is in the URL. Toggle them off in the top bar to preview the exact participant view.</li>
+        <li><b>Tailored for the State of West Virginia:</b> Styled in West Virginia's official Fira Sans + Navy (<code>#053254</code>), Rust (<code>#C1452C</code>), and Gold (<code>#D5A245</code>) system, with two hands-on WV tracks: <b>Track A</b> (<i>Mountain State Ready $40M Site Readiness &amp; Grants</i>) and <b>Track B</b> (<i>Mine &amp; Corrections Incident Report Triage</i>).</li>
+        <li><b>Zero-blocker BigQuery design:</b> BigQuery is the default database connector via keyless <code>gcloud auth application-default login</code>, paired with a bundled local WV BigQuery snapshot so participants without cloud IAM or venue Wi-Fi never stall.</li>
+      </ul>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="overview">
+      <span class="eyebrow">State of West Virginia · Hands-On Business Analytics Workshop</span>
+      <h1>Build Live Dashboards with <span>Antigravity</span></h1>
+      <p class="lede">In 60 minutes you will install the <b>Dashboard Studio</b> plugin in Google Antigravity, emulate a reference dashboard screenshot, connect to <b>Google BigQuery</b> (and other agency databases), and rearrange cards, chart types, and brand colors visually in Chrome—without writing code or burning prompts on layout tweaks.</p>
+      <div class="facts">
+        <span class="fact"><b>60</b> minutes</span>
+        <span class="fact"><b>3</b> guided labs</span>
+        <span class="fact"><b>0</b> CSS prompts needed</span>
+        <span class="fact"><b>BigQuery</b> default + 4 DBs</span>
+      </div>
+      <div class="cta-row">
+        <a class="btn primary" href="#step-1">Install the plugin</a>
+        <a class="btn ghost" href="#catchup">Download starter ZIPs</a>
+      </div>
+      <figure class="shot">
+        <div class="frame">
+          <img src="./img/hero-wv-dashboard.svg" width="1200" height="720" alt="Finished Mountain State Ready $40M Site Readiness dashboard in Chrome showing 4 KPI cards, County Bar Chart, Readiness Tier Donut, and County Register Table">
+        </div>
+        <figcaption>Track A finished build: <b>Mountain State Ready ($40M Site Readiness Portfolio)</b> running locally in Chrome with one-click visual layout editing.</figcaption>
+      </figure>
+    </section>
+
+    <!-- THE WORKFLOW LOOP -->
+    <section aria-labelledby="loop-h">
+      <div class="sec-head">
+        <h2 id="loop-h">Why Dashboard Studio feels different</h2>
+        <p>Use AI where AI shines (SQL, data modeling, screenshot extraction) and direct visual clicks where humans are faster (layout, chart types, colors).</p>
+      </div>
+      <div class="loop">
+        <div><b>Emulate</b><span>Drop a screenshot of a dashboard you like so the agent extracts its palette and structure.</span></div>
+        <div><b>Connect</b><span>Point at BigQuery by default (or Postgres, MySQL, DuckDB, or CSV) with read-only SQL.</span></div>
+        <div><b>Customize</b><span>Click <b>Customize Layout</b> in Chrome to drag cards, resize widths, and swap chart types visually.</span></div>
+        <div><b>Save &amp; Extend</b><span>Click <b>Save Changes</b> to update <code>dashboard.config.json</code>—future data prompts keep your layout.</span></div>
+      </div>
+    </section>
+
+    <!-- AGENDA -->
+    <section aria-labelledby="agenda-h">
+      <div class="sec-head">
+        <h2 id="agenda-h">Today's agenda</h2>
+        <p>Times are from the start of the session.</p>
+      </div>
+      <ol class="route">
+        <li><time>0:00</time><span class="pin"></span><div class="seg"><b>Welcome &amp; live tour</b><span>Why spec-driven dashboards beat 20 rounds of "move that chart slightly left" prompting</span></div></li>
+        <li><time>0:06</time><span class="pin"></span><div class="seg"><b>Setup check</b><span>Antigravity open, Node.js ready, Dashboard Studio plugin zip downloaded</span></div></li>
+        <li class="lab"><time>0:10</time><span class="pin"></span><div class="seg"><b>Lab 1: Install the Dashboard Studio plugin</b><span>Steps 1–2 (about 12 minutes). Validate, install, and verify <code>/dashboard</code> in Antigravity.</span></div></li>
+        <li class="lab"><time>0:22</time><span class="pin"></span><div class="seg"><b>Lab 2: Spin up your West Virginia dashboard</b><span>Steps 3–6 (about 20 minutes). Emulate a reference screenshot, connect BigQuery, and open in Chrome.</span></div></li>
+        <li class="lab2"><time>0:42</time><span class="pin"></span><div class="seg"><b>Lab 3: Customize visually &amp; connect more data</b><span>Steps 7–10 (about 15 minutes). Drag cards, switch charts with zero prompts, add a metric, and audit accuracy.</span></div></li>
+        <li><time>0:57</time><span class="pin"></span><div class="seg"><b>Showcase &amp; wrap-up</b><span>Two participants share their customized dashboards and takeaways</span></div></li>
+      </ol>
+    </section>
+
+    <!-- BEFORE YOU ARRIVE -->
+    <section id="arrive" aria-labelledby="arrive-h">
+      <div class="sec-head">
+        <h2 id="arrive-h">Before you arrive</h2>
+        <p>Complete this 10-minute check before the session so your laptop is ready to build immediately.</p>
+      </div>
+      <ul class="checklist">
+        <li><label for="pre-1"><input type="checkbox" id="pre-1" data-ready><span><b>Install Google Antigravity</b> from <a href="https://antigravity.google/download" target="_blank" rel="noopener">antigravity.google/download</a> (Mac, Windows, or Linux) and sign in.</span></label></li>
+        <li><label for="pre-2"><input type="checkbox" id="pre-2" data-ready><span><b>Install Google Chrome</b> (or Edge/Firefox) to view and customize your live dashboard.</span></label></li>
+        <li><label for="pre-3"><input type="checkbox" id="pre-3" data-ready><span><b>Verify Node.js 18+</b> is installed (<a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>) so the local preview server runs with zero extra packages.</span></label></li>
+        <li><label for="pre-4"><input type="checkbox" id="pre-4" data-ready><span><b>Optional for live BigQuery queries:</b> Install the <a href="https://cloud.google.com/sdk/docs/install" target="_blank" rel="noopener">Google Cloud CLI (<code>gcloud</code>)</a>. Don't have a Cloud project today? No problem—every lab includes a built-in West Virginia BigQuery snapshot fallback.</span></label></li>
+        <li><label for="pre-5"><input type="checkbox" id="pre-5" data-ready><span><b>Bring a screenshot of a dashboard you admire</b> (PNG, JPG, or PDF flyer)—or use the included West Virginia Executive Style Reference card below.</span></label></li>
+      </ul>
+      <div class="note"><b class="t">Facilitator note</b>Because Dashboard Studio uses only built-in Node.js modules (<code>node:http</code>, <code>node:fs</code>, <code>node:crypto</code>), participants never run <code>npm install</code> at the venue—saving ~200 MB of conference Wi-Fi bandwidth per person.</div>
+    </section>
+
+    <!-- SETUP CHECK -->
+    <section id="setup" aria-labelledby="setup-h">
+      <div class="sec-head">
+        <h2 id="setup-h">Setup check</h2>
+        <p>At 0:06 we will verify these four items together.</p>
+      </div>
+      <ul class="checklist">
+        <li><label for="ready-1"><input type="checkbox" id="ready-1" data-ready><span>Antigravity is open and signed in, showing <span class="ui">New Conversation</span> on the left.</span></label></li>
+        <li><label for="ready-2"><input type="checkbox" id="ready-2" data-ready><span>This workshop guide is open on one half of your screen and Antigravity on the other.</span></label></li>
+        <li><label for="ready-3"><input type="checkbox" id="ready-3" data-ready><span>I downloaded <code>dashboard-studio-plugin.zip</code> from Step 1 below into my <b>Downloads</b> folder.</span></label></li>
+        <li><label for="ready-4"><input type="checkbox" id="ready-4" data-ready><span>I have either my own dashboard screenshot or <code>wv-style-reference.svg</code> ready to drop into chat.</span></label></li>
+      </ul>
+    </section>
+
+    <!-- LAB 1 -->
+    <section id="lab1" aria-labelledby="lab1-h">
+      <div class="sec-head">
+        <h2 id="lab1-h">Lab 1: Install the Dashboard Studio plugin</h2>
+        <p>About 12 minutes. Install a reusable Antigravity plugin bundle containing the <code>/dashboard</code> skill, design subagent, and BigQuery connector.</p>
+      </div>
+
+      <div class="lab-intro">
+        <span class="eyebrow">How Antigravity plugins work</span>
+        <p>Following the official <a href="https://antigravity.google/docs/build-plugins/#quickstart-create-your-first-plugin" target="_blank" rel="noopener">Antigravity Plugin Quickstart</a>, a plugin packages skills (<code>skills/dashboard/SKILL.md</code>), subagents, and guardrails behind a single <code>plugin.json</code> manifest. Install it once and every project on your laptop gains the <code>/dashboard</code> workflow.</p>
+      </div>
+
+      <!-- STEP 1 -->
+      <article class="step" id="step-1" data-step="1">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>1</b></span>
+          <div><h3>Download, validate, and install Dashboard Studio</h3><span class="mins">About 7 minutes</span></div>
+        </div>
+        <p>First, download the plugin bundle to your laptop:</p>
+        <div class="files">
+          <a class="file" href="./starters/dashboard-studio-plugin.zip" download>
+            <span class="ext">ZIP</span>
+            <span class="meta"><b>dashboard-studio-plugin.zip</b><span>Antigravity plugin bundle (plugin.json, /dashboard skill, WV templates &amp; BigQuery connector)</span></span>
+            <span class="go">Download</span>
+          </a>
+        </div>
+        <ol>
+          <li><span class="n">1</span>Unzip <code>dashboard-studio-plugin.zip</code> in your <b>Downloads</b> folder so you have a folder named <code>dashboard-studio</code>.</li>
+          <li><span class="n">2</span>Open <b>Terminal</b> (Mac) or <b>PowerShell</b> (Windows) and run the official Antigravity plugin validator and installer:</li>
+        </ol>
+        <div class="os">
+          <div>
+            <b class="t">Mac / Linux · Terminal</b>
+            <div class="copybox"><pre id="c-inst-mac">cd ~/Downloads
+agy plugin validate --strict ./dashboard-studio
+agy plugin install ./dashboard-studio
+agy plugin list</pre><button class="copy" type="button" data-copy="c-inst-mac">Copy</button></div>
+          </div>
+          <div>
+            <b class="t">Windows · PowerShell</b>
+            <div class="copybox"><pre id="c-inst-win">cd $HOME\Downloads
+agy plugin validate --strict .\dashboard-studio
+agy plugin install .\dashboard-studio
+agy plugin list</pre><button class="copy" type="button" data-copy="c-inst-win">Copy</button></div>
+          </div>
+        </div>
+        <div class="callout why">
+          <b class="t">Prefer not to touch the terminal? Ask Antigravity to install it for you</b>
+          Paste this into any Antigravity chat instead: <code>Unzip dashboard-studio-plugin.zip from my Downloads folder, run agy plugin validate --strict on it, and install it into ~/.gemini/config/plugins/dashboard-studio.</code>
+        </div>
+        <figure class="shot">
+          <div class="frame">
+            <img src="./img/step1-plugin-install.svg" width="960" height="430" alt="Antigravity Customizations Installed view showing Dashboard Studio v1.0.0 Enabled with three clickable starter prompts">
+          </div>
+          <figcaption>In Antigravity, open <b>Customizations → Plugins → Installed</b> to see <b>Dashboard Studio</b> enabled with its three starter prompt chips.</figcaption>
+        </figure>
+        <div class="callout check"><b class="t">Checkpoint</b><code>agy plugin validate --strict</code> reports <b>Validation passed</b>, and <b>Dashboard Studio</b> appears under <b>Customizations → Installed</b> (or when you type <code>/dash</code> in chat).</div>
+        <div class="done-row"><label for="done-1"><input type="checkbox" id="done-1" data-done="1">Step 1 done</label></div>
+      </article>
+
+      <!-- STEP 2 -->
+      <article class="step" id="step-2" data-step="2">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>2</b></span>
+          <div><h3>Create your workspace folder &amp; check two settings</h3><span class="mins">About 5 minutes</span></div>
+        </div>
+        <p>Create a dedicated folder where your West Virginia dashboard files and configuration will live.</p>
+        <ol>
+          <li>In Antigravity's left sidebar next to <span class="ui">Projects</span>, click <span class="ui">Create New Project</span> → <span class="ui">New Project</span>.</li>
+          <li>In <b>Documents</b>, create a new folder named <code>wv-dashboard</code> and click <span class="ui">Open</span> (or <span class="ui">Select Folder</span> on Windows).</li>
+          <li>Under the prompt box, click the <b>shield icon</b> and confirm <span class="ui">Default</span> (<i>Ask before sensitive operations</i>) is selected.</li>
+          <li>Click the <b>model selector</b> and choose <span class="ui">Gemini 3.8 Flash</span> for fast, quota-friendly iteration.</li>
+        </ol>
+        <div class="callout check"><b class="t">Checkpoint</b><b>wv-dashboard</b> is selected above the prompt box, permissions say <b>Default</b>, and your model is <b>Gemini 3.8 Flash</b>.</div>
+        <div class="done-row"><label for="done-2"><input type="checkbox" id="done-2" data-done="2">Step 2 done</label></div>
+      </article>
+    </section>
+
+    <!-- LAB 2 -->
+    <section id="lab2" aria-labelledby="lab2-h">
+      <div class="sec-head">
+        <h2 id="lab2-h">Lab 2: Spin up your West Virginia dashboard</h2>
+        <p>About 20 minutes. Choose a real State of West Virginia scenario, emulate a reference screenshot, wire up BigQuery, and launch your live dashboard.</p>
+      </div>
+
+      <!-- STEP 3 -->
+      <article class="step" id="step-3" data-step="3">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>3</b></span>
+          <div><h3>Invoke <code>/dashboard</code> and pick your West Virginia track</h3><span class="mins">About 5 minutes</span></div>
+        </div>
+        <p>Type <code>/dashboard</code> in the prompt box—you will see the skill from your newly installed plugin light up. Pick <b>either Track A or Track B</b> below and send the prompt:</p>
+
+        <div class="prompts">
+          <div class="prompt">
+            <div class="prompt-top"><span class="tag">TRACK A</span><b>Economic Development · Mountain State Ready ($40M Site Readiness &amp; Grants)</b></div>
+            <p>Tracks WVEDA's $25M Shell Building Loan Program and IJDC's $15M Tier 1–3 Site Readiness Grant Program across West Virginia counties ahead of the December 31, 2026 Round 1 close.</p>
+            <div class="copybox"><pre id="c-track-a">/dashboard I want to create a Mountain State Ready $40M Site Readiness &amp; Grants executive dashboard for West Virginia, connected to BigQuery by default. Ask me for my reference style screenshot before scaffolding.</pre><button class="copy" type="button" data-copy="c-track-a">Copy</button></div>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt-top"><span class="tag alt">TRACK B</span><b>Operations Leadership · Mine &amp; Corrections Incident Report Triage</b></div>
+            <p>Tracks automated triage across Mine Incident Reports and DCR Operations Reports: critical director alerts vs. routine archived reports, 3–4 minute alert SLA latency, fail-safe holds, and zero-Spam verification.</p>
+            <div class="copybox"><pre id="c-track-b">/dashboard I want to create a Mine and Corrections Incident Report Triage operations dashboard for West Virginia leadership, connected to BigQuery by default. Ask me for my reference style screenshot before scaffolding.</pre><button class="copy" type="button" data-copy="c-track-b">Copy</button></div>
+          </div>
+        </div>
+
+        <div class="callout check"><b class="t">Checkpoint</b>Antigravity loads the <code>dashboard</code> skill and pauses to ask whether you have a <b>screenshot of a dashboard or brand flyer</b> you want to emulate.</div>
+        <div class="done-row"><label for="done-3"><input type="checkbox" id="done-3" data-done="3">Step 3 done</label></div>
+      </article>
+
+      <!-- STEP 4 -->
+      <article class="step" id="step-4" data-step="4">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>4</b></span>
+          <div><h3>Give the agent a reference screenshot to emulate</h3><span class="mins">About 5 minutes</span></div>
+        </div>
+        <p>Instead of writing paragraphs describing hex codes, borders, and font weights, drop a picture of a clean dashboard (or agency brand sheet) straight into the chat box.</p>
+        <div class="files">
+          <a class="file" href="./img/wv-style-reference.svg" download="wv-style-reference.svg">
+            <span class="ext">SVG</span>
+            <span class="meta"><b>wv-style-reference.svg</b><span>Official West Virginia Executive Style Card (Navy #053254, Rust #C1452C, Gold #D5A245, Fira Sans) — use if you didn't bring your own screenshot</span></span>
+            <span class="go">Download</span>
+          </a>
+        </div>
+        <ol>
+          <li>Drag <b>your own dashboard screenshot</b> (PNG/JPG/PDF) <i>or</i> <code>wv-style-reference.svg</code> into Antigravity's prompt box.</li>
+          <li>Paste the reply below and press <kbd>Enter</kbd>:</li>
+        </ol>
+        <div class="field">
+          <span>Reply with your style reference</span>
+          <div class="copybox"><pre id="c-emulate">Emulate the clean executive style in this reference image: extract its primary header color, accent KPI highlight color, neutral background, card borders, and typography feel into dashboard.config.json. Use BigQuery as the default connector with the built-in West Virginia snapshot fallback, scaffold the project, and start the local preview server.</pre><button class="copy" type="button" data-copy="c-emulate">Copy</button></div>
+        </div>
+        <figure class="shot">
+          <div class="frame">
+            <img src="./img/step4-screenshot-emulate.svg" width="960" height="410" alt="Antigravity chat showing the attached wv-style-reference.svg card and prompt instructing the plugin to extract palette and layout tokens">
+          </div>
+          <figcaption>Multimodal vision reads your reference image and writes clean hex tokens directly into <code>dashboard.config.json</code>.</figcaption>
+        </figure>
+        <div class="callout check"><b class="t">Checkpoint</b>Approve the scaffold command when asked. Your <code>wv-dashboard</code> folder now contains <code>dashboard.config.json</code>, <code>data/snapshot.json</code>, and <code>server.mjs</code>.</div>
+        <div class="done-row"><label for="done-4"><input type="checkbox" id="done-4" data-done="4">Step 4 done</label></div>
+      </article>
+
+      <!-- STEP 5 -->
+      <article class="step" id="step-5" data-step="5">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>5</b></span>
+          <div><h3>BigQuery connection: Live Cloud or Instant Workshop Snapshot</h3><span class="mins">About 5 minutes</span></div>
+        </div>
+        <p>Dashboard Studio sets <b>Google BigQuery</b> as your default connector with read-only SQL and a 1 GB billed-bytes safety cap.</p>
+        <div class="grid2">
+          <div class="card">
+            <h3>Path 1 · Zero-Setup Workshop Mode (Recommended today)</h3>
+            <p>Nothing extra to configure! When <code>GCP_PROJECT_ID</code> is unset in <code>.env</code>, <code>query_connector.mjs</code> automatically serves your local BigQuery-shaped West Virginia dataset (<code>BIGQUERY · SNAPSHOT</code>) so you can keep moving immediately.</p>
+          </div>
+          <div class="card">
+            <h3>Path 2 · Connect Live BigQuery (If you have a GCP Project)</h3>
+            <p>Authenticate with Application Default Credentials—no downloaded JSON keys needed:</p>
+            <div class="copybox"><pre id="c-bq-auth">gcloud auth application-default login</pre><button class="copy" type="button" data-copy="c-bq-auth">Copy</button></div>
+            <p>Then copy <code>.env.example</code> to <code>.env</code>, set <code>GCP_PROJECT_ID=your-project-id</code>, and click <b>Refresh Data</b> in the dashboard header.</p>
+          </div>
+        </div>
+        <div class="callout warn"><b class="t">Keep credentials out of chat</b>Never paste database passwords or API keys into the chat window. Put project IDs and connection settings inside <code>wv-dashboard/.env</code>, which <code>.gitignore</code> excludes from version control automatically.</div>
+        <div class="done-row"><label for="done-5"><input type="checkbox" id="done-5" data-done="5">Step 5 done</label></div>
+      </article>
+
+      <!-- STEP 6 -->
+      <article class="step" id="step-6" data-step="6">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>6</b></span>
+          <div><h3>Open your live dashboard in Chrome</h3><span class="mins">About 5 minutes</span></div>
+        </div>
+        <ol>
+          <li>Click (or copy into Chrome) the local preview URL Antigravity printed: <code>http://127.0.0.1:4173</code>.</li>
+          <li>Try the interactive controls in <b>View Mode</b>:
+            <ul>
+              <li>Click the <b>Program</b> or <b>Readiness Tier</b> (Track A) / <b>Report Stream</b> (Track B) filter pills—watch all 4 KPI cards, charts, and table rows recompute live.</li>
+              <li>Type <code>Kanawha</code> or <code>Board Ready</code> (Track A) / <code>Critical</code> (Track B) into the search box.</li>
+              <li>Click any column header in the bottom register table to sort ascending or descending.</li>
+            </ul>
+          </li>
+        </ol>
+        <div class="callout check"><b class="t">Checkpoint</b>Your dashboard is live at <code>http://127.0.0.1:4173</code> in Chrome with interactive filters, sortable columns, and your emulated color palette.</div>
+        <p class="catch">Behind or hit a snag? <a href="#catchup">Grab the finished Track A or Track B starter ZIP</a> and jump straight into Lab 3.</p>
+        <div class="done-row"><label for="done-6"><input type="checkbox" id="done-6" data-done="6">Step 6 done</label></div>
+      </article>
+
+      <div class="finish">
+        <h3>Your BigQuery-ready West Virginia dashboard is live.</h3>
+        <p>Next comes the superpower for business users: redesigning layout, widths, chart types, and colors right inside Chrome—with zero prompting.</p>
+      </div>
+    </section>
+
+    <!-- LAB 3 -->
+    <section id="lab3" aria-labelledby="lab3-h">
+      <div class="sec-head">
+        <h2 id="lab3-h">Lab 3: Customize layout without prompting &amp; connect more data</h2>
+        <p>About 18 minutes. Reshape your dashboard visually in seconds, then watch Antigravity add a new SQL metric without disturbing your visual layout.</p>
+      </div>
+
+      <div class="lab-intro l2">
+        <span class="eyebrow">Why spec-driven editing matters</span>
+        <p>Every visual edit you make in Chrome saves cleanly into <code>dashboard.config.json</code>. That means business users own the look and layout directly, while Antigravity owns the SQL and data plumbing underneath.</p>
+      </div>
+
+      <!-- STEP 7 -->
+      <article class="step l2" id="step-7" data-step="7">
+        <div class="step-head">
+          <span class="badge l2"><small>STEP</small><b>7</b></span>
+          <div><h3>Rearrange cards, chart types, and colors with zero prompts</h3><span class="mins">About 6 minutes</span></div>
+        </div>
+        <ol>
+          <li><span class="n">1</span>In the top-right corner of your dashboard in Chrome, click <span class="ui">Customize Layout</span>. The Visual Design Drawer opens.</li>
+          <li><span class="n">2</span>On the first chart card, click <span class="ui">H-Bar</span> (Horizontal Bar) and click <span class="ui">Full</span> so it spans all 12 columns.</li>
+          <li><span class="n">3</span>Grab <span class="ui">⠿ Drag card</span> on any widget (or use the <code>←</code> / <code>→</code> buttons) to reorder two cards on the page.</li>
+          <li>Click the dashboard title or any chart heading—type a sharper executive title and press <kbd>Enter</kbd>.</li>
+          <li>Test switching between <b>West Virginia Official</b>, <b>Midnight Operations</b>, and <b>Appalachian Forest</b> (or tweak a color swatch), then pick your favorite.</li>
+          <li>Click the rust <span class="ui">Save Changes *</span> button in the top bar.</li>
+        </ol>
+        <figure class="shot">
+          <div class="frame">
+            <img src="./img/step7-customize-mode.svg" width="1040" height="470" alt="Dashboard Customize Layout mode showing Style Preset buttons, Brand Color pickers, Drag card handle, 1/3 1/2 Full width pills, Bar H-Bar Line Donut switcher, and Save Changes button">
+          </div>
+          <figcaption>Every layout, width, chart-type, title, and color change happens in one click and writes straight back to <code>dashboard.config.json</code>.</figcaption>
+        </figure>
+        <div class="callout check"><b class="t">Checkpoint</b>A toast confirms <b>Saved layout and theme to dashboard.config.json</b>. Refresh Chrome (<kbd>Cmd</kbd>+<kbd>R</kbd> or <kbd>Ctrl</kbd>+<kbd>R</kbd>)—every visual change stayed saved, and you used <b>zero prompts</b>.</div>
+        <div class="done-row"><label for="done-7"><input type="checkbox" id="done-7" data-done="7">Step 7 done</label></div>
+      </article>
+
+      <!-- STEP 8 -->
+      <article class="step l2" id="step-8" data-step="8">
+        <div class="step-head">
+          <span class="badge l2"><small>STEP</small><b>8</b></span>
+          <div><h3>Add a new metric via chat—without losing your visual edits</h3><span class="mins">About 5 minutes</span></div>
+        </div>
+        <p>When you need a new calculated field or SQL aggregation, send <b>one concise data prompt</b> in Antigravity. Because the plugin's rules require reading <code>dashboard.config.json</code> first, your custom card widths, order, and colors stay untouched.</p>
+        <div class="field">
+          <span>Prompt (works for both Track A and Track B)</span>
+          <div class="copybox"><pre id="c-add-metric">Read my current dashboard.config.json first so you preserve all my saved layout, chartType, width, and theme edits. Add one new half-width chart widget comparing projected efficiency by county or category, update data/snapshot.json and the parameterized BigQuery SQL query to support it, and keep my server running.</pre><button class="copy" type="button" data-copy="c-add-metric">Copy</button></div>
+        </div>
+        <div class="callout check"><b class="t">Checkpoint</b>Refresh Chrome: your new chart appears alongside your existing cards, and your Step 7 layout, renamed headings, and theme colors are all still intact.</div>
+        <div class="done-row"><label for="done-8"><input type="checkbox" id="done-8" data-done="8">Step 8 done</label></div>
+      </article>
+
+      <!-- STEP 9 -->
+      <article class="step l2" id="step-9" data-step="9">
+        <div class="step-head">
+          <span class="badge l2"><small>STEP</small><b>9</b></span>
+          <div><h3>Connect other databases (PostgreSQL, MySQL, DuckDB, or CSV)</h3><span class="mins">About 4 minutes</span></div>
+        </div>
+        <p>BigQuery is the default, but agencies frequently combine warehouse tables with operational databases or spreadsheet exports. Try switching or adding a local CSV data source in one step:</p>
+        <div class="field">
+          <span>Test the multi-connector workflow</span>
+          <div class="copybox"><pre id="c-csv-test">Export the current records in data/snapshot.json to data/agency_export.csv, add two new West Virginia rows to that CSV, and run query_connector.mjs with DASHBOARD_CONNECTOR=csv and CSV_PATH=./data/agency_export.csv so my dashboard loads from the CSV.</pre><button class="copy" type="button" data-copy="c-csv-test">Copy</button></div>
+        </div>
+        <div class="callout why"><b class="t">Supported out of the box</b>Set <code>DASHBOARD_CONNECTOR</code> in <code>.env</code> to <code>bigquery</code> (default), <code>postgres</code> (Cloud SQL / AlloyDB / PostgreSQL), <code>mysql</code>, <code>duckdb</code>, or <code>csv</code>. Every connector enforces read-only queries.</div>
+        <div class="done-row"><label for="done-9"><input type="checkbox" id="done-9" data-done="9">Step 9 done</label></div>
+      </article>
+
+      <!-- STEP 10 -->
+      <article class="step l2" id="step-10" data-step="10">
+        <div class="step-head">
+          <span class="badge l2"><small>STEP</small><b>10</b></span>
+          <div><h3>Verify numbers before briefing leadership</h3><span class="mins">About 3 minutes</span></div>
+        </div>
+        <p>Before sharing any AI-assisted dashboard with cabinet leadership, county authorities, or the public, run this 60-second verification pass:</p>
+        <div class="callout warn">
+          <b class="t">Executive QA checklist</b>
+          <ul>
+            <li><b>Spot-check headline KPIs against source rules:</b> For example, in Track A, verify that Shell Building Loans ($25M) + Site Readiness Grants ($15M) = <b>$40M</b>, and the Round 1 deadline reads <b>December 31, 2026</b>.</li>
+            <li><b>Filter math check:</b> Click a single filter pill (such as <code>Site Readiness Grant ($15M)</code>) and confirm the KPI sum matches the visible rows in the table.</li>
+            <li><b>Read-only SQL check:</b> Open <code>dashboard.config.json</code> → <code>queries</code> and confirm every statement is a parameterized <code>SELECT</code>.</li>
+          </ul>
+        </div>
+        <div class="done-row"><label for="done-10"><input type="checkbox" id="done-10" data-done="10">Step 10 done</label></div>
+      </article>
+
+      <div class="finish" id="finish">
+        <h3>You installed a plugin and shipped a live West Virginia dashboard.</h3>
+        <p>You emulated a visual reference, wired up BigQuery-ready data, customized your layout in Chrome with zero prompting, and verified the numbers.</p>
+      </div>
+    </section>
+
+    <!-- LEVEL-UPS -->
+    <section id="stretch" aria-labelledby="stretch-h">
+      <div class="sec-head">
+        <h2 id="stretch-h">Make it your own</h2>
+        <p>Finished early? Try one of these single-sentence upgrades.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Public BigQuery Dataset Live Query</h3>
+          <p>"Point my dashboard at <code>bigquery-public-data.usa_names.usa_1910_current</code> filtered to <code>state = 'WV'</code> and show top names by decade."</p>
+        </div>
+        <div class="card">
+          <h3>Print-Ready Briefing Layout</h3>
+          <p>"Add a clean <code>@media print</code> stylesheet in <code>styles.css</code> that hides filter buttons and prints my KPIs and charts on one landscape page for leadership packets."</p>
+        </div>
+        <div class="card">
+          <h3>Emulate Your Own Agency Screenshot</h3>
+          <p>Take a screenshot of an existing Looker, Power BI, Tableau, or PDF report on your laptop, drop it into chat, and ask <code>/dashboard</code> to match its exact palette.</p>
+        </div>
+        <div class="card">
+          <h3>Threshold Highlighting</h3>
+          <p>"Highlight any county row in the register table where projected jobs exceed 150 with a subtle gold badge."</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHOWCASE -->
+    <section id="showcase" aria-labelledby="showcase-h">
+      <div class="sec-head">
+        <h2 id="showcase-h">Showcase at 0:57</h2>
+        <p>Two or three participants share their customized dashboards for 2 minutes each.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>What to show</h3>
+          <ul class="tight">
+            <li>Which track (or custom dataset) you picked</li>
+            <li>The screenshot or theme you emulated</li>
+            <li>One layout or chart change you made visually without prompting</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Exporting your config</h3>
+          <p>Click <b>Export Config</b> in your dashboard header to save a portable copy of <code>dashboard.config.json</code> you can share with teammates.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AFTER TODAY -->
+    <section id="next" aria-labelledby="next-h">
+      <div class="sec-head">
+        <h2 id="next-h">After today</h2>
+        <p>Everything you installed and built stays on your laptop.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Reuse <code>/dashboard</code> in any project</h3>
+          <p>Because <b>Dashboard Studio</b> is installed globally in Antigravity, open any new folder next week and type <code>/dashboard</code> to spin up a fresh tracker in under two minutes.</p>
+        </div>
+        <div class="card">
+          <h3>Restarting your preview later</h3>
+          <p>Open your <code>wv-dashboard</code> project in Antigravity and say: <code>Start node server.mjs and give me the preview link.</code></p>
+        </div>
+        <div class="card">
+          <h3>Learn more</h3>
+          <ul class="tight">
+            <li><a href="https://antigravity.google/docs/build-plugins/#quickstart-create-your-first-plugin" target="_blank" rel="noopener">Antigravity Build Plugins Quickstart</a></li>
+            <li><a href="https://antigravity.google/docs/plugins" target="_blank" rel="noopener">Using &amp; Managing Plugins in Antigravity</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- TROUBLESHOOTING & STARTER ZIPS -->
+    <section id="help" aria-labelledby="help-h">
+      <div class="sec-head">
+        <h2 id="help-h">Troubleshooting &amp; catch-up starters</h2>
+        <p>Hit a snag? Expand the matching question below or download a ready-to-run starter bundle.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary><code>agy: command not found</code> when installing the plugin</summary>
+          <p>Open Antigravity and ask the agent in chat: <b>"Copy the unzipped dashboard-studio folder from my Downloads directory into ~/.gemini/config/plugins/dashboard-studio."</b> Antigravity discovers plugins in that folder automatically on your next turn.</p>
+        </details>
+        <details>
+          <summary>Typing <code>/dashboard</code> doesn't show the skill yet</summary>
+          <p>Start a <b>New Conversation</b> (or reload the window with <b>Cmd+R</b> / <b>Ctrl+R</b>) after installing the plugin so Antigravity refreshes its skill menu.</p>
+        </details>
+        <details>
+          <summary>Port 4173 is already in use</summary>
+          <p><code>server.mjs</code> automatically steps up to the next free port (<code>4174</code>, <code>4175</code>, etc.). Check the exact <code>http://127.0.0.1:XXXX</code> URL printed in Antigravity's reply.</p>
+        </details>
+        <details>
+          <summary>Clicking "Save Changes" says "Could not save layout"</summary>
+          <p>Make sure <code>node server.mjs</code> is still running in Antigravity, then refresh Chrome once so it picks up a fresh session token and click <b>Save Changes</b> again.</p>
+        </details>
+        <details>
+          <summary>BigQuery says credentials are not configured</summary>
+          <p>That's expected if you haven't run <code>gcloud auth application-default login</code> yet—your dashboard automatically falls back to <code>data/snapshot.json</code> so every chart and filter still works.</p>
+        </details>
+      </div>
+
+      <h3 id="catchup">Downloadable plugin &amp; catch-up starter ZIPs</h3>
+      <p>Fell behind or out of quota? Download Track A or Track B below, unzip its files directly into your empty <code>Documents/wv-dashboard</code> folder (so <code>server.mjs</code> sits inside <code>wv-dashboard/</code>), and run <code>node server.mjs</code>.</p>
+      <div class="files">
+        <a class="file" href="./starters/dashboard-studio-plugin.zip" download>
+          <span class="ext">ZIP</span>
+          <span class="meta"><b>dashboard-studio-plugin.zip</b><span>The complete Antigravity Dashboard Studio plugin (Step 1)</span></span>
+          <span class="go">Download</span>
+        </a>
+        <a class="file" href="./starters/finished-track-a-site-readiness.zip" download>
+          <span class="ext">ZIP</span>
+          <span class="meta"><b>finished-track-a-site-readiness.zip</b><span>Finished Track A · Mountain State Ready ($40M Site Readiness &amp; Grants) ready to run with <code>node server.mjs</code></span></span>
+          <span class="go">Download</span>
+        </a>
+        <a class="file" href="./starters/finished-track-b-incident-triage.zip" download>
+          <span class="ext">ZIP</span>
+          <span class="meta"><b>finished-track-b-incident-triage.zip</b><span>Finished Track B · Mine &amp; Corrections Incident Triage ready to run with <code>node server.mjs</code></span></span>
+          <span class="go">Download</span>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      Hands-on participant guide · State of West Virginia Dashboard Studio Workshop with Google Antigravity. Always verify AI-generated queries and figures against authoritative agency records before publication.
+    </footer>
+  </main>
+</div>
+
+<dialog class="lightbox" id="lightbox" aria-label="Enlarged screenshot">
+  <button type="button" id="lbClose">Close</button>
+  <div id="lbBody"></div>
+</dialog>
+
+<script src="./workshop.js"></script>
+</body>
+</html>
