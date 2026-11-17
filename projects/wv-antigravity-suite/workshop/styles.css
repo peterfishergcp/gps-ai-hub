@@ -363,6 +363,69 @@ body {
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.inline-prompt-box {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-family: "Roboto Mono", "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.step2-checklist {
+  margin: 6px 0 8px;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 1.5;
+}
+
+.step2-checklist li {
+  margin-bottom: 4px;
+}
+
+.turbo-pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 121, 107, 0.14);
+  color: var(--md-sys-color-secondary);
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+.agy-shot-card {
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--md-sys-color-outline-variant-rgb), 0.65);
+  background: var(--md-sys-color-surface-container);
+  overflow: hidden;
+}
+
+.agy-shot-caption {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--md-sys-color-on-surface-variant);
+  border-bottom: 1px solid rgba(var(--md-sys-color-outline-variant-rgb), 0.45);
+}
+
+.agy-shot-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.agy-shot-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
 .pathway-cta {
   width: 100%;
   min-height: 44px;

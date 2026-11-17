@@ -1,6 +1,15 @@
-# State of West Virginia — Antigravity Suite (`v1.2.0`) Guided Test Prompts
+# West Virginia Antigravity Launchpad & Guided Test Prompts (`v1.2.0`)
 
-Use these **7 copy-paste test prompts** to test all **6 plugins** and **21 skills** on your local Antigravity (`AGY`) install.
+## Quick 3-Step Setup
+1. **Step 1 — Complete AGY Download & Install:** Follow the [Antigravity Download & Install Guide](https://serve-dot-zipline.appspot.com/asset/18726ad2-eb6d-5295-baf2-86442bb8f3df/zpc/gktu4puu98z/).
+2. **Step 2 — Install Plugin (From a New Conversation in AGY + Switch to Turbo Mode):**
+   - Click **`+ New Conversation`** inside Antigravity.
+   - In the bottom-right corner of the prompt box, click **`Request Review ▾`** and switch to **`Turbo`** (*"Run all commands without restrictions"*) to eliminate repetitive approval prompts during installation.
+   - Paste this prompt and click Send (`→`):
+     ```text
+     agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
+     ```
+3. **Step 3 — Test the Plugin:** Copy and paste the **7 Guided Test Prompts** below to test all **6 plugins** and **21 skills**.
 
 ### Order of Tests
 1. **Prompt 1 (Start Here): Visual Dashboards, 16:9 Slides & Branded Flyers** (`wv-design-studio` — verifies rendered visual previews in the Side Pane + 1-click Browser Launch Cards, with **zero** raw `</> index.html` code views)
@@ -16,20 +25,20 @@ Use these **7 copy-paste test prompts** to test all **6 plugins** and **21 skill
 ## Prompt 1 — Dashboards, 16:9 Slides & Branded Flyers (`wv-design-studio`)
 
 ### What This Tests
-- **`/wv-dashboard`**, **`/slides`**, **`/doc-design`**, and the new **`WV Preview` (`wv-design-preview`)** sidecar.
-- **Visual Output Check:** Verifies that clicking the output in chat opens the **rendered visual Dashboard, Slide Deck, and Flyer** in Antigravity's right-hand Side Pane (or launches Chrome/Edge via the **1-Click Browser URL Card** at `http://127.0.0.1:4175/view/...`) instead of opening raw `</> index.html` source code.
+- **`/wv-dashboard`**, **`/slides`**, and **`/doc-design`**.
+- **100% Serverless Visual Output Check (Zero Python, Zero Node Server, Zero `127.0.0.1` Firewall Ports):** Verifies that all 3 deliverables (`Dashboard`, `Slide Deck`, and `Flyer`) are written as self-contained `.html` Artifacts in the Conversation Artifact Directory (`UserFacing: true`) so clicking any of the 3 in the `Artifacts` sidebar renders the interactive visual view right inside Antigravity—and includes an **`Open / Download HTML ↗`** button in the top bar for Chrome/Edge.
 
 ### Copy & Paste Into Antigravity
 ```text
 Using `/wv-dashboard`, `/slides`, and `/doc-design`, create a West Virginia "Mountain State Ready" executive package in `./wv-mountain-state-demo` using these exact program figures ($40.0M total portfolio closing December 31, 2026: $25.0M WVEDA Shell Building Loans + $15.0M IJDC Tier 1–3 Site Readiness Grants across Kanawha, Monongalia, Cabell, Berkeley, and Raleigh counties):
 
 1. `/wv-dashboard`: Scaffold an interactive executive dashboard in `./wv-mountain-state-demo/dashboard` in official West Virginia colors (`#053254` Navy, `#C1452C` Rust, `#D5A245` Gold) showing Total Portfolio ($40.0M), WVEDA Loans ($25.0M), IJDC Grants ($15.0M), and county project breakdowns.
-2. `/slides`: Create a 5-slide 16:9 executive briefing deck (`./wv-mountain-state-demo/slides/deck.html`) with keyboard navigation and speaker notes (`N` key).
+2. `/slides`: Create a 5-slide 16:9 executive briefing deck (`./wv-mountain-state-demo/slides/deck.html`) with keyboard navigation, speaker notes (`N` key), and a top `Download HTML` / `Print / Save as PDF` button.
 3. `/doc-design`: Create a 1-page print-ready stakeholder fact sheet (`./wv-mountain-state-demo/flyer/flyer.html`) comparing WVEDA Loan terms vs. IJDC Grant tiers.
 
-IMPORTANT — Follow the v1.2.0 WV Design Studio visual preview rules:
-- Write the self-contained single-file HTML copies (`dashboard-standalone.html`, `deck.html`, `flyer.html`) to the Conversation Artifact Directory with `UserFacing: true` and embed `<agent-embed>` previews so I see rendered visuals—never link raw workspace `index.html` code files in chat.
-- Register all three with the `WV Preview` sidecar (`http://127.0.0.1:4175`) and create 1-click `.url.json` Browser Launch cards.
+IMPORTANT — Serverless Visual Artifact Rules (No Local Ports / No Python Server):
+- Write all 3 self-contained single-file HTML copies (`wv_mountain_state_dashboard_preview.html` from `dashboard-standalone.html`, `wv_mountain_state_slides_preview.html` from `deck.html`, and `wv_mountain_state_flyer_preview.html` from `flyer.html`) directly to the Conversation Artifact Directory using `write_file` with `ArtifactMetadata: { UserFacing: true, RequestFeedback: false }`.
+- Do NOT create any `127.0.0.1` or `localhost` `.url.json` artifacts, do NOT start `python3 -m http.server`, and do NOT link workspace `index.html` code files in chat.
 ```
 
 ---
