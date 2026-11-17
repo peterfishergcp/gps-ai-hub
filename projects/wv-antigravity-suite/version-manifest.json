@@ -1,0 +1,53 @@
+{
+  "suiteName": "wv-antigravity-suite",
+  "displayName": "State of West Virginia Antigravity Skill & Connector Suite",
+  "suiteVersion": "1.0.0",
+  "releasedAt": "2026-11-17",
+  "minAntigravityVersion": "1.0.0",
+  "plugins": {
+    "wv-onboarding": {
+      "version": "1.0.0",
+      "category": "Onboarding, Daily Updates, Digital Twin & Triage",
+      "skills": ["wv-onboard", "daily-brief", "digital-twin", "inbox-triage", "wv-update"]
+    },
+    "wv-connectors": {
+      "version": "1.0.0",
+      "category": "Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
+      "skills": ["connect-ge", "connect-m365-workspace", "connect-github-bigquery"],
+      "mcpServers": ["wv-ge-bridge"]
+    },
+    "wv-design-studio": {
+      "version": "1.0.0",
+      "category": "Zero-Node Dashboards, Executive Slides & Branded State Documents",
+      "skills": ["wv-dashboard", "slides", "doc-design"],
+      "agents": ["wv-design-architect"]
+    },
+    "wv-state-workflows": {
+      "version": "1.0.0",
+      "category": "WV FOIA, Legal/Procurement Review & Policy Audits",
+      "skills": ["foia-expert", "legal-procurement-review", "policy-program-audit"]
+    },
+    "wv-engineering-cloud": {
+      "version": "1.0.0",
+      "category": "Legacy App Refactoring, Cloud Run & BigQuery Architecture",
+      "skills": ["modernize-refactor", "deploy-cloudrun", "bigquery-architect", "find-cloud-skill"]
+    },
+    "wv-security": {
+      "version": "1.0.0",
+      "category": "OWASP, Google Cloud WAF, Assured Workloads & IAM Hygiene",
+      "skills": ["security-audit", "iam-secret-hygiene"]
+    }
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-11-17",
+      "highlights": [
+        "Initial release across all 6 State of West Virginia onboarding categories (20 slash-command skills + 113 public-sector playbook recipes).",
+        "Zero-install Gemini Enterprise (GE) Federated Connector Bridge running on Antigravity's built-in agy-node runtime (supports Entra-synced Google Identity + Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub).",
+        "Zero-Node Browser Mode for /wv-dashboard, /slides, and /doc-design so locked-down state corporate laptops need zero extra local software.",
+        "Fast <2-second HTTPS ZIP and Git sparse-checkout installer/updater (/wv-update)."
+      ]
+    }
+  ]
+}

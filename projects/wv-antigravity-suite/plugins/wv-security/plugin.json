@@ -1,0 +1,12 @@
+{
+  "name": "wv-security",
+  "displayName": "WV Security, Assured Workloads & IAM Best Practices",
+  "version": "1.0.0",
+  "description": "Always-on secure coding guardrails, zero-install OWASP & Google Cloud Well-Architected security audits, Assured Workloads (FedRAMP, CJIS, HIPAA) guidance, and least-privilege IAM & Secret Manager hygiene.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /security-audit on this application to check OWASP vulnerabilities, XSS/SQLi risks, and Cloud Run security headers",
+    "Run /iam-secret-hygiene to audit our IAM roles, service accounts, and replace env-var secrets with Secret Manager",
+    "Review this architecture against Assured Workloads best practices for state PII, HIPAA, or CJIS workloads"
+  ]
+}
