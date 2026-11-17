@@ -281,3 +281,61 @@ scripts/verify.sh "$GCP_PROJECT_ID"
 | **`test_ge_ediscovery_e2e.py` Check 3/4 returns `403` on existing session, or user subject mismatch** | Customer's Workforce Pool maps `google.subject` to an Entra ID Object GUID (`assertion.oid`) instead of email (`assertion.upn` / `assertion.mail`). | Inspect `gcloud iam workforce-pools providers describe <IDP_PROVIDER> --workforce-pool=$WORKFORCE_POOL_ID --location=global --format="value(attributeMapping)"` and pass a matching `--user-subject` to `test_ge_ediscovery_e2e.py`. Note: `ge_harvest.py` handles both GUIDs and emails automatically in production because it reads the exact `userIamPrincipal` from Cloud Logging. |
 | **Historical sessions created before installation are missing from BigQuery** | Real-time Pub/Sub push only captures events after sink creation. | Run a one-time historical sweep: `python3 ge_harvest.py --project-id "$GCP_PROJECT_ID" --workforce-pool-id "$WORKFORCE_POOL_ID" --hours 720`. |
 | **BigQuery `InsertJob` / `load_rows_to_bigquery` fails with `HTTP Error 400: Bad Request` (`No schema specified on job or table`)** | `Dockerfile` omitted `conversation_turns_schema.json` (and `purview_connector.py`) when copying `/app/` into the Cloud Run container image, so per-run staging table (`conversation_turns_staging_<uuid>`) multipart load jobs were submitted without a `schema.fields` definition. | Ensure `Dockerfile` copies `conversation_turns_schema.json` and `purview_connector.py` into `/app/` (`COPY ge_harvest.py cloudrun_harvester_server.py purview_connector.py conversation_turns_schema.json /app/`), ensure `ge_harvest.py` includes the inline fallback schema in `load_rows_to_bigquery()`, and re-run `python3 deploy_cloudrun_harvester.py --project-id "$GCP_PROJECT_ID" --workforce-pool-id "$WORKFORCE_POOL_ID"`. |
+| **`INVALID_ARGUMENT: User <email> does not exist` when adding a reviewer to `ge-ediscovery-portal`** | The reviewer email is a Microsoft-only account and does not yet exist in Google Cloud Identity / Google Workspace. | Provision a Cloud Identity / Google Workspace user for that email, or see Section 6 below. |
+
+---
+
+## 6. Adding Authorized Reviewers to the Compliance Review Portal (`ge-ediscovery-portal`)
+
+When the user asks to add one or more reviewers to the Compliance Review Portal (`ge-ediscovery-portal`), **do NOT overwrite existing reviewers** and **do NOT rebuild the container**. Follow this exact 4-step workflow:
+
+1. **Auto-Discover Current Project, Region & Existing `ALLOWED_REVIEWER_EMAILS`:**
+   ```bash
+   GCP_PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+   REGION="us-central1"
+   EXISTING_REVIEWERS=$(gcloud run services describe ge-ediscovery-portal --project="$GCP_PROJECT_ID" --region="$REGION" --format=json | python3 -c '
+   import sys, json
+   d = json.load(sys.stdin)
+   envs = d.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [{}])[0].get("env", [])
+   print(next((e.get("value", "") for e in envs if e.get("name") == "ALLOWED_REVIEWER_EMAILS"), ""))
+   ')
+   echo "Project: $GCP_PROJECT_ID | Existing Reviewers: $EXISTING_REVIEWERS"
+   ```
+2. **Grant Cloud Run IAP Browser Access (`roles/iap.httpsResourceAccessor`) & Cloud Run Invoker (`roles/run.invoker`) to Each New Reviewer:**
+   - **Important Prerequisite:** Every `user:<email>` must be a valid **Google Cloud / Cloud Identity / Google Workspace** account.
+   ```bash
+   for NEW_REVIEWER in reviewer1@customer-domain reviewer2@customer-domain; do
+     gcloud iap web add-iam-policy-binding \
+       --project="$GCP_PROJECT_ID" \
+       --resource-type=cloud-run \
+       --service=ge-ediscovery-portal \
+       --region="$REGION" \
+       --member="user:${NEW_REVIEWER}" \
+       --role="roles/iap.httpsResourceAccessor"
+
+     gcloud run services add-iam-policy-binding ge-ediscovery-portal \
+       --project="$GCP_PROJECT_ID" \
+       --region="$REGION" \
+       --member="user:${NEW_REVIEWER}" \
+       --role="roles/run.invoker"
+   done
+   ```
+3. **Append New Reviewer(s) to `ALLOWED_REVIEWER_EMAILS` (Preserving Existing Reviewers Using `^;^` Delimiter):**
+   ```bash
+   UPDATED_REVIEWERS=$(python3 -c "
+   existing = '${EXISTING_REVIEWERS}'.split(',')
+   new_ones = ['reviewer1@customer-domain', 'reviewer2@customer-domain']
+   merged = sorted({e.strip().lower() for e in (existing + new_ones) if e.strip()})
+   print(','.join(merged))
+   ")
+   gcloud run services update ge-ediscovery-portal \
+     --project="$GCP_PROJECT_ID" \
+     --region="$REGION" \
+     --update-env-vars="^;^ALLOWED_REVIEWER_EMAILS=${UPDATED_REVIEWERS}"
+   ```
+4. **Verify & Print the Portal URL + Active Reviewers:**
+   ```bash
+   gcloud run services describe ge-ediscovery-portal --project="$GCP_PROJECT_ID" --region="$REGION" --format="value(status.url)"
+   gcloud iap web get-iam-policy --project="$GCP_PROJECT_ID" --resource-type=cloud-run --service=ge-ediscovery-portal --region="$REGION"
+   ```
+
