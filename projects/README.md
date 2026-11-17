@@ -37,6 +37,14 @@ Welcome to the **Google Cloud Public Sector AI Hub** reference architecture cata
 
 ---
 
+## 🏔️ State of West Virginia — Antigravity Skill & Federated Connector Suite (`./wv-antigravity-suite`)
+
+- ⚡ **[State of West Virginia Antigravity Onboarding, Federated GE Connector Bridge, Claude/Gemini Model Guide & Visual Design Suite (`v1.2.0`)](./wv-antigravity-suite)**:
+  - Complete `< 2-second` onboarding suite (`dist/wv-antigravity-suite.zip` + 1-line `agy plugin install`) packaging **6 modular Antigravity plugins** (`wv-onboarding`, `wv-connectors`, `wv-design-studio`, `wv-state-workflows`, `wv-engineering-cloud`, `wv-security`) and **21 slash-command skills** requiring **zero extra local software** on state corporate laptops.
+  - Includes **`/model-guide`** (switching between **Anthropic Claude Sonnet / Opus** and **Google Gemini** in Desktop & CLI, 2-Pass Dual-Model Cross-Review, and WV IT Vertex AI Model Garden enablement in `us-east5`), **`wv-ge-bridge` MCP** (connecting Azure/Entra-synced Google Identity to federated Outlook, SharePoint, OneDrive, Teams, Drive & GitHub through the user's default Gemini Enterprise instance), **`WV Skills`** live toggle UI sidecar, and **`WV Preview`** live visual design preview sidecar (`127.0.0.1:4175`) + [7 Guided Test Prompts (`docs/TEST_PROMPTS.md`)](./wv-antigravity-suite/docs/TEST_PROMPTS.md).
+
+---
+
 ## 📈 Google Antigravity Dashboard Studio Plugin & BI Workshop (`./agy-dashboard-studio`)
 
 - 🎨 **[Antigravity Dashboard Studio Plugin (`dashboard-studio`), Zero-Prompt Visual Layout Editor & Hands-On Workshop](./agy-dashboard-studio)**:
