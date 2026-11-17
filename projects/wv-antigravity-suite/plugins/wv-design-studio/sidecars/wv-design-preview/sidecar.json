@@ -1,0 +1,25 @@
+{
+  "command": "node",
+  "args": [
+    "main.mjs"
+  ],
+  "restart_policy": "always",
+  "display_name": "WV Design Studio Preview",
+  "description": "Live Visual Preview & 1-Click Browser Launcher for WV Dashboards, Slide Decks, and Branded Flyers.",
+  "has_web_ui": true,
+  "ui_config": {
+    "display_name": "WV Preview",
+    "views": [
+      {
+        "path": "/?entrypoint=sidebar",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
+        "title": "WV Preview"
+      },
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "WV Preview"
+      }
+    ]
+  }
+}

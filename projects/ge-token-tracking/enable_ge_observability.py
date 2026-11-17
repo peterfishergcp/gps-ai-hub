@@ -50,7 +50,9 @@ def get_gcloud_token() -> str:
     return subprocess.check_output(["gcloud", "auth", "print-access-token"]).decode("utf-8").strip()
 
 
-def enable_notebooklm_observability(project_id: str, token: str, sensitive_logging: bool) -> int:
+def enable_notebooklm_observability(
+    project_id: str, token: str, sensitive_logging: bool, preserve_sensitive: bool = False
+) -> int:
     """Enables Project-level customerProvidedConfig.notebooklmConfig.observabilityConfig across locations."""
     print("\n=== Enabling Project-Level NotebookLM Enterprise Observability ===")
     nb_updated = 0
@@ -76,13 +78,18 @@ def enable_notebooklm_observability(project_id: str, token: str, sensitive_loggi
             .get("notebooklmConfig", {})
             .get("observabilityConfig", {})
         )
+        effective_sensitive = (
+            bool(before_nb_cfg["sensitiveLoggingEnabled"])
+            if (preserve_sensitive and "sensitiveLoggingEnabled" in before_nb_cfg)
+            else bool(sensitive_logging)
+        )
         patch_url = f"{proj_url}?updateMask=customerProvidedConfig.notebooklmConfig.observabilityConfig"
         patch_body = json.dumps({
             "customerProvidedConfig": {
                 "notebooklmConfig": {
                     "observabilityConfig": {
                         "observabilityEnabled": True,
-                        "sensitiveLoggingEnabled": bool(sensitive_logging),
+                        "sensitiveLoggingEnabled": effective_sensitive,
                     }
                 }
             }
@@ -113,7 +120,13 @@ def enable_notebooklm_observability(project_id: str, token: str, sensitive_loggi
 
 
 def enable_agent_observability(
-    project_id: str, token: str, loc: str, prefix: str, engine_id: str, sensitive_logging: bool
+    project_id: str,
+    token: str,
+    loc: str,
+    prefix: str,
+    engine_id: str,
+    sensitive_logging: bool,
+    preserve_sensitive: bool = False,
 ) -> int:
     """Enables observabilityConfig on all custom Agents in an Engine so agent turns emit token telemetry."""
     agents_url = (
@@ -143,6 +156,11 @@ def enable_agent_observability(
         ag_display = ag.get("displayName", ag_id)
         ag_desc = ag.get("description", ag_display)
         before_obs = ag.get("observabilityConfig", {})
+        effective_ag_sensitive = (
+            bool(before_obs["sensitiveLoggingEnabled"])
+            if (preserve_sensitive and "sensitiveLoggingEnabled" in before_obs)
+            else bool(sensitive_logging)
+        )
 
         patch_url = (
             f"https://{prefix}discoveryengine.googleapis.com/v1alpha/"
@@ -158,7 +176,7 @@ def enable_agent_observability(
             "description": ag_desc,
             "observabilityConfig": {
                 "observabilityEnabled": True,
-                "sensitiveLoggingEnabled": bool(sensitive_logging),
+                "sensitiveLoggingEnabled": effective_ag_sensitive,
             },
         }).encode("utf-8")
         patch_req = urllib.request.Request(
@@ -196,6 +214,11 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         default=DEFAULT_SENSITIVE,
         help="Also log prompt/response text alongside token telemetry (default: True; pass --no-sensitive-logging for token/metadata-only mode)",
+    )
+    parser.add_argument(
+        "--preserve-sensitive-logging",
+        action="store_true",
+        help="Preserve each engine/agent's existing sensitiveLoggingEnabled setting (non-disruptive SIEM augmentation mode)",
     )
     args = parser.parse_args()
 
@@ -237,6 +260,11 @@ def main() -> None:
             engine_id = full_name.split("/")[-1]
             display_name = eng.get("displayName", engine_id)
             before_cfg = eng.get("observabilityConfig", {})
+            effective_eng_sensitive = (
+                bool(before_cfg["sensitiveLoggingEnabled"])
+                if (args.preserve_sensitive_logging and "sensitiveLoggingEnabled" in before_cfg)
+                else bool(args.sensitive_logging)
+            )
 
             patch_url = (
                 f"https://{prefix}discoveryengine.googleapis.com/v1alpha/"
@@ -246,7 +274,7 @@ def main() -> None:
             patch_body = json.dumps({
                 "observabilityConfig": {
                     "observabilityEnabled": True,
-                    "sensitiveLoggingEnabled": bool(args.sensitive_logging),
+                    "sensitiveLoggingEnabled": effective_eng_sensitive,
                 }
             }).encode("utf-8")
 
@@ -269,13 +297,21 @@ def main() -> None:
                 print(f"  Before           : {json.dumps(before_cfg)}")
                 print(f"  After            : {json.dumps(after_cfg)}")
                 total_agents_updated += enable_agent_observability(
-                    project_id, token, loc, prefix, engine_id, args.sensitive_logging
+                    project_id,
+                    token,
+                    loc,
+                    prefix,
+                    engine_id,
+                    args.sensitive_logging,
+                    preserve_sensitive=args.preserve_sensitive_logging,
                 )
             except urllib.error.HTTPError as e:
                 err_msg = e.read().decode("utf-8", errors="ignore")
                 print(f"\n  App Display Name : {display_name} ({engine_id}) -> ERROR {e.code}: {err_msg[:200]}")
 
-    nb_locations = enable_notebooklm_observability(project_id, token, args.sensitive_logging)
+    nb_locations = enable_notebooklm_observability(
+        project_id, token, args.sensitive_logging, preserve_sensitive=args.preserve_sensitive_logging
+    )
     print(
         f"\nDone! Enabled observability (sensitiveLoggingEnabled={args.sensitive_logging}) on "
         f"{total_updated} Gemini Enterprise engine(s), {total_agents_updated} Agent(s), and "

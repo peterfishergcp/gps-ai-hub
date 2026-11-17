@@ -1,0 +1,29 @@
+# Secrets and local environment files (never commit)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python virtual environments & caches
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Participant-generated workshop lab folders at root (keep starters/ tracked)
+/lab1-mission-portal/
+/briefing-coach/
+/setup-check/
+/.agents/
+/.agents-cli-spec.md
+
+# Keep packaged workshop Skill .zip archives tracked (overrides root *.zip rule)
+!/guide/skills/*.zip
+
+# OS & editor artifacts
+.DS_Store
+Thumbs.db

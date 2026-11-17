@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WV Skills &amp; Federated Connectors</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/preload.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="top-header">
+      <div class="brand-row">
+        <div class="title-cluster">
+          <svg class="spark-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="wvSparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4c8df6"/>
+                <stop offset="50%" stop-color="#8ab4f8"/>
+                <stop offset="100%" stop-color="#c58af9"/>
+              </linearGradient>
+            </defs>
+            <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#wvSparkGrad)"/>
+          </svg>
+          <div>
+            <h1>West Virginia Skills</h1>
+            <p class="subtitle" id="summaryCounter">20 skills across 6 categories · Toggle individual skills or categories live</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="pill-action" id="toggleGePanelBtn">GE Connector Hub</button>
+          <button type="button" class="pill-action subtle" id="updateSuiteBtn" title="Run /wv-update in chat">Sync Git Updates</button>
+        </div>
+      </div>
+
+      <section class="ge-drawer" id="geDrawer" hidden>
+        <label class="ge-label" for="geInput">Default Gemini Enterprise Instance (Azure/Entra-Synced Google Identity · Federated Connectors)</label>
+        <div class="ge-row">
+          <input type="text" id="geInput" placeholder="projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID">
+          <button type="button" class="pill-action primary" id="saveGeBtn">Save GE Instance</button>
+        </div>
+      </section>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input type="search" id="searchInput" placeholder="Filter skills by name, /command, or capability...">
+        </div>
+        <div class="filter-chips" id="categoryChips"></div>
+      </div>
+    </header>
+
+    <main id="categoriesContainer" class="categories-list" aria-live="polite"></main>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>

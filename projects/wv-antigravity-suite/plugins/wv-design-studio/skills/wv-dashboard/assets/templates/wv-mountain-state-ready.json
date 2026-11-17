@@ -1,0 +1,266 @@
+{
+  "config": {
+    "id": "wv-mountain-state-ready",
+    "eyebrow": "State of West Virginia · Economic Development (WVEDA & IJDC)",
+    "title": "Mountain State Ready: $40M Site Readiness Portfolio",
+    "subtitle": "$25M Shell Building Loan Program & $15M Site Readiness Grant Program · First-Round Window Closes Dec 31, 2026",
+    "connector": "bigquery",
+    "lastUpdatedLabel": "Round 1 Intake Snapshot · Nov 2026",
+    "themePreset": "wv-official",
+    "theme": {
+      "mode": "light",
+      "fontFamily": "\"Fira Sans\", system-ui, -apple-system, sans-serif",
+      "bg": "#F4F6F8",
+      "surface": "#FFFFFF",
+      "ink": "#1E252B",
+      "muted": "#5A6772",
+      "border": "#D8E0E6",
+      "primary": "#053254",
+      "accent": "#C1452C",
+      "secondary": "#D5A245",
+      "radius": 12,
+      "density": "comfortable"
+    },
+    "filters": [
+      {
+        "field": "program",
+        "label": "Program",
+        "options": [
+          "All",
+          "Shell Building Loan ($25M)",
+          "Site Readiness Grant ($15M)"
+        ]
+      },
+      {
+        "field": "tier",
+        "label": "Readiness Tier",
+        "options": [
+          "All",
+          "Shell Vertical (30k-50k sq ft)",
+          "Tier 1 (Turnkey Boundary)",
+          "Tier 2 (Utility Extension)",
+          "Tier 3 (High-Potential Acreage)"
+        ]
+      }
+    ],
+    "kpis": [
+      {
+        "id": "kpi-allocation",
+        "label": "Authorized State Funding",
+        "mode": "static",
+        "value": "$40.0M",
+        "delta": "$25M Loans · $15M Grants",
+        "tone": "accent"
+      },
+      {
+        "id": "kpi-pipeline",
+        "label": "Active Pipeline Requested",
+        "mode": "sum",
+        "field": "requestedMillions",
+        "format": "currency_m",
+        "delta": "Across active WV county applications",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-acreage",
+        "label": "Qualifying Industrial Acreage",
+        "mode": "sum",
+        "field": "acres",
+        "format": "integer_suffix_ac",
+        "delta": "5+ acre industrial minimum verified",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-jobs",
+        "label": "Projected Jobs Target",
+        "mode": "sum",
+        "field": "projectedJobs",
+        "format": "integer",
+        "delta": ">=120% county median wage target",
+        "tone": "gold"
+      }
+    ],
+    "widgets": [
+      {
+        "id": "w-county-funding",
+        "title": "Requested Investment by WV County ($M)",
+        "subtitle": "Top county economic development authority proposals in Round 1",
+        "chartType": "bar",
+        "span": 6,
+        "groupBy": "county",
+        "metricField": "requestedMillions",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-tier-mix",
+        "title": "Funding Mix by Readiness Tier ($M)",
+        "subtitle": "Balance across WVEDA vertical shell buildings and IJDC Tier 1-3 site prep",
+        "chartType": "donut",
+        "span": 6,
+        "groupBy": "tier",
+        "metricField": "requestedMillions",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-weekly-velocity",
+        "title": "Cumulative Round 1 Application Pipeline ($M)",
+        "subtitle": "Weekly progression from Nov 10 Governor announcement toward Dec 31 close",
+        "chartType": "line",
+        "span": 12,
+        "seriesKey": "weeklyTimeline",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-site-register",
+        "title": "County Site & Shell Building Readiness Register",
+        "subtitle": "Facilitating local authorities, utility readiness, local match, and WVDED joint review status",
+        "chartType": "table",
+        "span": 12,
+        "columns": [
+          { "key": "county", "label": "County" },
+          { "key": "authority", "label": "Facilitating Agent" },
+          { "key": "program", "label": "Program" },
+          { "key": "tier", "label": "Readiness Tier" },
+          { "key": "acres", "label": "Acres" },
+          { "key": "requestedMillions", "label": "Requested ($M)", "format": "currency_m" },
+          { "key": "projectedJobs", "label": "Est. Jobs" },
+          { "key": "wagePct", "label": "Wage Floor" },
+          { "key": "status", "label": "Review Stage" }
+        ],
+        "visible": true
+      }
+    ],
+    "queries": {
+      "records": "SELECT county, authority, program, tier, acres, requested_millions AS requestedMillions, projected_jobs AS projectedJobs, wage_pct AS wagePct, status FROM `wv_econ_dev.mountain_state_ready_applications` WHERE (@program = 'All' OR program = @program) ORDER BY requested_millions DESC LIMIT 250"
+    }
+  },
+  "snapshot": {
+    "sourceMode": "snapshot",
+    "connector": "bigquery",
+    "generatedAt": "2026-11-16T16:00:00Z",
+    "weeklyTimeline": [
+      { "label": "Nov 10 (Launch)", "value": 6.5 },
+      { "label": "Nov 17", "value": 14.2 },
+      { "label": "Nov 24", "value": 21.8 },
+      { "label": "Dec 01", "value": 27.4 },
+      { "label": "Dec 08", "value": 32.9 },
+      { "label": "Dec 15 (Proj.)", "value": 36.8 },
+      { "label": "Dec 31 (Close)", "value": 40.0 }
+    ],
+    "records": [
+      {
+        "county": "Kanawha",
+        "authority": "Charleston Area Alliance EDA",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 42,
+        "requestedMillions": 5.0,
+        "projectedJobs": 165,
+        "wagePct": "125% Median",
+        "status": "Joint WVDED Review"
+      },
+      {
+        "county": "Berkeley",
+        "authority": "Berkeley County Dev. Authority",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 55,
+        "requestedMillions": 5.0,
+        "projectedJobs": 180,
+        "wagePct": "130% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Putnam",
+        "authority": "Putnam County Dev. Authority",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 38,
+        "requestedMillions": 4.8,
+        "projectedJobs": 140,
+        "wagePct": "122% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Monongalia",
+        "authority": "Morgantown Area Partnership",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 34,
+        "requestedMillions": 5.0,
+        "projectedJobs": 155,
+        "wagePct": "128% Median",
+        "status": "Joint WVDED Review"
+      },
+      {
+        "county": "Cabell",
+        "authority": "Huntington Area Dev. Council",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 1 (Turnkey Boundary)",
+        "acres": 120,
+        "requestedMillions": 2.4,
+        "projectedJobs": 110,
+        "wagePct": "120% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Harrison",
+        "authority": "Harrison County Econ. Dev. Corp.",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 2 (Utility Extension)",
+        "acres": 210,
+        "requestedMillions": 3.1,
+        "projectedJobs": 135,
+        "wagePct": "120% Median",
+        "status": "Engineering Check"
+      },
+      {
+        "county": "Mason",
+        "authority": "Mason County Dev. Authority",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 3 (High-Potential Acreage)",
+        "acres": 410,
+        "requestedMillions": 3.8,
+        "projectedJobs": 190,
+        "wagePct": "125% Median",
+        "status": "Phase I/II ESA Review"
+      },
+      {
+        "county": "Wood",
+        "authority": "Wood County Development",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 2 (Utility Extension)",
+        "acres": 165,
+        "requestedMillions": 2.6,
+        "projectedJobs": 95,
+        "wagePct": "120% Median",
+        "status": "Joint WVDED Review"
+      },
+      {
+        "county": "Raleigh",
+        "authority": "New River Gorge Regional Dev.",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 1 (Turnkey Boundary)",
+        "acres": 95,
+        "requestedMillions": 1.9,
+        "projectedJobs": 85,
+        "wagePct": "120% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Marion",
+        "authority": "Marion Regional Dev. Corp.",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 46,
+        "requestedMillions": 4.4,
+        "projectedJobs": 125,
+        "wagePct": "120% Median",
+        "status": "Intake Complete"
+      }
+    ]
+  }
+}

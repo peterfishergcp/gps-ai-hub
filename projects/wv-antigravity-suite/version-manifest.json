@@ -1,0 +1,63 @@
+{
+  "suiteName": "wv-antigravity-suite",
+  "displayName": "State of West Virginia Antigravity Skill & Connector Suite",
+  "suiteVersion": "1.2.0",
+  "releasedAt": "2026-11-17",
+  "minAntigravityVersion": "1.0.0",
+  "plugins": {
+    "wv-onboarding": {
+      "version": "1.2.0",
+      "category": "Onboarding, Skill Toggle UI Panel, Model Guide (Claude + Gemini), Daily Brief & Triage",
+      "skills": ["wv-onboard", "model-guide", "daily-brief", "digital-twin", "inbox-triage", "wv-update"],
+      "sidecars": ["wv-skill-manager"]
+    },
+    "wv-connectors": {
+      "version": "1.0.0",
+      "category": "Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
+      "skills": ["connect-ge", "connect-m365-workspace", "connect-github-bigquery"],
+      "mcpServers": ["wv-ge-bridge"]
+    },
+    "wv-design-studio": {
+      "version": "1.2.0",
+      "category": "Zero-Node Dashboards, Executive Slides, Branded State Documents & Live Visual Preview Sidecar",
+      "skills": ["wv-dashboard", "slides", "doc-design"],
+      "agents": ["wv-design-architect"],
+      "sidecars": ["wv-design-preview"]
+    },
+    "wv-state-workflows": {
+      "version": "1.0.0",
+      "category": "WV FOIA, Legal/Procurement Review & Policy Audits",
+      "skills": ["foia-expert", "legal-procurement-review", "policy-program-audit"]
+    },
+    "wv-engineering-cloud": {
+      "version": "1.0.0",
+      "category": "Legacy App Refactoring, Cloud Run & BigQuery Architecture",
+      "skills": ["modernize-refactor", "deploy-cloudrun", "bigquery-architect", "find-cloud-skill"]
+    },
+    "wv-security": {
+      "version": "1.0.0",
+      "category": "OWASP, Google Cloud WAF, Assured Workloads & IAM Hygiene",
+      "skills": ["security-audit", "iam-secret-hygiene"]
+    }
+  },
+  "changelog": [
+    {
+      "version": "1.2.0",
+      "date": "2026-11-17",
+      "highlights": [
+        "Added /model-guide skill in wv-onboarding covering Anthropic Claude (Claude Sonnet & Claude Opus) and Google Gemini model selection in Antigravity Desktop, IDE, and CLI (/model, --model, --effort, /usage).",
+        "Added automatic Side-Pane Rendered Visual Artifacts (dashboard-standalone.html, deck.html, flyer.html in the Conversation Artifact Directory) + 1-click Browser Launch URL Cards (.url.json) + built-in wv-design-preview UI Sidecar on 127.0.0.1:4175 so business users see rendered dashboards/slides/flyers instead of raw HTML source code."
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-11-17",
+      "highlights": [
+        "Initial release across all 6 State of West Virginia onboarding categories (20 slash-command skills + 113 public-sector playbook recipes).",
+        "Zero-install Gemini Enterprise (GE) Federated Connector Bridge running on Antigravity's built-in agy-node runtime (supports Entra-synced Google Identity + Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub).",
+        "Zero-Node Browser Mode for /wv-dashboard, /slides, and /doc-design so locked-down state corporate laptops need zero extra local software.",
+        "Fast <2-second HTTPS ZIP and Git sparse-checkout installer/updater (/wv-update)."
+      ]
+    }
+  ]
+}

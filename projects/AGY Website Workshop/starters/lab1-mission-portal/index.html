@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  Copyright 2026 Google LLC
+  SPDX-License-Identifier: Apache-2.0
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mission Readiness &amp; AI Services Portal built during Lab 1 of the Google Antigravity Hands-On Workshop.">
+  <title>Mission AI Services Portal</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div>
+        <p class="eyebrow" id="greetingText">Mission Operations</p>
+        <h1 id="ownerName">Jordan Taylor</h1>
+        <p class="subtitle" id="ownerRole">Cloud AI Solutions Lead · Digital Services Modernization</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-secondary" id="filterAllBtn" aria-pressed="true">All Initiatives</button>
+        <button type="button" class="btn-secondary" id="filterActiveBtn" aria-pressed="false">Active Pilot</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card about-card" aria-labelledby="aboutHeading">
+      <h2 id="aboutHeading">Mission Summary</h2>
+      <p>
+        Designing human-directed, auditable AI workflows that accelerate constituent service delivery,
+        policy synthesis, and operational readiness using keyless Google Cloud security boundaries.
+      </p>
+    </section>
+
+    <section aria-labelledby="projectsHeading">
+      <div class="section-head">
+        <h2 id="projectsHeading">Priority Initiatives</h2>
+        <span class="count-pill" id="projectCount">3 initiatives</span>
+      </div>
+      <div class="project-grid" id="projectGrid"></div>
+    </section>
+
+    <section class="card contact-card" aria-labelledby="contactHeading">
+      <h2 id="contactHeading">Coordination &amp; Office Hours</h2>
+      <p>Reach the Architecture &amp; Enablement team for workshop templates, ADK agent reviews, or Cloud Workstations onboarding.</p>
+      <p class="contact-line">
+        <strong>Point of Contact:</strong>
+        <a href="mailto:ai-enablement@example.org" id="contactEmail">ai-enablement@example.org</a>
+      </p>
+    </section>
+  </main>
+
+  <footer class="container site-footer">
+    <p>Built with Google Antigravity · Zero external runtime dependencies · Verified static assets.</p>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>

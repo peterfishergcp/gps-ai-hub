@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="">
+  <title>Dashboard Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fira+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <div class="topbar-main">
+      <div class="header-titles">
+        <div class="eyebrow-row">
+          <span class="eyebrow" id="dashEyebrow">Loading...</span>
+          <span class="connector-pill" id="connectorPill">BigQuery</span>
+        </div>
+        <h1 class="dash-title" id="dashTitle">Dashboard Studio</h1>
+        <p class="dash-subtitle" id="dashSubtitle"></p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn ghost" id="refreshBtn" title="Run configured database query or reload snapshot">Refresh Data</button>
+        <button type="button" class="btn ghost" id="exportBtn" title="Download dashboard.config.json">Export Config</button>
+        <button type="button" class="btn accent" id="customizeBtn" aria-pressed="false">Customize Layout</button>
+        <button type="button" class="btn save" id="saveBtn" hidden>Save Changes</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="studio-drawer" id="studioDrawer" hidden aria-label="Visual layout and theme customization">
+    <div class="drawer-inner">
+      <div class="drawer-group">
+        <span class="drawer-label">Style Preset</span>
+        <div class="preset-row" id="presetRow"></div>
+      </div>
+      <div class="drawer-group">
+        <span class="drawer-label">Brand Colors</span>
+        <div class="color-row">
+          <label class="color-pick"><span>Primary</span><input type="color" id="colPrimary" value="#053254"></label>
+          <label class="color-pick"><span>Accent</span><input type="color" id="colAccent" value="#C1452C"></label>
+          <label class="color-pick"><span>Secondary</span><input type="color" id="colSecondary" value="#D5A245"></label>
+          <label class="color-pick"><span>Background</span><input type="color" id="colBg" value="#F4F6F8"></label>
+          <label class="color-pick"><span>Cards</span><input type="color" id="colSurface" value="#FFFFFF"></label>
+        </div>
+      </div>
+      <div class="drawer-group">
+        <span class="drawer-label">Card Corners &amp; Density</span>
+        <div class="preset-row">
+          <button type="button" class="chip-btn" data-radius="6">Sharp</button>
+          <button type="button" class="chip-btn" data-radius="12">Balanced</button>
+          <button type="button" class="chip-btn" data-radius="20">Rounded</button>
+          <button type="button" class="chip-btn" id="densityToggle">Compact: Off</button>
+        </div>
+      </div>
+      <div class="drawer-group" id="hiddenWidgetsGroup" hidden>
+        <span class="drawer-label">Hidden Cards (Click to Restore)</span>
+        <div class="preset-row" id="hiddenWidgetsRow"></div>
+      </div>
+      <p class="drawer-hint">Drag cards by their top handle, click width or chart-type pills on any card, click any heading to rename it, then click <strong>Save Changes</strong> to write directly to <code>dashboard.config.json</code>—zero prompts needed.</p>
+    </div>
+  </section>
+
+  <main class="workspace" id="workspace">
+    <section class="filter-bar" id="filterBar" aria-label="Dashboard filters"></section>
+    <section class="kpi-grid" id="kpiGrid" aria-label="Key performance indicators"></section>
+    <section class="widget-grid" id="widgetGrid" aria-label="Charts and data tables"></section>
+  </main>
+
+  <footer class="dash-footer">
+    <span id="footerStamp"></span>
+    <span>Powered by Antigravity Dashboard Studio · Visual edits sync to <code>dashboard.config.json</code></span>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

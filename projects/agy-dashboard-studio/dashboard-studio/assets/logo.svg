@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <!-- 12% transparent margin baked in (content sits inside 28..228) -->
+  <rect x="28" y="28" width="200" height="200" rx="40" fill="#053254" stroke="#D5A245" stroke-width="6"/>
+  <!-- Top KPI pills -->
+  <rect x="52" y="54" width="68" height="36" rx="10" fill="#0D4773" stroke="#D5A245" stroke-opacity="0.55" stroke-width="2"/>
+  <circle cx="70" cy="72" r="7" fill="#C1452C"/>
+  <rect x="84" y="67" width="24" height="10" rx="5" fill="#FFFFFF"/>
+  <rect x="132" y="54" width="72" height="36" rx="10" fill="#0D4773" stroke="#D5A245" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="146" y="67" width="44" height="10" rx="5" fill="#D5A245"/>
+  <!-- Chart panel -->
+  <rect x="52" y="104" width="152" height="100" rx="14" fill="#FFFFFF"/>
+  <!-- Bars -->
+  <rect x="70" y="156" width="20" height="32" rx="5" fill="#053254"/>
+  <rect x="102" y="138" width="20" height="50" rx="5" fill="#053254"/>
+  <rect x="134" y="124" width="20" height="64" rx="5" fill="#C1452C"/>
+  <rect x="166" y="116" width="20" height="72" rx="5" fill="#D5A245"/>
+  <!-- Dynamic trend line -->
+  <path d="M80 148 L112 130 L144 118 L176 112" stroke="#C1452C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="176" cy="112" r="6" fill="#C1452C" stroke="#FFFFFF" stroke-width="2.5"/>
+</svg>

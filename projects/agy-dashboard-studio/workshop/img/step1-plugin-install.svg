@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" fill="none">
+  <rect width="960" height="430" rx="12" fill="#0F172A"/>
+  <!-- Left Sidebar -->
+  <rect width="230" height="430" rx="12" fill="#1E293B"/>
+  <text x="22" y="38" fill="#94A3B8" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="1">ANTIGRAVITY</text>
+  <rect x="14" y="56" width="202" height="34" rx="8" fill="#334155"/>
+  <text x="28" y="78" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="600">+ New Conversation</text>
+  <text x="22" y="126" fill="#94A3B8" font-family="sans-serif" font-size="11" font-weight="700">CUSTOMIZATIONS</text>
+  <rect x="14" y="138" width="202" height="34" rx="8" fill="#053254" stroke="#D5A245" stroke-width="2"/>
+  <text x="28" y="160" fill="#FFFFFF" font-family="sans-serif" font-size="13" font-weight="700">Plugins · Installed</text>
+
+  <!-- Main Plugin Card -->
+  <rect x="258" y="34" width="674" height="362" rx="12" fill="#1E293B" stroke="#334155"/>
+  <rect x="284" y="60" width="56" height="56" rx="12" fill="#053254" stroke="#D5A245" stroke-width="2"/>
+  <rect x="298" y="88" width="7" height="16" rx="2" fill="#FFFFFF"/>
+  <rect x="309" y="80" width="7" height="24" rx="2" fill="#C1452C"/>
+  <rect x="320" y="74" width="7" height="30" rx="2" fill="#D5A245"/>
+
+  <text x="356" y="84" fill="#F8FAFC" font-family="sans-serif" font-size="22" font-weight="800">Dashboard Studio</text>
+  <rect x="556" y="67" width="54" height="22" rx="11" fill="#334155"/>
+  <text x="568" y="82" fill="#CBD5E1" font-family="monospace" font-size="11">v1.0.0</text>
+  <text x="356" y="106" fill="#94A3B8" font-family="sans-serif" font-size="13">Create clean, dynamic business dashboards with visual no-prompt layout editing and BigQuery.</text>
+
+  <!-- Enabled Toggle -->
+  <rect x="814" y="68" width="90" height="30" rx="15" fill="#15803D"/>
+  <circle cx="888" cy="83" r="11" fill="#FFFFFF"/>
+  <text x="828" y="87" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="700">Enabled</text>
+
+  <!-- Components summary -->
+  <text x="284" y="152" fill="#94A3B8" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="1">BUNDLED COMPONENTS</text>
+  <rect x="284" y="164" width="136" height="30" rx="6" fill="#0F172A" stroke="#334155"/>
+  <text x="298" y="183" fill="#E2E8F0" font-family="monospace" font-size="12">/dashboard skill</text>
+  <rect x="430" y="164" width="176" height="30" rx="6" fill="#0F172A" stroke="#334155"/>
+  <text x="444" y="183" fill="#E2E8F0" font-family="monospace" font-size="12">dashboard-designer</text>
+  <rect x="616" y="164" width="150" height="30" rx="6" fill="#0F172A" stroke="#334155"/>
+  <text x="630" y="183" fill="#E2E8F0" font-family="monospace" font-size="12">rules/AGENTS.md</text>
+
+  <!-- Starter Prompts -->
+  <text x="284" y="228" fill="#94A3B8" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="1">STARTER PROMPTS (CLICK TO LAUNCH)</text>
+  <rect x="284" y="242" width="620" height="38" rx="8" fill="#0F172A" stroke="#D5A245" stroke-width="2"/>
+  <text x="300" y="266" fill="#F8FAFC" font-family="sans-serif" font-size="13">→ Create a new BigQuery dashboard and ask me if I have a reference screenshot to emulate</text>
+
+  <rect x="284" y="290" width="620" height="38" rx="8" fill="#0F172A" stroke="#334155"/>
+  <text x="300" y="314" fill="#CBD5E1" font-family="sans-serif" font-size="13">→ Spin up a Mountain State Ready $40M Site Readiness &amp; Grants dashboard for West Virginia</text>
+
+  <rect x="284" y="338" width="620" height="38" rx="8" fill="#0F172A" stroke="#334155"/>
+  <text x="300" y="362" fill="#CBD5E1" font-family="sans-serif" font-size="13">→ Spin up a Mine and Corrections Incident Triage dashboard with live visual layout editing</text>
+</svg>
