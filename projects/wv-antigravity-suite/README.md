@@ -46,13 +46,13 @@ bash projects/wv-antigravity-suite/scripts/install-wv-suite.sh
 
 ---
 
-## What Gets Installed (6 Modular Plugins · 20 Slash Skills · 113 Public-Sector Recipes)
+## What Gets Installed (6 Modular Plugins · 21 Slash Skills · 114 Public-Sector Recipes)
 
 All 6 plugins are **enabled immediately upon installation**, and non-technical staff can optionally toggle off developer-focused plugins (such as `wv-engineering-cloud`) anytime under **Customizations > Installed**:
 
 | Plugin | Included `/skills` & Capabilities | Target Personas |
 | :--- | :--- | :--- |
-| **`wv-onboarding`** | `/wv-onboard` · `/daily-brief` · `/digital-twin` · `/inbox-triage` · `/wv-update` *(+ Playbooks for 30-60-90 onboarding, SOPs, meeting prep, correspondence & threshold triage)* | All State Staff & Leadership |
+| **`wv-onboarding`** | `/wv-onboard` · **`/model-guide` *(Using Claude & Gemini in AGY)*** · `/daily-brief` · `/digital-twin` · `/inbox-triage` · `/wv-update` *(+ In-App Skill Toggle UI Panel)* | All State Staff, Admins & Leadership |
 | **`wv-connectors`** | `/connect-ge` *(Default)* · `/connect-m365-workspace` · `/connect-github-bigquery` + **`wv-ge-bridge` MCP** *(Federated Outlook, SharePoint, OneDrive, Teams, Gmail, Drive & GitHub via GE)* | All Staff + IT Onboarding |
 | **`wv-design-studio`** | `/wv-dashboard` *(Zero-Node `file://` + optional `127.0.0.1` Node/BQ)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos, BLUF notices)* + `wv-design-architect` agent | Analysts, Comms & Program Leads |
 | **`wv-state-workflows`** | `/foia-expert` *(WV Code § 29B-1-4 + `5 U.S.C. § 552` + Vault/Purview/GE discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` | FOIA Officers, Legal, Procurement & Policy |

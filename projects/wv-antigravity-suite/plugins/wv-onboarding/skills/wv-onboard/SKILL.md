@@ -36,8 +36,8 @@ Ask the user (allowing rough or 1-line answers):
 
 ## Step 3: Recommend Personalized Day-1 Starter Commands
 
-Based on their role in Question 1 & 3, give them **3 tailored slash commands** they can try immediately:
-- **Executives, Chiefs of Staff & Program Managers:** `/daily-brief`, `/inbox-triage`, `/wv-dashboard`
-- **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`
-- **Communications & Operations Leads:** `/digital-twin`, `/slides`, `/doc-design`
-- **Application, Data & Cloud Engineers:** `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`
+Based on their role in Question 1 & 3, give them **3 tailored slash commands** they can try immediately (plus **`/model-guide`** anytime they want to switch between Google Gemini and Anthropic Claude):
+- **Executives, Chiefs of Staff & Program Managers:** `/daily-brief`, `/inbox-triage`, `/wv-dashboard`, `/model-guide`
+- **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`, `/model-guide`
+- **Communications & Operations Leads:** `/digital-twin`, `/slides`, `/doc-design`, `/model-guide`
+- **Application, Data & Cloud Engineers:** `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`, `/model-guide`
