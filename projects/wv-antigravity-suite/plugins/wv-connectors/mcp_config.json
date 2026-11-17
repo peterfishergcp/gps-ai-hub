@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "wv-ge-bridge": {
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/scripts/ge_instance_mcp.mjs"]
+    }
+  }
+}

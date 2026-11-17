@@ -1,0 +1,12 @@
+{
+  "name": "wv-onboarding",
+  "displayName": "WV Onboarding, Skill Toggle Panel & Digital Twin",
+  "version": "1.1.0",
+  "description": "Includes the interactive WV Skills Toggle Control Panel (Sidebar & AuxPane), 60-second onboarding, morning executive briefings, Digital Twin drafting, rule-driven inbox triage, and 1-command Git updates.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /wv-onboard to set up my West Virginia agency role, Digital Twin voice, and Gemini Enterprise connection",
+    "Run /daily-brief to summarize today's top priorities, meetings, and open action items",
+    "Run /inbox-triage on my unread emails and flag anything meeting director escalation rules"
+  ]
+}

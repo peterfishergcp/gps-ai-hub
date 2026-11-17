@@ -1,0 +1,12 @@
+{
+  "name": "wv-design-studio",
+  "displayName": "WV Design Studio — Dashboards, Slides & Branded Docs",
+  "version": "1.0.0",
+  "description": "Zero-install visual dashboards (Zero-Node Browser Mode + optional BigQuery/Node preview), 16:9 HTML/PDF presentation decks, and West Virginia branded flyers, memos, and public notices.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /wv-dashboard to spin up a West Virginia branded executive dashboard I can customize visually in Chrome or Edge",
+    "Run /slides to build a 16:9 West Virginia leadership presentation deck from my program notes",
+    "Run /doc-design to create a 2-page print-ready stakeholder flyer or 1-page decision memo"
+  ]
+}

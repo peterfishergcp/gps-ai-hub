@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>West Virginia Gemini &amp; Antigravity Hub — Onboarding, Connectors &amp; Skills Registry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="top-app-bar">
+    <div class="nav-inner">
+      <a href="#overview" class="brand-link">
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="geminiStarGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1a73e8"/>
+              <stop offset="35%" stop-color="#8ab4f8"/>
+              <stop offset="70%" stop-color="#9334e6"/>
+              <stop offset="100%" stop-color="#ea4335"/>
+            </linearGradient>
+          </defs>
+          <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#geminiStarGradNav)"/>
+        </svg>
+        <span>West Virginia · Gemini &amp; Antigravity Hub</span>
+      </a>
+
+      <nav class="nav-pills" aria-label="Primary sections">
+        <a href="#overview" class="nav-pill active">Launchpad</a>
+        <a href="#install-section" class="nav-pill">2s Install &amp; GE Setup</a>
+        <a href="#skills-registry" class="nav-pill">Skills Registry (20)</a>
+        <button type="button" class="nav-pill" id="facilitatorNavBtn">IT Rollout Guide</button>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="./dist/wv-antigravity-suite.zip" download class="btn-primary-pill">Download Suite (.zip · 125 KB)</a>
+        <button type="button" class="icon-toggle" id="themeToggleBtn" title="Toggle Light / Dark theme" aria-label="Toggle Light or Dark theme">☾</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-wrap">
+    <!-- ACT 1: TARGET AUDIENCE BANNER & HERO -->
+    <section id="overview">
+      <div class="audience-banner">
+        <div>
+          <strong>State of West Virginia Onboarding:</strong> Executive Staff, FOIA &amp; Legal Officers, Analysts, and Cloud Engineers on <strong>Google Antigravity + Gemini Enterprise</strong>
+        </div>
+        <span class="audience-tag">Zero Laptop Runtime Installs · Entra-Synced Google Identity</span>
+      </div>
+
+      <div class="eyebrow-chips">
+        <span class="m3-chip blue">6 Modular Plugins · 20 Slash Skills</span>
+        <span class="m3-chip emerald">Federated Outlook · SharePoint · OneDrive · Teams · GitHub</span>
+        <span class="m3-chip amber">Built-In AGY Skill Toggle Panel</span>
+      </div>
+
+      <h1 class="hero-title">West Virginia Antigravity Launchpad &amp; Federated Skill Registry</h1>
+      <p class="hero-lead">
+        Equip Google Antigravity in under 2 seconds with role-ready public-sector skills, a <strong>1-step Federated Gemini Enterprise (`GE`) connector bridge</strong>, <strong>Zero-Node Browser Mode dashboards</strong>, and a native <strong>in-app Skill Toggle Control Panel</strong>—with zero Node.js, Python, or Docker required on corporate laptops.
+      </p>
+
+      <!-- 3 QUICK-ACTION PATHWAY CARDS ("CHOOSE YOUR MISSION") -->
+      <div class="pathway-grid">
+        <div class="pathway-card">
+          <div>
+            <div class="pathway-top">
+              <span class="icon-tile blue">⚡</span>
+              <span class="mono-tag">&lt; 2s · 125 KB Bundle</span>
+            </div>
+            <h3>1. Fast 1-Command Onboarding</h3>
+            <p>Install all 6 West Virginia plugins via PowerShell (zero Git needed on corporate laptops), Antigravity CLI, or sparse Git—and update anytime via <code>/wv-update</code>.</p>
+          </div>
+          <a href="#install-section" class="pathway-cta blue">Configure &amp; Copy Install Command →</a>
+        </div>
+
+        <div class="pathway-card emerald-accent">
+          <div>
+            <div class="pathway-top">
+              <span class="icon-tile emerald">✦</span>
+              <span class="mono-tag">wv-ge-bridge · StreamAssist</span>
+            </div>
+            <h3>2. Connect Federated Gemini Enterprise</h3>
+            <p>Uses your Azure/Entra-synced Google Identity and your GE instance's pre-configured federated connectors (Outlook, SharePoint, OneDrive, Teams, Drive, GitHub).</p>
+          </div>
+          <a href="#install-section" class="pathway-cta emerald">Pre-Fill Your GE Instance →</a>
+        </div>
+
+        <div class="pathway-card amber-accent">
+          <div>
+            <div class="pathway-top">
+              <span class="icon-tile amber">☰</span>
+              <span class="mono-tag">Extensions → WV Skills</span>
+            </div>
+            <h3>3. Toggle Skills Live Inside AGY</h3>
+            <p>Includes a built-in Antigravity UI panel (<code>WV Skills</code> in the left sidebar &amp; right AuxPane) so every employee can toggle individual skills on or off with 1 click.</p>
+          </div>
+          <a href="#skills-registry" class="pathway-cta amber">Explore All 20 Skills →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTIONAL IT FACILITATOR GUIDE -->
+    <section class="facilitator-box" id="facilitatorBox" hidden>
+      <h3>WV Agency IT &amp; Cohort Facilitator Rollout Checklist</h3>
+      <ul>
+        <li><strong>Zero Extra Laptop Software:</strong> Both <code>wv-ge-bridge</code> (MCP) and <code>wv-skill-manager</code> (UI Toggle Sidecar) execute automatically on Antigravity Desktop's bundled Node runtime + built-in <code>sidecar_sdk</code>. Dashboards (<code>/wv-dashboard</code>), slides (<code>/slides</code>), and flyers (<code>/doc-design</code>) run over <code>file://</code> in Chrome or Edge.</li>
+        <li><strong>Entra ID -&gt; Google Cloud Identity:</strong> Ensure the cohort's synced Google Identity group has Gemini Enterprise / Discovery Engine user access on your host GCP project, and remind users to click <strong>Authorize</strong> once inside their GE Web App on federated M365/GitHub sources.</li>
+        <li><strong>Turn-1 Cohort Pre-Fill:</strong> Paste your agency's GE resource path below before sharing the PowerShell command. For laptops without <code>gcloud</code>, pass <code>-OAuthClientId</code> + <code>-OAuthClientSecret</code> or deploy <code>deploy/cloudrun-ge-gateway/</code>.</li>
+      </ul>
+    </section>
+
+    <!-- ACT 2: 2-SECOND INSTALLER & GE INSTANCE PRE-FILL -->
+    <section id="install-section" class="section-card">
+      <h2>2-Second Suite Installation &amp; Default GE Connector Setup</h2>
+      <p class="section-sub">
+        <strong>Quick Steps:</strong> (1) Download and extract <code>wv-antigravity-suite.zip</code> (top-right button), (2) optionally paste your Gemini Enterprise resource path below so Turn-1 connectors are pre-configured, and (3) run the command in PowerShell or Terminal.
+      </p>
+
+      <div class="ge-prefill">
+        <label for="geInstanceInput">Optional — Default Gemini Enterprise Resource Path (Pre-Configures Federated Connectors on Install):</label>
+        <input type="text" id="geInstanceInput" placeholder="projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID">
+      </div>
+
+      <div class="os-tabs">
+        <button type="button" class="seg-btn active" data-os="windows">Windows Corporate Laptop (PowerShell — Zero Git)</button>
+        <button type="button" class="seg-btn" data-os="agy">Antigravity CLI (1-Line Git Install)</button>
+        <button type="button" class="seg-btn" data-os="mac">macOS / Linux</button>
+      </div>
+
+      <div class="code-box">
+        <button type="button" class="copy-pill" id="copyInstallBtn">Copy Command</button>
+        <pre id="installCmdText"></pre>
+      </div>
+    </section>
+
+    <!-- ACT 3: AURORA OMNIBOX SKILLS REGISTRY -->
+    <section id="skills-registry">
+      <div class="registry-hero">
+        <h2>West Virginia Skills Registry</h2>
+        <p>
+          Explore <strong>20 slash-command skills</strong> across 6 role-tailored plugins—backed by <strong>113 public-sector SOP recipes</strong>, West Virginia FOIA &amp; procurement guardrails, and live toggle switches inside Antigravity.
+        </p>
+
+        <div class="aurora-omnibox">
+          <div class="aurora-inner">
+            <span aria-hidden="true" style="color:var(--md-sys-color-primary);font-weight:700;">⌕</span>
+            <input type="search" id="skillSearchInput" placeholder="Search skills by name, /command, FOIA, SharePoint, Cloud Run, BigQuery...">
+          </div>
+        </div>
+
+        <div class="filter-row" id="typeFilterBar"></div>
+        <div class="filter-row" id="catFilterBar"></div>
+      </div>
+
+      <div class="m3-skills-grid" id="skillsGrid"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    State of West Virginia · Gemini &amp; Antigravity Onboarding Suite · Material 3 Adaptive Light &amp; Dark Portal
+  </footer>
+
+  <script src="./workshop.js"></script>
+</body>
+</html>
