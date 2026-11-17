@@ -48,3 +48,5 @@ Whenever you generate an HTML flyer, fact sheet, or formatted decision memo, alw
        "description": "Opens the rendered print-ready document in Chrome/Edge with zero terminal prompts."
      }
      ```
+3. **In Your Reply (Inline `<agent-embed>` + Rendered Links Only — ZERO `</> flyer.html` Code Links!):**
+   - Embed `<agent-embed src="file:///<appDataDir>/brain/<conversation-id>/<doc_name>_preview.html"></agent-embed>` in your chat response, and link **ONLY** to `[Open Rendered Flyer in Side Pane](file:///<appDataDir>/brain/<conversation-id>/<doc_name>_preview.html)` and `[Launch Branded Flyer in Browser](http://127.0.0.1:4175/view/<id>)`. **NEVER** create a `file://` link to the workspace `flyer.html` or `index.html` (which opens raw HTML source code in the Code Editor).

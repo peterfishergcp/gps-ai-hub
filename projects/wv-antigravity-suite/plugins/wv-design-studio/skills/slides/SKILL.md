@@ -52,3 +52,5 @@ Always complete these 2 steps before replying:
        "description": "Opens the rendered presentation deck in Chrome/Edge with zero terminal prompts."
      }
      ```
+3. **In Your Reply (Inline `<agent-embed>` + Rendered Links Only — ZERO `</> deck.html` Code Links!):**
+   - Embed `<agent-embed src="file:///<appDataDir>/brain/<conversation-id>/<deck_name>_slides_preview.html"></agent-embed>` in your chat response, and link **ONLY** to `[Open Rendered Slides in Side Pane](file:///<appDataDir>/brain/<conversation-id>/<deck_name>_slides_preview.html)` and `[Launch 16:9 Slide Deck in Browser](http://127.0.0.1:4175/view/<id>)`. **NEVER** create a `file://` link to the workspace `deck.html` or `index.html` (which opens raw HTML source code in the Code Editor).

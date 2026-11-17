@@ -13,9 +13,12 @@ When creating or updating dashboards (`/wv-dashboard`), slide decks (`/slides`),
      - Run `scaffold_dashboard.mjs` (for dashboards) or `node <wv-design-studio-plugin-dir>/scripts/register_deliverable.mjs --file <html_path> --kind <slides|doc> --title "<Title>"` (or write `~/.gemini/config/plugin_data/wv-design-studio/deliverables.json`).
      - This registers the deliverable with the built-in **`WV Preview` (`wv-design-preview`)** sidecar running on `http://127.0.0.1:4175/view/<id>`.
      - Use `write_file` to create a URL Artifact (`<appDataDir>/brain/<conversation-id>/Open <Deliverable Name> in Browser.url.json`) with `ArtifactMetadata: { Summary: "1-click browser launch", UserFacing: true, RequestFeedback: false }` containing `{"url": "http://127.0.0.1:4175/view/<id>", "title": "Launch <Deliverable Name> in Browser", "description": "Opens the live rendered view in Chrome/Edge with zero terminal prompts"}`.
-  3. **In Your Chat Response:**
-     - Tell the user to click the **Visual Artifact Card** (to view it rendered right inside Antigravity's side pane), click the **Launch in Browser URL Card** (to open `http://127.0.0.1:4175/view/<id>` in Chrome/Edge with 1 click), or open the **`WV Preview`** panel in the left Sidebar / right AuxPane.
-     - **Do NOT** tell business users to click `[index.html](file:///.../workspace/index.html)` to view the visual output, and **do NOT** run `open` / `start` shell commands unless explicitly asked.
+  3. **In Your Chat Response (Inline `<agent-embed>` + Rendered Links Only — ZERO Workspace `</> index.html` Links!):**
+     - Include `<agent-embed src="file:///<appDataDir>/brain/<conversation-id>/<deliverable_slug>.html"></agent-embed>` directly in your response so the user sees the rendered visual preview inline in chat immediately.
+     - Every clickable link in your chat bullets **MUST** point to either:
+       - `[Open Rendered Preview in Side Pane](file:///<appDataDir>/brain/<conversation-id>/<deliverable_slug>.html)` (pointing to the **Artifact Directory** path so clicking it opens the **rendered visual preview**, never the code editor!), or
+       - `[Launch in Browser (Chrome / Edge)](http://127.0.0.1:4175/view/<id>)` (pointing to the `WV Preview` loopback URL).
+     - **STRICT PROHIBITION:** **NEVER** output a markdown `file://` link to a workspace `.html`, `.css`, or `.js` file (such as `[index.html](file:///.../dashboard/index.html)`, `[deck.html](file:///...)`, or `[flyer.html](file:///...)`), because Antigravity renders workspace file links as `</> index.html` chips that open raw source code in the Code Editor! If you mention workspace file names, write them in plain backticks (`dashboard.config.json`) without a `file://` link.
 
 ## 2. Preserve Visual Edits (`dashboard.config.json` Is Source of Truth)
 - Always read `dashboard.config.json` from disk immediately before editing it so you never overwrite layout spans, card order, titles, or theme colors the user saved visually.

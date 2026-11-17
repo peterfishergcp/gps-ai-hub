@@ -52,10 +52,10 @@ Instead, you **MUST** always complete both of these native artifact steps before
        "description": "Opens the live rendered dashboard with Customize Layout & Save Changes enabled—zero terminal prompts."
      }
      ```
-3. **In Your Reply:** Point the user to:
-   - The **Rendered Dashboard Artifact Card** (to view and interact right inside Antigravity's Side Pane),
-   - The **Launch Interactive Dashboard in Browser** URL Card (to open `http://127.0.0.1:4175/view/<id>` in Chrome/Edge with 1 click), or
-   - The **`WV Preview`** button in Antigravity's left Sidebar / right AuxPane!
+3. **In Your Reply (Inline `<agent-embed>` + Rendered Links Only — ZERO `</> index.html` Code Links!):**
+   - Embed `<agent-embed src="file:///<appDataDir>/brain/<conversation-id>/<dashboard_name>_preview.html"></agent-embed>` directly in your chat response so the dashboard renders visually inline.
+   - For clickable links in your bullet list, link **ONLY** to `[Open Rendered Dashboard in Side Pane](file:///<appDataDir>/brain/<conversation-id>/<dashboard_name>_preview.html)` and `[Launch Interactive Dashboard in Browser](http://127.0.0.1:4175/view/<id>)`.
+   - **NEVER** create a `file://` markdown link to the workspace `index.html`, `styles.css`, or `app.js` (because clicking `</> index.html` opens raw source code in the Code Editor!). Write workspace filenames in plain backticks (`dashboard.config.json`) only.
 
 ## Step 4: Standing Preservation Rule
 Always read `dashboard.config.json` from disk immediately before making follow-up edits so visual layout changes saved by the user are preserved.
