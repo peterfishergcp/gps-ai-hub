@@ -140,6 +140,27 @@ try {
     Write-Host "Saved default Gemini Enterprise instance to $GeConfigPath" -ForegroundColor Green
   }
 
+  # Re-apply any per-skill toggles saved by the user in the WV Skills UI panel
+  $LedgerPath = Join-Path $TargetConfigDir "plugin_data\wv-onboarding\skill-toggles.json"
+  if (Test-Path $LedgerPath) {
+    try {
+      $Ledger = Get-Content -Raw -Path $LedgerPath | ConvertFrom-Json
+      if ($null -ne $Ledger.disabledSkills) {
+        foreach ($prop in $Ledger.disabledSkills.PSObject.Properties) {
+          if ($prop.Value -eq $true) {
+            $parts = $prop.Name -split "/"
+            if ($parts.Length -eq 2) {
+              $mdPath = Join-Path $PluginsDest "$($parts[0])\skills\$($parts[1])\SKILL.md"
+              if (Test-Path $mdPath) {
+                Move-Item -Force -Path $mdPath -Destination "$mdPath.disabled"
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
   Write-Host "`nReady! Open Google Antigravity and type /wv-onboard or /connect-ge to begin." -ForegroundColor Green
 } finally {
   if ($null -ne $TempDir -and (Test-Path $TempDir)) {

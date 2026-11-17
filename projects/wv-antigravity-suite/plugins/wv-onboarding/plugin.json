@@ -1,8 +1,8 @@
 {
   "name": "wv-onboarding",
-  "displayName": "WV Onboarding, Daily Brief & Digital Twin",
-  "version": "1.0.0",
-  "description": "Role-based onboarding, morning executive briefings, Digital Twin voice drafting, rule-driven inbox triage, and 1-command Git updates for State of West Virginia teams.",
+  "displayName": "WV Onboarding, Skill Toggle Panel & Digital Twin",
+  "version": "1.1.0",
+  "description": "Includes the interactive WV Skills Toggle Control Panel (Sidebar & AuxPane), 60-second onboarding, morning executive briefings, Digital Twin drafting, rule-driven inbox triage, and 1-command Git updates.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /wv-onboard to set up my West Virginia agency role, Digital Twin voice, and Gemini Enterprise connection",

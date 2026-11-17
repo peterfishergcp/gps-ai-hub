@@ -176,4 +176,4 @@ EOF
   echo "Saved default Gemini Enterprise instance to ${GE_CFG}"
 fi
 
-echo "Ready! Open Google Antigravity and run /wv-onboard or /connect-ge to begin."
+echo "Ready! Open Google Antigravity -> Extensions -> WV Skills (or run /wv-onboard) to begin."

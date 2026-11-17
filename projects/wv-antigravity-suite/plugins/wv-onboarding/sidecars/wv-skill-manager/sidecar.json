@@ -1,0 +1,25 @@
+{
+  "command": "node",
+  "args": [
+    "main.mjs"
+  ],
+  "restart_policy": "always",
+  "display_name": "WV Skills & Connectors",
+  "description": "Interactive toggle control panel for State of West Virginia Antigravity skills and Federated Gemini Enterprise instance settings.",
+  "has_web_ui": true,
+  "ui_config": {
+    "display_name": "WV Skills",
+    "views": [
+      {
+        "path": "/?entrypoint=sidebar",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
+        "title": "WV Skills"
+      },
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "WV Skills"
+      }
+    ]
+  }
+}
