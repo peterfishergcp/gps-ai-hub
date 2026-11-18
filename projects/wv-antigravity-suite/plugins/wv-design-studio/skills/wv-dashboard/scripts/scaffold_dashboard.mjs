@@ -191,6 +191,8 @@ function main() {
     }
   }
 
+  registerDeliverable(target, activeConfig.title, activeConfig.subtitle);
+
   console.log(`Scaffolded WV Dashboard (${template}) into ${target}`);
   console.log(`STANDALONE_ARTIFACT_HTML=${standalonePath}`);
   console.log('NOTE: Write STANDALONE_ARTIFACT_HTML directly to the Conversation Artifact Directory (<appDataDir>/brain/<conversation-id>/<name>_dashboard_preview.html) with ArtifactMetadata: { UserFacing: true }. Do NOT create 127.0.0.1 .url.json artifacts.');
