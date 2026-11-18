@@ -863,6 +863,8 @@
 
     (state.config.widgets || []).forEach(function (widget, idx) {
       if (widget.visible === false) return;
+      if (state.activeTab === 'analytics' && widget.chartType === 'table') return;
+      if (state.activeTab === 'register' && widget.chartType !== 'table') return;
       var span = [4, 6, 8, 12].indexOf(Number(widget.span)) !== -1 ? Number(widget.span) : 6;
       var card = el('article', 'card span-' + span);
       card.dataset.widgetId = widget.id;
