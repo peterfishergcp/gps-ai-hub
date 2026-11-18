@@ -122,11 +122,81 @@ def _fetch_google_oidc_certs() -> dict[str, str]:
     return {}
 
 
+def _normalize_wif_pool_id(raw_pool: str) -> str:
+    """Normalizes a Workforce Identity Pool URI or ID to its lowercase pool ID."""
+    val = (raw_pool or "").strip().lower()
+    if not val or val.startswith("<"):
+        return ""
+    m = re.search(r"workforcepools/([a-z0-9-]+)", val)
+    if m:
+        return m.group(1)
+    val = val.strip("/")
+    if "/" not in val and re.fullmatch(r"[a-z0-9-]+", val):
+        return val
+    return ""
+
+
+def _get_allowed_wif_pools() -> set[str]:
+    raw_pools = os.environ.get("ALLOWED_WIF_POOLS", "")
+    pools: set[str] = set()
+    for item in raw_pools.split(","):
+        norm = _normalize_wif_pool_id(item)
+        if norm:
+            pools.add(norm)
+    return pools
+
+
+def _extract_iap_wif_identity(claims: dict) -> tuple[str, str, str]:
+    """
+    Extracts `(reviewer_email_or_id, display_name, wif_pool_id)` from an IAP JWT claim set.
+    Supports both Workforce Identity Federation (`workforce_identity` claim / `principal://...`)
+    and 1P Google Sign-In (`accounts.google.com:user@domain`).
+    """
+    wfi = claims.get("workforce_identity")
+    wfi_dict = wfi if isinstance(wfi, dict) else {}
+    raw_pool_name = str(wfi_dict.get("workforce_pool_name") or "").strip()
+    iam_principal = str(wfi_dict.get("iam_principal") or "").strip()
+    raw_email = str(claims.get("email") or "").strip()
+    raw_sub = str(claims.get("sub") or "").strip()
+
+    pool_id = _normalize_wif_pool_id(raw_pool_name)
+    subject = ""
+
+    for candidate in (iam_principal, raw_email, raw_sub):
+        if "workforcePools/" in candidate or "workforcepools/" in candidate.lower():
+            if not pool_id:
+                pool_id = _normalize_wif_pool_id(candidate)
+            m_sub = re.search(r"workforce[Pp]ools/[a-zA-Z0-9-]+/subject/(.+)$", candidate)
+            if m_sub and not subject:
+                subject = m_sub.group(1).strip()
+
+    # Clean 1P or federated email claim if present
+    clean_email = raw_email
+    if clean_email.lower().startswith("principal://") or "workforcepools/" in clean_email.lower():
+        clean_email = ""
+    elif ":" in clean_email:
+        clean_email = clean_email.split(":", 1)[1].strip()
+
+    if pool_id:
+        reviewer_id = clean_email or subject or f"auditor@{pool_id}.wif"
+        if "@" not in reviewer_id:
+            reviewer_id = f"{reviewer_id}@{pool_id}.wif"
+        disp = subject or reviewer_id.split("@", 1)[0]
+        if "@" in disp:
+            disp = disp.split("@", 1)[0]
+        return reviewer_id, disp, pool_id
+
+    if not clean_email:
+        return "", "", ""
+    return clean_email, clean_email.split("@")[0], ""
+
+
 def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
     """
     Cryptographically verifies a `X-Goog-IAP-JWT-Assertion` ES256 JWT against
     Google IAP's public EC keys (`https://www.gstatic.com/iap/verify/public_key`).
     Uses in-memory `cryptography` (zero subprocesses or /tmp writes) with OpenSSL fallback.
+    Supports both 1P Google IAP identities and Workforce Identity Federation (WIF) pools.
     """
     parts = jwt_token.split(".")
     if len(parts) != 3:
@@ -153,11 +223,19 @@ def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
     if not expected_iap_aud or str(claims.get("aud") or "") != expected_iap_aud:
         return None
 
-    email = str(claims.get("email") or "").strip()
-    if not email:
+    reviewer_id, display_name, wif_pool_id = _extract_iap_wif_identity(claims)
+    if not reviewer_id:
         return None
-    if ":" in email:
-        email = email.split(":", 1)[1].strip()
+
+    allowed_wif_pools = _get_allowed_wif_pools()
+    if allowed_wif_pools and wif_pool_id not in allowed_wif_pools:
+        raw_emails_cfg = {
+            e.strip().lower()
+            for e in os.environ.get("ALLOWED_REVIEWER_EMAILS", "").split(",")
+            if e.strip() and not e.strip().startswith("<")
+        }
+        if reviewer_id.lower() not in raw_emails_cfg:
+            return None
 
     try:
         keys = _fetch_iap_public_keys()
@@ -206,7 +284,7 @@ def _verify_es256_iap_jwt(jwt_token: str) -> tuple[str, str] | None:
     except Exception:
         return None
 
-    return email, email.split("@")[0]
+    return reviewer_id, display_name
 
 
 def _verify_rs256_google_oidc_jwt(jwt_token: str) -> tuple[str, str] | None:
@@ -797,12 +875,15 @@ def build_compliance_dataset(project_id: str, force_refresh: bool = False) -> di
 def is_reviewer_authorized(reviewer_email: str) -> bool:
     """
     Enforces mandatory server-side Role-Based Access Control (RBAC) for compliance reviewers.
-    Fails closed (returns False) if neither `ALLOWED_REVIEWER_EMAILS` nor `ALLOWED_REVIEWER_DOMAINS`
-    is configured (unless explicit loopback `ALLOW_LOCAL_DEV_BYPASS=true` outside Cloud Run).
+    Fails closed (returns False) if none of `ALLOWED_WIF_POOLS`, `ALLOWED_REVIEWER_EMAILS`, or
+    `ALLOWED_REVIEWER_DOMAINS` is configured (unless explicit loopback `ALLOW_LOCAL_DEV_BYPASS=true`
+    outside Cloud Run).
     """
     norm_email = (reviewer_email or "").strip().lower()
     if not norm_email or "@" not in norm_email:
         return False
+
+    allowed_wif_pools = _get_allowed_wif_pools()
 
     raw_emails = os.environ.get("ALLOWED_REVIEWER_EMAILS", "")
     allowed_emails = {
@@ -825,15 +906,20 @@ def is_reviewer_authorized(reviewer_email: str) -> bool:
         if d.strip() and not d.strip().startswith("<")
     }
 
-    if not allowed_emails and not allowed_domains:
+    if not allowed_emails and not allowed_domains and not allowed_wif_pools:
         if not os.environ.get("K_SERVICE") and os.environ.get("ALLOW_LOCAL_DEV_BYPASS", "").lower() == "true":
             return True
         return False
+
+    if allowed_wif_pools and not allowed_emails and not allowed_domains:
+        return True
 
     if norm_email in allowed_emails:
         return True
     domain = norm_email.rsplit("@", 1)[1]
     if domain in allowed_domains:
+        return True
+    if allowed_wif_pools and domain.endswith(".wif") and domain[:-4] in allowed_wif_pools:
         return True
     return False
 
