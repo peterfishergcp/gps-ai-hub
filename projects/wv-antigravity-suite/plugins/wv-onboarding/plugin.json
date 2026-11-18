@@ -1,7 +1,7 @@
 {
   "name": "wv-onboarding",
   "displayName": "WV Onboarding, Skill Toggle Panel & Digital Twin",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Includes the interactive WV Skills Toggle Control Panel (with 1-click SHA-256 Incremental Skill Sync), Anthropic Claude & Gemini model selection guide (/model-guide), 60-second onboarding, morning briefings, Digital Twin drafting, inbox triage, and <1s incremental /wv-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

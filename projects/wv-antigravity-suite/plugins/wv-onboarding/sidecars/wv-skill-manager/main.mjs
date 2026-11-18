@@ -113,6 +113,38 @@ async function syncSkillsIncrementally(skillFilter = '') {
       updatedSkillIds.push(skillId);
     }
   }
+
+  // Also sync sidecar UI files (wv-skill-manager, wv-design-preview) when no single skill filter is passed
+  if (!skillFilter && manifest.sidecarManifest) {
+    for (const [scId, scEntry] of Object.entries(manifest.sidecarManifest)) {
+      const pluginName = scEntry.plugin;
+      if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(scId)) continue;
+      const scDir = path.join(pluginsRoot, pluginName, 'sidecars', scId);
+      for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {
+        if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
+        const parts = relPath.split('/');
+        if (!parts.every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
+        const localPath = path.join(scDir, relPath);
+        let localSha = null;
+        try {
+          if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
+            localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
+          }
+        } catch {}
+        if (localSha !== expectedSha) {
+          const buf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/plugins/${pluginName}/sidecars/${scId}/${relPath}`);
+          if (crypto.createHash('sha256').update(buf).digest('hex') !== expectedSha) {
+            throw new Error(`Hash mismatch on sidecar ${scId}/${relPath}`);
+          }
+          fs.mkdirSync(path.dirname(localPath), { recursive: true });
+          const tmp = `${localPath}.tmp-${process.pid}`;
+          fs.writeFileSync(tmp, buf);
+          fs.renameSync(tmp, localPath);
+          updatedFilesCount += 1;
+        }
+      }
+    }
+  }
   return {
     ok: true,
     suiteVersion: manifest.suiteVersion || '1.3.0',
@@ -239,6 +271,7 @@ const SKILL_CATALOG = [
     ]
   },
   {
+    categoryId: 'wv-state-workflows',
     plugin: 'wv-state-workflows',
     categoryLabel: 'State Workflows — FOIA, Legal & Policy',
     skills: [
@@ -265,6 +298,70 @@ const SKILL_CATALOG = [
         command: '/policy-program-audit',
         badge: 'Audit Gate',
         starterPrompt: '/policy-program-audit Check our program rules, stakeholder flyer, and web copy for any conflicting numbers or dates.'
+      }
+    ]
+  },
+  {
+    categoryId: 'public_sector',
+    plugin: 'wv-state-workflows',
+    categoryLabel: 'Government Services (public_sector) Skills',
+    chipLabel: 'Government Services (public_sector)',
+    skills: [
+      {
+        id: 'document-intake-cleanup-and-validation',
+        title: 'Public Sector Document Intake & Validation',
+        subtitle: 'Validates citizen paystubs, leases, residency proofs & monthly gross income math',
+        command: '/document-intake-cleanup-and-validation',
+        badge: 'public_sector',
+        starterPrompt: '/document-intake-cleanup-and-validation Validate this citizen\'s uploaded paystubs and residential lease, and calculate prospective monthly gross income.'
+      },
+      {
+        id: 'expense-auditor',
+        title: 'Expense Auditor (2 CFR Part 200)',
+        subtitle: 'Audits grant expenditure ledgers, receipts & vouchers against Uniform Guidance',
+        command: '/expense-auditor',
+        badge: 'public_sector',
+        starterPrompt: '/expense-auditor Audit this grant expenditure ledger against 2 CFR Part 200 Uniform Guidance and flag any unallowable costs.'
+      },
+      {
+        id: 'foia-request-processing',
+        title: 'FOIA Request Processing',
+        subtitle: 'First-pass search & 3-table officer report across connected agency systems',
+        command: '/foia-request-processing',
+        badge: 'public_sector',
+        starterPrompt: '/foia-request-processing Review this public records request, confirm the governing law, search connected systems, and return the three-table first-pass report.'
+      },
+      {
+        id: 'plain-language-notice-generator',
+        title: 'Plain Language Notice Generator',
+        subtitle: 'Rewrites public advisories & notices into plain language with zero fact invention',
+        command: '/plain-language-notice-generator',
+        badge: 'public_sector',
+        starterPrompt: '/plain-language-notice-generator Rewrite this public health advisory into compliant plain language while preserving all dates, contacts, and regulatory blocks.'
+      },
+      {
+        id: 'policy-and-statute-assistant',
+        title: 'Policy and Statute Assistant',
+        subtitle: 'Pinpoint federal/CFR & state administrative code citations with hierarchy',
+        command: '/policy-and-statute-assistant',
+        badge: 'public_sector',
+        starterPrompt: '/policy-and-statute-assistant Research the controlling federal regulation and state administrative rule for this program eligibility question.'
+      },
+      {
+        id: 'public-records-redaction',
+        title: 'Public Records Redaction',
+        subtitle: 'Drafts 50-state & federal FOIA redactions with pinpoint citations & officer flags',
+        command: '/public-records-redaction',
+        badge: 'public_sector',
+        starterPrompt: '/public-records-redaction Draft first-pass public records redactions on this document under West Virginia FOIA (W. Va. Code § 29B-1-4) with citations and reasons.'
+      },
+      {
+        id: 'rfp-vendor-evaluation',
+        title: 'RFP Vendor Evaluation',
+        subtitle: 'Cross-checks vendor bid packages against RFP rubrics with page-cited matrices',
+        command: '/rfp-vendor-evaluation',
+        badge: 'public_sector',
+        starterPrompt: '/rfp-vendor-evaluation Evaluate these vendor proposals against our RFP mandatory requirements and compile page-cited rubric evidence.'
       }
     ]
   },
@@ -530,16 +627,28 @@ app.api('/api/state', async () => {
     }
   }
 
+  const sharedPluginCounts = {};
+  for (const cat of SKILL_CATALOG) {
+    sharedPluginCounts[cat.plugin] = (sharedPluginCounts[cat.plugin] || 0) + 1;
+  }
+
   const categories = SKILL_CATALOG.map((cat) => {
     const pluginDisabled = lsDisabledMap[cat.plugin] ?? Boolean(ledger.disabledPlugins[cat.plugin]);
+    const mappedSkills = cat.skills.map((s) => ({
+      ...s,
+      enabled: !pluginDisabled && inspectSkillDiskState(pluginsRoot, cat.plugin, s.id, ledger),
+    }));
+    const isSharedPlugin = (sharedPluginCounts[cat.plugin] || 0) > 1;
+    const categoryEnabled = isSharedPlugin
+      ? !pluginDisabled && mappedSkills.some((s) => s.enabled)
+      : !pluginDisabled;
     return {
+      categoryId: cat.categoryId || cat.plugin,
       plugin: cat.plugin,
       categoryLabel: cat.categoryLabel,
-      pluginEnabled: !pluginDisabled,
-      skills: cat.skills.map((s) => ({
-        ...s,
-        enabled: !pluginDisabled && inspectSkillDiskState(pluginsRoot, cat.plugin, s.id, ledger),
-      })),
+      chipLabel: cat.chipLabel || '',
+      pluginEnabled: categoryEnabled,
+      skills: mappedSkills,
     };
   });
 
@@ -559,10 +668,33 @@ app.api('/api/toggle-skill', async (data) => {
 
 app.api('/api/toggle-category', async (data) => {
   const pluginName = String(data.plugin || '');
+  const categoryId = String(data.categoryId || pluginName);
   if (!SAFE_ID_RE.test(pluginName)) {
     throw new Error('Invalid plugin identifier.');
   }
   const enabled = Boolean(data.enabled);
+  const matchingCats = SKILL_CATALOG.filter((c) => c.plugin === pluginName);
+  if (matchingCats.length > 1) {
+    // Multiple UI categories live inside the same plugin (e.g., wv-state-workflows + public_sector):
+    // toggle only the skills belonging to this specific category so sibling categories remain untouched!
+    const targetCat = SKILL_CATALOG.find((c) => (c.categoryId || c.plugin) === categoryId);
+    if (targetCat) {
+      const pluginsRoot = getPluginsRoot();
+      for (const s of targetCat.skills) {
+        toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, s.id, enabled);
+      }
+      if (enabled) {
+        const ledger = readToggleLedger();
+        delete ledger.disabledPlugins[pluginName];
+        writeToggleLedger(ledger);
+        await callLanguageServerRpc('JetboxWriteState', {
+          userConfig: { plugins: { [pluginName]: { enabled: true } } },
+        });
+      }
+    }
+    return { ok: true, categoryId, plugin: pluginName, enabled };
+  }
+
   const ledger = readToggleLedger();
   if (enabled) delete ledger.disabledPlugins[pluginName];
   else ledger.disabledPlugins[pluginName] = true;
@@ -576,7 +708,7 @@ app.api('/api/toggle-category', async (data) => {
       },
     },
   });
-  return { ok: true, plugin: pluginName, enabled };
+  return { ok: true, categoryId, plugin: pluginName, enabled };
 }, 'POST');
 
 app.api('/api/save-ge', async (data) => {
