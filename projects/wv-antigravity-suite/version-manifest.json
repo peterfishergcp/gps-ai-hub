@@ -1,7 +1,7 @@
 {
   "suiteName": "wv-antigravity-suite",
   "displayName": "State of West Virginia Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.2.0",
+  "suiteVersion": "1.2.1",
   "releasedAt": "2026-11-17",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
@@ -18,11 +18,10 @@
       "mcpServers": ["wv-ge-bridge"]
     },
     "wv-design-studio": {
-      "version": "1.2.0",
-      "category": "Zero-Node Dashboards, Executive Slides, Branded State Documents & Live Visual Preview Sidecar",
+      "version": "1.2.1",
+      "category": "100% Serverless Visual Dashboards, Executive Slides & Branded State Documents",
       "skills": ["wv-dashboard", "slides", "doc-design"],
-      "agents": ["wv-design-architect"],
-      "sidecars": ["wv-design-preview"]
+      "agents": ["wv-design-architect"]
     },
     "wv-state-workflows": {
       "version": "1.0.0",
