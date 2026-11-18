@@ -1,18 +1,24 @@
-# West Virginia Antigravity Launchpad & Guided Test Prompts (`v1.2.0`)
+# West Virginia Antigravity Launchpad & Guided Test Prompts (`v1.3.1`)
 
 ## Quick 3-Step Setup
 1. **Step 1 — Complete AGY Download & Install:** Follow the [Antigravity Download & Install Guide](https://serve-dot-zipline.appspot.com/asset/18726ad2-eb6d-5295-baf2-86442bb8f3df/zpc/gktu4puu98z/).
-2. **Step 2 — Install Plugin (From a New Conversation in AGY + Switch to Turbo Mode):**
+2. **Step 2 — Install or Incrementally Update Plugin (From a New Conversation in AGY + Switch to Turbo Mode):**
    - Click **`+ New Conversation`** inside Antigravity.
    - In the bottom-right corner of the prompt box, click **`Request Review ▾`** and switch to **`Turbo`** (*"Run all commands without restrictions"*) to eliminate repetitive approval prompts during installation.
-   - Paste this prompt and click Send (`→`):
+   - **First-Time Install (or Upgrade to `v1.3.1`):** Paste this prompt and click Send (`→`):
      ```text
      agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
      ```
+   - **Fast `< 1s` Incremental Skill Updates (`v1.3.0+` — No Full Re-Install Needed!):**
+     - Click **`Sync Git Updates`** in the top-right of the **`WV Skills`** sidebar panel (**Extensions → WV Skills**), or click the **`↻`** icon next to any individual skill toggle; **OR**
+     - Type `/wv-update` (syncs all changed skills via SHA-256 hash comparison over HTTPS `443`) or `/wv-update wv-dashboard` (updates a single skill in `< 1 second`).
 3. **Step 3 — Test the Plugin:** Copy and paste the **7 Guided Test Prompts** below to test all **6 plugins** and **21 skills**.
 
+> [!NOTE]
+> **Tip for Google Docs Links Inside Antigravity:** If clicking a `docs.google.com` link inside Antigravity's built-in browser shows a Context-Aware Access prompt, click **`Open the page in system browser`** in the top banner to open in Google Chrome. All 21 West Virginia skills write local `.md` and `.html` Artifacts that render natively inside Antigravity with zero browser blocks.
+
 ### Order of Tests
-1. **Prompt 1 (Start Here): Visual Dashboards, 16:9 Slides & Branded Flyers** (`wv-design-studio` — verifies rendered visual previews in the Side Pane + 1-click Browser Launch Cards, with **zero** raw `</> index.html` code views)
+1. **Prompt 1 (Start Here): West Virginia Command Center Dashboards, 16:9 Slides & Branded Flyers** (`wv-design-studio v1.3.1` — verifies the new Capitol Navy Command Center UI, `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK`, numbered tabs `1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS`, `4. COUNTY SITE REGISTER`, rendered Side-Pane HTML Artifacts + `Extensions → WV Preview`, with **zero** local port errors)
 2. **Prompt 2: Using Anthropic Claude & Google Gemini Models in AGY** (`wv-onboarding` `/model-guide` — switching models, Claude vs. Gemini routing, 2-Pass Dual-Model Review, and WV IT Vertex AI setup)
 3. **Prompt 3: 60-Second Onboarding, Daily Brief, Digital Twin & Inbox Triage** (`wv-onboarding`)
 4. **Prompt 4: West Virginia FOIA, Legal Contract Redlining & Policy Audit** (`wv-state-workflows`)
@@ -22,17 +28,18 @@
 
 ---
 
-## Prompt 1 — Dashboards, 16:9 Slides & Branded Flyers (`wv-design-studio`)
+## Prompt 1 — West Virginia Command Center Dashboards, 16:9 Slides & Branded Flyers (`wv-design-studio v1.3.1`)
 
 ### What This Tests
-- **`/wv-dashboard`**, **`/slides`**, and **`/doc-design`**.
-- **100% Serverless Visual Output Check (Zero Python, Zero Node Server, Zero `127.0.0.1` Firewall Ports):** Verifies that all 3 deliverables (`Dashboard`, `Slide Deck`, and `Flyer`) are written as self-contained `.html` Artifacts in the Conversation Artifact Directory (`UserFacing: true`) so clicking any of the 3 in the `Artifacts` sidebar renders the interactive visual view right inside Antigravity—and includes an **`Open / Download HTML ↗`** button in the top bar for Chrome/Edge.
+- **`/wv-dashboard`**, **`/slides`**, and **`/doc-design`** (plus **`Extensions → WV Preview`**).
+- **West Virginia Command Center UI (`v1.3.1`):** Verifies the Capitol Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` / `2027 SESSION CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS` showing charts only, and `4. COUNTY SITE REGISTER` showing the register table only), green-bordered System Health banner, and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
+- **100% Serverless Visual Output Check (Zero Python, Zero Node Server, Zero `127.0.0.1` Firewall Ports):** Verifies that all 3 deliverables (`Dashboard`, `Slide Deck`, and `Flyer`) are written as self-contained `.html` Artifacts in the Conversation Artifact Directory (`UserFacing: true`) with a built-in **`Open / Download HTML ↗`** button in the top bar for Chrome/Edge.
 
 ### Copy & Paste Into Antigravity
 ```text
-Using `/wv-dashboard`, `/slides`, and `/doc-design`, create a West Virginia "Mountain State Ready" executive package in `./wv-mountain-state-demo` using these exact program figures ($40.0M total portfolio closing December 31, 2026: $25.0M WVEDA Shell Building Loans + $15.0M IJDC Tier 1–3 Site Readiness Grants across Kanawha, Monongalia, Cabell, Berkeley, and Raleigh counties):
+Using `/wv-dashboard`, `/slides`, and `/doc-design`, create a West Virginia "Mountain State Ready" Command Center executive package in `./wv-mountain-state-demo` using these exact program figures ($40.0M total portfolio closing December 31, 2026: $25.0M WVEDA Shell Building Loans + $15.0M IJDC Tier 1–3 Site Readiness Grants across Kanawha, Monongalia, Cabell, Berkeley, and Raleigh counties):
 
-1. `/wv-dashboard`: Scaffold an interactive executive dashboard in `./wv-mountain-state-demo/dashboard` in official West Virginia colors (`#053254` Navy, `#C1452C` Rust, `#D5A245` Gold) showing Total Portfolio ($40.0M), WVEDA Loans ($25.0M), IJDC Grants ($15.0M), and county project breakdowns.
+1. `/wv-dashboard`: Scaffold an interactive West Virginia Command Center dashboard in `./wv-mountain-state-demo/dashboard` (`wv-mountain-state-ready` template) featuring the Capitol Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS`, `4. COUNTY SITE REGISTER`), green-bordered System Health banner, 4 KPI cards ($40.0M Authorized Funding, Active Pipeline, Qualifying Acreage, Projected Jobs), and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
 2. `/slides`: Create a 5-slide 16:9 executive briefing deck (`./wv-mountain-state-demo/slides/deck.html`) with keyboard navigation, speaker notes (`N` key), and a top `Download HTML` / `Print / Save as PDF` button.
 3. `/doc-design`: Create a 1-page print-ready stakeholder fact sheet (`./wv-mountain-state-demo/flyer/flyer.html`) comparing WVEDA Loan terms vs. IJDC Grant tiers.
 
@@ -59,6 +66,9 @@ Please give me:
 3. The 4-step checklist for our West Virginia GCP Administrator to enable Anthropic Claude in Vertex AI Model Garden (`us-east5` region), set Pay-As-You-Go budget alerts, and enforce CJIS/HIPAA/FedRAMP data governance.
 4. A ready-to-paste "Pass-2 Claude Cross-Review" prompt I can run right now after switching my model picker to Claude Sonnet or Claude Opus to audit the dashboard and flyer we just built in Prompt 1.
 ```
+
+> [!TIP]
+> **Hands-On Claude Follow-Up (10 Seconds):** After the agent replies, click the **Model Selector dropdown** at the bottom of your Antigravity prompt box, switch to **Claude Sonnet** (or **Claude Opus**), and paste the Pass-2 review prompt it generated to watch Claude audit your Prompt 1 deliverables in the same thread!
 
 ---
 
@@ -87,7 +97,7 @@ Run a combined test of our `wv-onboarding` skills (`/wv-onboard`, `/daily-brief`
 ## Prompt 4 — West Virginia FOIA, Legal Review & Policy Consistency (`wv-state-workflows`)
 
 ### What This Tests
-- **`/foia-expert`** (Google Vault + Microsoft Purview KQL search strings, **W. Va. Code § 29B-1-4** & **5 U.S.C. § 552** line-by-line segregability redaction, and a formal **Vaughn Index**),
+- **`/foia-expert`** (adapted from the WV FOIA Custom Skill spec: Google Vault + Microsoft Purview KQL search strings, **W. Va. Code § 29B-1-4** & **5 U.S.C. § 552** line-by-line segregability redaction, and a formal **Vaughn Index**),
 - **`/legal-procurement-review`** (catches vendor clauses that violate West Virginia constitutional sovereign immunity, multi-year fiscal non-appropriation rules, and AI model training on state data using `1:3:9` risk scoring),
 - **`/policy-program-audit`** (catches conflicting dollar caps or dates across documents).
 
@@ -139,11 +149,13 @@ Test `wv-engineering-cloud` (`/modernize-refactor`, `/deploy-cloudrun`, and `/bi
 ## Prompt 6 — Security & Cloud Readiness: "Catch the 4 Real-World Mistakes" (`wv-security`)
 
 ### What This Is Actually Testing (In Plain English)
-When an agency developer or contractor writes code or Cloud Run deployment scripts, `wv-security` (`/security-audit`, `/iam-secret-hygiene`, and its always-on `rules/AGENTS.md`) scans for **4 high-risk mistakes that cause real government data breaches**:
-1. **SQL Injection (`CWE-89`):** Pasting user input directly into a SQL string (`WHERE county = '${county}'`) instead of using safe `@county` parameters.
-2. **Cross-Site Scripting / XSS (`CWE-79`):** Rendering untrusted user text with `.innerHTML = ...` instead of `.textContent = ...`.
-3. **Exposed Passwords & API Keys (`CWE-798`):** Hardcoding secrets in code or passing `--set-env-vars API_KEY=...` in plain text instead of Google Cloud Secret Manager (`--set-secrets`).
-4. **Over-Privileged Cloud IAM:** Deploying a service publicly (`--allow-unauthenticated`) with the default compute service account (`*-compute@developer.gserviceaccount.com`) and primitive `roles/editor` instead of an Entra-synced Google Identity group with least-privilege roles.
+Previously, the security test prompt looked abstract because it didn't give you a **concrete piece of broken code/config** to watch the skill fix.
+Here is what `wv-security` (`/security-audit`, `/iam-secret-hygiene`, and its always-on `rules/AGENTS.md`) actually does for West Virginia:
+- When an agency developer or contractor writes code or Cloud Run deployment scripts, `wv-security` scans for **4 high-risk mistakes that cause real government data breaches**:
+  1. **SQL Injection (`CWE-89`):** Pasting user input directly into a SQL string (`WHERE county = '${county}'`) instead of using safe `@county` parameters.
+  2. **Cross-Site Scripting / XSS (`CWE-79`):** Rendering untrusted user text with `.innerHTML = ...` instead of `.textContent = ...`.
+  3. **Exposed Passwords & API Keys (`CWE-798`):** Hardcoding secrets in code or passing `--set-env-vars API_KEY=...` in plain text instead of Google Cloud Secret Manager (`--set-secrets`).
+  4. **Over-Privileged Cloud IAM:** Deploying a service publicly (`--allow-unauthenticated`) with the default compute service account (`*-compute@developer.gserviceaccount.com`) and primitive `roles/editor` instead of an Entra-synced Google Identity group with least-privilege roles.
 
 ### Copy & Paste Into Antigravity (Includes the 4 Intentional Mistakes to Catch!)
 ```text

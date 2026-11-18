@@ -121,15 +121,16 @@
     wrap.appendChild(allChip);
 
     state.categories.forEach(function (cat) {
-      var shortName = cat.categoryLabel.split('—')[0].split(',')[0].trim();
+      var catKey = cat.categoryId || cat.plugin;
+      var shortName = cat.chipLabel || cat.categoryLabel.split('—')[0].split(',')[0].trim();
       var chip = el(
         'button',
-        'chip' + (state.selectedPlugin === cat.plugin ? ' active' : ''),
+        'chip' + (state.selectedPlugin === catKey ? ' active' : ''),
         shortName + ' (' + cat.skills.length + ')'
       );
       chip.type = 'button';
       chip.addEventListener('click', function () {
-        state.selectedPlugin = cat.plugin;
+        state.selectedPlugin = catKey;
         renderAll();
       });
       wrap.appendChild(chip);
@@ -144,7 +145,8 @@
     var q = state.search.trim().toLowerCase();
 
     state.categories.forEach(function (cat) {
-      if (state.selectedPlugin !== 'all' && state.selectedPlugin !== cat.plugin) return;
+      var catKey = cat.categoryId || cat.plugin;
+      if (state.selectedPlugin !== 'all' && state.selectedPlugin !== catKey) return;
 
       var matchingSkills = cat.skills.filter(function (s) {
         if (!q) return true;
@@ -169,15 +171,15 @@
 
       var catToggleWrap = el('div', 'row-controls');
       catToggleWrap.appendChild(
-        createToggleSwitch(cat.pluginEnabled, 'Toggle ' + cat.categoryLabel + ' plugin', async function (next) {
+        createToggleSwitch(cat.pluginEnabled, 'Toggle ' + cat.categoryLabel, async function (next) {
           try {
-            await apiPost('/api/toggle-category', { plugin: cat.plugin, enabled: next });
+            await apiPost('/api/toggle-category', { categoryId: catKey, plugin: cat.plugin, enabled: next });
             cat.pluginEnabled = next;
             cat.skills.forEach(function (s) { s.enabled = next; });
             renderAll();
-            showToast((next ? 'Enabled ' : 'Disabled ') + cat.plugin);
+            showToast((next ? 'Enabled ' : 'Disabled ') + cat.categoryLabel);
           } catch {
-            showToast('Failed to toggle category ' + cat.plugin);
+            showToast('Failed to toggle category ' + cat.categoryLabel);
           }
         })
       );
