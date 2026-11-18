@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-import json
+import html
 import logging
 import os
 import re
@@ -8,8 +8,11 @@ import secrets
 import time
 from typing import List, Optional
 import urllib.parse
-import urllib.request
+import httpx
 import yaml
+
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
@@ -32,11 +35,70 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "t
 
 CONFIG_PATH = os.getenv("POLICY_CONFIG_PATH", os.path.join(os.path.dirname(__file__), "policy.yaml"))
 DEV_MODE = os.getenv("DEV_MODE", "false").lower() in ("true", "1", "yes")
-REQUIRE_REAL_AUTH = os.getenv("REQUIRE_REAL_AUTH", "false").lower() in ("true", "1", "yes")
+REQUIRE_REAL_AUTH = os.getenv("REQUIRE_REAL_AUTH", "false" if DEV_MODE else "true").lower() in ("true", "1", "yes")
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in ("true", "1", "yes") or (not DEV_MODE and REQUIRE_REAL_AUTH)
+CANONICAL_HOST = os.getenv("CANONICAL_HOST", "")
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-SESSION_SECRET = os.getenv("SESSION_SECRET", "ge-smart-router-secure-key-2026").encode()
+IAP_AUDIENCE = os.getenv("IAP_AUDIENCE", "")
+REQUIRE_IAP_JWT = os.getenv("REQUIRE_IAP_JWT", "false" if DEV_MODE else "true").lower() in ("true", "1", "yes")
+
+# Secure Session Secret Management: Dynamic 256-bit generation if unset
+SESSION_SECRET_RAW = os.getenv("SESSION_SECRET")
+if SESSION_SECRET_RAW:
+    SESSION_SECRET = SESSION_SECRET_RAW.encode()
+elif DEV_MODE:
+    SESSION_SECRET = b"dev-insecure-secret-key-do-not-use-in-production"
+    logger.warning("DEV_MODE active: using local development session secret.")
+else:
+    SESSION_SECRET = secrets.token_bytes(32)
+    logger.warning("SESSION_SECRET unset in environment: generated ephemeral 256-bit random key. Sessions will not persist across multi-instance restarts.")
+
+def is_safe_redirect_url(target: Optional[str]) -> bool:
+    """
+    Validates redirect URL to prevent Open Redirect vulnerabilities.
+    Decodes percent-encoded characters and ensures URL is strictly relative to current host.
+    """
+    if not target:
+        return False
+    try:
+        decoded_target = urllib.parse.unquote(target)
+        parsed = urllib.parse.urlsplit(decoded_target)
+        if parsed.scheme != "" or parsed.netloc != "":
+            return False
+        # Ensure path starts with a single '/' and does not start with '//' or contain '\'
+        if not parsed.path.startswith("/") or parsed.path.startswith("//") or "\\" in decoded_target:
+            return False
+        return True
+    except Exception:
+        return False
+
+def get_iap_jwt_claims(jwt_token: str) -> Optional[dict]:
+    """
+    Cryptographically verifies Cloud IAP signed JWT assertion against Google public certificates.
+    Validates token signature, issuer, audience, and expiration.
+    """
+    if not IAP_AUDIENCE and not DEV_MODE:
+        logger.error("IAP_AUDIENCE is not configured in production. Cannot securely verify IAP JWT.")
+        return None
+    try:
+        request_adapter = google_requests.Request()
+        certs_url = "https://www.gstatic.com/iap/verify/public_key"
+        expected_aud = IAP_AUDIENCE if IAP_AUDIENCE else None
+        claims = google_id_token.verify_token(
+            jwt_token,
+            request_adapter,
+            audience=expected_aud,
+            certs_url=certs_url
+        )
+        if claims.get("iss") != "https://cloud.google.com/iap":
+            logger.warning(f"Invalid IAP JWT issuer: {claims.get('iss')}")
+            return None
+        return claims
+    except Exception as e:
+        logger.error(f"Cryptographic verification failed for IAP JWT: {e}")
+        return None
 
 def sign_session_email(email: str) -> str:
     ts = str(int(time.time()))
@@ -75,34 +137,112 @@ class InstanceConfig(BaseModel):
     allowed_domains: List[str] = []
     blocked_users: List[str] = []
 
-def load_policy() -> List[InstanceConfig]:
+_cached_policy: Optional[List[InstanceConfig]] = None
+_cached_policy_mtime: float = 0.0
+_last_mtime_check: float = 0.0
+MTIME_CHECK_INTERVAL: float = 30.0  # Throttle filesystem stat syscalls
+
+def load_policy(force_reload: bool = False) -> List[InstanceConfig]:
+    """
+    Loads and caches parsed policy configuration in memory.
+    Throttles filesystem stat syscalls using an in-memory TTL check.
+    """
+    global _cached_policy, _cached_policy_mtime, _last_mtime_check
     if not os.path.exists(CONFIG_PATH):
         logger.error(f"Policy configuration file not found at {CONFIG_PATH}")
         return []
-    with open(CONFIG_PATH, "r") as f:
-        data = yaml.safe_load(f)
-    return [InstanceConfig(**item) for item in data.get("instances", [])]
+
+    now = time.time()
+    if not force_reload and _cached_policy is not None and (now - _last_mtime_check < MTIME_CHECK_INTERVAL):
+        return _cached_policy
+
+    _last_mtime_check = now
+    try:
+        current_mtime = os.path.getmtime(CONFIG_PATH)
+        if not force_reload and _cached_policy is not None and current_mtime == _cached_policy_mtime:
+            return _cached_policy
+
+        with open(CONFIG_PATH, "r") as f:
+            data = yaml.safe_load(f)
+        instances = []
+        for item in data.get("instances", []):
+            inst = InstanceConfig(**item)
+            if not inst.target_url.startswith("https://") and not DEV_MODE:
+                logger.warning(f"Instance '{inst.id}' target_url does not use HTTPS: {inst.target_url}")
+            instances.append(inst)
+        _cached_policy = instances
+        _cached_policy_mtime = current_mtime
+        logger.info(f"Loaded policy configuration from {CONFIG_PATH} ({len(_cached_policy)} instances)")
+        return _cached_policy
+    except Exception as e:
+        logger.error(f"Error loading policy configuration: {e}")
+        return _cached_policy or []
+
+def get_user_groups(request: Request) -> List[str]:
+    """
+    Resolves group memberships for the user.
+    Client-supplied request headers are only evaluated in DEV_MODE to prevent header spoofing.
+    In production, group memberships must be verified server-side or via Cloud IAM / IAP.
+    """
+    if not DEV_MODE:
+        return []
+    groups = []
+    header_groups = (
+        request.headers.get("X-Goog-Authenticated-User-Groups")
+        or request.headers.get("X-User-Groups")
+    )
+    if header_groups:
+        groups.extend([g.strip().lower() for g in header_groups.split(",") if g.strip()])
+    return groups
+
+def get_oauth_callback_url(request: Request) -> str:
+    """
+    Constructs OAuth redirect URI using trusted CANONICAL_HOST or sanitized Host header.
+    Prevents Host Header Injection and cache poisoning.
+    """
+    if CANONICAL_HOST:
+        return f"https://{CANONICAL_HOST}/auth/callback"
+    forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+    forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+    if forwarded_host and re.match(r"^[a-zA-Z0-9\.\-]+(?::\d+)?$", forwarded_host):
+        return f"{forwarded_proto}://{forwarded_host}/auth/callback"
+    return str(request.base_url).rstrip("/") + "/auth/callback"
 
 def extract_user_email(request: Request) -> Optional[str]:
     """
     Extracts authenticated user identity with fallback priority:
-    1. Cloud IAP header ('X-Goog-Authenticated-User-Email') when behind Cloud Load Balancer.
-    2. Signed session cookie ('ge_user_email') from Google OAuth.
-    3. Dev query parameters or headers when running in development mode.
+    1. Cloud IAP cryptographically signed JWT assertion ('x-goog-iap-jwt-assertion').
+    2. Cloud IAP header ('X-Goog-Authenticated-User-Email') when behind Cloud Load Balancer.
+    3. Signed session cookie ('ge_user_email') from Google OAuth.
+    4. Dev query parameters or headers when running in development mode.
     """
-    # 1. Check Identity-Aware Proxy (IAP) header first
+    # 1. Check Identity-Aware Proxy (IAP) cryptographically signed JWT assertion
+    iap_jwt = request.headers.get("x-goog-iap-jwt-assertion")
+    if iap_jwt:
+        claims = get_iap_jwt_claims(iap_jwt)
+        if claims:
+            if IAP_AUDIENCE and claims.get("aud") != IAP_AUDIENCE:
+                logger.error(f"IAP JWT audience mismatch: got {claims.get('aud')}, expected {IAP_AUDIENCE}")
+                return None
+            email = claims.get("email")
+            if email:
+                return email.strip().lower()
+
+    # 2. Check Identity-Aware Proxy (IAP) email header
     iap_email_header = request.headers.get("X-Goog-Authenticated-User-Email")
     if iap_email_header:
-        # IAP prefixes email with 'accounts.google.com:'
+        if REQUIRE_IAP_JWT and not DEV_MODE:
+            logger.warning("Rejected unverified X-Goog-Authenticated-User-Email header because REQUIRE_IAP_JWT is enabled.")
+            return None
         return re.sub(r"^[^:]+:", "", iap_email_header).strip().lower()
 
-    # 2. Check signed session cookie
+    # 3. Check signed session cookie
     cookie_val = request.cookies.get("ge_user_email")
     verified_email = verify_session_email(cookie_val)
     if verified_email:
         return verified_email
 
-    # 3. Check query parameters or dev headers (testing fallback)
+    # 4. Check query parameters or dev headers (testing fallback)
     if not REQUIRE_REAL_AUTH and DEV_MODE:
         dev_email = (
             request.query_params.get("dev_user")
@@ -115,7 +255,11 @@ def extract_user_email(request: Request) -> Optional[str]:
 
     return None
 
-def is_user_authorized_for_instance(email: str, instance: InstanceConfig) -> bool:
+def is_user_authorized_for_instance(
+    email: str,
+    instance: InstanceConfig,
+    user_groups: Optional[List[str]] = None
+) -> bool:
     email_clean = email.strip().lower()
 
     # Rule 1: Explicit blocklist check (Deny always wins)
@@ -129,7 +273,15 @@ def is_user_authorized_for_instance(email: str, instance: InstanceConfig) -> boo
         if allowed.strip().lower() == email_clean:
             return True
 
-    # Rule 3: Domain allowlist check
+    # Rule 3: Group membership check
+    if user_groups and instance.allowed_groups:
+        user_group_set = set(g.strip().lower() for g in user_groups)
+        for allowed_group in instance.allowed_groups:
+            if allowed_group.strip().lower() in user_group_set:
+                logger.info(f"User '{email}' authorized for '{instance.id}' via group '{allowed_group}'")
+                return True
+
+    # Rule 4: Domain allowlist check
     domain = email_clean.split("@")[-1] if "@" in email_clean else ""
     for allowed_domain in instance.allowed_domains:
         if allowed_domain.strip().lower() == domain:
@@ -147,12 +299,18 @@ def health_check():
 @app.get("/login")
 def login(email: str = "user@example.com", target: str = "/"):
     """Session login helper for direct browser access."""
-    if REQUIRE_REAL_AUTH:
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    if not DEV_MODE:
+        if REQUIRE_REAL_AUTH:
+            return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Direct persona login is disabled in production mode. Set DEV_MODE=true for testing."
+        )
+    safe_target = target if is_safe_redirect_url(target) else "/"
     email_clean = email.strip().lower()
     signed_val = sign_session_email(email_clean)
-    response = RedirectResponse(url=target, status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="ge_user_email", value=signed_val, max_age=86400, httponly=True, samesite="lax")
+    response = RedirectResponse(url=safe_target, status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="ge_user_email", value=signed_val, max_age=86400, httponly=True, samesite="lax", secure=COOKIE_SECURE)
     return response
 
 @app.get("/logout")
@@ -172,18 +330,15 @@ def auth_login(request: Request, target: str = "/"):
             context={
                 "message": "Google OAuth is not yet configured with client credentials. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET or use IAP.",
                 "oauth_configured": False,
-                "require_real_auth": REQUIRE_REAL_AUTH
+                "require_real_auth": REQUIRE_REAL_AUTH,
+                "dev_mode": DEV_MODE
             },
             status_code=status.HTTP_401_UNAUTHORIZED
         )
 
+    safe_target = target if is_safe_redirect_url(target) else "/"
     state = secrets.token_urlsafe(16)
-    forwarded_proto = request.headers.get("x-forwarded-proto", "https")
-    forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-    if forwarded_host:
-        callback_url = f"{forwarded_proto}://{forwarded_host}/auth/callback"
-    else:
-        callback_url = str(request.base_url).rstrip("/") + "/auth/callback"
+    callback_url = get_oauth_callback_url(request)
 
     auth_params = {
         "client_id": GOOGLE_CLIENT_ID,
@@ -196,44 +351,50 @@ def auth_login(request: Request, target: str = "/"):
     }
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(auth_params)}"
     response = RedirectResponse(url=auth_url, status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="oauth_state", value=state, max_age=600, httponly=True, samesite="lax")
-    response.set_cookie(key="oauth_target", value=target, max_age=600, httponly=True, samesite="lax")
+    response.set_cookie(key="oauth_state", value=state, max_age=600, httponly=True, samesite="lax", secure=COOKIE_SECURE)
+    response.set_cookie(key="oauth_target", value=safe_target, max_age=600, httponly=True, samesite="lax", secure=COOKIE_SECURE)
     return response
 
 @app.get("/auth/callback")
 def auth_callback(request: Request, code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
     """Handles Google OAuth callback, verifies identity token with Google, and establishes secure session."""
     if error:
-        logger.error(f"Google OAuth authorization error: {error}")
-        return HTMLResponse(f"<h3>Google Authentication Error: {error}</h3><p><a href='/'>Return to Home</a></p>", status_code=400)
+        safe_error = html.escape(error)
+        logger.error(f"Google OAuth authorization error: {safe_error}")
+        return templates.TemplateResponse(
+            request=request,
+            name="unauthorized.html",
+            context={
+                "message": f"Google Authentication Error: {error}",
+                "dev_mode": DEV_MODE
+            },
+            status_code=400
+        )
 
     saved_state = request.cookies.get("oauth_state")
     target = request.cookies.get("oauth_target") or "/"
+    safe_target = target if is_safe_redirect_url(target) else "/"
 
     if not code or not state or state != saved_state:
         logger.error("OAuth state mismatch or missing code.")
         raise HTTPException(status_code=400, detail="Invalid OAuth state or missing code.")
 
-    forwarded_proto = request.headers.get("x-forwarded-proto", "https")
-    forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-    if forwarded_host:
-        callback_url = f"{forwarded_proto}://{forwarded_host}/auth/callback"
-    else:
-        callback_url = str(request.base_url).rstrip("/") + "/auth/callback"
+    callback_url = get_oauth_callback_url(request)
 
-    token_url = "https://oauth2.googleapis.com/token"
-    token_data = urllib.parse.urlencode({
+    token_endpoint = "https://oauth2.googleapis.com/token"  # nosec B105
+    token_payload = {
         "code": code,
         "client_id": GOOGLE_CLIENT_ID,
         "client_secret": GOOGLE_CLIENT_SECRET,
         "redirect_uri": callback_url,
-        "grant_type": "authorization_code"
-    }).encode("utf-8")
+        "grant_type": "authorization_code",
+    }
 
     try:
-        req = urllib.request.Request(token_url, data=token_data, headers={"Content-Type": "application/x-www-form-urlencoded"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            token_res = json.loads(resp.read().decode("utf-8"))
+        with httpx.Client(timeout=10.0) as http_client:
+            token_resp = http_client.post(token_endpoint, data=token_payload)
+            token_resp.raise_for_status()
+            token_res = token_resp.json()
     except Exception as e:
         logger.error(f"Failed to exchange OAuth code for tokens: {e}")
         raise HTTPException(status_code=500, detail="Failed to complete Google authentication token exchange.")
@@ -243,12 +404,21 @@ def auth_callback(request: Request, code: Optional[str] = None, state: Optional[
         raise HTTPException(status_code=500, detail="No id_token returned by Google.")
 
     try:
-        verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
-        with urllib.request.urlopen(verify_url, timeout=10) as resp:
-            id_info = json.loads(resp.read().decode("utf-8"))
+        request_adapter = google_requests.Request()
+        id_info = google_id_token.verify_oauth2_token(
+            id_token,
+            request_adapter,
+            audience=GOOGLE_CLIENT_ID
+        )
     except Exception as e:
         logger.error(f"Failed to verify Google ID token: {e}")
-        raise HTTPException(status_code=500, detail="Failed to verify Google identity token.")
+        raise HTTPException(status_code=400, detail="Failed to verify Google identity token.")
+
+    # Validate Issuer (iss) claim is official Google accounts domain
+    iss = id_info.get("iss")
+    if iss not in ("accounts.google.com", "https://accounts.google.com"):
+        logger.error(f"Invalid Google ID token issuer: '{iss}'")
+        raise HTTPException(status_code=400, detail="Invalid Google ID token issuer.")
 
     email = id_info.get("email")
     email_verified = id_info.get("email_verified") in (True, "true")
@@ -259,8 +429,8 @@ def auth_callback(request: Request, code: Optional[str] = None, state: Optional[
     logger.info(f"Verified Google Workspace identity: {email}")
 
     signed_cookie = sign_session_email(email)
-    response = RedirectResponse(url=target, status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="ge_user_email", value=signed_cookie, max_age=86400, httponly=True, samesite="lax")
+    response = RedirectResponse(url=safe_target, status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="ge_user_email", value=signed_cookie, max_age=86400, httponly=True, samesite="lax", secure=COOKIE_SECURE)
     response.delete_cookie(key="oauth_state")
     response.delete_cookie(key="oauth_target")
     return response
@@ -276,7 +446,10 @@ def demo_switch_account(request: Request):
     response = templates.TemplateResponse(
         request=request,
         name="unauthorized.html",
-        context={"message": "Select or enter an identity to evaluate routing rules:"}
+        context={
+            "message": "Select or enter an identity to evaluate routing rules:",
+            "dev_mode": DEV_MODE
+        }
     )
     response.delete_cookie(key="ge_user_email")
     return response
@@ -286,21 +459,40 @@ def demo_launchpad(request: Request):
     """
     Direct endpoint to preview the Gemini Enterprise Multi-App Launchpad.
     """
-    email = extract_user_email(request) or "admin@example.com"
+    email = extract_user_email(request)
+    if not email:
+        if REQUIRE_REAL_AUTH and not DEV_MODE:
+            return RedirectResponse(url="/auth/login?target=/launchpad", status_code=status.HTTP_302_FOUND)
+        email = "admin@example.com" if DEV_MODE else None
+
+    if not email:
+        instances = load_policy()
+        return templates.TemplateResponse(
+            request=request,
+            name="unauthorized.html",
+            context={
+                "message": "Authentication required to view the Launchpad.",
+                "instances": instances,
+                "dev_mode": DEV_MODE
+            },
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
+    groups = get_user_groups(request)
     instances = load_policy()
-    authorized = [i for i in instances if is_user_authorized_for_instance(email, i)]
-    if not authorized:
-        authorized = instances  # show all instances in demo preview
+    authorized = [i for i in instances if is_user_authorized_for_instance(email, i, groups)]
+    if not authorized and DEV_MODE:
+        authorized = instances  # show all instances in demo preview only if DEV_MODE
 
     return templates.TemplateResponse(
         request=request,
         name="launchpad.html",
         context={
             "user_email": email,
-            "instances": authorized
+            "instances": authorized,
+            "dev_mode": DEV_MODE
         }
     )
-
 
 @app.get("/api/me")
 def get_current_user_profile(request: Request):
@@ -312,11 +504,12 @@ def get_current_user_profile(request: Request):
             content={"error": "Unauthenticated. No valid identity header found."}
         )
 
+    groups = get_user_groups(request)
     instances = load_policy()
     authorized = []
     blocked = []
     for inst in instances:
-        if is_user_authorized_for_instance(email, inst):
+        if is_user_authorized_for_instance(email, inst, groups):
             authorized.append({"id": inst.id, "name": inst.name, "url": inst.target_url})
         else:
             blocked.append({"id": inst.id, "name": inst.name})
@@ -345,13 +538,15 @@ def root_route(request: Request):
             name="unauthorized.html",
             context={
                 "message": "Authentication required. Please sign in or authenticate via Identity-Aware Proxy (IAP).",
-                "instances": instances
+                "instances": instances,
+                "dev_mode": DEV_MODE
             },
             status_code=status.HTTP_401_UNAUTHORIZED
         )
 
+    groups = get_user_groups(request)
     instances = load_policy()
-    authorized_instances = [inst for inst in instances if is_user_authorized_for_instance(email, inst)]
+    authorized_instances = [inst for inst in instances if is_user_authorized_for_instance(email, inst, groups)]
 
     logger.info(f"User '{email}' evaluated. Authorized instances: {[i.id for i in authorized_instances]}")
 
@@ -399,13 +594,14 @@ def direct_app_route(instance_id: str, request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
 
+    groups = get_user_groups(request)
     instances = load_policy()
     target_instance = next((inst for inst in instances if inst.id == instance_id), None)
 
     if not target_instance:
         raise HTTPException(status_code=404, detail=f"Gemini Enterprise instance '{instance_id}' not found.")
 
-    if not is_user_authorized_for_instance(email, target_instance):
+    if not is_user_authorized_for_instance(email, target_instance, groups):
         logger.warning(f"SECURITY BLOCK: User '{email}' denied access to instance '{instance_id}' ({target_instance.name})")
         return templates.TemplateResponse(
             request=request,
