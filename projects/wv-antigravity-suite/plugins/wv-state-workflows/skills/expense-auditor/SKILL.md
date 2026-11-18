@@ -87,14 +87,18 @@ tier is unavailable, errors, or does not cover the needed section or rate.
 
 Connector calls:
 
-1.  If `custom_mcp_*_agent__search_api` and `custom_mcp_*_agent__execute` are
-    available, call them directly: `search_api` to find the endpoint, then
+1.  If `custom_mcp_*_agent__search_api` and `custom_mcp_*_agent__execute` (or an
+    `ecfr`/`federal_register` MCP server in `<mcp_servers>`) are declared in your
+    runtime tools, call them directly: `search_api` to find the endpoint, then
     `execute`, passing the award date (or today, if none is stated) as
     `as_of_date` where the endpoint accepts a date.
-2.  Otherwise, call `load_skill` on the `1p-skill-custom-mcp-*-search-api` and
-    `1p-skill-custom-mcp-*-execute` skills (their descriptions mention the `fr`,
-    `ecfr`, and `regs` sources), then call the tools as in step 1. Do not call
-    `list_skills`.
+2.  Otherwise, **only if** a `load_skill` tool is declared in your runtime
+    (Gemini Enterprise), call `load_skill` on the
+    `1p-skill-custom-mcp-*-search-api` and `1p-skill-custom-mcp-*-execute`
+    skills, then call the tools as in step 1. In Antigravity / CLI environments
+    where `load_skill` is not declared and no regulatory MCP server is attached,
+    skip immediately to Tier 2 (`search_web` or `google_search_tool` on
+    `ecfr.gov` / `gsa.gov`) without calling `load_skill` or `list_skills`.
 3.  On a connector error, name the status code. HTTP 429 is not retryable; HTTP
     401, 403, 503, or 504 means use Tier 2. For any other error (for example
     400, 404, or 406), retry once with a corrected parameter (such as an earlier

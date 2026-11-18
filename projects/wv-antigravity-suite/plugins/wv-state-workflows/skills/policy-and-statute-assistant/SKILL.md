@@ -116,12 +116,17 @@ Register, Regulations.gov), retrieve it through the federal regulatory connector
 before any `google_search_tool` call for it:
 
 1.  If `custom_mcp_*_agent__search_api` and `custom_mcp_*_agent__execute` (or
-    another federal regulatory connector tool) are available, call them
-    directly: `search_api` to find the endpoint, then `execute` it, passing
-    `as_of_date` where the endpoint accepts a date.
-2.  Otherwise, call `load_skill` on the `1p-skill-custom-mcp-*-search-api` and
-    `1p-skill-custom-mcp-*-execute` skills (their descriptions mention the `fr`,
-    `ecfr`, and `regs` sources), then call the tools as in step 1.
+    another federal regulatory MCP connector tool in `<mcp_servers>`) are
+    declared in your runtime tools, call them directly: `search_api` to find the
+    endpoint, then `execute` it, passing `as_of_date` where the endpoint accepts
+    a date.
+2.  Otherwise, **only if** a `load_skill` tool is declared in your runtime
+    (Gemini Enterprise), call `load_skill` on the
+    `1p-skill-custom-mcp-*-search-api` and `1p-skill-custom-mcp-*-execute`
+    skills, then call the tools as in step 1. In Antigravity / CLI environments
+    where `load_skill` is not declared and no regulatory MCP server is attached,
+    skip immediately to Rule 2 (`search_web` restricted to Allowed sources)
+    without calling `load_skill`.
 
 Go to Rule 2 only for an authority the connector does not cover, or when no
 federal regulatory connector tool or skill is available.
@@ -146,14 +151,14 @@ federal regulatory connector tool or skill is available.
 Use only for an authority the connector does not cover, or one the connector
 returned an error or nothing for.
 
--   Search with `google_search_tool`, restricted to the Allowed sources. For a
-    known host use `site:` (U.S. Code: `site:govinfo.gov` first, then
-    `site:uscode.house.gov`; public laws: `site:congress.gov` or
+-   Search with `search_web` (or `google_search_tool`), restricted to the
+    Allowed sources. For a known host use `site:` (U.S. Code: `site:govinfo.gov`
+    first, then `site:uscode.house.gov`; public laws: `site:congress.gov` or
     `site:govinfo.gov`; regulations: `site:ecfr.gov`; Federal Register:
     `site:federalregister.gov`). For state law, search `"{State} Administrative
     Code" OR "{State} Statutes" {program} {topic}`.
--   Discard every result whose host is not an Allowed source; never open, quote,
-    or cite it.
+-   Discard every result or grounded snippet whose source host is not an Allowed
+    source; never open, quote, or cite it.
 -   Cite a result only if it shows both the pinpoint section number and the
     operative rule text. Otherwise cite the section and say the pinpoint was not
     verified, or leave it out.

@@ -492,7 +492,7 @@ Before sending, confirm:
     immigration, health, vendor and financial records, proprietary material,
     grants, licenses, permits, criminal history and background checks.
 -   [references/citation_guide.md](references/citation_guide.md): a federal,
-    Colorado, or Arizona record, or a statute that may make information
-    confidential (tax, education, treatment, criminal history).
+    West Virginia, Colorado, or Arizona record, or a statute that may make
+    information confidential (tax, education, treatment, criminal history).
 -   [references/qa_and_special_inputs.md](references/qa_and_special_inputs.md):
     QA mode, special requests (principle 10), a large table, or agency policy.

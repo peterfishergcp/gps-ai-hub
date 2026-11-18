@@ -281,18 +281,18 @@
     "document-intake-cleanup-and-validation": {
       "plugin": "wv-state-workflows",
       "skill": "document-intake-cleanup-and-validation",
-      "treeSha256": "93cbb4a03913a613",
+      "treeSha256": "807918b048ea8e04",
       "files": {
-        "SKILL.md": "b83efc86d08219106f167c673ffc7074a17974751c833496f7d5b3aab1c9d454",
+        "SKILL.md": "ab302362dad476e0bf8decbc37a5578f309c1d138486e39eb53c8e56639af8fe",
         "references/domain_standards_and_examples.md": "3d7a83b63d74d42fcca5630c96f897052df19607d9a18f6606a51528b4059af8"
       }
     },
     "expense-auditor": {
       "plugin": "wv-state-workflows",
       "skill": "expense-auditor",
-      "treeSha256": "2a431855b5991c19",
+      "treeSha256": "36dd429c38778988",
       "files": {
-        "SKILL.md": "074eb4283a51695a8ee0c9fe30cf7112af0fa44e545834357a51da0bcd1686f7"
+        "SKILL.md": "1b59b8f13d289ddec74fbaf93649556efd47b590917da742161c1532977275ef"
       }
     },
     "foia-expert": {
@@ -335,9 +335,9 @@
     "policy-and-statute-assistant": {
       "plugin": "wv-state-workflows",
       "skill": "policy-and-statute-assistant",
-      "treeSha256": "b7bccccbb9d5154e",
+      "treeSha256": "34b55b1527943496",
       "files": {
-        "SKILL.md": "2a7e1cad07fc5103960ecb1cc2249021cf2d26c412aa19ceb12a945915aff5ea"
+        "SKILL.md": "88c6b300afeeff649e8b1e1347f68658deda0daa765c8615865c05c90d14b2e5"
       }
     },
     "policy-program-audit": {
@@ -352,10 +352,10 @@
     "public-records-redaction": {
       "plugin": "wv-state-workflows",
       "skill": "public-records-redaction",
-      "treeSha256": "00733b26745612fb",
+      "treeSha256": "9983db5911762059",
       "files": {
-        "SKILL.md": "38b5976955e0de3ef2ce76163e58f342ea03cbf17d2765965e460fc949e09f88",
-        "references/citation_guide.md": "1d5b74951d74a070a25791da799c36d551dcf10f82f3bcf1468f9e2973d17d8a",
+        "SKILL.md": "9ce5eeeea7bdc628ccfef4d4d0ad966e573b37e5fc7260a55889844c561373ab",
+        "references/citation_guide.md": "25c97faf20cec3cf7e1e6448802940d71bd2056a6a01e986aa610d77772342c8",
         "references/qa_and_special_inputs.md": "d8a3c15c6317127e8e206b3fd8a8924c7d7c6da9511ec7e963ec8e0798e71e98",
         "references/record_types.md": "80627d864fdbe995b3612dacb82f77834f55dc2cec473eb5d993b8216dd310b2"
       }

@@ -151,6 +151,13 @@ Federal:
 
 States (illustrations only; always point to the governing state's own law):
 
+-   **West Virginia Freedom of Information Act, W. Va. Code § 29B-1-1 and following** (`W. Va. Code § 29B-1-4` exemptions):
+    -   `W. Va. Code § 29B-1-4(a)(1)`: Trade secrets (unpatented, secret, commercially valuable plan, appliance, formula, or process).
+    -   `W. Va. Code § 29B-1-4(a)(2)`: Information of a personal nature such as that kept in a personal, medical, or similar file, where public disclosure would constitute an unreasonable invasion of privacy (personal home addresses, personal phone numbers, personal emails, DOBs, minor children's identities, medical/health details).
+    -   `W. Va. Code § 29B-1-4(a)(4)`: Records of law-enforcement agencies that deal with the detection and investigation of crime and internal records and notations maintained for internal law-enforcement use.
+    -   `W. Va. Code § 29B-1-4(a)(5)`: Information specifically exempted from disclosure by statute (including Social Security numbers, federal confidentiality statutes such as `26 U.S.C. § 6103` FTI or `20 U.S.C. § 1232g` FERPA, and confidential financial account/routing numbers).
+    -   `W. Va. Code § 29B-1-4(a)(8)`: Internal memoranda or letters received or prepared by any public body (deliberative/pre-decisional advice and attorney-client privileged material — flag for officer/counsel review rather than auto-redacting).
+    -   `W. Va. Code § 29B-1-4(a)(9)` & `(a)(19)`: Records assembled, prepared, or maintained to prevent, mitigate, or respond to terrorist acts or public cybersecurity/computing/telecommunications security vulnerabilities, passwords, internal admin IPs, and security codes (flag for officer/security review).
 -   Colorado Open Records Act, C.R.S. 24-72-200.1 and following; 24-72-204(1)(b)
     (contrary to federal law), (3)(a)(I) (medical data), (3)(a)(IV) (trade
     secrets, confidential commercial or financial data, and Social Security

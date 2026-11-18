@@ -1,4 +1,4 @@
-# West Virginia Antigravity Launchpad & Guided Test Prompts (`v1.3.1`)
+# West Virginia Antigravity Launchpad & Guided Test Prompts (`v1.4.0`)
 
 ## Quick 3-Step Setup
 1. **Step 1 — Complete AGY Download & Install:** Follow the [Antigravity Download & Install Guide](https://serve-dot-zipline.appspot.com/asset/18726ad2-eb6d-5295-baf2-86442bb8f3df/zpc/gktu4puu98z/).
@@ -12,7 +12,7 @@
    - **Fast `< 1s` Incremental Skill Updates (`v1.3.0+` — No Full Re-Install Needed!):**
      - Click **`Sync Git Updates`** in the top-right of the **`WV Skills`** sidebar panel (**Extensions → WV Skills**), or click the **`↻`** icon next to any individual skill toggle; **OR**
      - Type `/wv-update` (syncs all changed skills via SHA-256 hash comparison over HTTPS `443`) or `/wv-update wv-dashboard` (updates a single skill in `< 1 second`).
-3. **Step 3 — Test the Plugin:** Copy and paste the **7 Guided Test Prompts** below to test all **6 plugins** and **21 skills**.
+3. **Step 3 — Test the Plugin:** Copy and paste the **7 Guided Test Prompts** below to test all **6 plugins** and **28 skills**.
 
 > [!NOTE]
 > **Tip for Google Docs Links Inside Antigravity:** If clicking a `docs.google.com` link inside Antigravity's built-in browser shows a Context-Aware Access prompt, click **`Open the page in system browser`** in the top banner to open in Google Chrome. All 21 West Virginia skills write local `.md` and `.html` Artifacts that render natively inside Antigravity with zero browser blocks.
@@ -32,7 +32,7 @@
 
 ### What This Tests
 - **`/wv-dashboard`**, **`/slides`**, and **`/doc-design`** (plus **`Extensions → WV Preview`**).
-- **West Virginia Command Center UI (`v1.3.1`):** Verifies the Capitol Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` / `2027 SESSION CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS` showing charts only, and `4. COUNTY SITE REGISTER` showing the register table only), green-bordered System Health banner, and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
+- **West Virginia Command Center UI (`v1.4.0`):** Verifies the Capitol Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` / `2027 SESSION CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS` showing charts only, and `4. COUNTY SITE REGISTER` showing the register table only), green-bordered System Health banner, and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
 - **100% Serverless Visual Output Check (Zero Python, Zero Node Server, Zero `127.0.0.1` Firewall Ports):** Verifies that all 3 deliverables (`Dashboard`, `Slide Deck`, and `Flyer`) are written as self-contained `.html` Artifacts in the Conversation Artifact Directory (`UserFacing: true`) with a built-in **`Open / Download HTML ↗`** button in the top bar for Chrome/Edge.
 
 ### Copy & Paste Into Antigravity
