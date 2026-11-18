@@ -150,13 +150,13 @@
     "wv-dashboard": {
       "plugin": "wv-design-studio",
       "skill": "wv-dashboard",
-      "treeSha256": "65340534aa45514e",
+      "treeSha256": "010382c8d849bdab",
       "files": {
         "SKILL.md": "b6c4bb0dd488243aabd2a88994cd0ff2b8e80f2f3f4d91e11b1e639c11ca779d",
-        "assets/runtime/app.js": "0b6e7331695a3b2e71712e029134746f72095d43fa7059dcd34e136f8aefbd2b",
+        "assets/runtime/app.js": "b579f16737526a1cd300cde4193993f69730fc1ba74b4a6bfc0304b026456928",
         "assets/runtime/index.html": "e3c981daf7f131decb42ee40f4eefad2d808c66293749cff5ea4cb6435b5a9c2",
         "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
-        "assets/runtime/styles.css": "69d44438f2d6eb33f0a503b3e1712e938faa05f430913989b2e4e85874ac8f75",
+        "assets/runtime/styles.css": "594753a51e3a6d7b7c3d66a552aec17e8a4b2ae9943a93ce5b9c649c8afa9742",
         "assets/templates/executive-kpi.json": "371644fb9f63f899d62f5a6500ae900ebc6e0d1d55b57d8bae4db92382b289cc",
         "assets/templates/wv-incident-triage.json": "f0ae524bee7c721f04f89d98501138c1ce8b5e903fe4096335f51dd74b56ca6d",
         "assets/templates/wv-legislative-command-center.json": "ce0676a73b82eb0ae26dc3096dd76308c2c182838ba0aa6eab46ee5eace5cd36",
