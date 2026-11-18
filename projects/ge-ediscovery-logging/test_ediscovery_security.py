@@ -612,10 +612,57 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
                 },
                 graph_token="graph_tok",
             )
-            self.assertEqual(res_b3["status"], "updated_attachments")
-            self.assertEqual(res_b3["appended_attachments_count"], 1)
-            self.assertEqual(len(posted_attachments), 1)
-            self.assertEqual(posted_attachments[0]["name"], "late_arrival.pdf")
+        self.assertEqual(res_b3["status"], "updated_attachments")
+        self.assertEqual(res_b3["appended_attachments_count"], 1)
+        self.assertEqual(len(posted_attachments), 1)
+        self.assertEqual(posted_attachments[0]["name"], "late_arrival.pdf")
+
+    def test_wif_portal_identity_extraction_and_pool_authorization(self) -> None:
+        """Verify Workforce Identity Federation (WIF) IAP claim extraction and ALLOWED_WIF_POOLS authorization."""
+        import deploy_portal_wif
+
+        self.assertEqual(
+            deploy_portal_wif.normalize_wif_pool_id(
+                "https://auth.cloud.google/signin-callback/locations/global/workforcePools/entrapf-id-oidc-pool/providers/entrapf-id-oidc-pool-provider"
+            ),
+            "entrapf-id-oidc-pool",
+        )
+        self.assertEqual(
+            deploy_portal_wif.normalize_wif_provider_id(
+                "https://auth.cloud.google/signin-callback/locations/global/workforcePools/entrapf-id-oidc-pool/providers/entrapf-id-oidc-pool-provider"
+            ),
+            "entrapf-id-oidc-pool-provider",
+        )
+
+        wif_claims = {
+            "iss": "https://cloud.google.com/iap",
+            "aud": "/projects/111/locations/us-central1/services/ge-ediscovery-portal-wif",
+            "identity_source": "workforce_identity",
+            "email": "auditor@agency.gov",
+            "workforce_identity": {
+                "workforce_pool_name": "locations/global/workforcePools/entrapf-id-oidc-pool",
+                "iam_principal": (
+                    "principal://iam.googleapis.com/locations/global/workforcePools/"
+                    "entrapf-id-oidc-pool/subject/auditor@agency.gov"
+                ),
+            },
+        }
+        rev_id, disp, pool_id = portal_server._extract_iap_wif_identity(wif_claims)
+        self.assertEqual(rev_id, "auditor@agency.gov")
+        self.assertEqual(disp, "auditor")
+        self.assertEqual(pool_id, "entrapf-id-oidc-pool")
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "K_SERVICE": "ge-ediscovery-portal-wif",
+                "ALLOWED_WIF_POOLS": "entrapf-id-oidc-pool",
+                "ALLOWED_REVIEWER_EMAILS": "",
+                "ALLOWED_REVIEWER_DOMAINS": "",
+            },
+            clear=False,
+        ):
+            self.assertTrue(portal_server.is_reviewer_authorized("auditor@agency.gov"))
 
 
 if __name__ == "__main__":

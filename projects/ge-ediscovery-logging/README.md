@@ -272,7 +272,10 @@ python3 ge_harvest.py \
 
 ### Step 6: Deploy or Run the Self-Contained Compliance Review Portal (`portal/`)
 
-Deploy the **Compliance & Legal Brief Narrative Review Portal** (`ge-ediscovery-portal`) to Cloud Run as a single self-contained container (`1Gi` RAM, serving both the compiled React 18 SPA and the BigQuery/GCS API endpoints with server-side JWT `aud` verification and fail-closed reviewer RBAC):
+You can deploy either (or both) of the following Compliance Review Portal authentication options on Cloud Run:
+
+#### Option 6A: Standard Google IAP Review Portal (`deploy_portal.py` $\rightarrow$ `ge-ediscovery-portal`)
+Deploys the **Compliance & Legal Brief Narrative Review Portal** (`ge-ediscovery-portal`) to Cloud Run using 1P Google Sign-In (`user:<email>` or `group:<google-group>`) as a single self-contained container (`1Gi` RAM, serving both the compiled React 18 SPA and the BigQuery/GCS API endpoints with server-side JWT `aud` verification and fail-closed reviewer RBAC):
 
 ```bash
 python3 deploy_portal.py \
@@ -282,6 +285,34 @@ python3 deploy_portal.py \
 ```
 
 > **Security Note**: `deploy_portal.py` automatically configures `IAP_AUDIENCE` for server-side ES256/RS256 token audience verification, grants read-only access strictly on the `ge_ediscovery` BigQuery dataset (rather than project-wide `bigquery.dataViewer`), and blocks broad `--iap-accessor domain:...` bindings so sensitive legal, HR, and executive transcripts are never exposed across an entire domain.
+
+#### Option 6B: Workforce Identity Federation (WIF) + Microsoft Entra ID Group Review Portal (`deploy_portal_wif.py` $\rightarrow$ `ge-ediscovery-portal-wif`)
+For enterprise customers who manage their eDiscovery & Legal auditors in a **Microsoft Entra ID Security Group** and do not want to create individual Google Cloud / Workspace user accounts, `deploy_portal_wif.py` deploys a dedicated WIF-authenticated Cloud Run service (`ge-ediscovery-portal-wif`), provisions the GCP IAM Confidential OAuth Client (`gcloud iam oauth-clients`), configures Cloud Run IAP `WorkforceIdentitySettings` (`WORKFORCE_IDENTITY_FEDERATION`), and binds your WIF Pool / Entra ID Group (`principalSet://iam.googleapis.com/locations/global/workforcePools/<POOL_ID>/...`) to `roles/iap.httpsResourceAccessor` and `roles/run.invoker`.
+
+> **Important IAP Requirement (Dedicated 1-Provider Auditor WIF Pool):** Google Cloud IAP's `WorkforceIdentitySettings` requires that the Workforce Identity Pool attached to IAP contain **exactly one** OIDC/SAML provider (if a pool has `>1` provider, IAP returns `HTTP 400 Error code 701: MORE_THAN_ONE_PROVIDER_IN_WORKFORCE_POOL`). Because the Gemini Enterprise Workforce Identity Pool has **two** providers (`<customer-idp>` + `ediscovery-archiver`), always create a **dedicated 1-provider Workforce Identity Pool** (`ediscovery-auditors-pool`) for your portal auditors:
+
+```bash
+# Single-Command Turnkey Setup (Creates WIF Pool + CODE Provider + Deploys WIF Portal + Binds Entra Group):
+# Automatically reads the Entra Client Secret from --entra-client-secret, $MS_CLIENT_SECRET, or
+# Secret Manager (--entra-secret-name, default: purview-ms-client-secret).
+python3 deploy_portal_wif.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --create-wif-pool \
+  --wif-pool "ediscovery-auditors-pool" \
+  --wif-provider "entra-auditors-oidc" \
+  --entra-tenant-id "$MS_TENANT_ID" \
+  --entra-client-id "$MS_CLIENT_ID" \
+  --entra-group-id "<ENTRA_AUDITOR_GROUP_OBJECT_ID>"
+
+# Or if the dedicated 1-provider Auditor WIF Pool already exists, omit --create-wif-pool:
+python3 deploy_portal_wif.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --wif-pool "ediscovery-auditors-pool" \
+  --wif-provider "entra-auditors-oidc" \
+  --entra-group-id "<ENTRA_AUDITOR_GROUP_OBJECT_ID>"
+```
+
+After running `deploy_portal_wif.py`, copy the printed **WIF Sign-In Callback URL** (`https://auth.cloud.google/signin-callback/locations/global/workforcePools/ediscovery-auditors-pool/providers/entra-auditors-oidc`) and add it under **Microsoft Entra ID** $\rightarrow$ **App registrations** (`$MS_CLIENT_ID`) $\rightarrow$ **Authentication** $\rightarrow$ **Web** $\rightarrow$ **Redirect URIs**.
 
 To access the IAM-protected Cloud Run portal in your browser via `gcloud run services proxy`, or to run the portal locally on `127.0.0.1` for testing:
 
