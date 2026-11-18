@@ -166,6 +166,7 @@ code {
 }
 
 .ge-ask-btn {
+  position: relative;
   background: #1D63B8;
   color: #FFFFFF;
   border: 0;
@@ -179,6 +180,29 @@ code {
 
 .ge-ask-btn:hover {
   background: #154E96;
+}
+
+.ge-ask-btn[data-tooltip]:hover::after,
+.ge-ask-btn[data-tooltip]:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 270px;
+  white-space: normal;
+  text-align: left;
+  background: #0F1A2A;
+  color: #F8FAFC;
+  border: 1px solid var(--secondary);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  z-index: 100;
+  pointer-events: none;
 }
 
 .owner-select-group {

@@ -1223,6 +1223,7 @@
 
     var askGeBtn = document.getElementById('askGeBtn');
     if (askGeBtn) {
+      askGeBtn.setAttribute('data-tooltip', 'Serverless preview: filters local snapshot records only. A hosted deployment can wire this button to embedded Gemini Enterprise.');
       askGeBtn.addEventListener('click', function () {
         var q = (globalSearch && globalSearch.value.trim()) || (state.config && state.config.title) || 'West Virginia Command Center status';
         showToast('Filtering Command Center & preparing Gemini Enterprise query for: "' + q + '"');
