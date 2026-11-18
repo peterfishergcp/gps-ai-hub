@@ -5,12 +5,25 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.30"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 }
 
 provider "google" {
   project = var.project_id
   region  = var.region
+}
+
+data "google_project" "current" {
+  project_id = var.project_id
+}
+
+# Persistent shared HMAC session secret for Cloud Run multi-instance replicas
+resource "random_id" "session_secret" {
+  byte_length = 32
 }
 
 # 1. Enable Required Google Cloud APIs
@@ -46,6 +59,30 @@ resource "google_cloud_run_v2_service" "router" {
       env {
         name  = "DEV_MODE"
         value = "false"
+      }
+      env {
+        name  = "REQUIRE_REAL_AUTH"
+        value = "true"
+      }
+      env {
+        name  = "REQUIRE_IAP_JWT"
+        value = "true"
+      }
+      env {
+        name  = "CANONICAL_HOST"
+        value = var.domain_name
+      }
+      env {
+        name  = "IAP_AUDIENCE"
+        value = var.iap_audience
+      }
+      env {
+        name  = "COOKIE_SECURE"
+        value = "true"
+      }
+      env {
+        name  = "SESSION_SECRET"
+        value = random_id.session_secret.hex
       }
       env {
         name  = "LOG_LEVEL"
@@ -140,17 +177,42 @@ resource "google_compute_global_forwarding_rule" "https_forwarding" {
   load_balancing_scheme = "EXTERNAL_MANAGED"
 }
 
-# 10. IAM: Allow IAP Service Agent to invoke Cloud Run
-data "google_project" "current" {
-  project_id = var.project_id
+# 10. HTTP-to-HTTPS Redirect URL Map
+resource "google_compute_url_map" "https_redirect" {
+  name    = "${var.service_name}-https-redirect"
+  project = var.project_id
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
 }
 
-resource "google_cloud_run_v2_service_iam_member" "iap_invoker" {
+# 11. Target HTTP Proxy for HTTPS Redirect
+resource "google_compute_target_http_proxy" "http_proxy" {
+  name    = "${var.service_name}-http-proxy"
+  project = var.project_id
+  url_map = google_compute_url_map.https_redirect.id
+}
+
+# 12. Global Forwarding Rule (Port 80)
+resource "google_compute_global_forwarding_rule" "http_forwarding" {
+  name                  = "${var.service_name}-http-fwd-rule"
+  project               = var.project_id
+  target                = google_compute_target_http_proxy.http_proxy.id
+  port_range            = "80"
+  ip_address            = google_compute_global_address.lb_ip.address
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+}
+
+# 13. IAM: Allow Load Balancer invoker access (ingress isolated to Internal & Cloud Load Balancing)
+resource "google_cloud_run_v2_service_iam_member" "lb_invoker" {
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.router.name
   role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-iap.iam.gserviceaccount.com"
+  member   = "allUsers"
 }
 
 # Outputs
@@ -162,4 +224,9 @@ output "load_balancer_ip" {
 output "cloud_run_url" {
   description = "The internal Cloud Run URL"
   value       = google_cloud_run_v2_service.router.uri
+}
+
+output "iap_expected_audience" {
+  description = "The expected IAP audience string to configure on the router"
+  value       = "/projects/${data.google_project.current.number}/global/backendServices/${google_compute_backend_service.backend.generated_id}"
 }

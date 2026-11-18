@@ -174,7 +174,7 @@
     <div class="card">
         <div class="logo">✨</div>
         <h1>Gemini Enterprise Smart Router</h1>
-        <p class="subtitle">Authenticate with your organization credentials:</p>
+        <p class="subtitle">{{ message if message else "Authenticate with your organization credentials:" }}</p>
 
         <!-- Real Google Account Sign-In -->
         <a href="/auth/login" class="google-btn">
@@ -189,13 +189,14 @@
             <span>Sign in with Google Workspace</span>
         </a>
 
+        {% if dev_mode %}
         <div class="divider">or test simulated roles (Demo Mode)</div>
 
         <!-- Pre-configured demo accounts -->
-        <a href="/login?email=user@example.com" class="account-btn">
+        <a href="/login?email=user@example.com" class="account-btn" style="border-color: #1a73e8; background-color: #f8fbff;">
             <div class="account-info">
                 <div class="account-email">user@example.com</div>
-                <div class="account-badge">⚡ Auto-Redirect → Instance 1 (Operations & General Hub)</div>
+                <div class="account-badge" style="color: #1557b0; font-weight: 500;">⚡ Auto-Redirect → Instance 1 (Operations & General Hub)</div>
             </div>
             <span class="arrow">➔</span>
         </a>
@@ -230,6 +231,7 @@
             <input type="email" name="email" class="custom-input" placeholder="user@example.com" required>
             <button type="submit" class="submit-btn">Continue</button>
         </form>
+        {% endif %}
 
         <div class="info-box">
             💡 <strong>Architecture Note:</strong> When accessed behind a <strong>Google Cloud Application Load Balancer with Identity-Aware Proxy (IAP)</strong>, this screen is bypassed automatically. IAP authenticates the user via Google Workspace / Cloud Identity SSO and the router seamlessly forwards to the authorized instance.

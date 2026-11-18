@@ -1,9 +1,16 @@
 .git/
 .gitignore
+.env
+.env.*
+*.pem
+*.key
+*credentials*.json
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .pytest_cache/
+.ruff_cache/
 terraform/
 README.md
+CUSTOMER_DEPLOYMENT_GUIDE.md

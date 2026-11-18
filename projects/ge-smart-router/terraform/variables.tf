@@ -33,3 +33,9 @@ variable "iap_client_secret" {
   default     = ""
   sensitive   = true
 }
+
+variable "iap_audience" {
+  description = "Expected audience for Cloud IAP JWT validation (e.g., /projects/PROJECT_NUMBER/global/backendServices/BACKEND_SERVICE_ID)"
+  type        = string
+  default     = ""
+}
