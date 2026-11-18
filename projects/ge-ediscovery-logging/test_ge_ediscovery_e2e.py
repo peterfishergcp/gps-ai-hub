@@ -402,7 +402,7 @@ def check_9_antigravity_devtools_capture(
     prompt1_id = f"agy-prompt-1-{int(time.time())}"
     body1 = json.dumps({
         "contents": [{"role": "USER", "parts": [{"text": turn1_prompt}]}],
-        "aicode": {"experience": "gemini-2.5-flash"},
+        "aicode": {"experience": "gemini-3.8-flash"},
         "entitlement": {"user_tier": user_tier},
     }).encode("utf-8")
     req1 = urllib.request.Request(
@@ -441,7 +441,7 @@ def check_9_antigravity_devtools_capture(
             {"role": "MODEL", "parts": [{"text": turn1_reply}]},
             {"role": "USER", "parts": [{"text": turn2_prompt}]},
         ],
-        "aicode": {"experience": "gemini-2.5-flash"},
+        "aicode": {"experience": "gemini-3.8-flash"},
         "entitlement": {"user_tier": user_tier},
     }).encode("utf-8")
     req2 = urllib.request.Request(
