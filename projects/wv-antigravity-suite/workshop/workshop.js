@@ -5,25 +5,7 @@
 (function () {
   'use strict';
 
-  var OS_MODES = {
-    windows: {
-      buildCmd: function (ge) {
-        var base = 'powershell -ExecutionPolicy Bypass -File .\\scripts\\install-wv-suite.ps1';
-        return ge ? base + ' `\n  -GeInstance "' + ge + '"' : base;
-      }
-    },
-    agy: {
-      buildCmd: function () {
-        return 'agy plugin install https://github.com/cloud-gtm/gps-ai-hub/tree/main/projects/wv-antigravity-suite';
-      }
-    },
-    mac: {
-      buildCmd: function (ge) {
-        var base = 'bash ./scripts/install-wv-suite.sh';
-        return ge ? base + ' \\\n  --ge-instance "' + ge + '"' : base;
-      }
-    }
-  };
+  var STEP2_INSTALL_PROMPT = 'agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite';
 
   var SKILLS = [
     { id: '/wv-onboard', title: 'Agency Role & Digital Twin Quickstart', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: '60-second setup for agency role, Digital Twin tone, 30-60-90 plans, and SOP builders.', prompt: '/wv-onboard Help me set up my West Virginia agency role, Digital Twin tone, and Gemini Enterprise connection.' },
@@ -37,8 +19,8 @@
     { id: '/connect-m365-workspace', title: 'M365 & Workspace Grounded Search', category: 'Federated Connectors', type: 'SOP Playbook', desc: 'Chronological email/Teams reconstruction and SharePoint/OneDrive citation rules through Federated GE.', prompt: '/connect-m365-workspace Search SharePoint and OneDrive via my GE instance for the latest program tracker.' },
     { id: '/connect-github-bigquery', title: 'GitHub & Cost-Capped BigQuery', category: 'Federated Connectors', type: 'SOP Playbook', desc: 'Bridges federated GitHub search with direct PR workflows and 1 GB cost-capped read-only BigQuery.', prompt: '/connect-github-bigquery Configure read-only BigQuery access with a 1 GB scan cap.' },
 
-    { id: '/wv-dashboard', title: 'Zero-Node Executive Dashboard Studio', category: 'Design Studio', type: 'Executable Skill', desc: 'Builds interactive dashboards in Zero-Node file:// Browser Mode (drag-and-drop Customize Layout) or live BigQuery mode.', prompt: '/wv-dashboard Build a West Virginia branded executive dashboard I can customize visually in Chrome or Edge.' },
-    { id: '/slides', title: '16:9 HTML/PDF Presentation Decks', category: 'Design Studio', type: 'SOP Playbook', desc: 'Responsive 16:9 decks with keyboard navigation, speaker notes drawer, and crisp Landscape PDF export.', prompt: '/slides Create an 8-slide West Virginia leadership presentation deck with speaker notes.' },
+    { id: '/wv-dashboard', title: 'Zero-Node Executive Dashboard Studio', category: 'Design Studio', type: 'Executable Skill', desc: 'Builds interactive dashboards with automatic Side-Pane visual rendering, 1-click browser launch, and drag-and-drop Customize Layout.', prompt: '/wv-dashboard Build a West Virginia branded executive dashboard I can customize visually in Chrome or Edge.' },
+    { id: '/slides', title: '16:9 HTML/PDF Presentation Decks', category: 'Design Studio', type: 'SOP Playbook', desc: 'Responsive 16:9 decks with Side-Pane visual preview, keyboard navigation, speaker notes drawer, and crisp Landscape PDF export.', prompt: '/slides Create an 8-slide West Virginia leadership presentation deck with speaker notes.' },
     { id: '/doc-design', title: 'Stakeholder Flyers & BLUF Memos', category: 'Design Studio', type: 'SOP Playbook', desc: 'Print-CSS 2-page fact sheets, 1-page BLUF decision memos, press releases, and plain-language public notices.', prompt: '/doc-design Design a 2-page print-ready stakeholder flyer and eligibility checklist.' },
 
     { id: '/foia-expert', title: 'WV FOIA Discovery & Vaughn Index', category: 'State & FOIA Workflows', type: 'SOP Playbook', desc: 'Google Vault + Microsoft Purview KQL queries, W. Va. Code § 29B-1-4 & 5 U.S.C. § 552 redaction, and Vaughn Index report.', prompt: '/foia-expert Formulate Google Vault and Purview KQL discovery queries for this FOIA request and build a Vaughn Index report.' },
@@ -64,7 +46,6 @@
     'Security & IAM'
   ];
 
-  var activeOs = 'windows';
   var activeType = 'All';
   var activeCategory = 'All';
   var searchQuery = '';
@@ -85,16 +66,6 @@
     }
   }
 
-  function renderInstallCmd() {
-    var input = document.getElementById('geInstanceInput');
-    var cleanGe = input ? input.value.trim().replace(/["`$\\]/g, '') : '';
-    var target = document.getElementById('installCmdText');
-    if (target) target.textContent = OS_MODES[activeOs].buildCmd(cleanGe);
-    document.querySelectorAll('[data-os]').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-os') === activeOs);
-    });
-  }
-
   function renderRegistry() {
     var typeBar = document.getElementById('typeFilterBar');
     var catBar = document.getElementById('catFilterBar');
@@ -108,7 +79,7 @@
     [
       { id: 'All', label: 'All Skills (' + SKILLS.length + ')' },
       { id: 'Executable Skill', label: 'Executable & UI/MCP (' + execCount + ')' },
-      { id: 'Prompt Playbook', label: 'Domain Playbooks (' + sopCount + ')' }
+      { id: 'SOP Playbook', label: 'Domain Playbooks (' + sopCount + ')' }
     ].forEach(function (t) {
       var b = el('button', 'type-pill' + (activeType === t.id ? ' active' : ''), t.label);
       b.type = 'button';
@@ -149,7 +120,7 @@
       var card = el('article', 'm3-skill-card');
       var top = el('div', 'card-meta-top');
       var isExec = s.type === 'Executable Skill';
-      top.appendChild(el('span', 'skill-type-badge ' + (isExec ? 'exec' : 'sop'), isExec ? 'Executable' : 'SOP Playbook'));
+      top.appendChild(el('span', 'skill-type-badge ' + (isExec ? 'exec' : 'sop'), isExec ? 'Executable' : 'Playbook'));
       top.appendChild(el('span', 'skill-slash-id', s.id));
       card.appendChild(top);
 
@@ -189,45 +160,27 @@
       });
     }
 
-    document.querySelectorAll('[data-os]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        activeOs = b.getAttribute('data-os') || 'windows';
-        renderInstallCmd();
-      });
-    });
-
-    var geIn = document.getElementById('geInstanceInput');
-    if (geIn) geIn.addEventListener('input', renderInstallCmd);
-
-    var copyCmdBtn = document.getElementById('copyInstallBtn');
-    if (copyCmdBtn) {
-      copyCmdBtn.addEventListener('click', function () {
-        var t = document.getElementById('installCmdText');
-        if (t) copyWithFeedback(t.textContent, copyCmdBtn, 'Copy Command');
+    var copyStep2Btn = document.getElementById('copyStep2PromptBtn');
+    if (copyStep2Btn) {
+      copyStep2Btn.addEventListener('click', function () {
+        copyWithFeedback(STEP2_INSTALL_PROMPT, copyStep2Btn, 'Copy Install Prompt');
       });
     }
 
-    var searchIn = document.getElementById('skillSearchInput');
-    if (searchIn) {
-      searchIn.addEventListener('input', function () {
-        searchQuery = searchIn.value || '';
+    var searchInput = document.getElementById('skillSearchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        searchQuery = searchInput.value || '';
         renderRegistry();
       });
     }
 
-    var facBox = document.getElementById('facilitatorBox');
-    var facBtn = document.getElementById('facilitatorNavBtn');
-    if (params.has('review') && facBox) facBox.hidden = false;
-    if (facBtn && facBox) {
-      facBtn.addEventListener('click', function () {
-        facBox.hidden = !facBox.hidden;
-        if (!facBox.hidden) facBox.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    renderInstallCmd();
     renderRegistry();
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

@@ -53,24 +53,24 @@ function safeJsonForHtmlScript(obj) {
 function buildStandaloneHtml(rawHtml, cssText, jsText, hydratedPayload, titleText) {
   let out = rawHtml;
   if (titleText) {
-    out = out.replace('<title>Dashboard Studio</title>', `<title>${String(titleText).replace(/[<>&]/g, '')}</title>`);
+    out = out.replace('<title>Dashboard Studio</title>', () => `<title>${String(titleText).replace(/[<>&]/g, '')}</title>`);
   }
   // Inline styles.css
   const safeCss = cssText.replace(/<\/style/gi, '<\\/style');
   out = out.replace(
     '<link rel="stylesheet" href="./styles.css">',
-    `<style>\n${safeCss}\n</style>`
+    () => `<style>\n${safeCss}\n</style>`
   );
   // Inline initial-data JSON
   out = out.replace(
     '<script id="initial-data" type="application/json">{"config":null,"snapshot":null}</script>',
-    `<script id="initial-data" type="application/json">${hydratedPayload}</script>`
+    () => `<script id="initial-data" type="application/json">${hydratedPayload}</script>`
   );
   // Inline app.js
   const safeJs = jsText.replace(/<\/script/gi, '<\\/script');
   out = out.replace(
     '<script nonce="__CSP_NONCE__" src="./app.js"></script>',
-    `<script>\n${safeJs}\n</script>`
+    () => `<script>\n${safeJs}\n</script>`
   );
   return out;
 }
@@ -153,7 +153,7 @@ function main() {
   // 1. Hydrate workspace index.html
   const hydratedHtml = rawHtml.replace(
     '<script id="initial-data" type="application/json">{"config":null,"snapshot":null}</script>',
-    `<script id="initial-data" type="application/json">${hydratedPayload}</script>`
+    () => `<script id="initial-data" type="application/json">${hydratedPayload}</script>`
   );
   fs.writeFileSync(path.join(target, 'index.html'), hydratedHtml, 'utf-8');
 
@@ -191,11 +191,9 @@ function main() {
     }
   }
 
-  const reg = registerDeliverable(target, activeConfig.title, activeConfig.subtitle);
-
   console.log(`Scaffolded WV Dashboard (${template}) into ${target}`);
   console.log(`STANDALONE_ARTIFACT_HTML=${standalonePath}`);
-  console.log(`LIVE_PREVIEW_URL=${reg.previewUrl}`);
+  console.log('NOTE: Write STANDALONE_ARTIFACT_HTML directly to the Conversation Artifact Directory (<appDataDir>/brain/<conversation-id>/<name>_dashboard_preview.html) with ArtifactMetadata: { UserFacing: true }. Do NOT create 127.0.0.1 .url.json artifacts.');
 }
 
 main();
