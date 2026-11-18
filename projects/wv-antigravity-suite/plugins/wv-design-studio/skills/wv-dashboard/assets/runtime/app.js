@@ -1021,6 +1021,27 @@
       showToast('Downloaded dashboard.config.json');
     });
 
+    var dlHtmlBtn = document.getElementById('downloadHtmlBtn');
+    if (dlHtmlBtn) {
+      dlHtmlBtn.addEventListener('click', function () {
+        var inlineEl = document.getElementById('initial-data');
+        if (inlineEl && state.config && state.snapshot) {
+          inlineEl.textContent = JSON.stringify({ config: state.config, snapshot: state.snapshot }).replace(/</g, '\\u003c');
+        }
+        var fullHtml = '<!doctype html>\n' + document.documentElement.outerHTML;
+        var blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'wv-dashboard-standalone.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Downloaded wv-dashboard-standalone.html — click it in your browser downloads bar to open in Chrome/Edge!');
+      });
+    }
+
     document.getElementById('refreshBtn').addEventListener('click', async function () {
       var btn = document.getElementById('refreshBtn');
       if (window.location.protocol === 'file:') {
@@ -1097,11 +1118,27 @@
 
   async function init() {
     bindGlobalControls();
+    // 1. Check embedded initial-data first (0ms serverless rendering inside Antigravity Artifact Viewer & file://):
+    try {
+      var inlineEl = document.getElementById('initial-data');
+      if (inlineEl && inlineEl.textContent) {
+        var parsedInline = JSON.parse(inlineEl.textContent);
+        if (parsedInline && parsedInline.config && parsedInline.snapshot) {
+          state.staticHosted = true;
+          state.config = parsedInline.config;
+          state.snapshot = parsedInline.snapshot;
+          renderAll();
+          return;
+        }
+      }
+    } catch {}
+
     if (window.location.protocol !== 'file:') {
       try {
         var res = await fetch('./api/state');
         if (res.ok) {
           var payload = await res.json();
+          state.staticHosted = false;
           state.config = payload.config;
           state.snapshot = payload.snapshot;
           if (payload.csrfToken) state.csrfToken = payload.csrfToken;
@@ -1110,7 +1147,6 @@
         }
       } catch {}
 
-      // Static HTTPS preview fallback (e.g. Zipline / GitHub Pages):
       try {
         state.staticHosted = true;
         var cfgRes = await fetch('./dashboard.config.json');
@@ -1123,21 +1159,6 @@
         }
       } catch {}
     }
-
-    // Zero-Node Browser Mode (file:// on locked-down corporate laptops with no Node.js installed):
-    try {
-      state.staticHosted = true;
-      var inlineEl = document.getElementById('initial-data');
-      if (inlineEl && inlineEl.textContent) {
-        var parsedInline = JSON.parse(inlineEl.textContent);
-        if (parsedInline && parsedInline.config && parsedInline.snapshot) {
-          state.config = parsedInline.config;
-          state.snapshot = parsedInline.snapshot;
-          renderAll();
-          return;
-        }
-      }
-    } catch {}
     showToast('Failed to load dashboard configuration.');
   }
 
