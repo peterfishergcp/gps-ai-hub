@@ -12,6 +12,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
+import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,108 @@ import { SidecarApp, Response } from 'sidecar_sdk';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
+const SAFE_SEG_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+const DEFAULT_RAW_BASE = 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite';
+
+function httpsGetBuffer(urlStr, redirectsLeft = 4) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr);
+    if (u.protocol !== 'https:') {
+      reject(new Error('HTTPS required'));
+      return;
+    }
+    const req = https.get(
+      u,
+      { headers: { 'User-Agent': 'WV-Skill-Manager-Sidecar/1.3' }, timeout: 12000 },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
+          if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
+          return resolve(httpsGetBuffer(new URL(res.headers.location, urlStr).toString(), redirectsLeft - 1));
+        }
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+        const chunks = [];
+        let total = 0;
+        res.on('data', (c) => {
+          total += c.length;
+          if (total > 5 * 1024 * 1024) return req.destroy(new Error('Response too large'));
+          chunks.push(c);
+        });
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('Timeout')));
+  });
+}
+
+async function syncSkillsIncrementally(skillFilter = '') {
+  const manifestBuf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/version-manifest.json`);
+  const manifest = JSON.parse(manifestBuf.toString('utf-8'));
+  const skillManifest = manifest.skillManifest || {};
+  const pluginsRoot = getPluginsRoot();
+  const targetSkills = Object.keys(skillManifest).filter((id) => !skillFilter || id === skillFilter);
+
+  let updatedSkillsCount = 0;
+  let updatedFilesCount = 0;
+  const updatedSkillIds = [];
+
+  for (const skillId of targetSkills) {
+    const entry = skillManifest[skillId];
+    const pluginName = entry.plugin;
+    if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(skillId)) continue;
+
+    const skillDir = path.join(pluginsRoot, pluginName, 'skills', skillId);
+    const isDisabled =
+      !fs.existsSync(path.join(skillDir, 'SKILL.md')) &&
+      fs.existsSync(path.join(skillDir, 'SKILL.md.disabled'));
+
+    let skillChanged = false;
+    for (const [relPath, expectedSha] of Object.entries(entry.files || {})) {
+      if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
+      const parts = relPath.split('/');
+      if (!parts.every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
+
+      const diskRel = relPath === 'SKILL.md' && isDisabled ? 'SKILL.md.disabled' : relPath;
+      const localPath = path.join(skillDir, diskRel);
+      let localSha = null;
+      try {
+        if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
+          localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
+        }
+      } catch {}
+
+      if (localSha !== expectedSha) {
+        const buf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/plugins/${pluginName}/skills/${skillId}/${relPath}`);
+        const actualSha = crypto.createHash('sha256').update(buf).digest('hex');
+        if (actualSha !== expectedSha) {
+          throw new Error(`Hash mismatch on ${skillId}/${relPath}`);
+        }
+        fs.mkdirSync(path.dirname(localPath), { recursive: true });
+        const tmp = `${localPath}.tmp-${process.pid}`;
+        fs.writeFileSync(tmp, buf);
+        fs.renameSync(tmp, localPath);
+        updatedFilesCount += 1;
+        skillChanged = true;
+      }
+    }
+    if (skillChanged) {
+      updatedSkillsCount += 1;
+      updatedSkillIds.push(skillId);
+    }
+  }
+  return {
+    ok: true,
+    suiteVersion: manifest.suiteVersion || '1.3.0',
+    checkedSkillsCount: targetSkills.length,
+    updatedSkillsCount,
+    updatedFilesCount,
+    updatedSkillIds
+  };
+}
 
 const SKILL_CATALOG = [
   {
@@ -479,6 +582,11 @@ app.api('/api/toggle-category', async (data) => {
 app.api('/api/save-ge', async (data) => {
   const saved = saveGeInstanceConfig(data.geInstance || '');
   return { ok: true, geConfig: saved };
+}, 'POST');
+
+app.api('/api/incremental-sync', async (data) => {
+  const skillFilter = data && typeof data.skill === 'string' ? data.skill.trim() : '';
+  return await syncSkillsIncrementally(skillFilter);
 }, 'POST');
 
 app.run();
