@@ -158,7 +158,11 @@ python3 deploy_cloudrun_harvester.py \
 - Builds and deploys `ge-ediscovery-harvester` to Cloud Run (`--no-allow-unauthenticated`).
 - Creates Pub/Sub topic `ge-ediscovery-events`, Dead-Letter Queue `ge-ediscovery-dlq` (`ge-ediscovery-dlq-hold`), Cloud Logging sink `ge-ediscovery-pubsub-sink`, and OIDC-authenticated push subscription `ge-ediscovery-push-sub`.
 
-### Step 6: Deploy the Self-Contained Compliance Review Portal (`ge-ediscovery-portal`)
+### Step 6: Deploy the Self-Contained Compliance Review Portal (`ge-ediscovery-portal` or `ge-ediscovery-portal-wif`)
+
+You can deploy either (or both) of the following Compliance Review Portal authentication options:
+
+#### Option A: Standard Google IAP Review Portal (`ge-ediscovery-portal` — Individual GCP / Google Workspace Users)
 ```bash
 python3 deploy_portal.py \
   --project-id "$GCP_PROJECT_ID" \
@@ -166,6 +170,34 @@ python3 deploy_portal.py \
   --iap-accessor "user:${PORTAL_REVIEWER_EMAIL}"
 ```
 *(If the customer's Org Policy or setup does not use Cloud Run native IAP, pass `--no-iap` and access the portal via `gcloud run services proxy ge-ediscovery-portal --project "$GCP_PROJECT_ID" --region us-central1 --port 8085`)*
+
+#### Option B: Workforce Identity Federation (WIF) + Microsoft Entra ID Group Review Portal (`ge-ediscovery-portal-wif` — Zero GCP User Creation)
+For enterprises that manage their eDiscovery/Legal auditors in a **Microsoft Entra ID Security Group** and do not want to provision individual Google Cloud / Workspace user accounts:
+> **Important IAP Requirement (Why a Dedicated 1-Provider Auditor WIF Pool Is Required):** Google Cloud IAP's `WorkforceIdentitySettings` requires that a Workforce Identity Pool attached to IAP contain **exactly one provider** (if a pool has `>1` provider, IAP returns `HTTP 400 Error code 701: MORE_THAN_ONE_PROVIDER_IN_WORKFORCE_POOL`). Because the Gemini Enterprise Workforce Pool has **two** providers (`<customer-idp>` + `ediscovery-archiver`), you must use a **separate 1-provider Workforce Identity Pool** dedicated to your auditors (`ediscovery-auditors-pool`).
+
+```bash
+# Single-Command Turnkey Setup (Creates WIF Pool + CODE Provider + Deploys WIF Portal + Binds Entra Group):
+# Automatically reads the Entra Client Secret from --entra-client-secret, $MS_CLIENT_SECRET, or
+# Secret Manager (--entra-secret-name, default: purview-ms-client-secret).
+python3 deploy_portal_wif.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --create-wif-pool \
+  --wif-pool "ediscovery-auditors-pool" \
+  --wif-provider "entra-auditors-oidc" \
+  --entra-tenant-id "$MS_TENANT_ID" \
+  --entra-client-id "$MS_CLIENT_ID" \
+  --entra-group-id "<ENTRA_AUDITOR_GROUP_OBJECT_ID>"
+```
+
+*(Or if the dedicated 1-provider Auditor WIF Pool already exists, omit `--create-wif-pool`:)*
+```bash
+python3 deploy_portal_wif.py \
+  --project-id "$GCP_PROJECT_ID" \
+  --wif-pool "ediscovery-auditors-pool" \
+  --wif-provider "entra-auditors-oidc" \
+  --entra-group-id "<ENTRA_AUDITOR_GROUP_OBJECT_ID>"
+```
+After running `deploy_portal_wif.py`, copy the printed **WIF Sign-In Callback URL** (`https://auth.cloud.google/signin-callback/locations/global/workforcePools/ediscovery-auditors-pool/providers/entra-auditors-oidc`) and add it under **Microsoft Entra ID** $\rightarrow$ **App registrations** (`$MS_CLIENT_ID`) $\rightarrow$ **Authentication** $\rightarrow$ **Web** $\rightarrow$ **Redirect URIs**.
 
 ### Step 7: Provision `geUserNoDelete` Custom Role & Swap WIF User Binding (Spoliation Prevention)
 Always run the **dry-run first** (which creates `projects/<PROJECT_ID>/roles/geUserNoDelete` and binds it additively to the WIF principal), verify output, and then run `--apply` (which saves a timestamped IAM policy backup JSON and removes `roles/discoveryengine.user` from that single principal):
@@ -281,11 +313,12 @@ scripts/verify.sh "$GCP_PROJECT_ID"
 | **`test_ge_ediscovery_e2e.py` Check 3/4 returns `403` on existing session, or user subject mismatch** | Customer's Workforce Pool maps `google.subject` to an Entra ID Object GUID (`assertion.oid`) instead of email (`assertion.upn` / `assertion.mail`). | Inspect `gcloud iam workforce-pools providers describe <IDP_PROVIDER> --workforce-pool=$WORKFORCE_POOL_ID --location=global --format="value(attributeMapping)"` and pass a matching `--user-subject` to `test_ge_ediscovery_e2e.py`. Note: `ge_harvest.py` handles both GUIDs and emails automatically in production because it reads the exact `userIamPrincipal` from Cloud Logging. |
 | **Historical sessions created before installation are missing from BigQuery** | Real-time Pub/Sub push only captures events after sink creation. | Run a one-time historical sweep: `python3 ge_harvest.py --project-id "$GCP_PROJECT_ID" --workforce-pool-id "$WORKFORCE_POOL_ID" --hours 720`. |
 | **BigQuery `InsertJob` / `load_rows_to_bigquery` fails with `HTTP Error 400: Bad Request` (`No schema specified on job or table`)** | `Dockerfile` omitted `conversation_turns_schema.json` (and `purview_connector.py`) when copying `/app/` into the Cloud Run container image, so per-run staging table (`conversation_turns_staging_<uuid>`) multipart load jobs were submitted without a `schema.fields` definition. | Ensure `Dockerfile` copies `conversation_turns_schema.json` and `purview_connector.py` into `/app/` (`COPY ge_harvest.py cloudrun_harvester_server.py purview_connector.py conversation_turns_schema.json /app/`), ensure `ge_harvest.py` includes the inline fallback schema in `load_rows_to_bigquery()`, and re-run `python3 deploy_cloudrun_harvester.py --project-id "$GCP_PROJECT_ID" --workforce-pool-id "$WORKFORCE_POOL_ID"`. |
-| **`INVALID_ARGUMENT: User <email> does not exist` when adding a reviewer to `ge-ediscovery-portal`** | The reviewer email is a Microsoft-only account and does not yet exist in Google Cloud Identity / Google Workspace. | Provision a Cloud Identity / Google Workspace user for that email, or see Section 6 below. |
+| **Opening `ge-ediscovery-portal-wif` returns `HTTP 400: Error code 701` from IAP** | IAP Error Code `701` (`MORE_THAN_ONE_PROVIDER_IN_WORKFORCE_POOL`) occurs when the Workforce Identity Pool configured in IAP `WorkforceIdentitySettings` contains more than 1 OIDC/SAML provider (for example, pointing IAP at the Gemini Enterprise WIF pool which also contains `ediscovery-archiver`). | Point `deploy_portal_wif.py --wif-pool` to a dedicated Workforce Identity Pool (`ediscovery-auditors-pool`) that contains **only 1** OIDC/SAML provider mapped to your Entra ID Auditor Group. |
+| **`INVALID_ARGUMENT: User <email> does not exist` when adding a reviewer to `ge-ediscovery-portal`** | The reviewer email is a Microsoft-only account and does not yet exist in Google Cloud Identity / Google Workspace. | Deploy the WIF-based portal (`deploy_portal_wif.py` $\rightarrow$ `ge-ediscovery-portal-wif`) or provision a Cloud Identity / Google Workspace user for that email (see Section 6 below). |
 
 ---
 
-## 6. Adding Authorized Reviewers to the Compliance Review Portal (`ge-ediscovery-portal`)
+## 6. Adding Authorized Reviewers to the Compliance Review Portal (`ge-ediscovery-portal` or `ge-ediscovery-portal-wif`)
 
 When the user asks to add one or more reviewers to the Compliance Review Portal (`ge-ediscovery-portal`), **do NOT overwrite existing reviewers** and **do NOT rebuild the container**. Follow this exact 4-step workflow:
 
@@ -338,4 +371,3 @@ When the user asks to add one or more reviewers to the Compliance Review Portal 
    gcloud run services describe ge-ediscovery-portal --project="$GCP_PROJECT_ID" --region="$REGION" --format="value(status.url)"
    gcloud iap web get-iam-policy --project="$GCP_PROJECT_ID" --resource-type=cloud-run --service=ge-ediscovery-portal --region="$REGION"
    ```
-
