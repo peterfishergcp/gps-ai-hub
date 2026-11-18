@@ -32,12 +32,44 @@ resource "google_project_service" "apis" {
     "run.googleapis.com",
     "compute.googleapis.com",
     "iap.googleapis.com",
+    "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com"
   ])
   project            = var.project_id
   service            = each.key
   disable_on_destroy = false
+}
+
+# 1b. Dedicated Least-Privilege Runtime Service Account (Never use Default Compute SA)
+resource "google_service_account" "router_sa" {
+  account_id   = "${var.service_name}-sa"
+  display_name = "Gemini Smart Router Runtime SA"
+  project      = var.project_id
+}
+
+# 1c. Store SESSION_SECRET in Secret Manager instead of plain-text container env
+resource "google_secret_manager_secret" "session_secret" {
+  secret_id = "${var.service_name}-session-secret"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_version" "session_secret_v1" {
+  secret      = google_secret_manager_secret.session_secret.id
+  secret_data = random_id.session_secret.hex
+}
+
+resource "google_secret_manager_secret_iam_member" "router_sa_secret_accessor" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.session_secret.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.router_sa.email}"
 }
 
 # 2. Cloud Run Service (The Smart Router Dispatcher)
@@ -48,6 +80,8 @@ resource "google_cloud_run_v2_service" "router" {
   ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   template {
+    service_account = google_service_account.router_sa.email
+
     containers {
       image = "gcr.io/${var.project_id}/${var.service_name}:latest"
       resources {
@@ -81,8 +115,13 @@ resource "google_cloud_run_v2_service" "router" {
         value = "true"
       }
       env {
-        name  = "SESSION_SECRET"
-        value = random_id.session_secret.hex
+        name = "SESSION_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.session_secret.secret_id
+            version = "latest"
+          }
+        }
       }
       env {
         name  = "LOG_LEVEL"
@@ -95,7 +134,11 @@ resource "google_cloud_run_v2_service" "router" {
     }
   }
 
-  depends_on = [google_project_service.apis]
+  depends_on = [
+    google_project_service.apis,
+    google_secret_manager_secret_version.session_secret_v1,
+    google_secret_manager_secret_iam_member.router_sa_secret_accessor
+  ]
 }
 
 # 3. Serverless Network Endpoint Group (NEG) targeting Cloud Run
@@ -206,13 +249,13 @@ resource "google_compute_global_forwarding_rule" "http_forwarding" {
   load_balancing_scheme = "EXTERNAL_MANAGED"
 }
 
-# 13. IAM: Allow Load Balancer invoker access (ingress isolated to Internal & Cloud Load Balancing)
-resource "google_cloud_run_v2_service_iam_member" "lb_invoker" {
+# 13. IAM: Least-Privilege IAP Service Agent Invoker (avoid allUsers)
+resource "google_cloud_run_v2_service_iam_member" "iap_invoker" {
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.router.name
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-iap.iam.gserviceaccount.com"
 }
 
 # Outputs
