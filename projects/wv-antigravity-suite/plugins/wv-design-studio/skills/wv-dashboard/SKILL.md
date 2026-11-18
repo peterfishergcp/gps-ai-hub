@@ -9,18 +9,18 @@ Create clean, dynamic business dashboards that **render visually right inside An
 
 ## Step 1: Align on Style & Data Source (1 Concise Question If Unspecified)
 1. **Visual Style:** Ask whether the user has a **screenshot / brand PDF** to emulate, or wants one of the built-in presets:
-   - **`wv-official`** *(Default — WV Navy `#053254`, WV Rust `#C1452C`, WV Gold `#D5A245`, `Fira Sans`)*
+   - **`wv-official`** *(Default — Capitol Command Navy `#0F1A2A`, WV Gold `#D5A245`, WV Rust `#C1452C`, `Fira Sans`, featuring the West Virginia Command Center header, `Ask Gemini Enterprise` search bar, `PROGRAM / SESSION CLOCK` ribbon, numbered tabs `1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. ANALYTICS & CHARTS`, `4. FULL REGISTER`, green-bordered System Health banner, and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels)*
    - `clean-executive`, `dark-ops`, or `civic-forest`.
    - If they attach a screenshot, inspect it (or delegate to `wv-design-architect`) and write its exact hex colors into `dashboard.config.json` under `theme`.
 2. **Data Source (3 Frictionless Paths):**
    - **Federated Gemini Enterprise (`GE`) Instance (`wv-ge-bridge`):** Pull tables/metrics from SharePoint, OneDrive, Google Sheets/Drive, or Outlook reports via `ge_ask_instance` and populate `data/snapshot.json`!
    - **Google BigQuery (Default Database Connector)** or secondary read-only SQL/CSV (`postgres`, `mysql`, `duckdb`, `csv`) — see `./references/database_and_ge_connectors.md`.
-   - **Uploaded CSV / Excel / JSON or Starter Template** (`wv-mountain-state-ready`, `wv-incident-triage`, `executive-kpi`).
+   - **Uploaded CSV / Excel / JSON or Starter Template** (`wv-mountain-state-ready`, `wv-legislative-command-center`, `wv-incident-triage`, `executive-kpi`).
 
 ## Step 2: Scaffold & Sync the Dashboard (`dashboard-standalone.html` + `index.html`)
 1. Run the scaffolder using Antigravity's built-in Node runtime:
    ```bash
-   node <skill_dir>/scripts/scaffold_dashboard.mjs --target <target_dir> --template <wv-mountain-state-ready|wv-incident-triage|executive-kpi>
+   node <skill_dir>/scripts/scaffold_dashboard.mjs --target <target_dir> --template <wv-mountain-state-ready|wv-legislative-command-center|wv-incident-triage|executive-kpi>
    ```
 2. Edit `<target_dir>/dashboard.config.json` and `<target_dir>/data/snapshot.json` to match the user's metrics, KPIs, and West Virginia theme.
 3. Re-run with `--sync` so both `index.html` and the 100% self-contained single-file `dashboard-standalone.html` (which inlines all CSS, JS, config, and snapshot data) are updated:

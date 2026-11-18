@@ -4,29 +4,69 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="__CSRF_TOKEN__">
-  <title>Dashboard Studio</title>
+  <title>West Virginia Command Center</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <header class="topbar" id="topbar">
-    <div class="topbar-main">
-      <div class="header-titles">
-        <div class="eyebrow-row">
-          <span class="eyebrow" id="dashEyebrow">Loading...</span>
-          <span class="connector-pill" id="connectorPill">BigQuery</span>
+    <div class="topbar-inner">
+      <!-- Row 1: State Seal + Agency Eyebrow & Command Center Title -->
+      <div class="brand-header-row">
+        <div class="seal-brand">
+          <svg class="wv-seal-svg" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+            <circle cx="22" cy="22" r="20" stroke="#94A3B8" stroke-width="1.6" fill="#0B1422"/>
+            <circle cx="22" cy="22" r="16.5" stroke="#D5A245" stroke-width="1" stroke-dasharray="2 2"/>
+            <path d="M13 27L18 17L22 23L26 15L31 27H13Z" stroke="#E2E8F0" stroke-width="1.5" fill="rgba(213,162,69,0.2)"/>
+            <text x="22" y="34" text-anchor="middle" fill="#D5A245" font-size="6.2" font-weight="700" font-family="sans-serif">1863</text>
+          </svg>
+          <div class="seal-text">
+            <span class="seal-sub" id="sealSubText">State of West Virginia</span>
+            <span class="seal-main" id="sealMainText">Executive Command</span>
+          </div>
         </div>
-        <h1 class="dash-title" id="dashTitle">Dashboard Studio</h1>
-        <p class="dash-subtitle" id="dashSubtitle"></p>
+        <div class="brand-divider" aria-hidden="true"></div>
+        <div class="header-titles">
+          <div class="eyebrow-row">
+            <span class="eyebrow" id="dashEyebrow">WEST VIRGINIA · EXECUTIVE OPERATIONS</span>
+          </div>
+          <h1 class="dash-title" id="dashTitle">COMMAND CENTER</h1>
+        </div>
       </div>
-      <div class="header-actions">
-        <button type="button" class="btn ghost" id="downloadHtmlBtn" title="Download self-contained HTML to open directly in Chrome or Edge (zero server needed)">Open / Download HTML ↗</button>
-        <button type="button" class="btn ghost" id="refreshBtn" title="Run configured database query or reload snapshot">Refresh Data</button>
-        <button type="button" class="btn ghost" id="loadConfigBtn" title="Load a saved dashboard.config.json file">Load Config</button>
-        <input type="file" id="loadConfigInput" accept=".json,application/json" hidden>
-        <button type="button" class="btn ghost" id="exportBtn" title="Download dashboard.config.json">Export Config</button>
-        <button type="button" class="btn accent" id="customizeBtn" aria-pressed="false">Customize Layout</button>
-        <button type="button" class="btn save" id="saveBtn" hidden>Save Changes</button>
+
+      <!-- Row 2: Ask Gemini Enterprise Search Bar + Signed-In Filter + Action Buttons -->
+      <div class="command-controls-row">
+        <div class="ge-search-box">
+          <input type="search" id="globalSearchInput" placeholder="Search records, bills, counties, or Gemini Enterprise..." aria-label="Search command center records">
+          <button type="button" class="ge-ask-btn" id="askGeBtn">Ask Gemini Enterprise</button>
+        </div>
+
+        <div class="owner-select-group">
+          <label for="ownerSelect" class="signed-in-label">SIGNED IN:</label>
+          <select id="ownerSelect" class="owner-select" aria-label="Filter by lead or owner"></select>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn gold" id="refreshBtn" title="Refresh feeds or reload snapshot">Refresh Feeds</button>
+          <button type="button" class="btn white" id="printViewBtn" title="Print or Save as PDF">Print View</button>
+          <button type="button" class="btn ghost" id="downloadHtmlBtn" title="Download self-contained HTML to open directly in Chrome or Edge">Open / Download HTML ↗</button>
+          <button type="button" class="btn ghost" id="loadConfigBtn" title="Load a saved dashboard.config.json file">Load Config</button>
+          <input type="file" id="loadConfigInput" accept=".json,application/json" hidden>
+          <button type="button" class="btn ghost" id="customizeBtn" aria-pressed="false">Customize Layout</button>
+          <button type="button" class="btn save" id="saveBtn" hidden>Save Changes</button>
+        </div>
       </div>
+
+      <!-- Row 3: Session / Program Clock Ribbon & Automation Telemetry -->
+      <div class="clock-ribbon" id="clockRibbon">
+        <div class="clock-line">
+          <span class="clock-badge" id="clockBadge">PROGRAM CLOCK</span>
+          <span class="clock-milestones" id="clockMilestones"></span>
+        </div>
+        <div class="telemetry-line" id="telemetryLine"></div>
+      </div>
+
+      <!-- Row 4: Numbered Command Center View Tabs -->
+      <nav class="command-tabs" id="commandTabs" role="tablist" aria-label="Command Center views"></nav>
     </div>
   </header>
 
@@ -39,39 +79,57 @@
       <div class="drawer-group">
         <span class="drawer-label">Brand Colors</span>
         <div class="color-row">
-          <label class="color-pick"><span>Primary</span><input type="color" id="colPrimary" value="#053254"></label>
+          <label class="color-pick"><span>Primary</span><input type="color" id="colPrimary" value="#0F1A2A"></label>
           <label class="color-pick"><span>Accent</span><input type="color" id="colAccent" value="#C1452C"></label>
           <label class="color-pick"><span>Secondary</span><input type="color" id="colSecondary" value="#D5A245"></label>
-          <label class="color-pick"><span>Background</span><input type="color" id="colBg" value="#F4F6F8"></label>
+          <label class="color-pick"><span>Background</span><input type="color" id="colBg" value="#F4F6F9"></label>
           <label class="color-pick"><span>Cards</span><input type="color" id="colSurface" value="#FFFFFF"></label>
         </div>
       </div>
       <div class="drawer-group">
         <span class="drawer-label">Card Corners &amp; Density</span>
         <div class="preset-row">
-          <button type="button" class="chip-btn" data-radius="6">Sharp</button>
+          <button type="button" class="chip-btn" data-radius="6">Sharp (Command)</button>
           <button type="button" class="chip-btn" data-radius="12">Balanced</button>
-          <button type="button" class="chip-btn" data-radius="20">Rounded</button>
+          <button type="button" class="chip-btn" data-radius="18">Rounded</button>
           <button type="button" class="chip-btn" id="densityToggle">Compact: Off</button>
+          <button type="button" class="chip-btn" id="exportBtn">Export Config JSON</button>
         </div>
       </div>
       <div class="drawer-group" id="hiddenWidgetsGroup" hidden>
         <span class="drawer-label">Hidden Cards (Click to Restore)</span>
         <div class="preset-row" id="hiddenWidgetsRow"></div>
       </div>
-      <p class="drawer-hint">Drag cards by their top handle, click width or chart-type pills on any card, click any heading to rename it, then click <strong>Save Changes</strong> to write directly to <code>dashboard.config.json</code>—zero prompts needed.</p>
+      <p class="drawer-hint">Drag cards by their top handle, click width or chart-type pills on any card, click any heading to rename it, then click <strong>Save Changes</strong> to write directly to <code>dashboard.config.json</code>.</p>
     </div>
   </section>
 
   <main class="workspace" id="workspace">
+    <!-- Green-Bordered System & Gemini Enterprise Coverage Health Banner -->
+    <section class="health-banner" id="healthBanner" aria-label="System and connector health">
+      <div class="health-text" id="healthBannerText"></div>
+      <span class="owner-pill" id="activeOwnerPill"></span>
+    </section>
+
+    <!-- Secondary Filter Pills (Visible when filters are configured) -->
     <section class="filter-bar" id="filterBar" aria-label="Dashboard filters"></section>
+
+    <!-- 4-Column Executive KPI Cards -->
     <section class="kpi-grid" id="kpiGrid" aria-label="Key performance indicators"></section>
+
+    <!-- Command Center Operational Split Panels (Needs Action Now + My Work List / Follow-Ups) -->
+    <section class="ops-split-grid" id="opsSplitGrid" aria-label="Operational triage and work list"></section>
+
+    <!-- Priority Agenda / Tracked Goals Table -->
+    <section class="agenda-section" id="agendaSection" aria-label="Priority agenda and goals" hidden></section>
+
+    <!-- Charts & Full Register Widgets Grid -->
     <section class="widget-grid" id="widgetGrid" aria-label="Charts and data tables"></section>
   </main>
 
   <footer class="dash-footer">
     <span id="footerStamp"></span>
-    <span>Powered by Antigravity Dashboard Studio · Visual edits sync to <code>dashboard.config.json</code></span>
+    <span>West Virginia Command Center Studio · Powered by Google Antigravity + Gemini Enterprise</span>
   </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
