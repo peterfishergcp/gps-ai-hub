@@ -194,6 +194,28 @@
         var badgeCol = el('div', 'badge-col', s.badge);
 
         var controls = el('div', 'row-controls');
+
+        var syncOneBtn = el('button', 'icon-btn', '↻');
+        syncOneBtn.type = 'button';
+        syncOneBtn.title = 'Incrementally check & update only ' + s.command + ' from GitHub';
+        syncOneBtn.addEventListener('click', async function () {
+          syncOneBtn.disabled = true;
+          showToast('Checking ' + s.command + ' for updates...');
+          try {
+            var res = await apiPost('/api/incremental-sync', { skill: s.id });
+            if (res.updatedFilesCount > 0) {
+              showToast('Updated ' + s.command + ' (' + res.updatedFilesCount + ' file(s) synced)');
+            } else {
+              showToast(s.command + ' is already up to date');
+            }
+          } catch {
+            showToast('Incremental sync failed for ' + s.command);
+          } finally {
+            syncOneBtn.disabled = false;
+          }
+        });
+        controls.appendChild(syncOneBtn);
+
         var runBtn = el('button', 'icon-btn');
         runBtn.type = 'button';
         runBtn.title = 'Run ' + s.command + ' in Antigravity chat';
@@ -266,8 +288,24 @@
 
     var updateBtn = document.getElementById('updateSuiteBtn');
     if (updateBtn) {
-      updateBtn.addEventListener('click', function () {
-        runPromptInChat('/wv-update Check if newer West Virginia Antigravity skills or templates are available.', '/wv-update');
+      updateBtn.addEventListener('click', async function () {
+        updateBtn.disabled = true;
+        var origText = updateBtn.textContent;
+        updateBtn.textContent = 'Syncing...';
+        showToast('Checking SHA-256 skill hashes against GitHub...');
+        try {
+          var res = await apiPost('/api/incremental-sync', {});
+          if (res.updatedSkillsCount > 0) {
+            showToast('Incrementally updated ' + res.updatedSkillsCount + ' skill(s) (' + res.updatedFilesCount + ' file(s)) to v' + res.suiteVersion);
+          } else {
+            showToast('All ' + res.checkedSkillsCount + ' skills are up to date (v' + res.suiteVersion + ')');
+          }
+        } catch {
+          runPromptInChat('/wv-update Incrementally check and sync any updated West Virginia skills.', '/wv-update');
+        } finally {
+          updateBtn.disabled = false;
+          updateBtn.textContent = origText;
+        }
       });
     }
 

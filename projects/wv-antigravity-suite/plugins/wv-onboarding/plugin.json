@@ -1,8 +1,8 @@
 {
   "name": "wv-onboarding",
   "displayName": "WV Onboarding, Skill Toggle Panel & Digital Twin",
-  "version": "1.2.0",
-  "description": "Includes the interactive WV Skills Toggle Control Panel (Sidebar & AuxPane), Anthropic Claude & Gemini model selection guide (/model-guide), 60-second onboarding, morning briefings, Digital Twin drafting, inbox triage, and 1-command Git updates.",
+  "version": "1.3.0",
+  "description": "Includes the interactive WV Skills Toggle Control Panel (with 1-click SHA-256 Incremental Skill Sync), Anthropic Claude & Gemini model selection guide (/model-guide), 60-second onboarding, morning briefings, Digital Twin drafting, inbox triage, and <1s incremental /wv-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /wv-onboard to set up my West Virginia agency role, Digital Twin voice, and Gemini Enterprise connection",
