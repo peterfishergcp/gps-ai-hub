@@ -1,8 +1,8 @@
 {
   "name": "wv-state-workflows",
   "displayName": "WV State Workflows — FOIA, Legal & Policy Review",
-  "version": "1.0.0",
-  "description": "West Virginia FOIA & federal public records discovery/redaction (Google Vault, Microsoft Purview KQL, Federated GE, Vaughn Index), state legal/procurement contract review, and legislative/program policy audits.",
+  "version": "1.4.0",
+  "description": "West Virginia State Workflows (FOIA Vault/Purview discovery & Vaughn Index, legal/procurement redlines, cross-document policy audits) plus the 7 Government Services (public_sector) Skills (Document Intake & Validation, Expense Auditor, FOIA Request Processing, Plain Language Notice Generator, Policy & Statute Assistant, Public Records Redaction, and RFP Vendor Evaluation).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /foia-expert to translate this public records request into Google Vault and Purview queries and generate a Vaughn Index redaction report",

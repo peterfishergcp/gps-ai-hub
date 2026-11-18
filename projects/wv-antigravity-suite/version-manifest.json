@@ -1,13 +1,13 @@
 {
   "suiteName": "wv-antigravity-suite",
   "displayName": "State of West Virginia Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.3.1",
+  "suiteVersion": "1.4.0",
   "releasedAt": "2026-11-18",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "wv-onboarding": {
-      "version": "1.3.0",
-      "category": "Onboarding, Skill Toggle UI Panel, Incremental Skill Sync, Model Guide (Claude + Gemini), Daily Brief & Triage",
+      "version": "1.4.0",
+      "category": "Onboarding, Skill Toggle UI Panel (7 Categories), Incremental Skill & Sidecar Sync, Model Guide (Claude + Gemini), Daily Brief & Triage",
       "skills": [
         "wv-onboard",
         "model-guide",
@@ -48,12 +48,19 @@
       ]
     },
     "wv-state-workflows": {
-      "version": "1.0.0",
-      "category": "WV FOIA, Legal/Procurement Review & Policy Audits",
+      "version": "1.4.0",
+      "category": "WV State Workflows (3) + Government Services (public_sector) Skills (7)",
       "skills": [
         "foia-expert",
         "legal-procurement-review",
-        "policy-program-audit"
+        "policy-program-audit",
+        "document-intake-cleanup-and-validation",
+        "expense-auditor",
+        "foia-request-processing",
+        "plain-language-notice-generator",
+        "policy-and-statute-assistant",
+        "public-records-redaction",
+        "rfp-vendor-evaluation"
       ]
     },
     "wv-engineering-cloud": {
@@ -246,10 +253,10 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "71d6980185b2b6b1",
+      "treeSha256": "a821011f529e8c89",
       "files": {
         "SKILL.md": "63d6dd0fb1d0385187fe9633093a37e1dca3fd74adf753d26f7d79c240a97468",
-        "scripts/incremental-sync.mjs": "86d3ff813944f923fd7cb2a93857ae9ce824afae53ab2608726f7865d8e4619c",
+        "scripts/incremental-sync.mjs": "da4c0e2ecbb09567ef243088ad1d53e0b9c5bcb6dac31438c79cf79f52b455b0",
         "scripts/install-wv-suite.ps1": "1f53a4ae54a7d2546e635446559d580464bfb082ad170b6a686518b3377f518a",
         "scripts/install-wv-suite.sh": "5cf90fb2cdd2a9ac096a66d7f27d5681fb382a05ceec23c8704d933aa563db4a"
       }
@@ -271,6 +278,23 @@
         "references/owasp_and_cloud_waf_checklist.md": "ca276c32d16473fb78612b7face3ebb9d455c245a7913822cf2b0a95f860480e"
       }
     },
+    "document-intake-cleanup-and-validation": {
+      "plugin": "wv-state-workflows",
+      "skill": "document-intake-cleanup-and-validation",
+      "treeSha256": "807918b048ea8e04",
+      "files": {
+        "SKILL.md": "ab302362dad476e0bf8decbc37a5578f309c1d138486e39eb53c8e56639af8fe",
+        "references/domain_standards_and_examples.md": "3d7a83b63d74d42fcca5630c96f897052df19607d9a18f6606a51528b4059af8"
+      }
+    },
+    "expense-auditor": {
+      "plugin": "wv-state-workflows",
+      "skill": "expense-auditor",
+      "treeSha256": "36dd429c38778988",
+      "files": {
+        "SKILL.md": "1b59b8f13d289ddec74fbaf93649556efd47b590917da742161c1532977275ef"
+      }
+    },
     "foia-expert": {
       "plugin": "wv-state-workflows",
       "skill": "foia-expert",
@@ -278,6 +302,17 @@
       "files": {
         "SKILL.md": "d6d3ab6d40587aff782c9ec89eb6b6e60043c261325363cc92346085c549c836",
         "references/wv_and_federal_foia_exemptions.md": "cb7c87c70fb1d55a55adf2997419614de04a94e7a9487914d8ad57d16383329b"
+      }
+    },
+    "foia-request-processing": {
+      "plugin": "wv-state-workflows",
+      "skill": "foia-request-processing",
+      "treeSha256": "7a32e82a327f260c",
+      "files": {
+        "SKILL.md": "aff34859945a23e2d1ac473ebd11dd05f387362d2ed1469de33708ce3d90e16f",
+        "references/corner_cases.md": "bb5a9359ef40a709b515bb595691328394f1d55a2cf9ae59057c98f34214690c",
+        "references/legal_references.md": "b4d3bd48e59f035c448e92988c4a51f587daeef01427847994adaaa6eb9764d0",
+        "references/search_terms.md": "a70bcd7e31a902b5b455332924f7bb3c442ac9419769ac2aec3de224a3aca042"
       }
     },
     "legal-procurement-review": {
@@ -289,6 +324,22 @@
         "references/procurement_grants_playbook.md": "0f0a3a03fa9ba8e1def56166a4a1c8a7f5f624658dc55fc938f02426eeb70d33"
       }
     },
+    "plain-language-notice-generator": {
+      "plugin": "wv-state-workflows",
+      "skill": "plain-language-notice-generator",
+      "treeSha256": "636a13398af471be",
+      "files": {
+        "SKILL.md": "7092b2029c97713b6c062646f8f52ab265265171ae14bc6aec739719c42dc478"
+      }
+    },
+    "policy-and-statute-assistant": {
+      "plugin": "wv-state-workflows",
+      "skill": "policy-and-statute-assistant",
+      "treeSha256": "34b55b1527943496",
+      "files": {
+        "SKILL.md": "88c6b300afeeff649e8b1e1347f68658deda0daa765c8615865c05c90d14b2e5"
+      }
+    },
     "policy-program-audit": {
       "plugin": "wv-state-workflows",
       "skill": "policy-program-audit",
@@ -296,6 +347,51 @@
       "files": {
         "SKILL.md": "ac02d673c8cfacd329a9999ac4d96293ef1f664353525fc95c5a7b3f7e7a23f8",
         "references/policy_finance_it_playbook.md": "3d260ce13e8db14eb8c6ae53679d3f86997907cd782cd21b03f9d22873c45769"
+      }
+    },
+    "public-records-redaction": {
+      "plugin": "wv-state-workflows",
+      "skill": "public-records-redaction",
+      "treeSha256": "9983db5911762059",
+      "files": {
+        "SKILL.md": "9ce5eeeea7bdc628ccfef4d4d0ad966e573b37e5fc7260a55889844c561373ab",
+        "references/citation_guide.md": "25c97faf20cec3cf7e1e6448802940d71bd2056a6a01e986aa610d77772342c8",
+        "references/qa_and_special_inputs.md": "d8a3c15c6317127e8e206b3fd8a8924c7d7c6da9511ec7e963ec8e0798e71e98",
+        "references/record_types.md": "80627d864fdbe995b3612dacb82f77834f55dc2cec473eb5d993b8216dd310b2"
+      }
+    },
+    "rfp-vendor-evaluation": {
+      "plugin": "wv-state-workflows",
+      "skill": "rfp-vendor-evaluation",
+      "treeSha256": "f33f272e3314b3b6",
+      "files": {
+        "SKILL.md": "7309fee226cff3a725dee33888b21af58fa0fdda1aec5afb83b84f8bb19ba896"
+      }
+    }
+  },
+  "sidecarManifest": {
+    "wv-design-preview": {
+      "plugin": "wv-design-studio",
+      "sidecar": "wv-design-preview",
+      "files": {
+        "app.js": "32237ab7e03e466a202e7e09c2b96089e97f1002519cd42b42c25d2fd97ccbb9",
+        "index.html": "a8478793f1fd66e712c315cf87222cff4887a8e3ada002a48438909e35cd4333",
+        "main.mjs": "1a852717d15377995cefd339049d7eebeac4aeaae2fb70388ff22c4520afda68",
+        "package.json": "284ad8d16b8a134d74aace541943386d254aed286649d35f339221d5784cc02f",
+        "sidecar.json": "35a62012f35d2388c66d0ec5357aa028b23dda1465a727559c0f536403f90be7",
+        "styles.css": "015d736137ceef29bfa3cd7875620c647f8dc4fce4c648f9fd330eb6081c4c44"
+      }
+    },
+    "wv-skill-manager": {
+      "plugin": "wv-onboarding",
+      "sidecar": "wv-skill-manager",
+      "files": {
+        "app.js": "a05d51440acbf300680ad700e7626e1caba6d657d6493ff5d956d76237ae359e",
+        "index.html": "55364c42aacf8043b26a398f2bd68827a6d2adaa9273509b1a44845855eb8a63",
+        "main.mjs": "5d1d0c7fbe903699bb339bfe8613720a75cd3e39b7da683bdbc3b6f5e4a80e5e",
+        "package.json": "8c4cfe0430332455357d6248fcb84446cb7376f77d12493d0c172f95c22d2cb0",
+        "sidecar.json": "09d1eb57de2f87d501e5c9228749f7cf34de59fff2cb9214f6e145194f4ec078",
+        "styles.css": "44b25419e4ab7c0e736b13474ec4faa5370b020b01719d0a9b39f900a7020e28"
       }
     }
   }

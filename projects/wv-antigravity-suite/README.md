@@ -46,16 +46,17 @@ bash projects/wv-antigravity-suite/scripts/install-wv-suite.sh
 
 ---
 
-## What Gets Installed (6 Modular Plugins · 21 Slash Skills · 114 Public-Sector Recipes)
+## What Gets Installed (6 Modular Plugins · 28 Slash Skills Across 7 `WV Skills` Categories)
 
-All 6 plugins are **enabled immediately upon installation**, and non-technical staff can optionally toggle off developer-focused plugins (such as `wv-engineering-cloud`) anytime under **Customizations > Installed**:
+All 6 plugins are **enabled immediately upon installation**, and non-technical staff can optionally toggle off individual skills or entire categories (including the **`Government Services (public_sector) Skills`** category) anytime inside **`Extensions -> WV Skills`**:
 
-| Plugin | Included `/skills` & Capabilities | Target Personas |
+| Plugin (`WV Skills` Category) | Included `/skills` & Capabilities | Target Personas |
 | :--- | :--- | :--- |
-| **`wv-onboarding`** | `/wv-onboard` · **`/model-guide` *(Using Claude & Gemini in AGY)*** · `/daily-brief` · `/digital-twin` · `/inbox-triage` · `/wv-update` *(+ In-App Skill Toggle UI Panel)* | All State Staff, Admins & Leadership |
+| **`wv-onboarding`** | `/wv-onboard` · **`/model-guide` *(Using Claude & Gemini in AGY)*** · `/daily-brief` · `/digital-twin` · `/inbox-triage` · `/wv-update` *(+ In-App `WV Skills` Toggle Panel)* | All State Staff, Admins & Leadership |
 | **`wv-connectors`** | `/connect-ge` *(Default)* · `/connect-m365-workspace` · `/connect-github-bigquery` + **`wv-ge-bridge` MCP** *(Federated Outlook, SharePoint, OneDrive, Teams, Gmail, Drive & GitHub via GE)* | All Staff + IT Onboarding |
-| **`wv-design-studio`** | `/wv-dashboard` *(Zero-Node `file://` + optional `127.0.0.1` Node/BQ)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos, BLUF notices)* + `wv-design-architect` agent | Analysts, Comms & Program Leads |
-| **`wv-state-workflows`** | `/foia-expert` *(WV Code § 29B-1-4 + `5 U.S.C. § 552` + Vault/Purview/GE discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` | FOIA Officers, Legal, Procurement & Policy |
+| **`wv-design-studio`** | `/wv-dashboard` *(West Virginia Command Center UI, 100% serverless Side-Pane preview + 1-click HTML download)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos)* + `wv-design-architect` agent | Analysts, Comms & Program Leads |
+| **`wv-state-workflows` *(State Workflows Category)*** | `/foia-expert` *(WV Code § 29B-1-4 + `5 U.S.C. § 552` + Vault/Purview/GE discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` | FOIA Officers, Legal, Procurement & Policy |
+| **`wv-state-workflows` *(Government Services `public_sector` Category)*** | `/document-intake-cleanup-and-validation` · `/expense-auditor` *(2 CFR Part 200)* · `/foia-request-processing` · `/plain-language-notice-generator` · `/policy-and-statute-assistant` · `/public-records-redaction` · `/rfp-vendor-evaluation` | Caseworkers, Grant Auditors, FOIA, Comms & Procurement |
 | **`wv-engineering-cloud`** | `/modernize-refactor` *(Stage 0/1/2 Crucible adapted from [migrate-to-rust](https://github.com/google/skills/tree/main/skills/developers/migrate-to-rust))* · `/deploy-cloudrun` *(Zero-Docker source deploy)* · `/bigquery-architect` · `/find-cloud-skill` | Application, Data & Cloud Engineers |
 | **`wv-security`** | `/security-audit` *(OWASP + Cloud WAF + Assured Workloads CJIS/HIPAA/FedRAMP)* · `/iam-secret-hygiene` + Always-on `rules/AGENTS.md` | Engineers, Security & All Builders |
 

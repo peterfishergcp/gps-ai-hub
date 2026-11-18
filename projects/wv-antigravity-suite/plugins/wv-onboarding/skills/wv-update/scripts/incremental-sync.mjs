@@ -183,6 +183,34 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
     });
   }
 
+  // Also sync sidecars (wv-skill-manager & wv-design-preview) when running a full suite sync (!skillFilter)
+  const sidecarManifest = manifest.sidecarManifest || {};
+  if (!skillFilter) {
+    for (const [scId, scEntry] of Object.entries(sidecarManifest)) {
+      const pluginName = scEntry.plugin;
+      if (!SAFE_SEGMENT_RE.test(pluginName) || !SAFE_SEGMENT_RE.test(scId)) continue;
+      const scDir = path.join(pluginsRoot, pluginName, 'sidecars', scId);
+      for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {
+        if (!isSafeRelPath(relPath)) continue;
+        const localPath = path.join(scDir, relPath);
+        const localSha = sha256FileIfExists(localPath);
+        if (localSha !== expectedSha) {
+          if (!checkOnly) {
+            const buf = await httpsGetBuffer(`${rawBase}/plugins/${pluginName}/sidecars/${scId}/${relPath}`);
+            if (sha256Buffer(buf) !== expectedSha) {
+              throw new Error(`SHA-256 mismatch on sidecar ${scId}/${relPath}`);
+            }
+            fs.mkdirSync(path.dirname(localPath), { recursive: true });
+            const tmpPath = `${localPath}.tmp-${process.pid}`;
+            fs.writeFileSync(tmpPath, buf);
+            fs.renameSync(tmpPath, localPath);
+          }
+          updatedFilesCount += 1;
+        }
+      }
+    }
+  }
+
   return {
     ok: true,
     suiteVersion: manifest.suiteVersion || 'unknown',
