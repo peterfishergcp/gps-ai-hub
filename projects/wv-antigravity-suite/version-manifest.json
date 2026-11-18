@@ -150,10 +150,10 @@
     "wv-dashboard": {
       "plugin": "wv-design-studio",
       "skill": "wv-dashboard",
-      "treeSha256": "e2dbcf53f9713ced",
+      "treeSha256": "65340534aa45514e",
       "files": {
         "SKILL.md": "b6c4bb0dd488243aabd2a88994cd0ff2b8e80f2f3f4d91e11b1e639c11ca779d",
-        "assets/runtime/app.js": "5a0330c85cf87d4715aadbe94b9faa66bd423d36c5fb7e28034cc2bbbf984d72",
+        "assets/runtime/app.js": "0b6e7331695a3b2e71712e029134746f72095d43fa7059dcd34e136f8aefbd2b",
         "assets/runtime/index.html": "e3c981daf7f131decb42ee40f4eefad2d808c66293749cff5ea4cb6435b5a9c2",
         "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
         "assets/runtime/styles.css": "69d44438f2d6eb33f0a503b3e1712e938faa05f430913989b2e4e85874ac8f75",
