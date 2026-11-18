@@ -697,21 +697,43 @@ async function handleToolCall(name, args = {}) {
 
     const auth = await resolveUserAccessToken(cfg);
     const base = discoveryEngineBaseUrl(cfg.location);
+    const headers = buildAuthHeaders(auth.accessToken, auth.quotaProjectId);
+    const parentCol = `projects/${encodeURIComponent(cfg.projectId)}/locations/${encodeURIComponent(cfg.location)}/collections/${encodeURIComponent(cfg.collectionId)}`;
     const assistantPath =
-      `projects/${encodeURIComponent(cfg.projectId)}/locations/${encodeURIComponent(cfg.location)}` +
-      `/collections/${encodeURIComponent(cfg.collectionId)}/engines/${encodeURIComponent(cfg.engineId)}` +
+      `${parentCol}/engines/${encodeURIComponent(cfg.engineId)}` +
       `/assistants/default_assistant`;
+
+    // StreamAssist requires explicit toolsSpec.vertexAiSearchSpec.dataStoreSpecs for federated Workspace/3P connectors
+    const [engResp, dsResp] = await Promise.all([
+      httpsJsonRequest(`${base}/v1alpha/${parentCol}/engines/${encodeURIComponent(cfg.engineId)}`, { headers }),
+      httpsJsonRequest(`${base}/v1alpha/${parentCol}/dataStores?pageSize=50`, { headers }),
+    ]);
+    const linkedIds = new Set((engResp.status === 200 && engResp.json && Array.isArray(engResp.json.dataStoreIds)) ? engResp.json.dataStoreIds : []);
+    const allStores = (dsResp.status === 200 && dsResp.json && Array.isArray(dsResp.json.dataStores)) ? dsResp.json.dataStores : [];
+    const dataStoreSpecs = allStores
+      .filter((ds) => {
+        const id = String(ds.name || '').split('/').pop();
+        return linkedIds.size === 0 || linkedIds.has(id);
+      })
+      .map((ds) => ({ dataStore: ds.name }));
 
     const body = {
       query: { text: query },
     };
+    if (dataStoreSpecs.length > 0) {
+      body.toolsSpec = {
+        vertexAiSearchSpec: {
+          dataStoreSpecs,
+        },
+      };
+    }
     if (args.session && String(args.session).trim()) {
       body.session = String(args.session).trim();
     }
 
     const resp = await httpsJsonRequest(`${base}/v1alpha/${assistantPath}:streamAssist`, {
       method: 'POST',
-      headers: buildAuthHeaders(auth.accessToken, auth.quotaProjectId),
+      headers,
       bodyObj: body,
       timeoutMs: 60000,
     });
