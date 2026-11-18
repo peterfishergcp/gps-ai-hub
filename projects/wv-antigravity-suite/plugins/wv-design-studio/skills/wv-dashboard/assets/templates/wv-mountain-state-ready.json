@@ -6,19 +6,41 @@
     "subtitle": "$25M Shell Building Loan Program & $15M Site Readiness Grant Program · First-Round Window Closes Dec 31, 2026",
     "connector": "bigquery",
     "lastUpdatedLabel": "Round 1 Intake Snapshot · Nov 2026",
+    "commandCenter": {
+      "sealSubtitle": "West Virginia Office of the Governor",
+      "sealTitle": "Economic Command",
+      "clockBadge": "2026 SITE READINESS CLOCK",
+      "clockMilestones": "Nov 10: Program Launch ($40M) • Dec 10: Phase I/II ESA & Utility Cutoff • Dec 18: Joint WVDED & IJDC Board Packet • Dec 31, 2026: Round 1 Window Close",
+      "telemetryText": "All 8 Automations Healthy • Live Federated Gemini Enterprise (Drive • Gmail • Chat • SharePoint • BigQuery) Active",
+      "owners": [
+        "WVDED & IJDC Joint Review (Owner)",
+        "Governor's Economic Development Lead",
+        "Regional EDA Portfolio Coordinator"
+      ],
+      "healthBannerText": "All 8 automations running on schedule. Gemini Enterprise (Google Drive • Gmail • Google Chat • SharePoint • BigQuery) connected.",
+      "triageTitle": "NEEDS ACTION NOW — MOST URGENT FIRST (TOD-1)",
+      "workListTitle": "MY WORK LIST: WVDED & IJDC REVIEW LEAD (WRK-3 / WRK-4)",
+      "agendaTitle": "GOVERNOR'S ECONOMIC AGENDA — PRIORITY SITES & 2026–2027 GOALS (AGN-1..4)",
+      "tabs": [
+        { "id": "today", "label": "1. TODAY & TRIAGE" },
+        { "id": "agenda", "label": "2. PRIORITY AGENDA" },
+        { "id": "analytics", "label": "3. PORTFOLIO ANALYTICS" },
+        { "id": "register", "label": "4. COUNTY SITE REGISTER" }
+      ]
+    },
     "themePreset": "wv-official",
     "theme": {
       "mode": "light",
       "fontFamily": "\"Fira Sans\", system-ui, -apple-system, sans-serif",
-      "bg": "#F4F6F8",
+      "bg": "#F4F6F9",
       "surface": "#FFFFFF",
-      "ink": "#1E252B",
-      "muted": "#5A6772",
-      "border": "#D8E0E6",
-      "primary": "#053254",
+      "ink": "#0F1A2A",
+      "muted": "#475569",
+      "border": "#CBD5E1",
+      "primary": "#0F1A2A",
       "accent": "#C1452C",
       "secondary": "#D5A245",
-      "radius": 12,
+      "radius": 6,
       "density": "comfortable"
     },
     "filters": [
@@ -149,6 +171,85 @@
       { "label": "Dec 08", "value": 32.9 },
       { "label": "Dec 15 (Proj.)", "value": 36.8 },
       { "label": "Dec 31 (Close)", "value": 40.0 }
+    ],
+    "triageItems": [
+      {
+        "urgency": "DESK CLOCK (PRI-1)",
+        "tone": "critical",
+        "item": "Kanawha County ($5.0M Shell Building Loan) — Charleston Area Alliance 20% local match certification due before Dec 18 WVEDA board docket",
+        "action": "Open Desk Record"
+      },
+      {
+        "urgency": "STALE ESA NOTE (ENV-4)",
+        "tone": "critical",
+        "item": "Mason County ($3.8M Tier 3 Site Grant, 410 ac) — Phase I/II Environmental Site Assessment addendum pending DEP sign-off",
+        "action": "Request Updated Note"
+      },
+      {
+        "urgency": "UTILITY MATCH >5D (IJDC-8)",
+        "tone": "warning",
+        "item": "Harrison County ($3.1M Tier 2 Utility Extension, 210 ac) — Municipal water/wastewater capacity letter unfiled 6 days",
+        "action": "Send Agency Reminder"
+      }
+    ],
+    "workListItems": [
+      {
+        "code": "Berkeley County ($5.0M)",
+        "text": "Berkeley County Dev. Authority — 55-acre Shell Vertical (30k-50k sq ft), 180 est. jobs at 130% median wage",
+        "badge": "BOARD READY"
+      },
+      {
+        "code": "Putnam County ($4.8M)",
+        "text": "Putnam County Dev. Authority — 38-acre Shell Vertical (30k-50k sq ft), 140 est. jobs at 122% median wage",
+        "badge": "BOARD READY"
+      },
+      {
+        "code": "Cabell County ($2.4M)",
+        "text": "Huntington Area Dev. Council — 120-acre Tier 1 Turnkey Boundary site, 110 est. jobs at 120% median wage",
+        "badge": "BOARD READY"
+      }
+    ],
+    "followUps": [
+      "Due 2026-12-10 (Joint WVDED/IJDC Technical Sync): Deliver 5-county Shell Building structural & pad-ready verification packet to Finance Committee.",
+      "Due 2026-12-18 (Round 1 Pre-Close Review): Confirm ≥120% county median wage floor covenants across all 10 active county applications."
+    ],
+    "agendaItems": [
+      {
+        "rank": "#1",
+        "area": "High-Wage Shell Building Acceleration ($25M WVEDA)",
+        "sub": "Vertical 30,000–50,000 sq ft industrial shells with 5-year interest-free carryover",
+        "goal": "Approve 5 turnkey shell building loans across Kanawha, Berkeley, Putnam, Monongalia & Marion Counties (765+ jobs).",
+        "lead": "WVDED Loan Review Lead",
+        "measure": "$24.2M Tracked (5 Counties)",
+        "holds": "None"
+      },
+      {
+        "rank": "#2",
+        "area": "Tier 1 Turnkey Boundary Site Grants ($15M IJDC)",
+        "sub": "Pad-ready industrial sites with water, sewer, electric, gas & broadband to property boundary",
+        "goal": "Certify Cabell (120 ac) and Raleigh (95 ac) Tier 1 sites for immediate Q1 2027 prospect selection.",
+        "lead": "IJDC Engineering Lead",
+        "measure": "$4.3M Tracked (215 Acres)",
+        "holds": "None"
+      },
+      {
+        "rank": "#3",
+        "area": "Tier 2 Utility Extension & Corridor Readiness",
+        "sub": "12-to-18 month water, wastewater, and three-phase power extensions",
+        "goal": "Complete IJDC engineering review for Harrison (210 ac) and Wood (165 ac) utility corridors.",
+        "lead": "IJDC Infrastructure Lead",
+        "measure": "$5.7M Tracked (375 Acres)",
+        "holds": "1 Utility Note Pending"
+      },
+      {
+        "rank": "#4",
+        "area": "Tier 3 Mega-Site & River/Rail Industrial Acreage",
+        "sub": "Large-tract (400+ acre) master planning, Phase I/II environmental & geotechnical clearing",
+        "goal": "Advance Mason County (410 ac) mega-site through Phase II ESA for baseload manufacturing & energy prospects.",
+        "lead": "Site Readiness Director",
+        "measure": "$3.8M Tracked (410 Acres)",
+        "holds": "ESA Addendum in Review"
+      }
     ],
     "records": [
       {

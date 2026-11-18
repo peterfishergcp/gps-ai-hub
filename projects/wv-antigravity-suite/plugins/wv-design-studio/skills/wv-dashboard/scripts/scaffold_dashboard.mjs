@@ -24,6 +24,7 @@ const TEMPLATES_DIR = path.join(SKILL_ROOT, 'assets', 'templates');
 
 const ALLOWED_TEMPLATES = new Set([
   'wv-mountain-state-ready',
+  'wv-legislative-command-center',
   'wv-incident-triage',
   'executive-kpi',
 ]);

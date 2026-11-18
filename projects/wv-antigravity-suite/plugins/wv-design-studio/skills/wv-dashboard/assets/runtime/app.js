@@ -14,19 +14,19 @@
   var THEME_PRESETS = [
     {
       id: 'wv-official',
-      label: 'West Virginia Official',
+      label: 'WV Command Center (Official)',
       theme: {
         mode: 'light',
         fontFamily: '"Fira Sans", system-ui, -apple-system, sans-serif',
-        bg: '#F4F6F8',
+        bg: '#F4F6F9',
         surface: '#FFFFFF',
-        ink: '#1E252B',
-        muted: '#5A6772',
-        border: '#D8E0E6',
-        primary: '#053254',
+        ink: '#0F1A2A',
+        muted: '#475569',
+        border: '#CBD5E1',
+        primary: '#0F1A2A',
         accent: '#C1452C',
         secondary: '#D5A245',
-        radius: 12,
+        radius: 6,
         density: 'comfortable'
       }
     },
@@ -93,6 +93,8 @@
     staticHosted: false,
     editMode: false,
     dirty: false,
+    activeTab: 'today',
+    activeOwner: 'All',
     activeFilters: {},
     searchQuery: '',
     sortKey: '',
@@ -272,30 +274,99 @@
   }
 
   function renderHeader() {
-    var cfg = state.config;
+    var cfg = state.config || {};
+    var cc = cfg.commandCenter || {};
+    var sealSubEl = document.getElementById('sealSubText');
+    var sealMainEl = document.getElementById('sealMainText');
     var eyebrowEl = document.getElementById('dashEyebrow');
     var titleEl = document.getElementById('dashTitle');
-    var subEl = document.getElementById('dashSubtitle');
-    var pillEl = document.getElementById('connectorPill');
+    var clockBadgeEl = document.getElementById('clockBadge');
+    var clockMilestonesEl = document.getElementById('clockMilestones');
+    var telemetryEl = document.getElementById('telemetryLine');
+    var healthTextEl = document.getElementById('healthBannerText');
+    var ownerPillEl = document.getElementById('activeOwnerPill');
+    var ownerSelectEl = document.getElementById('ownerSelect');
+    var tabsEl = document.getElementById('commandTabs');
     var stampEl = document.getElementById('footerStamp');
 
-    eyebrowEl.textContent = cfg.eyebrow || 'Analytics';
-    titleEl.textContent = cfg.title || 'Dashboard';
-    subEl.textContent = cfg.subtitle || '';
-    document.title = cfg.title || 'Dashboard Studio';
+    if (sealSubEl) sealSubEl.textContent = cc.sealSubtitle || 'West Virginia Office of the Governor';
+    if (sealMainEl) sealMainEl.textContent = cc.sealTitle || 'Executive Command';
+    if (eyebrowEl) eyebrowEl.textContent = cfg.eyebrow || 'WEST VIRGINIA · OFFICE OF THE GOVERNOR';
+    if (titleEl) titleEl.textContent = cfg.title || 'EXECUTIVE COMMAND CENTER';
+    document.title = cfg.title || 'West Virginia Command Center';
 
-    var connName = ((state.snapshot && state.snapshot.connector) || cfg.connector || 'bigquery').toUpperCase();
-    var srcMode = String((state.snapshot && state.snapshot.sourceMode) || '');
-    var modeName = srcMode.indexOf('live-') === 0 ? 'LIVE' : 'SNAPSHOT';
-    pillEl.textContent = connName + ' · ' + modeName;
+    if (clockBadgeEl) clockBadgeEl.textContent = cc.clockBadge || '2026–2027 PROGRAM CLOCK';
+    if (clockMilestonesEl) {
+      clockMilestonesEl.textContent =
+        cc.clockMilestones ||
+        cfg.subtitle ||
+        'Nov 10: Program Launch • Dec 15: Priority Review Cutoff • Dec 31, 2026: Round 1 Window Close • Jan 13, 2027: Legislative Session Convening';
+    }
+    if (telemetryEl) {
+      telemetryEl.textContent =
+        cc.telemetryText ||
+        'All 8 Automations Healthy • Live Federated Gemini Enterprise Capture Active • ' + (cfg.lastUpdatedLabel || 'Updated Nov 2026');
+    }
+
+    // Populate Owner Select Dropdown
+    var owners = Array.isArray(cc.owners) && cc.owners.length
+      ? cc.owners
+      : ['All Leads (Statewide View)', 'WVDED & IJDC Review Lead (Owner)', 'Legislative & Policy Counsel'];
+    if (ownerSelectEl && ownerSelectEl.options.length === 0) {
+      owners.forEach(function (o) {
+        var opt = el('option', '', o);
+        opt.value = o;
+        ownerSelectEl.appendChild(opt);
+      });
+      state.activeOwner = owners[0];
+    }
+
+    if (healthTextEl) {
+      healthTextEl.replaceChildren();
+      var strongEl = el('strong', '', 'System & Room Coverage Healthy: ');
+      var spanEl = el(
+        'span',
+        '',
+        cc.healthBannerText ||
+          'All automations running on schedule. Gemini Enterprise (Google Drive • Gmail • Google Chat • SharePoint • BigQuery) connected.'
+      );
+      healthTextEl.appendChild(strongEl);
+      healthTextEl.appendChild(spanEl);
+    }
+    if (ownerPillEl) {
+      ownerPillEl.textContent = (state.activeOwner || owners[0]).toUpperCase();
+    }
+
+    // Populate Numbered Command Center Tabs
+    if (tabsEl) {
+      tabsEl.replaceChildren();
+      var tabs = Array.isArray(cc.tabs) && cc.tabs.length
+        ? cc.tabs
+        : [
+            { id: 'today', label: '1. TODAY & TRIAGE' },
+            { id: 'agenda', label: '2. PRIORITY AGENDA' },
+            { id: 'analytics', label: '3. ANALYTICS & CHARTS' },
+            { id: 'register', label: '4. FULL REGISTER' }
+          ];
+      tabs.forEach(function (t) {
+        var b = el('button', 'cmd-tab' + (state.activeTab === t.id ? ' active' : ''), t.label);
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-selected', String(state.activeTab === t.id));
+        b.addEventListener('click', function () {
+          state.activeTab = t.id;
+          renderAll();
+        });
+        tabsEl.appendChild(b);
+      });
+    }
 
     if (stampEl) {
       stampEl.textContent = cfg.lastUpdatedLabel || '';
     }
 
-    makeInlineEditable(eyebrowEl, function () { return cfg.eyebrow; }, function (v) { cfg.eyebrow = v; });
-    makeInlineEditable(titleEl, function () { return cfg.title; }, function (v) { cfg.title = v; });
-    makeInlineEditable(subEl, function () { return cfg.subtitle; }, function (v) { cfg.subtitle = v; });
+    if (eyebrowEl) makeInlineEditable(eyebrowEl, function () { return cfg.eyebrow; }, function (v) { cfg.eyebrow = v; });
+    if (titleEl) makeInlineEditable(titleEl, function () { return cfg.title; }, function (v) { cfg.title = v; });
   }
 
   function renderStudioDrawer() {
@@ -357,30 +428,19 @@
       bar.appendChild(grp);
     });
 
-    var searchBox = el('div', 'search-box');
-    var searchInput = el('input', 'search-input');
-    searchInput.type = 'search';
-    searchInput.placeholder = 'Filter counties, agencies, or status...';
-    searchInput.value = state.searchQuery;
-    searchInput.addEventListener('input', function () {
-      state.searchQuery = searchInput.value;
-      renderKpisAndWidgets();
-    });
-    searchBox.appendChild(searchInput);
-
     if (state.searchQuery || Object.keys(state.activeFilters).some(function (k) { return state.activeFilters[k] && state.activeFilters[k] !== 'All'; })) {
-      var resetBtn = el('button', 'chip-btn', 'Reset');
+      var resetBtn = el('button', 'chip-btn', 'Reset Filters');
       resetBtn.type = 'button';
       resetBtn.addEventListener('click', function () {
         state.activeFilters = {};
         state.searchQuery = '';
+        var gSearch = document.getElementById('globalSearchInput');
+        if (gSearch) gSearch.value = '';
         renderFilters();
         renderKpisAndWidgets();
       });
-      searchBox.appendChild(resetBtn);
+      bar.appendChild(resetBtn);
     }
-
-    bar.appendChild(searchBox);
   }
 
   function computeKpiValue(kpi, records) {
@@ -875,9 +935,193 @@
     });
   }
 
+  function renderOpsAndAgenda(records) {
+    var opsGrid = document.getElementById('opsSplitGrid');
+    var agendaSec = document.getElementById('agendaSection');
+    var widgetGrid = document.getElementById('widgetGrid');
+    var snap = state.snapshot || {};
+
+    if (opsGrid) {
+      opsGrid.replaceChildren();
+      opsGrid.hidden = state.activeTab !== 'today';
+
+      if (state.activeTab === 'today') {
+        // Left Panel: NEEDS ACTION NOW — MOST URGENT FIRST (LIVE TRIAGE)
+        var leftPanel = el('article', 'ops-panel');
+        var leftHead = el('div', 'ops-panel-head');
+        leftHead.appendChild(el('h2', 'ops-panel-title', (state.config.commandCenter && state.config.commandCenter.triageTitle) || 'NEEDS ACTION NOW — MOST URGENT FIRST (TOD-1)'));
+        leftHead.appendChild(el('span', 'ops-badge red', 'LIVE TRIAGE'));
+        leftPanel.appendChild(leftHead);
+
+        var triageTbl = el('table', 'triage-table');
+        var thead = el('thead');
+        var htr = el('tr');
+        ['URGENCY / CATEGORY', 'ITEM', 'ACTION'].forEach(function (col) {
+          htr.appendChild(el('th', '', col));
+        });
+        thead.appendChild(htr);
+        triageTbl.appendChild(thead);
+
+        var tbody = el('tbody');
+        var triageItems = Array.isArray(snap.triageItems) && snap.triageItems.length
+          ? snap.triageItems
+          : records.slice(0, 4).map(function (r, idx) {
+              var label = r.county || r.bill || r.id || ('Item #' + (idx + 1));
+              var detail = r.authority || r.title || r.summary || r.program || '';
+              var status = r.status || r.stage || 'Pending Review';
+              return {
+                urgency: idx === 0 ? 'DESK CLOCK (PRI-1)' : idx === 1 ? 'JOINT REVIEW DUE' : 'MATCH VERIFICATION',
+                tone: idx === 0 ? 'critical' : idx === 1 ? 'warning' : 'info',
+                item: label + ' — ' + detail + ' (' + status + ')',
+                action: idx === 0 ? 'Open Desk Record' : idx === 1 ? 'Request Updated Note' : 'Send Agency Reminder'
+              };
+            });
+
+        triageItems.forEach(function (tItem) {
+          var tr = el('tr');
+          var tdUrg = el('td');
+          tdUrg.appendChild(el('span', 'urg-pill ' + (tItem.tone || 'critical'), tItem.urgency || 'URGENT'));
+          tr.appendChild(tdUrg);
+
+          var tdItem = el('td', '', tItem.item || '');
+          tr.appendChild(tdItem);
+
+          var tdAct = el('td');
+          var actBtn = el('button', 'action-link', tItem.action || 'Open Record');
+          actBtn.type = 'button';
+          actBtn.addEventListener('click', function () {
+            showToast('Opened action workflow: ' + (tItem.action || 'Record'));
+          });
+          tdAct.appendChild(actBtn);
+          tr.appendChild(tdAct);
+          tbody.appendChild(tr);
+        });
+        triageTbl.appendChild(tbody);
+        leftPanel.appendChild(triageTbl);
+        opsGrid.appendChild(leftPanel);
+
+        // Right Panel: MY WORK LIST & ASSIGNED FOLLOW-UPS
+        var rightPanel = el('article', 'ops-panel');
+        var rightHead = el('div', 'ops-panel-head');
+        var wlTitle = (state.config.commandCenter && state.config.commandCenter.workListTitle) || 'MY WORK LIST & ASSIGNED PRIORITIES (WRK-3 / WRK-4)';
+        rightHead.appendChild(el('h2', 'ops-panel-title', wlTitle));
+        rightHead.appendChild(el('span', 'ops-badge green', records.slice(0, 3).length + ' ACTIVE • 2 FOLLOW-UPS'));
+        rightPanel.appendChild(rightHead);
+
+        var rightBody = el('div', 'ops-panel-body');
+        rightBody.appendChild(el('h3', 'worklist-heading', 'Assigned Priority Items:'));
+        var ulItems = el('ul', 'worklist-ul');
+        var workItems = Array.isArray(snap.workListItems) && snap.workListItems.length
+          ? snap.workListItems
+          : records.slice(0, 3).map(function (r) {
+              return {
+                code: r.county || r.bill || r.id || 'Priority',
+                text: (r.authority || r.title || '') + (r.program ? ' — ' + r.program : ''),
+                badge: r.status || 'BOARD READY'
+              };
+            });
+        workItems.forEach(function (w) {
+          var li = el('li');
+          var codeSpan = el('strong', '', w.code + ' — ');
+          li.appendChild(codeSpan);
+          li.appendChild(el('span', '', w.text + ' ('));
+          li.appendChild(el('span', 'support-pill', w.badge || 'SUPPORT'));
+          li.appendChild(el('span', '', ')'));
+          ulItems.appendChild(li);
+        });
+        rightBody.appendChild(ulItems);
+
+        rightBody.appendChild(el('h3', 'worklist-heading', 'Assigned Follow-Ups & Due Dates:'));
+        var ulFollow = el('ul', 'worklist-ul');
+        var followUps = Array.isArray(snap.followUps) && snap.followUps.length
+          ? snap.followUps
+          : [
+              'Due 2026-12-10: Deliver Phase I/II utility & engineering readiness verification packet to review board.',
+              'Due 2026-12-18: Finalize local matching funds certification and statutory compliance sign-off.'
+            ];
+        followUps.forEach(function (fText) {
+          ulFollow.appendChild(el('li', '', fText));
+        });
+        rightBody.appendChild(ulFollow);
+        rightPanel.appendChild(rightBody);
+        opsGrid.appendChild(rightPanel);
+      }
+    }
+
+    if (agendaSec) {
+      agendaSec.replaceChildren();
+      agendaSec.hidden = state.activeTab !== 'agenda';
+
+      if (state.activeTab === 'agenda') {
+        var agPanel = el('article', 'ops-panel');
+        var agHead = el('div', 'ops-panel-head');
+        agHead.appendChild(
+          el(
+            'h2',
+            'ops-panel-title',
+            (state.config.commandCenter && state.config.commandCenter.agendaTitle) ||
+              "GOVERNOR'S & AGENCY PRIORITY AGENDA — TRACKED GOALS (AGN-1..4)"
+          )
+        );
+        agHead.appendChild(el('span', 'ops-badge green', 'DEDUPLICATED AT FURTHEST STAGE'));
+        agPanel.appendChild(agHead);
+
+        var agTbl = el('table', 'agenda-table');
+        var agThead = el('thead');
+        var agHtr = el('tr');
+        ['#', 'PRIORITY AREA', 'SESSION / PROGRAM GOAL', 'OFFICE LEAD', 'TRACKED MEASURES / SITES', 'EXCEPTIONS / HOLDS'].forEach(function (c) {
+          agHtr.appendChild(el('th', '', c));
+        });
+        agThead.appendChild(agHtr);
+        agTbl.appendChild(agThead);
+
+        var agTbody = el('tbody');
+        var agendaRows = Array.isArray(snap.agendaItems) && snap.agendaItems.length
+          ? snap.agendaItems
+          : records.map(function (r, idx) {
+              return {
+                rank: '#' + (idx + 1),
+                area: r.county || r.priorityArea || ('Priority #' + (idx + 1)),
+                sub: r.program || r.tier || '',
+                goal: r.authority ? (r.authority + ' (' + (r.acres ? r.acres + ' ac, ' : '') + (r.projectedJobs ? r.projectedJobs + ' jobs target' : '') + ')') : (r.goal || ''),
+                lead: r.officeLead || 'WVDED & IJDC Review Lead',
+                measure: (r.requestedMillions ? '$' + r.requestedMillions + 'M' : '') + ' (' + (r.status || 'Active') + ')',
+                holds: 'None'
+              };
+            });
+
+        agendaRows.forEach(function (ar) {
+          var tr = el('tr');
+          tr.appendChild(el('td', '', ar.rank));
+          var tdArea = el('td');
+          tdArea.appendChild(el('strong', '', ar.area));
+          if (ar.sub) {
+            tdArea.appendChild(el('div', 'card-subtitle', ar.sub));
+          }
+          tr.appendChild(tdArea);
+          tr.appendChild(el('td', '', ar.goal));
+          tr.appendChild(el('td', '', ar.lead));
+          var tdMeas = el('td');
+          tdMeas.appendChild(el('strong', 'action-link', ar.measure));
+          tr.appendChild(tdMeas);
+          tr.appendChild(el('td', '', ar.holds || 'None'));
+          agTbody.appendChild(tr);
+        });
+        agTbl.appendChild(agTbody);
+        agPanel.appendChild(agTbl);
+        agendaSec.appendChild(agPanel);
+      }
+    }
+
+    if (widgetGrid) {
+      widgetGrid.hidden = state.activeTab === 'agenda';
+    }
+  }
+
   function renderKpisAndWidgets() {
     var filtered = getFilteredRecords();
     renderKpis(filtered);
+    renderOpsAndAgenda(filtered);
     renderWidgets(filtered);
   }
 
@@ -967,6 +1211,41 @@
   }
 
   function bindGlobalControls() {
+    var globalSearch = document.getElementById('globalSearchInput');
+    if (globalSearch) {
+      globalSearch.addEventListener('input', function () {
+        state.searchQuery = globalSearch.value || '';
+        renderKpisAndWidgets();
+      });
+    }
+
+    var askGeBtn = document.getElementById('askGeBtn');
+    if (askGeBtn) {
+      askGeBtn.addEventListener('click', function () {
+        var q = (globalSearch && globalSearch.value.trim()) || (state.config && state.config.title) || 'West Virginia Command Center status';
+        showToast('Filtering Command Center & preparing Gemini Enterprise query for: "' + q + '"');
+        state.searchQuery = globalSearch ? globalSearch.value || '' : '';
+        renderKpisAndWidgets();
+      });
+    }
+
+    var ownerSel = document.getElementById('ownerSelect');
+    if (ownerSel) {
+      ownerSel.addEventListener('change', function () {
+        state.activeOwner = ownerSel.value;
+        var pill = document.getElementById('activeOwnerPill');
+        if (pill) pill.textContent = state.activeOwner.toUpperCase();
+        showToast('Switched Command Center view to: ' + state.activeOwner);
+      });
+    }
+
+    var printBtn = document.getElementById('printViewBtn');
+    if (printBtn) {
+      printBtn.addEventListener('click', function () {
+        window.print();
+      });
+    }
+
     var customizeBtn = document.getElementById('customizeBtn');
     customizeBtn.addEventListener('click', function () {
       state.editMode = !state.editMode;
