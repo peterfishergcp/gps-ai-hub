@@ -57,12 +57,12 @@ Want to show an Account Executive, Emergency Management Director, or CISO what t
 ### 2. 1-Command Google Antigravity Plugin Install (Recommended for Coworkers)
 Paste into your terminal (or directly into a **+ New Conversation** in Google Antigravity):
 ```bash
-agy plugin install https://github.com/cloud-gtm/gps-ai-hub/tree/main/projects/agy-emergency-readiness/emergency-readiness
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/agy-emergency-readiness/emergency-readiness
 ```
 
 ### 3. Local Sparse-Checkout + Strict Validation
 ```bash
-git clone --depth 1 --filter=blob:none --sparse https://github.com/cloud-gtm/gps-ai-hub.git agy-em
+git clone --depth 1 --filter=blob:none --sparse https://github.com/peterfishergcp/gps-ai-hub.git agy-em
 cd agy-em && git sparse-checkout set projects/agy-emergency-readiness
 cd projects/agy-emergency-readiness
 agy plugin validate --strict ./emergency-readiness
