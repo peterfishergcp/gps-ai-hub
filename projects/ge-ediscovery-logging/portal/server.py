@@ -928,6 +928,7 @@ ALLOWED_UI_AUDIT_ACTIONS: frozenset[str] = frozenset({
     "VIEW_SESSION_TRANSCRIPT",
     "EXPORT_LEGAL_BRIEF",
     "FILTER_CUSTODIAN",
+    "FILTER_SESSIONS",
     "JUMP_TO_SEARCH_RESULT",
 })
 
@@ -1402,9 +1403,15 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         logged_q = "[REDACTED]" if (redact_query and raw_q) else raw_q
         sess_id = _sanitize_audit_str(payload.get("session_id", ""), 256)
         cust_email = _sanitize_audit_str(payload.get("custodian_email", ""), 320).lower()
+        explicit_filtered_user = _sanitize_audit_str(payload.get("filtered_user", ""), 320).lower()
         surface = _sanitize_audit_str(payload.get("surface", ""), 64)
         exp_fmt = _sanitize_audit_str(payload.get("export_format", ""), 64)
-        target_res = sess_id or cust_email or f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
+        try:
+            matched_cnt = max(0, min(10000, int(payload.get("matched_count") or 0)))
+        except (TypeError, ValueError):
+            matched_cnt = 0
+        matched_csv = _sanitize_audit_str(payload.get("matched_sessions_csv", ""), 2048)
+        target_res = sess_id or cust_email or explicit_filtered_user or f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
 
         self.emit_access_audit_log(
             rev_email,
@@ -1413,7 +1420,9 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
             {
                 "query_text": logged_q,
                 "query_length": len(raw_q),
-                "filtered_user": cust_email if ui_action == "FILTER_CUSTODIAN" else "",
+                "filtered_user": explicit_filtered_user or (cust_email if ui_action == "FILTER_CUSTODIAN" else ""),
+                "matched_count": matched_cnt,
+                "matched_sessions_csv": matched_csv,
                 "session_id": sess_id,
                 "custodian_email": cust_email,
                 "surface": surface,

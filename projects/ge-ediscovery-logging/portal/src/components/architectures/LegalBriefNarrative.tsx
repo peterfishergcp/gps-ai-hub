@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   UnifiedReviewItem,
   UserProfile,
@@ -315,6 +315,33 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
   const filteredSessions = useMemo(() => {
     return items.filter((item) => matchesQuery(item, sessionSearch));
   }, [items, sessionSearch]);
+
+  const lastAuditedSessionSearchRef = useRef<string>('');
+  useEffect(() => {
+    const trimmed = sessionSearch.trim();
+    if (trimmed.length < 2) {
+      lastAuditedSessionSearchRef.current = '';
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const auditKey = `${surfaceMode}|${selectedUserEmail || ''}|${trimmed}`;
+      if (lastAuditedSessionSearchRef.current === auditKey) return;
+      lastAuditedSessionSearchRef.current = auditKey;
+      const matchedIds = filteredSessions
+        .slice(0, 50)
+        .map((s) => s.id)
+        .join(',');
+      void logAuditorUiEvent({
+        action: 'FILTER_SESSIONS',
+        query_text: trimmed,
+        filtered_user: selectedUserEmail || '',
+        matched_count: filteredSessions.length,
+        matched_sessions_csv: matchedIds,
+        surface: surfaceMode,
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [sessionSearch, filteredSessions, selectedUserEmail, surfaceMode]);
 
   const isNotebook = activeItem?.surface === 'NOTEBOOK_LM';
 
