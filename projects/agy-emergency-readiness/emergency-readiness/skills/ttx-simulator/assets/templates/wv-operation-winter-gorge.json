@@ -1,0 +1,1642 @@
+{
+  "schemaVersion": "1.0.0",
+  "templateId": "wv-operation-winter-gorge",
+  "meta": {
+    "exerciseId": "WV-TTX-2026-WINTER-GORGE",
+    "operationName": "Operation Winter Gorge",
+    "title": "WV HSEEP Tabletop & Crisis Simulator — Operation Winter Gorge",
+    "subtitle": "Ice Storm, Anhydrous Ammonia Cold-Storage Leak (UN1005, 9,000 lb) & Municipal Water SCADA Cyber Intrusion",
+    "classificationBanner": "HSEEP TABLETOP EXERCISE (TTX) · STATE OF WEST VIRGINIA MULTI-AGENCY READINESS",
+    "defaultCounty": "Kanawha",
+    "operationalPeriod": "Operational Period 1 · 06:00–14:00 EST (Winter Readiness Cycle)",
+    "weatherSummary": "0.65 in. radial ice · 24°F valley inversion · Wind from WSW (245°) at 9–14 mph pushing plume ENE (065°)",
+    "hazmatProfile": {
+      "un": "UN1005",
+      "material": "Anhydrous Ammonia",
+      "guide": "125",
+      "releaseQuantityLb": 9000,
+      "spillCategory": "Large Spill (9,000 lb high-pressure receiver manifold fracture)",
+      "initialIsolationFt": 500,
+      "downwindDayMi": 0.5,
+      "downwindNightMi": 1.3,
+      "windFrom": "WSW (245°)",
+      "plumeBearingDeg": 65,
+      "plumeBearingText": "ENE (065°) along {RIVER_BASIN} terrace",
+      "tacticalRule": "ERG 2024 Guide 125 (UN1005 Large Spill): Isolate 500 ft in all directions; protect 0.5 mi (day) / 1.3 mi (night) downwind. Use water fog/spray downwind on vapor cloud only — NEVER apply direct water stream into liquid ammonia pool."
+    }
+  },
+  "theme": {
+    "navy": "#0F1A2A",
+    "navyLight": "#182840",
+    "gold": "#D5A245",
+    "goldLight": "#E6BC6A",
+    "bg": "#F2F5FA",
+    "surface": "#FFFFFF",
+    "ink": "#0F1A2A",
+    "muted": "#4B5B73",
+    "border": "#D5DFEC"
+  },
+  "jurisdictions": [
+    {
+      "county": "Barbour",
+      "seat": "Philippi",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 7",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Tygart Valley / Monongahela",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Berkeley",
+      "seat": "Martinsburg",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region IX",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "Potomac / Opequon",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Boone",
+      "seat": "Madison",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 1",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region III",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Coal / Kanawha",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Braxton",
+      "seat": "Sutton",
+      "wvemdArea": "Area 4 (Central)",
+      "wvdohDistrict": "District 7",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Elk / Little Kanawha",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Brooke",
+      "seat": "Wellsburg",
+      "wvemdArea": "Area 1 (Northern Panhandle)",
+      "wvdohDistrict": "District 6",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region XI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Upper Ohio",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Cabell",
+      "seat": "Huntington",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 2",
+      "wvspTroop": "Troop 5",
+      "rpdc": "Region II",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Ohio / Guyandotte",
+      "legacyFloodWorks": 13
+    },
+    {
+      "county": "Calhoun",
+      "seat": "Grantsville",
+      "wvemdArea": "Area 4 (Central)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Little Kanawha",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Clay",
+      "seat": "Clay",
+      "wvemdArea": "Area 4 (Central)",
+      "wvdohDistrict": "District 1",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region III",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Elk River",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Doddridge",
+      "seat": "West Union",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 4",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region VI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Middle Island Creek",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Fayette",
+      "seat": "Fayetteville",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 9",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region IV",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "New / Gauley / Kanawha",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Gilmer",
+      "seat": "Glenville",
+      "wvemdArea": "Area 4 (Central)",
+      "wvdohDistrict": "District 7",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Little Kanawha",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Grant",
+      "seat": "Petersburg",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region VIII",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "South Branch Potomac",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Greenbrier",
+      "seat": "Lewisburg",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 9",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region IV",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Greenbrier River",
+      "legacyFloodWorks": 4
+    },
+    {
+      "county": "Hampshire",
+      "seat": "Romney",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region VIII",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "South Branch Potomac",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Hancock",
+      "seat": "New Cumberland",
+      "wvemdArea": "Area 1 (Northern Panhandle)",
+      "wvdohDistrict": "District 6",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region XI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Upper Ohio",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Hardy",
+      "seat": "Moorefield",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region VIII",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "South Branch Potomac",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Harrison",
+      "seat": "Clarksburg",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 4",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region VI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "West Fork / Monongahela",
+      "legacyFloodWorks": 5
+    },
+    {
+      "county": "Jackson",
+      "seat": "Ripley",
+      "wvemdArea": "Area 4 (Central)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Ohio / Mill Creek",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Jefferson",
+      "seat": "Charles Town",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region IX",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "Shenandoah / Potomac",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Kanawha",
+      "seat": "Charleston",
+      "wvemdArea": "Area 5 (Metro Valley)",
+      "wvdohDistrict": "District 1",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region III",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Kanawha / Elk / Coal",
+      "legacyFloodWorks": 14
+    },
+    {
+      "county": "Lewis",
+      "seat": "Weston",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 7",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "West Fork River",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Lincoln",
+      "seat": "Hamlin",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 2",
+      "wvspTroop": "Troop 5",
+      "rpdc": "Region II",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Guyandotte / Mud River",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Logan",
+      "seat": "Logan",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 2",
+      "wvspTroop": "Troop 5",
+      "rpdc": "Region II",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Guyandotte River",
+      "legacyFloodWorks": 5
+    },
+    {
+      "county": "Marion",
+      "seat": "Fairmont",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 4",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region VI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Monongahela / Tygart",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Marshall",
+      "seat": "Moundsville",
+      "wvemdArea": "Area 1 (Northern Panhandle)",
+      "wvdohDistrict": "District 6",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region X",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Upper Ohio",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Mason",
+      "seat": "Point Pleasant",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 1",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region II",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Ohio / Lower Kanawha",
+      "legacyFloodWorks": 4
+    },
+    {
+      "county": "McDowell",
+      "seat": "Welch",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 10",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region I",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Tug Fork",
+      "legacyFloodWorks": 15
+    },
+    {
+      "county": "Mercer",
+      "seat": "Princeton",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 10",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region I",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Bluestone / New River",
+      "legacyFloodWorks": 4
+    },
+    {
+      "county": "Mineral",
+      "seat": "Keyser",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region VIII",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "North Branch Potomac",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Mingo",
+      "seat": "Williamson",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 2",
+      "wvspTroop": "Troop 5",
+      "rpdc": "Region II",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Tug Fork",
+      "legacyFloodWorks": 9
+    },
+    {
+      "county": "Monongalia",
+      "seat": "Morgantown",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 4",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region VI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Monongahela / Cheat",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Monroe",
+      "seat": "Union",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 9",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region I",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Greenbrier / Indian Creek",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Morgan",
+      "seat": "Berkeley Springs",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 5",
+      "wvspTroop": "Troop 2",
+      "rpdc": "Region IX",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "Potomac / Cacapon",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Nicholas",
+      "seat": "Summersville",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 9",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region IV",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Gauley / Meadow River",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Ohio",
+      "seat": "Wheeling",
+      "wvemdArea": "Area 1 (Northern Panhandle)",
+      "wvdohDistrict": "District 6",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region X",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Upper Ohio / Wheeling Creek",
+      "legacyFloodWorks": 6
+    },
+    {
+      "county": "Pendleton",
+      "seat": "Franklin",
+      "wvemdArea": "Area 3 (Eastern Panhandle)",
+      "wvdohDistrict": "District 8",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VIII",
+      "usaceDistrict": "Baltimore",
+      "riverBasin": "South Branch Potomac",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Pleasants",
+      "seat": "St. Marys",
+      "wvemdArea": "Area 4 (Mid-Ohio Valley)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Mid-Ohio River",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Pocahontas",
+      "seat": "Marlinton",
+      "wvemdArea": "Area 6 (Mountain)",
+      "wvdohDistrict": "District 8",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region IV",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Upper Greenbrier",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Preston",
+      "seat": "Kingwood",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 4",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region VI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Cheat River",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Putnam",
+      "seat": "Winfield",
+      "wvemdArea": "Area 5 (Metro Valley)",
+      "wvdohDistrict": "District 1",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region III",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Lower Kanawha",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Raleigh",
+      "seat": "Beckley",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 10",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region I",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Piney Creek / New River",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Randolph",
+      "seat": "Elkins",
+      "wvemdArea": "Area 2 (Mountain)",
+      "wvdohDistrict": "District 8",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Tygart Valley / Cheat",
+      "legacyFloodWorks": 4
+    },
+    {
+      "county": "Ritchie",
+      "seat": "Harrisville",
+      "wvemdArea": "Area 4 (Mid-Ohio Valley)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Hughes River",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Roane",
+      "seat": "Spencer",
+      "wvemdArea": "Area 4 (Central)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Spring Creek / Little Kanawha",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Summers",
+      "seat": "Hinton",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 9",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region I",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "New / Greenbrier / Bluestone",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Taylor",
+      "seat": "Grafton",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 4",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region VI",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Tygart Valley River",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Tucker",
+      "seat": "Parsons",
+      "wvemdArea": "Area 2 (Mountain)",
+      "wvdohDistrict": "District 8",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Cheat / Blackwater",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Tyler",
+      "seat": "Middlebourne",
+      "wvemdArea": "Area 1 (Mid-Ohio Valley)",
+      "wvdohDistrict": "District 6",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Mid-Ohio / Middle Island",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Upshur",
+      "seat": "Buckhannon",
+      "wvemdArea": "Area 2 (North-Central)",
+      "wvdohDistrict": "District 7",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region VII",
+      "usaceDistrict": "Pittsburgh",
+      "riverBasin": "Buckhannon River",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Wayne",
+      "seat": "Wayne",
+      "wvemdArea": "Area 5 (Southwest)",
+      "wvdohDistrict": "District 2",
+      "wvspTroop": "Troop 5",
+      "rpdc": "Region II",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Twelvepole / Tug Fork / Ohio",
+      "legacyFloodWorks": 4
+    },
+    {
+      "county": "Webster",
+      "seat": "Webster Springs",
+      "wvemdArea": "Area 6 (Central Mountain)",
+      "wvdohDistrict": "District 7",
+      "wvspTroop": "Troop 3",
+      "rpdc": "Region IV",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Elk / Gauley Headwaters",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Wetzel",
+      "seat": "New Martinsville",
+      "wvemdArea": "Area 1 (Northern Panhandle)",
+      "wvdohDistrict": "District 6",
+      "wvspTroop": "Troop 1",
+      "rpdc": "Region X",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Upper Ohio / Fishing Creek",
+      "legacyFloodWorks": 2
+    },
+    {
+      "county": "Wirt",
+      "seat": "Elizabeth",
+      "wvemdArea": "Area 4 (Mid-Ohio Valley)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Little Kanawha",
+      "legacyFloodWorks": 1
+    },
+    {
+      "county": "Wood",
+      "seat": "Parkersburg",
+      "wvemdArea": "Area 4 (Mid-Ohio Valley)",
+      "wvdohDistrict": "District 3",
+      "wvspTroop": "Troop 4",
+      "rpdc": "Region V",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Ohio / Little Kanawha",
+      "legacyFloodWorks": 5
+    },
+    {
+      "county": "Wyoming",
+      "seat": "Pineville",
+      "wvemdArea": "Area 6 (Southern)",
+      "wvdohDistrict": "District 10",
+      "wvspTroop": "Troop 6",
+      "rpdc": "Region I",
+      "usaceDistrict": "Huntington",
+      "riverBasin": "Guyandotte River",
+      "legacyFloodWorks": 3
+    },
+    {
+      "county": "Anonymized WV Valley Town",
+      "seat": "Riverbend",
+      "wvemdArea": "Area X (Multi-County Training)",
+      "wvdohDistrict": "District X (Regional)",
+      "wvspTroop": "Troop X",
+      "rpdc": "Appalachian Regional Council",
+      "usaceDistrict": "Huntington / Pittsburgh",
+      "riverBasin": "Appalachian Valley River",
+      "legacyFloodWorks": 4
+    }
+  ],
+  "verifierReference": {
+    "erg2024": [
+      {
+        "un": "UN1005",
+        "material": "Anhydrous Ammonia",
+        "guide": "125",
+        "smallIsolationFt": 100,
+        "smallDownwindDayMi": 0.1,
+        "smallDownwindNightMi": 0.2,
+        "largeIsolationFt": 500,
+        "largeDownwindDayMi": 0.5,
+        "largeDownwindNightMi": 1.3,
+        "notes": "Corrosive & toxic inhalation hazard (TIH); water fog/spray on vapor cloud, do NOT apply water directly into liquid spill."
+      },
+      {
+        "un": "UN1017",
+        "material": "Chlorine",
+        "guide": "124",
+        "smallIsolationFt": 200,
+        "smallDownwindDayMi": 0.3,
+        "smallDownwindNightMi": 1.1,
+        "largeIsolationFt": 1000,
+        "largeDownwindDayMi": 1.9,
+        "largeDownwindNightMi": 4.9,
+        "notes": "Heavy greenish-yellow TIH gas; settles in low river valleys; shelter-in-place with HVAC shutoff when evacuation would cross plume."
+      },
+      {
+        "un": "UN1170",
+        "material": "Ethanol / Ethyl Alcohol Solutions",
+        "guide": "127",
+        "smallIsolationFt": 150,
+        "smallDownwindDayMi": 0,
+        "smallDownwindNightMi": 0,
+        "largeIsolationFt": 1000,
+        "largeDownwindDayMi": 0.5,
+        "largeDownwindNightMi": 0.5,
+        "notes": "Polar solvent — requires Alcohol-Resistant Aqueous Film-Forming Foam (AR-AFFF); tank car in fire: isolate 0.5 mile (800 m) in all directions."
+      },
+      {
+        "un": "UN1075",
+        "material": "Liquefied Petroleum Gas (Propane)",
+        "guide": "115",
+        "smallIsolationFt": 330,
+        "smallDownwindDayMi": 0,
+        "smallDownwindNightMi": 0,
+        "largeIsolationFt": 2640,
+        "largeDownwindDayMi": 0.5,
+        "largeDownwindNightMi": 0.5,
+        "notes": "BLEVE hazard if tank car/vessel exposed to flame; isolate 1 mile (1600 m) in all directions if tank is involved in fire."
+      }
+    ],
+    "wvStatutesAndDoctrine": [
+      {
+        "cite": "W. Va. Code § 15-5-6",
+        "topic": "Governor's State of Emergency & Preparedness Proclamation",
+        "rule": "Authorizes Governor (or Legislature by concurrent resolution) to proclaim a state of emergency; activates emergency powers and state EOP."
+      },
+      {
+        "cite": "W. Va. Code § 15-5-8 & § 15-5-11",
+        "topic": "Local Emergency Organization & Mutual Aid Arrangements",
+        "rule": "Authorizes county/municipal emergency services directors and reciprocal intrastate mutual aid across West Virginia political subdivisions."
+      },
+      {
+        "cite": "W. Va. Code § 15-5-22",
+        "topic": "Emergency Management Assistance Compact (EMAC)",
+        "rule": "Governs interstate mutual aid requests, credential reciprocity, tort liability, and reimbursement through WVEMD."
+      },
+      {
+        "cite": "WV HB 5638 / WVOT Cyber Incident Protocol",
+        "topic": "Public Sector Cybersecurity & Ransomware Reporting",
+        "rule": "Requires immediate isolation of compromised OT/IT segments, preservation of forensic logs, and coordination with WVOT CISO / WV Fusion Center—prohibits unapproved ransom payments."
+      },
+      {
+        "cite": "FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10",
+        "topic": "HSEEP Exercise & 90-Day AAR/IP Mandate",
+        "rule": "EMPG recipients must maintain a progressive HSEEP exercise program and submit a completed After-Action Report / Improvement Plan (AAR/IP) within 90 calendar days."
+      },
+      {
+        "cite": "2 CFR §§ 200.318–200.327 & FEMA PAPPG",
+        "topic": "Emergency Debris Time-and-Materials (T&M) Ceiling",
+        "rule": "T&M contracts are restricted to a reasonable initial emergency window (typically <= 70 hours under FEMA PA guidance), require a strict dollar ceiling, and require independent load/scale/monitor verification."
+      }
+    ]
+  },
+  "femaCapabilitiesCatalog": [
+    {
+      "id": "planning",
+      "name": "Planning",
+      "missionArea": "All Mission Areas"
+    },
+    {
+      "id": "public-information-warning",
+      "name": "Public Information and Warning",
+      "missionArea": "All Mission Areas"
+    },
+    {
+      "id": "operational-coordination",
+      "name": "Operational Coordination",
+      "missionArea": "All Mission Areas"
+    },
+    {
+      "id": "intelligence-info-sharing",
+      "name": "Intelligence and Information Sharing",
+      "missionArea": "Prevention & Protection"
+    },
+    {
+      "id": "interdiction-disruption",
+      "name": "Interdiction and Disruption",
+      "missionArea": "Prevention & Protection"
+    },
+    {
+      "id": "screening-search-detection",
+      "name": "Screening, Search, and Detection",
+      "missionArea": "Prevention & Protection"
+    },
+    {
+      "id": "forensics-attribution",
+      "name": "Forensics and Attribution",
+      "missionArea": "Prevention"
+    },
+    {
+      "id": "access-control-identity",
+      "name": "Access Control and Identity Verification",
+      "missionArea": "Protection"
+    },
+    {
+      "id": "cybersecurity",
+      "name": "Cybersecurity",
+      "missionArea": "Protection"
+    },
+    {
+      "id": "physical-protective-measures",
+      "name": "Physical Protective Measures",
+      "missionArea": "Protection"
+    },
+    {
+      "id": "risk-management-protection",
+      "name": "Risk Management for Protection Programs and Activities",
+      "missionArea": "Protection"
+    },
+    {
+      "id": "supply-chain-integrity",
+      "name": "Supply Chain Integrity and Security",
+      "missionArea": "Protection"
+    },
+    {
+      "id": "community-resilience",
+      "name": "Community Resilience",
+      "missionArea": "Mitigation"
+    },
+    {
+      "id": "long-term-vulnerability-reduction",
+      "name": "Long-Term Vulnerability Reduction",
+      "missionArea": "Mitigation"
+    },
+    {
+      "id": "risk-disaster-resilience-assessment",
+      "name": "Risk and Disaster Resilience Assessment",
+      "missionArea": "Mitigation"
+    },
+    {
+      "id": "threats-hazards-identification",
+      "name": "Threats and Hazards Identification",
+      "missionArea": "Mitigation"
+    },
+    {
+      "id": "critical-transportation",
+      "name": "Critical Transportation",
+      "missionArea": "Response"
+    },
+    {
+      "id": "environmental-response-health-safety",
+      "name": "Environmental Response/Health and Safety",
+      "missionArea": "Response"
+    },
+    {
+      "id": "fatality-management",
+      "name": "Fatality Management Services",
+      "missionArea": "Response"
+    },
+    {
+      "id": "fire-management-suppression",
+      "name": "Fire Management and Suppression",
+      "missionArea": "Response"
+    },
+    {
+      "id": "logistics-supply-chain",
+      "name": "Logistics and Supply Chain Management",
+      "missionArea": "Response"
+    },
+    {
+      "id": "mass-care-services",
+      "name": "Mass Care Services",
+      "missionArea": "Response"
+    },
+    {
+      "id": "mass-search-rescue",
+      "name": "Mass Search and Rescue Operations",
+      "missionArea": "Response"
+    },
+    {
+      "id": "on-scene-security-protection",
+      "name": "On-Scene Security, Protection, and Law Enforcement",
+      "missionArea": "Response"
+    },
+    {
+      "id": "operational-communications",
+      "name": "Operational Communications",
+      "missionArea": "Response"
+    },
+    {
+      "id": "public-health-healthcare-ems",
+      "name": "Public Health, Healthcare, and Emergency Medical Services",
+      "missionArea": "Response"
+    },
+    {
+      "id": "situational-assessment",
+      "name": "Situational Assessment",
+      "missionArea": "Response"
+    },
+    {
+      "id": "infrastructure-systems",
+      "name": "Infrastructure Systems",
+      "missionArea": "Response & Recovery"
+    },
+    {
+      "id": "economic-recovery",
+      "name": "Economic Recovery",
+      "missionArea": "Recovery"
+    },
+    {
+      "id": "health-social-services",
+      "name": "Health and Social Services",
+      "missionArea": "Recovery"
+    },
+    {
+      "id": "housing",
+      "name": "Housing",
+      "missionArea": "Recovery"
+    },
+    {
+      "id": "natural-cultural-resources",
+      "name": "Natural and Cultural Resources",
+      "missionArea": "Recovery"
+    }
+  ],
+  "briefing": {
+    "executiveSummary": "At 05:42 EST, a severe Appalachian ice storm snaps a 34.5 kV feeder serving the {SEAT} riverfront industrial corridor in {COUNTY} County ({WVEMD_AREA}). When backup diesel power transfers at Valley Cold Storage, hydraulic shock fractures a corroded relief manifold on a 9,000 lb Anhydrous Ammonia (UN1005) receiver, releasing a dense white toxic inhalation hazard (TIH) cloud hugging the {RIVER_BASIN} terrace under a 24°F temperature inversion. Sixteen minutes later (05:58 EST), operators at the {SEAT} Municipal Water Treatment Plant discover their SCADA HMI locked by ransomware after unauthorized commands throttled High-Service Pumps 2 and 3—dropping distribution main pressure toward 18 psi just as Fire/Hazmat crews, the Regional Medical Center, and an 84-bed nursing home 0.38 miles downwind require coordinated protective action.",
+    "keyTimelines": [
+      {
+        "time": "05:42 EST",
+        "event": "0.65 in. radial ice downs primary feeder in {SEAT}; Valley Cold Storage receiver manifold fractures (UN1005, 9,000 lb)."
+      },
+      {
+        "time": "05:50 EST",
+        "event": "911 receives pungent ammonia odor reports along Riverview Terrace; icy secondary grades slow mutual-aid response."
+      },
+      {
+        "time": "05:58 EST",
+        "event": "Municipal Water SCADA HMI displays ransom note; High-Service Pumps 2 & 3 throttled; main pressure drops from 62 psi toward 19 psi."
+      },
+      {
+        "time": "06:00 EST",
+        "event": "{COUNTY} County EOC activates ({WVEMD_AREA}); Exercise Clock starts at T+00m across 6 agency seats."
+      }
+    ],
+    "objectives": [
+      {
+        "code": "OBJ-1",
+        "capability": "Environmental Response/Health and Safety",
+        "text": "Execute ERG 2024 Guide 125 protective actions for a 9,000 lb UN1005 release (500 ft isolation, 0.5 mi daytime shelter-in-place with HVAC shutoff, vapor-only fog knockdown) within 10 minutes of arrival."
+      },
+      {
+        "code": "OBJ-2",
+        "capability": "Cybersecurity & Infrastructure Systems",
+        "text": "Isolate compromised water SCADA OT/IT segments, restore manual pump pressure above 20 psi, preserve forensic artifacts, and report to WVOT CISO / WV Fusion Center per WV HB 5638."
+      },
+      {
+        "code": "OBJ-3",
+        "capability": "Public Information and Warning",
+        "text": "Counter viral evacuation misinformation on iced valley bridges with a verified <= 120-word IPAWS/WEA warning meeting all 7 HSEEP Public Warning Essentials."
+      },
+      {
+        "code": "OBJ-4",
+        "capability": "Operational Coordination",
+        "text": "Align county mutual aid (W. Va. Code § 15-5-8 & § 15-5-11), Governor State of Emergency escalation (§ 15-5-6), FEMA-compliant <= 70-hour T&M debris caps (2 CFR §§ 200.318–200.327), and 90-day EMPG AAR/IP tracking."
+      }
+    ],
+    "groundRules": [
+      "HSEEP No-Fault Environment: Evaluate systems, plans, and cross-agency handoffs—not individual personnel.",
+      "Fog-of-War Discipline: Switch your Role Pill above to view seat-specific intelligence; share critical dependencies verbally across agencies.",
+      "Statutory & Technical Grounding: Anchor tactical calls in ERG 2024 Guide 125, W. Va. Code Chapter 15 Article 5, WV HB 5638, and 2 CFR Part 200."
+    ]
+  },
+  "roles": [
+    {
+      "id": "facilitator",
+      "shortLabel": "Master Facilitator",
+      "title": "Master Facilitator & White Cell Evaluator",
+      "badge": "ALL-SOURCE TRUTH",
+      "summary": "Full visibility across hazmat dispersion, water SCADA pressure dependencies, hospital walk-in surge, and statutory compliance gates.",
+      "knownFacts": [
+        "HIDDEN INTERDEPENDENCY #1: Fire Engine 11 hydrant supply in the industrial corridor is fed by the exact municipal water zone losing pressure from the SCADA cyber intrusion.",
+        "HIDDEN INTERDEPENDENCY #2: Valley Nursing Home (84 oxygen-dependent residents) sits at 0.38 mi ENE—inside the 0.5 mi UN1005 plume—where 0.65 in. road ice makes evacuation into open air far deadlier than Shelter-in-Place + HVAC shutoff.",
+        "HIDDEN INTERDEPENDENCY #3: 14 self-evacuated motorists are walking straight into the {SEAT} Regional Medical Center ED wearing ammonia-saturated winter coats.",
+        "PROCUREMENT & STATUTORY TRAP: At T+48m, an ice-debris contractor will push an uncapped 30-day Time-and-Materials contract; FEMA PA caps emergency T&M at <= 70 hours with a hard dollar ceiling and independent load monitoring."
+      ],
+      "blindSpots": [
+        "Facilitator note: Watch whether Water SCADA notifies Fire IC and Hospital BEFORE hydrant and decon pressure drops below 20 psi."
+      ],
+      "priorityQuestions": [
+        "Which seat first identifies the shared dependency between SCADA pump throttling, Hazmat decon water, and Hospital chillers?",
+        "Does the PIO explicitly refute the false Valley Bridge evacuation rumor inside 120 words?",
+        "Does County Commission / EOC enforce the <= 70-hour T&M ceiling and route state requests through WVEMD?"
+      ],
+      "statutoryAnchors": "FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10 · ERG 2024 Guide 125 · W. Va. Code § 15-5-6 · WV HB 5638"
+    },
+    {
+      "id": "eoc-wvemd",
+      "shortLabel": "County EOC & WVEMD",
+      "title": "{COUNTY} County EOC Director & WVEMD {WVEMD_AREA} Liaison",
+      "badge": "EOC COMMAND",
+      "summary": "Coordinates multi-agency resource priorities, intrastate mutual aid, Governor proclamation requests, and FEMA grant/procurement guardrails.",
+      "knownFacts": [
+        "{COUNTY} County EOC is activated at Level 1 (Full Multi-Agency) in {SEAT}, linked with WVEMD {WVEMD_AREA} and State EOC Watch.",
+        "Secondary ridge roads have 0.65 in. ice accumulation and downed limbs; {WVDOH_DIST} reports primary salt convoys need priority corridor tasking.",
+        "Neighboring WV counties within {RPDC} have 1 Hazmat decon unit and 3 potable water tankers available under W. Va. Code § 15-5-8 & § 15-5-11.",
+        "{COUNTY} County maintains {LEGACY_FLOOD_WORKS} legacy flood-control / drainage structures along {RIVER_BASIN} where ice-melt and ammonia runoff require environmental awareness."
+      ],
+      "blindSpots": [
+        "You do NOT yet have confirmed SCADA root cause from the Water Board or exact walk-in patient counts from the Hospital ED unless those seats brief you."
+      ],
+      "priorityQuestions": [
+        "When do we elevate a local emergency declaration to request a Governor State of Emergency under W. Va. Code § 15-5-6?",
+        "How do we sequence {WVDOH_DIST} de-icing between the upwind Hazmat staging corridor and the Hospital ambulance apron?",
+        "What contract ceiling and monitoring controls must be attached before signing any emergency debris clearance contract?"
+      ],
+      "statutoryAnchors": "W. Va. Code § 15-5-6, § 15-5-8, § 15-5-11, § 15-5-22 (EMAC) · 2 CFR §§ 200.318–200.327"
+    },
+    {
+      "id": "fire-hazmat",
+      "shortLabel": "Fire & Hazmat IC",
+      "title": "On-Scene Fire & Regional Hazmat Incident Commander",
+      "badge": "INCIDENT COMMAND",
+      "summary": "Commands hot-zone isolation, vapor suppression, Level A entry, technical decontamination, and downwind protective action zones.",
+      "knownFacts": [
+        "Valley Cold Storage facility manifest confirms 9,000 lb Anhydrous Ammonia (UN1005) receiver manifold fracture — classified as a LARGE SPILL under ERG 2024 Guide 125.",
+        "ERG 2024 Guide 125 mandates 500 ft initial isolation in all directions and 0.5 mi daytime (1.3 mi nighttime) downwind protective action ENE (065°).",
+        "Engine 11 crew wears structural turnout gear + SCBA (NOT vapor-tight against corrosive ammonia skin absorption; Level A suits on Regional Hazmat Task Force 3 are ETA 22m).",
+        "Engine 11 pump operator just reported industrial yard hydrant static pressure sagging from 62 psi down to 24 psi."
+      ],
+      "blindSpots": [
+        "You do NOT know WHY hydrant pressure is dropping (water main break vs. cyber/pump issue) until Water Utility / WVOT shares intelligence."
+      ],
+      "priorityQuestions": [
+        "How do we enforce water fog strictly on downwind vapor while prohibiting straight streams onto the pooled liquid UN1005?",
+        "Should Valley Nursing Home (0.38 mi ENE) evacuate onto icy roads or Shelter-in-Place with HVAC shutoff?",
+        "What backup water supply do we stage if municipal hydrants drop below 20 psi?"
+      ],
+      "statutoryAnchors": "ERG 2024 Guide 125 (UN1005) · OSHA 29 CFR 1910.120 (HAZWOPER Level A)"
+    },
+    {
+      "id": "wvot-scada",
+      "shortLabel": "WVOT Cyber & Water SCADA",
+      "title": "WVOT Cyber Incident Response & Municipal Water SCADA Lead",
+      "badge": "CYBER / OT OPS",
+      "summary": "Contains ransomware intrusion on water treatment OT/IT systems, restores manual pumping pressure, and preserves forensic evidence.",
+      "knownFacts": [
+        "At 05:58 EST, the SCADA engineering workstation displayed a ransom note demanding 0.8 BTC; remote RDP session originated via a vendor VPN jump host.",
+        "Unauthorized Modbus commands throttled High-Service Pumps 2 & 3 to 15%, dropping clearwell discharge pressure to 19 psi (regulatory Boil Water threshold is < 20 psi).",
+        "Plant electricians confirm High-Service Pumps 2 & 3 have physical HAND-OFF-AUTO switches allowing local manual VFD operation once disconnected from the SCADA PLC network.",
+        "WV HB 5638 & WVOT Cyber Incident Protocol mandate immediate network isolation, forensic log preservation, CISO/WV Fusion Center notification, and zero unapproved ransom payment."
+      ],
+      "blindSpots": [
+        "You do NOT initially know that Fire/Hazmat is actively drawing water for UN1005 vapor fogging and winter mass decon unless coordinated through EOC."
+      ],
+      "priorityQuestions": [
+        "How fast can we air-gap the OT PLC cabinet and switch pumps to manual local control without wiping volatile forensic memory?",
+        "Which zones dropped below 20 psi requiring an immediate precautionary Boil Water Advisory via DoHS / PIO?",
+        "Have WVOT CISO and the WV Fusion Center been formally notified under WV HB 5638?"
+      ],
+      "statutoryAnchors": "WV HB 5638 · WVOT Cyber Incident Protocol · WV Bureau for Public Health <20 psi Rule"
+    },
+    {
+      "id": "hospital-dohs",
+      "shortLabel": "Hospital & DoHS Health",
+      "title": "{SEAT} Regional Medical Center EM & WV DoHS Public Health",
+      "badge": "MEDICAL / PUBLIC HEALTH",
+      "summary": "Protects hospital clinical environment from secondary off-gassing, manages TIH airway surge, oversees cold-weather decon, and tracks vulnerable facilities.",
+      "knownFacts": [
+        "14 walk-in patients just arrived at the ED ambulance vestibule in private cars wearing heavy winter coats smelling strongly of ammonia (zero field decon performed).",
+        "Warm indoor hospital air rapidly volatilizes ammonia trapped in winter wool/synthetics—if admitted straight into the ED, secondary off-gassing can incapacitate staff and force ED closure.",
+        "Valley Nursing Home (0.38 mi ENE of leak) houses 84 residents (19 on continuous oxygen); transferring frail seniors onto iced roads through the plume carries high mortality risk.",
+        "Hospital domestic water pressure gauge just triggered a low-pressure alarm; internal emergency water tank holds ~6 hours at surge consumption."
+      ],
+      "blindSpots": [
+        "You do NOT know how long municipal water pressure will remain impaired or whether more walk-in casualties are inbound from Valley Bridge."
+      ],
+      "priorityQuestions": [
+        "How do we lock down ED doors/HVAC and stand up heated exterior winter decon (24°F) so patients avoid both secondary off-gassing and hypothermia?",
+        "How do we verify Valley Nursing Home maintenance has shut off fresh-air HVAC intakes and sealed dampers?",
+        "Do we need the Potable Water Tanker Task Force dispatched to the hospital manifold now?"
+      ],
+      "statutoryAnchors": "ERG 2024 Guide 125 First Aid/Decon · EMTALA (42 U.S.C. § 1395dd) · WV DoHS Surge Annex"
+    },
+    {
+      "id": "pio-commission",
+      "shortLabel": "PIO & County Commission",
+      "title": "Joint Information Center (PIO) & {COUNTY} County Commission",
+      "badge": "PUBLIC INFO & GOVERNANCE",
+      "summary": "Issues verified <=120-word emergency warnings, counters social media rumors, authorizes local declarations, and enforces fiscal guardrails.",
+      "knownFacts": [
+        "A viral livestream (\"Mountain State 8 News / Valley Scanner\") is falsely telling residents to jump in their cars and evacuate east across the iced Valley Bridge—straight into the 0.5 mi plume!",
+        "Residents are flooding 911 lines asking if \"hackers poisoned the city water\" because faucets are sputtering.",
+        "IPAWS/WEA psychological research and HSEEP warning standards require hitting all 7 Public Warning Essentials in <= 120 plain-language words.",
+        "A regional contractor is texting Commissioners offering to start clearing ice debris in 30 minutes if the County signs an uncapped 30-day Time-and-Materials (T&M) agreement."
+      ],
+      "blindSpots": [
+        "Never release protective distances or water safety instructions until verified with Fire IC and Water Utility / DoHS Health!"
+      ],
+      "priorityQuestions": [
+        "Does our <= 120-word public alert clearly instruct Shelter-in-Place + HVAC shutoff + Boil Water while directly refuting the false Valley Bridge evacuation rumor?",
+        "How do we coordinate with {WVSP_TROOP} to ensure roadblock messaging matches the IPAWS alert?",
+        "How do we structure the local emergency declaration and cap emergency T&M contracts at <= 70 hours?"
+      ],
+      "statutoryAnchors": "HSEEP Public Information & Warning · W. Va. Code § 15-5-6 & § 15-5-8 · 2 CFR § 200.318(j)"
+    }
+  ],
+  "resources": [
+    {
+      "id": "res-eng11",
+      "unitName": "Engine 11 (First-Due Suppression)",
+      "agency": "{SEAT} Fire Department",
+      "category": "Fire & Hazmat",
+      "etaMin": 4,
+      "capability": "Initial 500 ft hot-zone isolation & upwind/downwind vapor fog curtain",
+      "defaultStatus": "Dispatched",
+      "assignedZone": "Upwind Perimeter (Grid B3)"
+    },
+    {
+      "id": "res-hm3",
+      "unitName": "Regional Hazmat Task Force 3 (Level A)",
+      "agency": "WV Regional Response Team",
+      "category": "Fire & Hazmat",
+      "etaMin": 22,
+      "capability": "Level A vapor-tight entry, NH3 PID telemetry & manifold isolation valve shutoff",
+      "defaultStatus": "Staged",
+      "assignedZone": "Cold Storage Hot Zone (Grid B3)"
+    },
+    {
+      "id": "res-lad4",
+      "unitName": "Ladder 4 (Elevated Fog Monitor)",
+      "agency": "{SEAT} Fire Department",
+      "category": "Fire & Hazmat",
+      "etaMin": 9,
+      "capability": "High-volume downwind water fog knockdown (strictly away from liquid pool)",
+      "defaultStatus": "Available",
+      "assignedZone": "Crosswind Corridor (Grid B2)"
+    },
+    {
+      "id": "res-decon2",
+      "unitName": "Mass Decon Trailer 2 (Heated)",
+      "agency": "{COUNTY} County Fire Association",
+      "category": "Fire & Hazmat",
+      "etaMin": 18,
+      "capability": "24°F heated dual-corridor shelter tent & warm tepid water washdown",
+      "defaultStatus": "Available",
+      "assignedZone": "Hospital / Upwind Decon (Grid B1)"
+    },
+    {
+      "id": "res-med7",
+      "unitName": "Medic 7 & Medic 12 (ALS Airway Surge)",
+      "agency": "{COUNTY} County EMS",
+      "category": "EMS & Medical",
+      "etaMin": 6,
+      "capability": "TIH respiratory distress, humidified O2, bronchodilators & ocular irrigation",
+      "defaultStatus": "Dispatched",
+      "assignedZone": "Upwind Triage (Grid A3)"
+    },
+    {
+      "id": "res-medstrike",
+      "unitName": "Regional Medical Strike Team",
+      "agency": "WV DoHS Healthcare Coalition",
+      "category": "EMS & Medical",
+      "etaMin": 28,
+      "capability": "Hospital ED exterior walk-in decon triage & nursing home clinical check",
+      "defaultStatus": "Available",
+      "assignedZone": "{SEAT} Regional Medical Ctr (Grid B1)"
+    },
+    {
+      "id": "res-tankers",
+      "unitName": "Potable Water Tanker Task Force (3x 4,000 gal)",
+      "agency": "Mutual Aid VFD / WVNG Liaison",
+      "category": "EMS & Medical",
+      "etaMin": 35,
+      "capability": "Emergency potable supply for Hospital manifold & heated decon showers",
+      "defaultStatus": "Available",
+      "assignedZone": "Hospital & Decon Manifold (Grid B1)"
+    },
+    {
+      "id": "res-wvsp",
+      "unitName": "WV State Police {WVSP_TROOP} (4 Cruisers)",
+      "agency": "West Virginia State Police",
+      "category": "Law Enforcement",
+      "etaMin": 8,
+      "capability": "Close Valley Bridge & Route 60 approaches to stop vehicles entering 0.5 mi plume",
+      "defaultStatus": "Staged",
+      "assignedZone": "Valley Bridge Checkpoint (Grid C3)"
+    },
+    {
+      "id": "res-sheriff",
+      "unitName": "{COUNTY} County Sheriff Perimeter Detail",
+      "agency": "{COUNTY} County Sheriff",
+      "category": "Law Enforcement",
+      "etaMin": 7,
+      "capability": "500 ft isolation perimeter enforcement, ICP security & PA system shelter alerts",
+      "defaultStatus": "Dispatched",
+      "assignedZone": "Outer Perimeter & ICP (Grid A3)"
+    },
+    {
+      "id": "res-uas",
+      "unitName": "UAS Thermal & Plume Recon Unit",
+      "agency": "{COUNTY} County Emergency Mgmt",
+      "category": "Law Enforcement",
+      "etaMin": 14,
+      "capability": "Aerial inversion plume tracking & iced bridge stranded-vehicle check",
+      "defaultStatus": "Available",
+      "assignedZone": "Upwind Launch Pad (Grid A3)"
+    },
+    {
+      "id": "res-wvot-cirt",
+      "unitName": "WVOT Cyber Incident Response Team (CIRT)",
+      "agency": "WV Office of Technology",
+      "category": "WVOT Cyber & Water",
+      "etaMin": 15,
+      "capability": "WV HB 5638 OT/IT network containment, volatile forensic capture & CISO reporting",
+      "defaultStatus": "Available",
+      "assignedZone": "Municipal Water Plant (Grid C4)"
+    },
+    {
+      "id": "res-fusion",
+      "unitName": "WV Fusion Center Cyber Intelligence Desk",
+      "agency": "WV Dept. of Homeland Security",
+      "category": "WVOT Cyber & Water",
+      "etaMin": 10,
+      "capability": "Ransomware IOC correlation, CISA Water ISAC coordination & law enforcement link",
+      "defaultStatus": "Available",
+      "assignedZone": "Remote / EOC Cyber Bridge"
+    },
+    {
+      "id": "res-scada-crew",
+      "unitName": "Water Utility Manual VFD Override Crew",
+      "agency": "{SEAT} Municipal Water Board",
+      "category": "WVOT Cyber & Water",
+      "etaMin": 11,
+      "capability": "Air-gap compromised PLC, switch High-Service Pumps 2 & 3 to manual >45 psi & sample Cl2",
+      "defaultStatus": "Staged",
+      "assignedZone": "Municipal Water Plant (Grid C4)"
+    },
+    {
+      "id": "res-wvdoh",
+      "unitName": "WVDOH {WVDOH_DIST} Salt & Heavy Grader Convoy",
+      "agency": "WV Division of Highways",
+      "category": "WVDOH & EOC Logistics",
+      "etaMin": 16,
+      "capability": "Priority de-icing of upwind staging corridor, water plant access & ED apron",
+      "defaultStatus": "Available",
+      "assignedZone": "Upwind Access & Hospital Apron"
+    },
+    {
+      "id": "res-wvemd",
+      "unitName": "WVEMD {WVEMD_AREA} Regional Coordinator",
+      "agency": "WV Emergency Management Division",
+      "category": "WVDOH & EOC Logistics",
+      "etaMin": 12,
+      "capability": "State EOC resource tasking, W. Va. Code § 15-5-6 proclamation & § 15-5-22 EMAC prep",
+      "defaultStatus": "Dispatched",
+      "assignedZone": "{COUNTY} County EOC"
+    },
+    {
+      "id": "res-jic",
+      "unitName": "Joint Information Center (IPAWS / WEA Desk)",
+      "agency": "{COUNTY} County PIO & 911",
+      "category": "WVDOH & EOC Logistics",
+      "etaMin": 2,
+      "capability": "<=120-word Wireless Emergency Alert, EAS broadcast & rumor-control press bulletin",
+      "defaultStatus": "Staged",
+      "assignedZone": "{COUNTY} County EOC / JIC"
+    }
+  ],
+  "tacticalMap": {
+    "gridCols": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "gridRows": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "windBadge": "WIND: WSW 245° @ 9–14 mph · PLUME -> ENE 065° · 24°F INVERSION",
+    "facilities": [
+      {
+        "id": "fac-source",
+        "code": "NH3",
+        "name": "Valley Cold Storage (UN1005 Source)",
+        "sheet": "Sheet 3 (SW)",
+        "grid": "B3",
+        "x": 255,
+        "y": 255,
+        "type": "hazard",
+        "distanceMi": "0.00 mi (Release Origin)",
+        "note": "9,000 lb Anhydrous Ammonia manifold leak. Isolate 500 ft in all directions; NEVER apply straight water stream into liquid pool (ERG 2024 Guide 125)."
+      },
+      {
+        "id": "fac-icp",
+        "code": "ICP",
+        "name": "Unified Incident Command Post",
+        "sheet": "Sheet 3 (SW)",
+        "grid": "A3",
+        "x": 112,
+        "y": 278,
+        "type": "command",
+        "distanceMi": "0.32 mi WSW (Upwind)",
+        "note": "Upwind clear of 500 ft Hot Zone and valley drainage; primary link to {COUNTY} County EOC and {WVSP_TROOP}."
+      },
+      {
+        "id": "fac-staging",
+        "code": "STG",
+        "name": "Upwind Staging & Heated Decon",
+        "sheet": "Sheet 3 (SW)",
+        "grid": "A4",
+        "x": 135,
+        "y": 342,
+        "type": "staging",
+        "distanceMi": "0.41 mi SW (Upwind)",
+        "note": "Priority de-icing target for {WVDOH_DIST}; staging for Regional Hazmat Task Force 3 and Mutual Aid Tankers."
+      },
+      {
+        "id": "fac-nursing",
+        "code": "SNF",
+        "name": "Valley Nursing Home (84 Beds)",
+        "sheet": "Sheet 2 (NE)",
+        "grid": "C2",
+        "x": 432,
+        "y": 186,
+        "type": "vulnerable",
+        "distanceMi": "0.38 mi ENE (IN 0.5 MI PLUME)",
+        "note": "84 frail residents (19 on O2) inside daytime 0.5 mi downwind protective zone. ORDER SHELTER-IN-PLACE + IMMEDIATE HVAC SHUTOFF."
+      },
+      {
+        "id": "fac-bridge",
+        "code": "BRG",
+        "name": "Valley Bridge Checkpoint ({WVSP_TROOP})",
+        "sheet": "Sheet 2 (NE)",
+        "grid": "C3",
+        "x": 392,
+        "y": 235,
+        "type": "checkpoint",
+        "distanceMi": "0.29 mi ENE (IN PLUME)",
+        "note": "Iced river span directly beneath UN1005 vapor plume. Close approaches immediately and refute viral evacuation rumor!"
+      },
+      {
+        "id": "fac-water",
+        "code": "WTP",
+        "name": "{SEAT} Municipal Water Plant (SCADA)",
+        "sheet": "Sheet 4 (SE)",
+        "grid": "C4",
+        "x": 448,
+        "y": 332,
+        "type": "utility",
+        "distanceMi": "0.44 mi ESE (Crosswind)",
+        "note": "SCADA HMI locked by ransomware; High-Service Pumps throttled (<20 psi). Air-gap OT PLC and restore manual local pump control per WV HB 5638."
+      },
+      {
+        "id": "fac-hospital",
+        "code": "HOSP",
+        "name": "{SEAT} Regional Medical Center (ED)",
+        "sheet": "Sheet 1 (NW)",
+        "grid": "B1",
+        "x": 228,
+        "y": 88,
+        "type": "medical",
+        "distanceMi": "0.62 mi NNW (Cross-Upwind)",
+        "note": "14 un-decontaminated walk-in patients at ED vestibule. Lock down doors/HVAC, establish heated exterior decon, and connect emergency water tanker."
+      }
+    ]
+  },
+  "injects": [
+    {
+      "id": "inject-1",
+      "clock": "T+06m",
+      "domain": "HAZMAT / ERG 2024",
+      "targetSeat": "Fire & Hazmat IC + County EOC",
+      "title": "Engine 11 On-Scene Size-Up & ERG 2024 UN1005 Protective Action",
+      "prompt": "Engine 11 arrives upwind of Valley Cold Storage in {SEAT}. Facility engineers confirm a fractured manifold on a 9,000 lb Anhydrous Ammonia (UN1005) receiver venting a low, dense white cloud ENE (065°) along {RIVER_BASIN} toward the iced Valley Bridge (0.29 mi) and Valley Nursing Home (0.38 mi, 84 residents). Crew wears structural bunker gear + SCBA; Regional Hazmat Level A entry is 22 minutes out. What immediate tactical order does Unified Command issue?",
+      "options": [
+        {
+          "id": "inj1-a",
+          "label": "Option A",
+          "grade": "RECOMMENDED",
+          "summary": "Isolate 500 ft in all directions; order 0.5 mi ENE Shelter-in-Place + HVAC shutoff; apply downwind water fog on vapor cloud ONLY (never on liquid pool); hold Level A entry.",
+          "rationale": "Matches ERG 2024 Guide 125 for a Large Spill of UN1005 (500 ft initial isolation; 0.5 mi daytime downwind protection). Shelter-in-place with HVAC shutoff protects 84 nursing home residents without exposing them on iced roads, and fogging vapor (not pooled liquid ammonia) prevents violent exothermic boil-off and structural-gear skin burns.",
+          "citation": "ERG 2024 Guide 125 (UN1005 Large Spill: 500 ft Isolation / 0.5 mi Day Downwind; Water Fog on Vapor Only)",
+          "cascadeAlert": null
+        },
+        {
+          "id": "inj1-b",
+          "label": "Option B",
+          "grade": "ACCEPTABLE WITH LIMITS",
+          "summary": "Set a 100 ft small-spill perimeter and begin loading ambulatory nursing home residents onto transit buses while Engine 11 stands by.",
+          "rationale": "Misapplies the ERG 2024 Small Spill row (100 ft / 0.1 mi) to a 9,000 lb Large Spill (500 ft / 0.5 mi) and exposes frail seniors to outdoor plume concentrations during slow icy boarding.",
+          "citation": "ERG 2024 Guide 125 (Small vs. Large Spill Table Mismatch — 9,000 lb requires 500 ft / 0.5 mi)",
+          "cascadeAlert": "UNDER-SIZED 100 FT PERIMETER & OUTDOOR BUS EXPOSURE (Inject 1 — Option B): Low inversion held UN1005 vapor across the 150–450 ft zone and nursing home loading ramp, generating 11 additional acute inhalation patients and straining EMS!"
+        },
+        {
+          "id": "inj1-c",
+          "label": "Option C",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Advance Engine 11 in structural bunker gear + SCBA to flow a straight 500 gpm master stream directly into the liquid ammonia manifold pit to dilute the leak.",
+          "rationale": "Direct water into pooled liquid anhydrous ammonia triggers an exothermic reaction that violently accelerates toxic vapor generation, rapidly drains failing water mains, and exposes firefighters in non-vapor-tight structural gear to severe chemical skin burns.",
+          "citation": "ERG 2024 Guide 125 CRITICAL WARNING (\"Do NOT direct water at spill or source of leak\"; Level A required)",
+          "cascadeAlert": "VIOLENT AMMONIA VAPOR SURGE & FIREFIGHTER BURNS (Inject 1 — Option C): Direct water stream into liquid UN1005 boiled off a concentrated plume surge across the nursing home, injured two Engine 11 personnel, and accelerated municipal water pressure collapse!"
+        },
+        {
+          "id": "inj1-d",
+          "label": "Option D",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Order an immediate general evacuation of all valley residents and facilities eastward across the Valley Bridge.",
+          "rationale": "Directs civilian vehicles onto 0.65 in. of ice straight through the 0.5 mi ENE toxic inhalation plume with car defrosters pulling outside air into cabins.",
+          "citation": "ERG 2024 Guide 125 Protective Action Decision Factors (In-Place Protection vs. Evacuation Through Plume)",
+          "cascadeAlert": "ICY VALLEY BRIDGE GRIDLOCK INSIDE PLUME (Inject 1 — Option D): Over 60 civilian cars slid to a standstill on the iced Valley Bridge directly inside the 0.5 mi UN1005 plume, creating a multi-vehicle mass-casualty rescue crisis!"
+        }
+      ]
+    },
+    {
+      "id": "inject-2",
+      "clock": "T+18m",
+      "domain": "CYBER / WATER SCADA",
+      "targetSeat": "WVOT Cyber & Water SCADA + County EOC",
+      "title": "Municipal Water SCADA Ransomware & Distribution Pressure Drop (<20 psi)",
+      "prompt": "The {SEAT} Municipal Water Plant Chief Operator reports the SCADA HMI screen is locked with a 0.8 BTC ransom demand. Unauthorized commands throttled High-Service Pumps 2 & 3, dropping distribution pressure from 62 psi to 19 psi—threatening Engine 11 fog lines, heated decon showers, Regional Medical Center chillers, and crossing the <20 psi regulatory backflow threshold. How do WVOT Cyber and Water Operations respond?",
+      "options": [
+        {
+          "id": "inj2-a",
+          "label": "Option A",
+          "grade": "RECOMMENDED",
+          "summary": "Sever IT/OT network bridge immediately (preserving forensic memory/logs), switch High-Service Pumps to local manual VFD hand-control (>45 psi), report to WVOT CISO & WV Fusion Center, refuse ransom, and issue precautionary Boil Water Advisory for <20 psi zones.",
+          "rationale": "Satisfies WV HB 5638 and WVOT Cyber Incident Protocol (containment, forensic preservation, mandatory reporting, zero unapproved ransom payment) while restoring hydraulic pressure for Fire/Hazmat and Hospital operations within minutes and protecting public health under the <20 psi Boil Water rule.",
+          "citation": "WV HB 5638 / WVOT Cyber Incident Protocol & WV Bureau for Public Health (<20 psi Boil Water Rule)",
+          "cascadeAlert": null
+        },
+        {
+          "id": "inj2-b",
+          "label": "Option B",
+          "grade": "ACCEPTABLE WITH LIMITS",
+          "summary": "Shut down all water treatment plant electrical breakers completely and wait 2 hours for an outside cyber contractor before restarting any pumps.",
+          "rationale": "Contains lateral cyber movement, but shutting off all pumping drops municipal mains to 0 psi during an active hazmat decon and hospital surge emergency.",
+          "citation": "WV HB 5638 & FEMA Core Capability: Infrastructure Systems (Containment without Manual Continuity)",
+          "cascadeAlert": "ZERO-PSI HYDRANT & HOSPITAL WATER LOSS (Inject 2 — Option B): Full plant power-down collapsed municipal mains to 0 psi—cutting water to Hazmat decon showers and forcing {SEAT} Regional Medical Center onto its 6-hour reserve tank!"
+        },
+        {
+          "id": "inj2-c",
+          "label": "Option C",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Keep the SCADA network online so the utility business office can wire 0.8 BTC emergency ransom and obtain the decryption key quickly.",
+          "rationale": "Violates WV HB 5638 / WVOT incident rules prohibiting unapproved ransom payments, leaves the threat actor in active control of water treatment actuators, and offers no guarantee of restoration.",
+          "citation": "WV HB 5638 / WVOT Cyber Incident Protocol (Prohibits Unapproved Ransom Payment; Requires Immediate Isolation)",
+          "cascadeAlert": "ACTIVE SCADA LATERAL INCURSION (Inject 2 — Option C): Leaving compromised OT networks live allowed the adversary to close Clearwell Discharge Valve 4 and exfiltrate credentials while ransom talks stalled, triggering a countywide Boil Water Order!"
+        },
+        {
+          "id": "inj2-d",
+          "label": "Option D",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Format and factory-wipe all SCADA servers and PLC logs immediately, then bridge the consoles onto municipal Wi-Fi to reboot.",
+          "rationale": "Destroys volatile forensic evidence required by WVOT CIRT / WV Fusion Center under WV HB 5638 and re-exposes unsegmented OT controls to immediate re-compromise.",
+          "citation": "WV HB 5638 Forensic Preservation & OT Network Segmentation Mandate",
+          "cascadeAlert": "FORENSIC LOGS DESTROYED & OT RE-LOCKED (Inject 2 — Option D): Wiping HMI drives erased attacker IOCs needed by WVOT CIRT, and bridging over unsegmented Wi-Fi re-encrypted the console 9 minutes later!"
+        }
+      ]
+    },
+    {
+      "id": "inject-3",
+      "clock": "T+32m",
+      "domain": "HOSPITAL SURGE & DECON",
+      "targetSeat": "Hospital & DoHS Health + Fire & Hazmat IC",
+      "title": "Hospital ED Walk-In Contamination Surge & 24°F HVAC/Decon Decision",
+      "prompt": "Fourteen self-referred motorists and plant workers arrive unannounced at {SEAT} Regional Medical Center’s ED vestibule coughing with watering eyes, wearing heavy winter coats saturated with pungent ammonia vapor. Outside temperature is 24°F and municipal water pressure remains unstable. What protocol do Hospital Command and DoHS Health execute?",
+      "options": [
+        {
+          "id": "inj3-a",
+          "label": "Option A",
+          "grade": "RECOMMENDED",
+          "summary": "Lock down main ED entrances & isolate ED zone HVAC return air; route walk-ins through a heated exterior decon tent (remove outer winter garments + tepid eye/skin flush); hook Potable Water Tanker to hospital manifold; coordinate DoHS surge triage.",
+          "rationale": "Prevents secondary ammonia off-gassing from shutting down the county’s trauma/emergency department, removes 80–90% of contaminant immediately via outer garment removal in a heated shelter (preventing 24°F hypothermia), and sustains hospital water continuity.",
+          "citation": "ERG 2024 Guide 125 Decontamination · FEMA Core Capability: Public Health, Healthcare, and EMS",
+          "cascadeAlert": null
+        },
+        {
+          "id": "inj3-b",
+          "label": "Option B",
+          "grade": "ACCEPTABLE WITH LIMITS",
+          "summary": "Lock ED doors and wash walk-in patients outdoors on the open 24°F concrete apron using an unheated fire engine booster hose.",
+          "rationale": "Protects the interior ED from secondary contamination, but cold-water drenching in 24°F freezing wind induces rapid hypothermia.",
+          "citation": "Cold-Weather Mass Decontamination Doctrine & ERG 2024 Guide 125",
+          "cascadeAlert": "ACUTE HYPOTHERMIA ADMISSIONS (Inject 3 — Option B): Unheated 24°F outdoor hosedown caused 5 cold-exposure admissions and slowed walk-in compliance at the hospital perimeter!"
+        },
+        {
+          "id": "inj3-c",
+          "label": "Option C",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Bring all 14 patients in their winter coats directly into the warm central ED waiting room and trauma bays to triage out of the freezing weather.",
+          "rationale": "Ammonia trapped in heavy winter clothing rapidly volatilizes in warm indoor hospital air, incapacitating unprotected ED clinicians and forcing full Emergency Department closure.",
+          "citation": "ERG 2024 Guide 125 Secondary Contamination Warning & Hospital HAZMAT Lockdown Standard",
+          "cascadeAlert": "EMERGENCY DEPARTMENT FORCED ON FULL DIVERSION (Inject 3 — Option C): Secondary NH3 off-gassing inside the warm ED sickened 6 nurses and forced {SEAT} Regional Medical Center onto full ambulance diversion!"
+        },
+        {
+          "id": "inj3-d",
+          "label": "Option D",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Lock hospital gates and instruct symptomatic walk-ins to get back in their cars and drive 1.2 miles across iced streets to Fire Station 1.",
+          "rationale": "Turning away unstable respiratory patients presenting on hospital property violates federal EMTALA screening/stabilization duties and puts impaired drivers onto iced streets.",
+          "citation": "EMTALA (42 U.S.C. § 1395dd) & WV DoHS Hospital Surge Standard",
+          "cascadeAlert": "EMTALA COMPLIANCE BREACH & MULTI-CAR SLIDEOFF (Inject 3 — Option D): Turning away symptomatic walk-ins triggered regulatory escalation and caused a secondary crash two blocks from the hospital!"
+        }
+      ]
+    },
+    {
+      "id": "inject-4",
+      "clock": "T+48m",
+      "domain": "STATUTORY / MUTUAL AID / FEMA PA",
+      "targetSeat": "County EOC & WVEMD + PIO & County Commission",
+      "title": "Intrastate Mutual Aid, Debris T&M Ceiling & State of Emergency Proclamation",
+      "prompt": "Radial ice hits 0.75 in., blocking ridge feeders across {COUNTY} County. Overtime and mutual-aid costs mount. A private contractor offers the County Commission immediate tree/ice debris crews if Commissioners sign an uncapped 30-day Time-and-Materials (T&M) contract right now. How do County EOC and Commissioners structure statutory escalation and emergency contracting?",
+      "options": [
+        {
+          "id": "inj4-a",
+          "label": "Option A",
+          "grade": "RECOMMENDED",
+          "summary": "Activate WV intrastate mutual aid (§ 15-5-8 & § 15-5-11), submit local declaration to WVEMD requesting a Governor State of Emergency Proclamation (§ 15-5-6; pre-staging EMAC § 15-5-22), and cap emergency T&M debris work strictly at <= 70 hours with a hard dollar ceiling and independent load monitors.",
+          "rationale": "Aligns West Virginia emergency powers and mutual aid reimbursement channels while strictly preserving FEMA Public Assistance eligibility under 2 CFR §§ 200.318–200.327 and FEMA PAPPG.",
+          "citation": "W. Va. Code § 15-5-6, § 15-5-8, § 15-5-11, § 15-5-22 & 2 CFR §§ 200.318–200.327 (<=70-hr T&M Cap)",
+          "cascadeAlert": null
+        },
+        {
+          "id": "inj4-b",
+          "label": "Option B",
+          "grade": "ACCEPTABLE WITH LIMITS",
+          "summary": "Enforce the <= 70-hour T&M contract cap locally, but hold off notifying WVEMD or requesting a W. Va. Code § 15-5-6 State Proclamation until next week’s damage tally.",
+          "rationale": "Protects federal procurement compliance, but delaying WVEMD escalation bottlenecks state potable water tankers, WVOT on-site support, and {WVDOH_DIST} heavy equipment prioritization.",
+          "citation": "W. Va. Code § 15-5-6 & § 15-5-8 (Delayed State EOC Escalation)",
+          "cascadeAlert": "STATE RESOURCE BOTTLENECK (Inject 4 — Option B): Delaying W. Va. Code § 15-5-6 escalation through WVEMD pushed state tanker and heavy grader tasking back by 6+ hours."
+        },
+        {
+          "id": "inj4-c",
+          "label": "Option C",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Sign the uncapped 30-day Time-and-Materials debris contract immediately using contractor self-certified load tickets so saws start rolling now.",
+          "rationale": "Uncapped T&M contracts exceeding the ~70-hour initial emergency window without a not-to-exceed ceiling and independent monitoring are one of the top causes of FEMA Public Assistance audit clawbacks.",
+          "citation": "2 CFR §§ 200.318–200.327 & FEMA PAPPG (Uncapped T&M Cost Disallowance)",
+          "cascadeAlert": "SEVERE FEMA PA AUDIT EXPOSURE (Inject 4 — Option C): Uncapped 30-day T&M debris contracting without independent load verification jeopardizes federal reimbursement under 2 CFR § 200.318(j)!"
+        },
+        {
+          "id": "inj4-d",
+          "label": "Option D",
+          "grade": "NOT RECOMMENDED",
+          "summary": "Bypass WVEMD and phone an out-of-state private/municipal hazmat team directly across the state border to self-deploy immediately.",
+          "rationale": "Interstate mutual aid deployed outside WVEMD Emergency Management Assistance Compact (EMAC) procedures lacks statutory tort immunity, credential reciprocity, and reimbursement authority.",
+          "citation": "W. Va. Code § 15-5-22 (Emergency Management Assistance Compact — EMAC)",
+          "cascadeAlert": "INTERSTATE LIABILITY & REIMBURSEMENT GAP (Inject 4 — Option D): Self-deploying out-of-state units outside WVEMD EMAC channels (W. Va. Code § 15-5-22) voided statutory liability protection and cost recovery!"
+        }
+      ]
+    }
+  ],
+  "mediaInject": {
+    "outlet": "LIVE · Mountain State 8 News & Valley Scanner Livestream",
+    "clock": "T+24m · VIRAL BROADCAST & SOCIAL RUMOR INJECT",
+    "headline": "FALSE RUMOR SPREADING: \"County Secretly Evacuating All of {SEAT} East Across Iced Valley Bridge After Plant Explosion & Water Poisoning\"",
+    "transcript": "\"BREAKING AT 6:24 AM — Thousands are sharing livestream clips of white vapor near the riverfront industrial park while taps sputter downtown. Viral posts claim officials are ordering everyone in {SEAT} to get into their cars immediately and drive east across the Valley Bridge! Commenters also claim hackers dumped chemicals into city tap water. Residents are backing up toward the iced bridge approach right now...\"",
+    "pioTask": "Draft an authoritative <= 120-word unified public emergency warning (IPAWS / WEA / Press Bulletin) that satisfies all 7 HSEEP Public Warning Essentials, keeps drivers OFF the iced Valley Bridge, specifies indoor Shelter-in-Place + HVAC shutoff + Boil Water steps, and directly refutes the false evacuation/poisoning rumors.",
+    "sampleGoldDraft": "{COUNTY} County Emergency Management & Fire Command ALERT: An anhydrous ammonia leak at the {SEAT} riverfront cold-storage plant and a water pump outage are affecting areas within 0.5 miles east-northeast of the industrial corridor, including Valley Nursing Home and Riverview Terrace. DO NOT EVACUATE—social media claims of a Valley Bridge evacuation order are FALSE. SHELTER IN PLACE now: go indoors, close windows, and shut off heating/HVAC systems. Boil tap water 1 minute before drinking until pressure returns. Check verified updates at wvemd.wv.gov and County 911 radio. Next update at 7:00 AM EST.",
+    "sampleWeakDraft": "URGENT NOTICE! Do not panic! We are experiencing a catastrophic UN1005 TIH incident and cyber event in the area. People near the river should be careful, avoid the bridge if icy, and stay tuned for more information whenever crews finish assessing the situation under EMAC and PAPPG rules."
+  },
+  "aarConfig": {
+    "empgCitation": "FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10 — Completed HSEEP AAR/IP due to WVEMD within 90 calendar days of exercise conduct.",
+    "evaluatedCapabilities": [
+      {
+        "id": "environmental-response-health-safety",
+        "name": "Environmental Response/Health and Safety",
+        "missionArea": "Response",
+        "rating": "S",
+        "observation": "ERG 2024 Guide 125 isolation (500 ft) and 0.5 mi shelter-in-place parameters verified; early hydrant pressure drop highlighted need for pre-staged tanker shuttle SOP."
+      },
+      {
+        "id": "cybersecurity",
+        "name": "Cybersecurity",
+        "missionArea": "Protection",
+        "rating": "S",
+        "observation": "WV HB 5638 OT/IT disconnect and manual VFD pump handover executed; municipal water plant needs pre-rehearsed memory-capture checklist with WVOT CIRT."
+      },
+      {
+        "id": "public-information-warning",
+        "name": "Public Information and Warning",
+        "missionArea": "All Mission Areas",
+        "rating": "P",
+        "observation": "7-Essentials <=120-word IPAWS template rapidly countered false Valley Bridge evacuation rumor and paired HVAC shutoff with precautionary Boil Water instructions."
+      },
+      {
+        "id": "public-health-healthcare-ems",
+        "name": "Public Health, Healthcare, and Emergency Medical Services",
+        "missionArea": "Response",
+        "rating": "S",
+        "observation": "ED vestibule lockdown and HVAC isolation prevented secondary off-gassing; cold-weather (24°F) heated decon trailer staging time requires tighter mutual-aid pre-alerting."
+      },
+      {
+        "id": "infrastructure-systems",
+        "name": "Infrastructure Systems",
+        "missionArea": "Response & Recovery",
+        "rating": "S",
+        "observation": "Cross-utility notification between Water SCADA, Fire IC, and Regional Hospital reduced zero-pressure risk once EOC established a unified infrastructure desk."
+      },
+      {
+        "id": "operational-coordination",
+        "name": "Operational Coordination",
+        "missionArea": "All Mission Areas",
+        "rating": "P",
+        "observation": "County EOC aligned W. Va. Code § 15-5-8 mutual aid, § 15-5-6 Governor proclamation routing via WVEMD, and <=70-hour FEMA PA T&M debris contract ceiling."
+      }
+    ],
+    "starterCorrectiveActions": [
+      {
+        "id": "CA-01",
+        "capability": "Environmental Response/Health and Safety",
+        "issue": "Industrial hydrant pressure sagged below 25 psi during simultaneous UN1005 vapor fogging and SCADA pump throttling.",
+        "action": "Establish automatic dual-dispatch of Potable/Drafting Tanker Task Force whenever Tier II TIH facilities activate within municipal pressure zones.",
+        "owner": "{SEAT} Fire Dept & {COUNTY} County EOC",
+        "authority": "ERG 2024 Guide 125",
+        "dueWindow": "30 Days",
+        "status": "Assigned"
+      },
+      {
+        "id": "CA-02",
+        "capability": "Cybersecurity",
+        "issue": "12-minute communication lag between Water Plant SCADA anomaly detection and Fire IC / Hospital notification.",
+        "action": "Adopt out-of-band radio + WVOT CIRT / WV Fusion Center bridge checklist triggering immediate EOC alert whenever OT pumps deviate >15% or pressure approaches 25 psi.",
+        "owner": "{SEAT} Water Board & WVOT Cyber Liaison",
+        "authority": "WV HB 5638",
+        "dueWindow": "60 Days",
+        "status": "In Progress"
+      },
+      {
+        "id": "CA-03",
+        "capability": "Public Health, Healthcare, and Emergency Medical Services",
+        "issue": "Self-referred walk-in TIH patients arrived in ammonia-saturated winter coats prior to Mass Decon Trailer arrival.",
+        "action": "Pre-stage heated quick-erect vestibule decon kit and exterior speaker signage at {SEAT} Regional Medical Center ED with quarterly HVAC isolation drills.",
+        "owner": "{SEAT} Regional Medical Center & WV DoHS",
+        "authority": "ERG 2024 Guide 125 / EMTALA",
+        "dueWindow": "60 Days",
+        "status": "Assigned"
+      },
+      {
+        "id": "CA-04",
+        "capability": "Public Information and Warning",
+        "issue": "Viral livestream misinformation nearly drew civilian traffic onto iced Valley Bridge inside 0.5 mi plume.",
+        "action": "Pre-load 7-Essentials <=120-word IPAWS/WEA templates (Shelter + Shut Off HVAC + Rumor Refutation + Boil Water) in County 911/JIC binder.",
+        "owner": "{COUNTY} County PIO & 911 Director",
+        "authority": "HSEEP Public Warning Standard",
+        "dueWindow": "30 Days",
+        "status": "Validated"
+      },
+      {
+        "id": "CA-05",
+        "capability": "Operational Coordination",
+        "issue": "Emergency debris contractors offered uncapped 30-day Time-and-Materials terms during peak ice storm pressure.",
+        "action": "Adopt pre-vetted County Commission emergency contract rider enforcing <= 70-hour T&M cap, hard dollar ceiling, and independent load monitors.",
+        "owner": "{COUNTY} County Commission & Purchasing",
+        "authority": "2 CFR §§ 200.318–200.327 & W. Va. Code § 15-5-6",
+        "dueWindow": "90 Days (EMPG AAR/IP Gate)",
+        "status": "Assigned"
+      }
+    ]
+  }
+}

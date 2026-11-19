@@ -1,0 +1,162 @@
+[
+  {
+    "id": "planning",
+    "name": "Planning",
+    "missionArea": "All Mission Areas"
+  },
+  {
+    "id": "public-information-warning",
+    "name": "Public Information and Warning",
+    "missionArea": "All Mission Areas"
+  },
+  {
+    "id": "operational-coordination",
+    "name": "Operational Coordination",
+    "missionArea": "All Mission Areas"
+  },
+  {
+    "id": "intelligence-info-sharing",
+    "name": "Intelligence and Information Sharing",
+    "missionArea": "Prevention & Protection"
+  },
+  {
+    "id": "interdiction-disruption",
+    "name": "Interdiction and Disruption",
+    "missionArea": "Prevention & Protection"
+  },
+  {
+    "id": "screening-search-detection",
+    "name": "Screening, Search, and Detection",
+    "missionArea": "Prevention & Protection"
+  },
+  {
+    "id": "forensics-attribution",
+    "name": "Forensics and Attribution",
+    "missionArea": "Prevention"
+  },
+  {
+    "id": "access-control-identity",
+    "name": "Access Control and Identity Verification",
+    "missionArea": "Protection"
+  },
+  {
+    "id": "cybersecurity",
+    "name": "Cybersecurity",
+    "missionArea": "Protection"
+  },
+  {
+    "id": "physical-protective-measures",
+    "name": "Physical Protective Measures",
+    "missionArea": "Protection"
+  },
+  {
+    "id": "risk-management-protection",
+    "name": "Risk Management for Protection Programs and Activities",
+    "missionArea": "Protection"
+  },
+  {
+    "id": "supply-chain-integrity",
+    "name": "Supply Chain Integrity and Security",
+    "missionArea": "Protection"
+  },
+  {
+    "id": "community-resilience",
+    "name": "Community Resilience",
+    "missionArea": "Mitigation"
+  },
+  {
+    "id": "long-term-vulnerability-reduction",
+    "name": "Long-Term Vulnerability Reduction",
+    "missionArea": "Mitigation"
+  },
+  {
+    "id": "risk-disaster-resilience-assessment",
+    "name": "Risk and Disaster Resilience Assessment",
+    "missionArea": "Mitigation"
+  },
+  {
+    "id": "threats-hazards-identification",
+    "name": "Threats and Hazards Identification",
+    "missionArea": "Mitigation"
+  },
+  {
+    "id": "critical-transportation",
+    "name": "Critical Transportation",
+    "missionArea": "Response"
+  },
+  {
+    "id": "environmental-response-health-safety",
+    "name": "Environmental Response/Health and Safety",
+    "missionArea": "Response"
+  },
+  {
+    "id": "fatality-management",
+    "name": "Fatality Management Services",
+    "missionArea": "Response"
+  },
+  {
+    "id": "fire-management-suppression",
+    "name": "Fire Management and Suppression",
+    "missionArea": "Response"
+  },
+  {
+    "id": "logistics-supply-chain",
+    "name": "Logistics and Supply Chain Management",
+    "missionArea": "Response"
+  },
+  {
+    "id": "mass-care-services",
+    "name": "Mass Care Services",
+    "missionArea": "Response"
+  },
+  {
+    "id": "mass-search-rescue",
+    "name": "Mass Search and Rescue Operations",
+    "missionArea": "Response"
+  },
+  {
+    "id": "on-scene-security-protection",
+    "name": "On-Scene Security, Protection, and Law Enforcement",
+    "missionArea": "Response"
+  },
+  {
+    "id": "operational-communications",
+    "name": "Operational Communications",
+    "missionArea": "Response"
+  },
+  {
+    "id": "public-health-healthcare-ems",
+    "name": "Public Health, Healthcare, and Emergency Medical Services",
+    "missionArea": "Response"
+  },
+  {
+    "id": "situational-assessment",
+    "name": "Situational Assessment",
+    "missionArea": "Response"
+  },
+  {
+    "id": "infrastructure-systems",
+    "name": "Infrastructure Systems",
+    "missionArea": "Response & Recovery"
+  },
+  {
+    "id": "economic-recovery",
+    "name": "Economic Recovery",
+    "missionArea": "Recovery"
+  },
+  {
+    "id": "health-social-services",
+    "name": "Health and Social Services",
+    "missionArea": "Recovery"
+  },
+  {
+    "id": "housing",
+    "name": "Housing",
+    "missionArea": "Recovery"
+  },
+  {
+    "id": "natural-cultural-resources",
+    "name": "Natural and Cultural Resources",
+    "missionArea": "Recovery"
+  }
+]
