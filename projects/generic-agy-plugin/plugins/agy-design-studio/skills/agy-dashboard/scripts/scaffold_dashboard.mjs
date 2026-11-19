@@ -54,7 +54,7 @@ function safeJsonForHtmlScript(obj) {
 function buildStandaloneHtml(rawHtml, cssText, jsText, hydratedPayload, titleText) {
   let out = rawHtml;
   if (titleText) {
-    out = out.replace('<title>Dashboard Studio</title>', () => `<title>${String(titleText).replace(/[<>&]/g, '')}</title>`);
+    out = out.replace(/<title>[^<]*<\/title>/, () => `<title>${String(titleText).replace(/[<>&]/g, '')}</title>`);
   }
   // Inline styles.css
   const safeCss = cssText.replace(/<\/style/gi, '<\\/style');

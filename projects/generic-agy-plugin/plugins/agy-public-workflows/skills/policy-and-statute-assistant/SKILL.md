@@ -101,7 +101,12 @@ partial analysis, or hierarchy table until the user answers. Do not assume a
 state from earlier conversations or examples.
 
 If the state is given but the period is not, use today's date as `as_of_date`.
-Otherwise use the period the user states.
+Otherwise use the period the user states. *Federal-baseline hierarchy
+exception:* If the user explicitly asks for the **federal regulatory baseline**
+and general federal-versus-state administrative manual hierarchy (without asking
+for a specific state's elected option), proceed directly with the federal
+baseline analysis and clearly note which sub-rules depend on state-level options
+or waivers.
 
 ## Retrieval (two rules, mandatory)
 

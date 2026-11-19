@@ -14,6 +14,7 @@ Content                                             | Cite
 Personal information                                | Exemption 6, `5 U.S.C. § 552(b)(6)`
 Personal information in a law enforcement record    | `5 U.S.C. § 552(b)(6), (b)(7)(C)`
 Health information                                  | Exemption 6 (HIPAA is not an exemption)
+Trade secrets & confidential commercial/financial   | Exemption 4, `5 U.S.C. § 552(b)(4)`
 FTI                                                 | Exemption 3 with 26 U.S.C. § 6103, for example `5 U.S.C. § 552(b)(3); 26 U.S.C. § 6103`
 Record made confidential by another federal statute | Exemption 3 with the statute
 
@@ -26,6 +27,7 @@ Predecisional recommendations, legal advice, attorney-client privilege          
 Active investigation                                                            | Exemption 7(A), 5 U.S.C. § 552(b)(7)(A)
 Confidential source, or a witness who asks not to be named or fears retaliation | Exemption 7(D), 5 U.S.C. § 552(b)(7)(D), if confidentiality was promised or implied
 Law enforcement techniques, security details                                    | Exemption 7(E), 5 U.S.C. § 552(b)(7)(E)
+Critical-infrastructure or security details endangering life/physical safety    | Exemption 7(F), 5 U.S.C. § 552(b)(7)(F)
 Names of law enforcement personnel                                              | Exemptions 6 and 7(C); say you do not know the agency's practice if you don't
 
 For a federal agency's incident, patient safety, or quality review report, flag
