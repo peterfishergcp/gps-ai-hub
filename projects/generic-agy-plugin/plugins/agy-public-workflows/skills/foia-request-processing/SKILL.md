@@ -102,7 +102,14 @@ Run these first, before opening a connector or reading any search result:
     -   Name in several states (Washington County, Springfield), a place outside
         the United States, or no agency named: the Request Summary ends with one
         question asking which state, and nothing else runs, even with a named
-        folder or search results shown. No search, no tables.
+        folder or search results shown. No search, no tables. *Synthetic/training
+        test exception:* when the user supplies a self-contained test scenario
+        with generic/placeholder agency or county names alongside pre-exported
+        search results and asks to confirm the governing law and generate the
+        3-table report, state `"Governing law: State Public Records Act
+        (synthetic test scenario — confirm specific state statute; Federal FOIA 5
+        U.S.C. § 552 baseline applied where noted)"` and proceed through all 3
+        tables.
     -   Courts, legislatures, tribes, DC or a territory, private businesses,
         foreign governments, police or criminal justice records: see Special
         Requests in [corner_cases.md](references/corner_cases.md).

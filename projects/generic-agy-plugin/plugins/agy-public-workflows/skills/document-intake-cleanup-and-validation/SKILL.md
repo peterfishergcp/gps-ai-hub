@@ -75,7 +75,13 @@ Notice.
         -   **Halt Financial Calculations & Projections**: Do **NOT**
             back-calculate Gross Pay from Net Pay + Deductions, and do **NOT**
             output `Gross Income Calculation` or `Projected Monthly Gross
-            Income` tables.
+            Income` tables *when the income proof documents themselves are
+            incomplete*. *(Mixed-packet rule: if all submitted income/paystub
+            documents are 100% complete and only a separate non-income document
+            — such as a residential lease or utility addendum — is missing a
+            page or signature, still compute verified prospective monthly gross
+            income from the complete paystubs while halting shelter/expense
+            deductions and flagging the incomplete document as `BLOCKER`.)*
         -   **Reduce Extracted Data Presentation**: Never pair labels and
             amounts across a table whose column headers or boundary rows are
             torn or cropped off. Collapse any torn or headerless table section

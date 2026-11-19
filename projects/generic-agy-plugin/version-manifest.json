@@ -1,7 +1,7 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.0.0",
+  "suiteVersion": "1.0.1",
   "releasedAt": "2026-11-19",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
@@ -124,7 +124,7 @@
     "agy-dashboard": {
       "plugin": "agy-design-studio",
       "skill": "agy-dashboard",
-      "treeSha256": "809678fc02d7aed2",
+      "treeSha256": "5f8037a84930838b",
       "files": {
         "SKILL.md": "7b0269d20813b6f8310ab7c07ae88148f5fcfb495522c0ed711eb5ff68ba4f49",
         "assets/runtime/app.js": "2ccac517fb47f8e38250106c943b4e2c4a257cf444aac81a91495f8af062520e",
@@ -137,7 +137,7 @@
         "assets/templates/public-legislative-command-center.json": "10d95b3b9885371322b2fd8acd3dcd8ccf1b484489d2304c3cbdc102cd749f6a",
         "references/database_and_ge_connectors.md": "4eff0a8946f03bcd566e61e0fbf3a31d1a439b63c606caf0bd4f571d43647831",
         "scripts/query_connector.mjs": "f3220c5b04e39794cc456ccc4a8ae3ae6703d926e03076781d3f7465d3b8034d",
-        "scripts/scaffold_dashboard.mjs": "5f52edc1759bea8564ad20da4f5cafe825cfcf3c62e2aa5f0ed5615ec32c7f5c"
+        "scripts/scaffold_dashboard.mjs": "8cd79c14c64d947f3fb77828b742cfff9990f1cb3870f4296a2b80b23d7af70a"
       }
     },
     "doc-design": {
@@ -248,9 +248,9 @@
     "document-intake-cleanup-and-validation": {
       "plugin": "agy-public-workflows",
       "skill": "document-intake-cleanup-and-validation",
-      "treeSha256": "807918b048ea8e04",
+      "treeSha256": "159d1521b12ce68e",
       "files": {
-        "SKILL.md": "ab302362dad476e0bf8decbc37a5578f309c1d138486e39eb53c8e56639af8fe",
+        "SKILL.md": "d719d5abaee5265f69454589b3a92ed73378e03073254647d607e216ad35a809",
         "references/domain_standards_and_examples.md": "3d7a83b63d74d42fcca5630c96f897052df19607d9a18f6606a51528b4059af8"
       }
     },
@@ -274,9 +274,9 @@
     "foia-request-processing": {
       "plugin": "agy-public-workflows",
       "skill": "foia-request-processing",
-      "treeSha256": "7a32e82a327f260c",
+      "treeSha256": "94928862cb1f6be9",
       "files": {
-        "SKILL.md": "aff34859945a23e2d1ac473ebd11dd05f387362d2ed1469de33708ce3d90e16f",
+        "SKILL.md": "bdc6330afb17eff06bf8585d0a1e70518ec8b954a675bd31ce5c9c94781a83ea",
         "references/corner_cases.md": "bb5a9359ef40a709b515bb595691328394f1d55a2cf9ae59057c98f34214690c",
         "references/legal_references.md": "b4d3bd48e59f035c448e92988c4a51f587daeef01427847994adaaa6eb9764d0",
         "references/search_terms.md": "a70bcd7e31a902b5b455332924f7bb3c442ac9419769ac2aec3de224a3aca042"
@@ -302,9 +302,9 @@
     "policy-and-statute-assistant": {
       "plugin": "agy-public-workflows",
       "skill": "policy-and-statute-assistant",
-      "treeSha256": "34b55b1527943496",
+      "treeSha256": "081eef382c9d5747",
       "files": {
-        "SKILL.md": "88c6b300afeeff649e8b1e1347f68658deda0daa765c8615865c05c90d14b2e5"
+        "SKILL.md": "f6bde74b49d93ed112b2cbd40cd069398c37643fa369e84cfb2f5a588d773a7a"
       }
     },
     "policy-program-audit": {
@@ -319,10 +319,10 @@
     "public-records-redaction": {
       "plugin": "agy-public-workflows",
       "skill": "public-records-redaction",
-      "treeSha256": "0330543623a3db4a",
+      "treeSha256": "09831a2e3ab698d6",
       "files": {
-        "SKILL.md": "f598e1966865eb653e097b56c630d3a31e7e1397a0ad525b6b5101631500ec7c",
-        "references/citation_guide.md": "1d5b74951d74a070a25791da799c36d551dcf10f82f3bcf1468f9e2973d17d8a",
+        "SKILL.md": "f9f4b44c06b70ec0729df4e2336a4b56a281db4abe368b76d07b1bce01195ac5",
+        "references/citation_guide.md": "8b5cf67e53edf6c31ededdfd77fcb5c7dbdcb0143794622d69cdab893cc80889",
         "references/qa_and_special_inputs.md": "d8a3c15c6317127e8e206b3fd8a8924c7d7c6da9511ec7e963ec8e0798e71e98",
         "references/record_types.md": "80627d864fdbe995b3612dacb82f77834f55dc2cec473eb5d993b8216dd310b2"
       }
