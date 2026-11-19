@@ -1,0 +1,428 @@
+{
+  "config": {
+    "id": "civic-readiness-command-center",
+    "eyebrow": "Public Sector \u00b7 Economic Development & Site Readiness",
+    "title": "Civic Ready 2026: $40M Site Readiness Portfolio",
+    "subtitle": "$25M Shell Building Loan Program (EDFA) & $15M Site Readiness Grant Program (ISRG) \u00b7 First-Round Window Closes Dec 31, 2026",
+    "connector": "bigquery",
+    "lastUpdatedLabel": "Round 1 Intake Snapshot \u00b7 Nov 2026",
+    "commandCenter": {
+      "sealSubtitle": "Public Sector Executive Office",
+      "sealTitle": "Economic Command",
+      "clockBadge": "2026 SITE READINESS CLOCK",
+      "clockMilestones": "Nov 10: Program Launch ($40M) \u2022 Dec 10: Phase I/II ESA & Utility Cutoff \u2022 Dec 18: Joint EDFA & ISRG Board Packet \u2022 Dec 31, 2026: Round 1 Window Close",
+      "telemetryText": "All 8 Automations Healthy \u2022 Live Federated Gemini Enterprise (Drive \u2022 Gmail \u2022 Chat \u2022 SharePoint \u2022 BigQuery) Active",
+      "owners": [
+        "EDFA & ISRG Joint Review (Owner)",
+        "Economic Development Portfolio Lead",
+        "Regional Infrastructure Coordinator"
+      ],
+      "healthBannerText": "All 8 automations running on schedule. Gemini Enterprise (Google Drive \u2022 Gmail \u2022 Google Chat \u2022 SharePoint \u2022 BigQuery) connected.",
+      "triageTitle": "NEEDS ACTION NOW \u2014 MOST URGENT FIRST (TOD-1)",
+      "workListTitle": "MY WORK LIST: PROGRAM & INFRASTRUCTURE REVIEW LEAD (WRK-3 / WRK-4)",
+      "agendaTitle": "EXECUTIVE ECONOMIC AGENDA \u2014 PRIORITY SITES & 2026\u20132027 GOALS (AGN-1..4)",
+      "tabs": [
+        {
+          "id": "today",
+          "label": "1. TODAY & TRIAGE"
+        },
+        {
+          "id": "agenda",
+          "label": "2. PRIORITY AGENDA"
+        },
+        {
+          "id": "analytics",
+          "label": "3. PORTFOLIO ANALYTICS"
+        },
+        {
+          "id": "register",
+          "label": "4. COUNTY SITE REGISTER"
+        }
+      ]
+    },
+    "themePreset": "civic-official",
+    "theme": {
+      "mode": "light",
+      "fontFamily": "\"Fira Sans\", system-ui, -apple-system, sans-serif",
+      "bg": "#F4F6F9",
+      "surface": "#FFFFFF",
+      "ink": "#0F1A2A",
+      "muted": "#475569",
+      "border": "#CBD5E1",
+      "primary": "#0F1A2A",
+      "accent": "#C1452C",
+      "secondary": "#D5A245",
+      "radius": 6,
+      "density": "comfortable"
+    },
+    "filters": [
+      {
+        "field": "program",
+        "label": "Program",
+        "options": [
+          "All",
+          "Shell Building Loan ($25M)",
+          "Site Readiness Grant ($15M)"
+        ]
+      },
+      {
+        "field": "tier",
+        "label": "Readiness Tier",
+        "options": [
+          "All",
+          "Shell Vertical (30k-50k sq ft)",
+          "Tier 1 (Turnkey Boundary)",
+          "Tier 2 (Utility Extension)",
+          "Tier 3 (High-Potential Acreage)"
+        ]
+      }
+    ],
+    "kpis": [
+      {
+        "id": "kpi-allocation",
+        "label": "Authorized Public Funding",
+        "mode": "static",
+        "value": "$40.0M",
+        "delta": "$25M Loans \u00b7 $15M Grants",
+        "tone": "accent"
+      },
+      {
+        "id": "kpi-pipeline",
+        "label": "Active Pipeline Requested",
+        "mode": "sum",
+        "field": "requestedMillions",
+        "format": "currency_m",
+        "delta": "Across active regional applications",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-acreage",
+        "label": "Qualifying Industrial Acreage",
+        "mode": "sum",
+        "field": "acres",
+        "format": "integer_suffix_ac",
+        "delta": "5+ acre industrial minimum verified",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-jobs",
+        "label": "Projected Jobs Target",
+        "mode": "sum",
+        "field": "projectedJobs",
+        "format": "integer",
+        "delta": ">=120% regional median wage target",
+        "tone": "gold"
+      }
+    ],
+    "widgets": [
+      {
+        "id": "w-county-funding",
+        "title": "Requested Investment by County ($M)",
+        "subtitle": "Top county economic development authority proposals in Round 1",
+        "chartType": "bar",
+        "span": 6,
+        "groupBy": "county",
+        "metricField": "requestedMillions",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-tier-mix",
+        "title": "Funding Mix by Readiness Tier ($M)",
+        "subtitle": "Balance across EDFA vertical shell buildings and ISRG Tier 1-3 site prep",
+        "chartType": "donut",
+        "span": 6,
+        "groupBy": "tier",
+        "metricField": "requestedMillions",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-weekly-velocity",
+        "title": "Cumulative Round 1 Application Pipeline ($M)",
+        "subtitle": "Weekly progression from Nov 10 program launch toward Dec 31 close",
+        "chartType": "line",
+        "span": 12,
+        "seriesKey": "weeklyTimeline",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-site-register",
+        "title": "County Site & Shell Building Readiness Register",
+        "subtitle": "Facilitating local authorities, utility readiness, local match, and joint review status",
+        "chartType": "table",
+        "span": 12,
+        "columns": [
+          {
+            "key": "county",
+            "label": "County"
+          },
+          {
+            "key": "authority",
+            "label": "Facilitating Agent"
+          },
+          {
+            "key": "program",
+            "label": "Program"
+          },
+          {
+            "key": "tier",
+            "label": "Readiness Tier"
+          },
+          {
+            "key": "acres",
+            "label": "Acres"
+          },
+          {
+            "key": "requestedMillions",
+            "label": "Requested ($M)",
+            "format": "currency_m"
+          },
+          {
+            "key": "projectedJobs",
+            "label": "Est. Jobs"
+          },
+          {
+            "key": "wagePct",
+            "label": "Wage Floor"
+          },
+          {
+            "key": "status",
+            "label": "Review Stage"
+          }
+        ],
+        "visible": true
+      }
+    ],
+    "queries": {
+      "records": "SELECT county, authority, program, tier, acres, requested_millions AS requestedMillions, projected_jobs AS projectedJobs, wage_pct AS wagePct, status FROM `public_econ_dev.civic_readiness_applications` WHERE (@program = 'All' OR program = @program) ORDER BY requested_millions DESC LIMIT 250"
+    }
+  },
+  "snapshot": {
+    "sourceMode": "snapshot",
+    "connector": "bigquery",
+    "generatedAt": "2026-11-19T16:00:00Z",
+    "weeklyTimeline": [
+      {
+        "label": "Nov 10 (Launch)",
+        "value": 6.5
+      },
+      {
+        "label": "Nov 17",
+        "value": 14.2
+      },
+      {
+        "label": "Nov 24",
+        "value": 21.8
+      },
+      {
+        "label": "Dec 01",
+        "value": 27.4
+      },
+      {
+        "label": "Dec 08",
+        "value": 32.9
+      },
+      {
+        "label": "Dec 15 (Proj.)",
+        "value": 36.8
+      },
+      {
+        "label": "Dec 31 (Close)",
+        "value": 40.0
+      }
+    ],
+    "triageItems": [
+      {
+        "urgency": "DESK CLOCK (PRI-1)",
+        "tone": "critical",
+        "item": "Riverbend County ($5.0M Shell Building Loan) \u2014 Metro Alliance 20% local match certification due before Dec 18 EDFA board docket",
+        "action": "Open Desk Record"
+      },
+      {
+        "urgency": "STALE ESA NOTE (ENV-4)",
+        "tone": "critical",
+        "item": "Valleyview County ($3.8M Tier 3 Site Grant, 410 ac) \u2014 Phase I/II Environmental Site Assessment addendum pending environmental sign-off",
+        "action": "Request Updated Note"
+      },
+      {
+        "urgency": "UTILITY MATCH >5D (ISRG-8)",
+        "tone": "warning",
+        "item": "Lakeside County ($3.1M Tier 2 Utility Extension, 210 ac) \u2014 Municipal water/wastewater capacity letter unfiled 6 days",
+        "action": "Send Agency Reminder"
+      }
+    ],
+    "workListItems": [
+      {
+        "code": "Pinecrest County ($5.0M)",
+        "text": "Pinecrest Dev. Authority \u2014 55-acre Shell Vertical (30k-50k sq ft), 180 est. jobs at 130% median wage",
+        "badge": "BOARD READY"
+      },
+      {
+        "code": "Brookside County ($4.8M)",
+        "text": "Brookside Dev. Authority \u2014 38-acre Shell Vertical (30k-50k sq ft), 140 est. jobs at 122% median wage",
+        "badge": "BOARD READY"
+      },
+      {
+        "code": "Cedarbrook County ($2.4M)",
+        "text": "Cedarbrook Dev. Council \u2014 120-acre Tier 1 Turnkey Boundary site, 110 est. jobs at 120% median wage",
+        "badge": "BOARD READY"
+      }
+    ],
+    "followUps": [
+      "Due 2026-12-10 (Joint EDFA/ISRG Technical Sync): Deliver 5-county Shell Building structural & pad-ready verification packet to Finance Committee.",
+      "Due 2026-12-18 (Round 1 Pre-Close Review): Confirm >=120% county median wage floor covenants across all 10 active county applications."
+    ],
+    "agendaItems": [
+      {
+        "rank": "#1",
+        "area": "High-Wage Shell Building Acceleration ($25M EDFA)",
+        "sub": "Vertical 30,000\u201350,000 sq ft industrial shells with 5-year interest-free carryover",
+        "goal": "Approve 5 turnkey shell building loans across Riverbend, Pinecrest, Brookside, Oakridge & Meadowbrook Counties (765+ jobs).",
+        "lead": "EDFA Loan Review Lead",
+        "measure": "$24.2M Tracked (5 Counties)",
+        "holds": "None"
+      },
+      {
+        "rank": "#2",
+        "area": "Tier 1 Turnkey Boundary Site Grants ($15M ISRG)",
+        "sub": "Pad-ready industrial sites with water, sewer, electric, gas & broadband to property boundary",
+        "goal": "Certify Cedarbrook (120 ac) and Summit (95 ac) Tier 1 sites for immediate Q1 2027 prospect selection.",
+        "lead": "ISRG Engineering Lead",
+        "measure": "$4.3M Tracked (215 Acres)",
+        "holds": "None"
+      },
+      {
+        "rank": "#3",
+        "area": "Tier 2 Utility Extension & Corridor Readiness",
+        "sub": "12-to-18 month water, wastewater, and three-phase power extensions",
+        "goal": "Complete ISRG engineering review for Lakeside (210 ac) and Crestview (165 ac) utility corridors.",
+        "lead": "ISRG Infrastructure Lead",
+        "measure": "$5.7M Tracked (375 Acres)",
+        "holds": "1 Utility Note Pending"
+      },
+      {
+        "rank": "#4",
+        "area": "Tier 3 Mega-Site & River/Rail Industrial Acreage",
+        "sub": "Large-tract (400+ acre) master planning, Phase I/II environmental & geotechnical clearing",
+        "goal": "Advance Valleyview County (410 ac) mega-site through Phase II ESA for baseload manufacturing & energy prospects.",
+        "lead": "Site Readiness Director",
+        "measure": "$3.8M Tracked (410 Acres)",
+        "holds": "ESA Addendum in Review"
+      }
+    ],
+    "records": [
+      {
+        "county": "Riverbend",
+        "authority": "Riverbend Metro Alliance EDA",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 42,
+        "requestedMillions": 5.0,
+        "projectedJobs": 165,
+        "wagePct": "125% Median",
+        "status": "Joint EDFA Review"
+      },
+      {
+        "county": "Pinecrest",
+        "authority": "Pinecrest County Dev. Authority",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 55,
+        "requestedMillions": 5.0,
+        "projectedJobs": 180,
+        "wagePct": "130% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Brookside",
+        "authority": "Brookside County Dev. Authority",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 38,
+        "requestedMillions": 4.8,
+        "projectedJobs": 140,
+        "wagePct": "122% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Oakridge",
+        "authority": "Oakridge Regional Partnership",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 34,
+        "requestedMillions": 5.0,
+        "projectedJobs": 155,
+        "wagePct": "128% Median",
+        "status": "Joint EDFA Review"
+      },
+      {
+        "county": "Cedarbrook",
+        "authority": "Cedarbrook Area Dev. Council",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 1 (Turnkey Boundary)",
+        "acres": 120,
+        "requestedMillions": 2.4,
+        "projectedJobs": 110,
+        "wagePct": "120% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Lakeside",
+        "authority": "Lakeside Econ. Dev. Corp.",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 2 (Utility Extension)",
+        "acres": 210,
+        "requestedMillions": 3.1,
+        "projectedJobs": 135,
+        "wagePct": "120% Median",
+        "status": "Engineering Check"
+      },
+      {
+        "county": "Valleyview",
+        "authority": "Valleyview Dev. Authority",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 3 (High-Potential Acreage)",
+        "acres": 410,
+        "requestedMillions": 3.8,
+        "projectedJobs": 190,
+        "wagePct": "125% Median",
+        "status": "Phase I/II ESA Review"
+      },
+      {
+        "county": "Crestview",
+        "authority": "Crestview Regional Development",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 2 (Utility Extension)",
+        "acres": 165,
+        "requestedMillions": 2.6,
+        "projectedJobs": 95,
+        "wagePct": "120% Median",
+        "status": "Joint ISRG Review"
+      },
+      {
+        "county": "Summit",
+        "authority": "Summit Corridor Regional Dev.",
+        "program": "Site Readiness Grant ($15M)",
+        "tier": "Tier 1 (Turnkey Boundary)",
+        "acres": 95,
+        "requestedMillions": 1.9,
+        "projectedJobs": 85,
+        "wagePct": "120% Median",
+        "status": "Board Ready"
+      },
+      {
+        "county": "Meadowbrook",
+        "authority": "Meadowbrook Regional Dev. Corp.",
+        "program": "Shell Building Loan ($25M)",
+        "tier": "Shell Vertical (30k-50k sq ft)",
+        "acres": 46,
+        "requestedMillions": 4.4,
+        "projectedJobs": 125,
+        "wagePct": "120% Median",
+        "status": "Intake Complete"
+      }
+    ]
+  }
+}

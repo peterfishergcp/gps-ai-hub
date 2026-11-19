@@ -1,0 +1,332 @@
+{
+  "config": {
+    "id": "public-legislative-command-center",
+    "eyebrow": "PUBLIC SECTOR \u00b7 EXECUTIVE POLICY OFFICE",
+    "title": "LEGISLATIVE COMMAND CENTER",
+    "subtitle": "2027 Regular Session Tracking, Executive Priority Agenda, Fiscal Note Triage & Desk Clock",
+    "connector": "bigquery",
+    "lastUpdatedLabel": "All 8 Automations Healthy \u00b7 Live Capture Offset (:02/:12) Active",
+    "commandCenter": {
+      "sealSubtitle": "Public Sector Executive Office",
+      "sealTitle": "Executive Command",
+      "clockBadge": "2027 SESSION CLOCK",
+      "clockMilestones": "Dec 6\u20138: Interim Meetings \u2022 Dec 14: Prefiling Opens (Bills & Resolutions) \u2022 Jan 13, 2027: Session Convening & Budget Submission \u2022 Mar 3: Day 50 Crossover \u2022 Mar 13: Day 60 Sine Die",
+      "telemetryText": "All 8 Automations Healthy \u2022 Live Capture Offset (:02/:12) Active (NFR-4)",
+      "owners": [
+        "Legislative & Policy Lead (Owner)",
+        "Budget & Fiscal Note Coordinator",
+        "Agency Liaison Lead"
+      ],
+      "healthBannerText": "All 8 automations running on schedule. Gemini Enterprise (Google Drive \u2022 Gmail \u2022 Google Chat \u2022 SharePoint) connected.",
+      "triageTitle": "NEEDS ACTION NOW \u2014 MOST URGENT FIRST (TOD-1)",
+      "workListTitle": "MY WORK LIST: LEGISLATIVE & POLICY LEAD (WRK-3 / WRK-4)",
+      "agendaTitle": "EXECUTIVE AGENDA \u2014 PRIORITY AREAS & 2027 GOALS (AGN-1..4)",
+      "tabs": [
+        {
+          "id": "today",
+          "label": "1. TODAY"
+        },
+        {
+          "id": "agenda",
+          "label": "2. AGENDA"
+        },
+        {
+          "id": "analytics",
+          "label": "3. BUDGET & ANALYTICS"
+        },
+        {
+          "id": "register",
+          "label": "4. BILLS & REGISTER"
+        }
+      ]
+    },
+    "themePreset": "civic-official",
+    "theme": {
+      "mode": "light",
+      "fontFamily": "\"Fira Sans\", system-ui, -apple-system, sans-serif",
+      "bg": "#F4F6F9",
+      "surface": "#FFFFFF",
+      "ink": "#0F1A2A",
+      "muted": "#475569",
+      "border": "#CBD5E1",
+      "primary": "#0F1A2A",
+      "accent": "#C1452C",
+      "secondary": "#D5A245",
+      "radius": 6,
+      "density": "comfortable"
+    },
+    "filters": [
+      {
+        "field": "chamber",
+        "label": "Chamber",
+        "options": [
+          "All",
+          "House",
+          "Senate",
+          "Joint / Executive Desk"
+        ]
+      },
+      {
+        "field": "priorityTier",
+        "label": "Priority Tier",
+        "options": [
+          "All",
+          "Priority 1 (Executive Agenda)",
+          "Priority 2 (Agency Monitored)",
+          "Fiscal Note Watch"
+        ]
+      }
+    ],
+    "kpis": [
+      {
+        "id": "kpi-measures",
+        "label": "2027 MEASURES FILED (TOD-4 / BIL-4)",
+        "mode": "static",
+        "value": "4",
+        "delta": "Includes Bills & Prefiled Joint Resolutions",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-positions",
+        "label": "2027 OFFICE POSITIONS SET",
+        "mode": "static",
+        "value": "4 / 4",
+        "delta": "100% of Priority 1 bills owned & positioned",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-desk-clock",
+        "label": "EXECUTIVE DESK CLOCK (DSK-1)",
+        "mode": "static",
+        "value": "3",
+        "delta": "Active HB 2045 + verified prior-session bills",
+        "tone": "accent"
+      },
+      {
+        "id": "kpi-unassigned",
+        "label": "MEMBERS WITHOUT OFFICE LEAD (TOD-5)",
+        "mode": "static",
+        "value": "1",
+        "delta": "Includes 2027 Members-Elect (LEG-4 roster active)",
+        "tone": "gold"
+      }
+    ],
+    "widgets": [
+      {
+        "id": "w-fiscal-impact",
+        "title": "Tracked Fiscal Impact by Priority Area ($M)",
+        "subtitle": "Estimated FY28 General Revenue & Special Revenue impact across active measures",
+        "chartType": "bar",
+        "span": 6,
+        "groupBy": "priorityArea",
+        "metricField": "fiscalImpactMillions",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-stage-mix",
+        "title": "Tracked Measures by Legislative Stage",
+        "subtitle": "Distribution across Introduced, Committee, Crossover, and Executive Desk",
+        "chartType": "donut",
+        "span": 6,
+        "groupBy": "stage",
+        "metricField": "measureCount",
+        "format": "integer",
+        "visible": true
+      },
+      {
+        "id": "w-bill-register",
+        "title": "2027 Priority Bill & Joint Resolution Register",
+        "subtitle": "Live committee status, fiscal note currency, and Executive Office position",
+        "chartType": "table",
+        "span": 12,
+        "columns": [
+          {
+            "key": "bill",
+            "label": "Measure"
+          },
+          {
+            "key": "title",
+            "label": "Short Title"
+          },
+          {
+            "key": "priorityArea",
+            "label": "Priority Area"
+          },
+          {
+            "key": "chamber",
+            "label": "Chamber"
+          },
+          {
+            "key": "stage",
+            "label": "Current Stage"
+          },
+          {
+            "key": "fiscalImpactMillions",
+            "label": "Fiscal Note ($M)",
+            "format": "currency_m"
+          },
+          {
+            "key": "officeLead",
+            "label": "Office Lead"
+          },
+          {
+            "key": "status",
+            "label": "Position / Triage"
+          }
+        ],
+        "visible": true
+      }
+    ],
+    "queries": {
+      "records": "SELECT bill, title, priority_area AS priorityArea, chamber, stage, fiscal_impact_millions AS fiscalImpactMillions, office_lead AS officeLead, status FROM `public_gov_command.legislative_measures_2027` ORDER BY bill ASC LIMIT 250"
+    }
+  },
+  "snapshot": {
+    "sourceMode": "snapshot",
+    "connector": "bigquery",
+    "generatedAt": "2026-11-19T16:00:00Z",
+    "triageItems": [
+      {
+        "urgency": "DESK CLOCK (NTF-4)",
+        "tone": "critical",
+        "item": "HB 2045 (Rural EMS Stabilization) presented Jan 16 \u2014 5-day return deadline 2027-01-22",
+        "action": "Open Desk Record"
+      },
+      {
+        "urgency": "STALE FISCAL NOTE (BUD-9)",
+        "tone": "critical",
+        "item": "SB 2010 (Watershed Flood Warning) amended by Senate Finance Committee Sub after Jan 14 fiscal note",
+        "action": "Request Updated Note"
+      },
+      {
+        "urgency": "UNFILED NOTE >5D (BUD-8)",
+        "tone": "warning",
+        "item": "HJR 101 (Homestead Tax Amendment) \u2014 Revenue Dept note unfiled 8 days",
+        "action": "Send Agency Reminder"
+      }
+    ],
+    "workListItems": [
+      {
+        "code": "HB 2001",
+        "text": "Grid Reliability & Energy Permitting Modernization Act",
+        "badge": "SUPPORT"
+      },
+      {
+        "code": "SB 2010",
+        "text": "Phase II Flood Warning & Watershed Telemetry Expansion Act",
+        "badge": "SUPPORT"
+      }
+    ],
+    "followUps": [
+      "Due 2026-12-10 (Meeting on HB 2001): Deliver 18-county watershed telemetry maintenance schedule to Senate Finance.",
+      "Due 2026-12-14 (Prefiling Opens): Verify companion bill deduplication across all Executive Priority Areas."
+    ],
+    "agendaItems": [
+      {
+        "rank": "#1",
+        "area": "Tax & Fiscal Modernization",
+        "sub": "Broad-based relief and agency revenue forecasting.",
+        "goal": "Enact revenue trigger modernization framework.",
+        "lead": "Tax & Revenue Policy Lead",
+        "measure": "HJR 101 (Introduced)",
+        "holds": "None"
+      },
+      {
+        "rank": "#2",
+        "area": "Workforce Readiness & Opportunity",
+        "sub": "Technical education, site readiness, and labor participation.",
+        "goal": "Expand technical career scholarships and rapid credentialing.",
+        "lead": "Economic & Workforce Lead",
+        "measure": "Civic Ready 2026 ($40M Active)",
+        "holds": "None"
+      },
+      {
+        "rank": "#3",
+        "area": "Grid Reliability & Energy Plan",
+        "sub": "Baseload generation, grid resilience, and streamlined permitting.",
+        "goal": "Streamline permitting for dispatchable baseload generation.",
+        "lead": "Energy & Infrastructure Lead",
+        "measure": "HB 2001 (In committee)",
+        "holds": "None"
+      },
+      {
+        "rank": "#4",
+        "area": "Rural Health Care Transformation",
+        "sub": "EMS sustainability, rural hospitals, and telehealth.",
+        "goal": "Establish rural trauma & EMS regional stabilization fund.",
+        "lead": "Health & Human Services Lead",
+        "measure": "HB 2045 (To Executive Desk)",
+        "holds": "None"
+      },
+      {
+        "rank": "#5",
+        "area": "Child & Family Services Reform",
+        "sub": "Foster care placement tracking, caseworker staffing, and kinship support.",
+        "goal": "Full implementation of kinship stipend & caseload cap.",
+        "lead": "Health & Human Services Lead",
+        "measure": "Drafting Complete",
+        "holds": "None"
+      },
+      {
+        "rank": "#6",
+        "area": "Education: Literacy & Career Pathways",
+        "sub": "Digital literacy, early reading mastery, and career scholarships.",
+        "goal": "Fully fund projected FY28 Career Pathways Scholarship enrollment growth.",
+        "lead": "Education Policy Lead",
+        "measure": "Budget Bill Included",
+        "holds": "None"
+      }
+    ],
+    "records": [
+      {
+        "bill": "HB 2001",
+        "title": "Grid Reliability & Energy Permitting Modernization Act",
+        "priorityArea": "Energy & Grid Reliability",
+        "priorityTier": "Priority 1 (Executive Agenda)",
+        "chamber": "House",
+        "stage": "In Committee (House Energy)",
+        "fiscalImpactMillions": 12.5,
+        "measureCount": 1,
+        "officeLead": "Energy & Infrastructure Lead",
+        "status": "SUPPORT"
+      },
+      {
+        "bill": "HB 2045",
+        "title": "Rural EMS & Trauma Stabilization Fund Act",
+        "priorityArea": "Rural Health Care",
+        "priorityTier": "Priority 1 (Executive Agenda)",
+        "chamber": "Joint / Executive Desk",
+        "stage": "To Executive Desk (5-Day Clock)",
+        "fiscalImpactMillions": 18.0,
+        "measureCount": 1,
+        "officeLead": "Health & Human Services Lead",
+        "status": "DESK CLOCK ALERT"
+      },
+      {
+        "bill": "SB 2010",
+        "title": "Phase II Flood Warning & Watershed Telemetry Act",
+        "priorityArea": "Infrastructure & Flood Resiliency",
+        "priorityTier": "Priority 1 (Executive Agenda)",
+        "chamber": "Senate",
+        "stage": "Senate Finance Committee Sub",
+        "fiscalImpactMillions": 8.4,
+        "measureCount": 1,
+        "officeLead": "Economic & Workforce Lead",
+        "status": "STALE FISCAL NOTE ALERT"
+      },
+      {
+        "bill": "HJR 101",
+        "title": "Homestead & Personal Income Tax Trigger Modernization Amendment",
+        "priorityArea": "Tax & Fiscal Modernization",
+        "priorityTier": "Fiscal Note Watch",
+        "chamber": "House",
+        "stage": "Introduced (House Finance)",
+        "fiscalImpactMillions": 45.0,
+        "measureCount": 1,
+        "officeLead": "Tax & Revenue Policy Lead",
+        "status": "SUPPORT"
+      }
+    ]
+  }
+}

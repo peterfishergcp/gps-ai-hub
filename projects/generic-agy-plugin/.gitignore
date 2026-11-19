@@ -1,0 +1,15 @@
+# Allow pre-packaged fast-install bundles in Git
+!dist/*.zip
+!workshop/starters/*.zip
+
+# Never commit credentials, tokens, or local runtime state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+agy-twin-profile.md
+ge-instance.json
+node_modules/
+.DS_Store

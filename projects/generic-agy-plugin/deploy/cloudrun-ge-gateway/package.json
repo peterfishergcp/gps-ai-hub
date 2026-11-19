@@ -1,0 +1,13 @@
+{
+  "name": "agy-cloudrun-ge-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stateless Streamable HTTP MCP gateway forwarding per-user Google Identity tokens to Gemini Enterprise StreamAssist & Search.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "agy-onboarding",
+  "displayName": "AGY Onboarding, Skill Toggle Panel & Digital Twin",
+  "version": "1.0.0",
+  "description": "Includes the interactive AGY Skills Toggle Control Panel (with 1-click SHA-256 Incremental Skill Sync), Anthropic Claude & Gemini model selection guide (/model-guide), 60-second onboarding, morning briefings, Digital Twin drafting, inbox triage, and <1s incremental /agy-update.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /agy-onboard to set up my Public Sector agency role, Digital Twin voice, and Gemini Enterprise connection",
+    "Run /model-guide to see how to use Anthropic Claude and Google Gemini in Antigravity for Public Sector workloads",
+    "Run /daily-brief to summarize today's top priorities, meetings, and open action items"
+  ]
+}

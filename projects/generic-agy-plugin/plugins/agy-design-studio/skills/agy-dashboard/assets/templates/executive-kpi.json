@@ -1,0 +1,140 @@
+{
+  "config": {
+    "id": "executive-kpi",
+    "eyebrow": "BigQuery Analytics · Executive Overview",
+    "title": "Agency Service Delivery & Budget Performance",
+    "subtitle": "Live KPI scorecard with interactive filtering and visual no-prompt layout customization",
+    "connector": "bigquery",
+    "lastUpdatedLabel": "BigQuery Snapshot · Current Quarter",
+    "themePreset": "clean-executive",
+    "theme": {
+      "mode": "light",
+      "fontFamily": "\"DM Sans\", system-ui, -apple-system, sans-serif",
+      "bg": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "ink": "#0F172A",
+      "muted": "#64748B",
+      "border": "#E2E8F0",
+      "primary": "#1D4ED8",
+      "accent": "#0F766E",
+      "secondary": "#D97706",
+      "radius": 12,
+      "density": "comfortable"
+    },
+    "filters": [
+      {
+        "field": "region",
+        "label": "Region",
+        "options": ["All", "North", "Central", "South", "Eastern Panhandle"]
+      }
+    ],
+    "kpis": [
+      {
+        "id": "kpi-total",
+        "label": "Active Cases Resolved",
+        "mode": "sum",
+        "field": "resolvedCount",
+        "format": "integer",
+        "delta": "+14.2% vs prior quarter",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-budget",
+        "label": "Allocated Program Spend",
+        "mode": "sum",
+        "field": "spendMillions",
+        "format": "currency_m",
+        "delta": "94% on-budget utilization",
+        "tone": "accent"
+      },
+      {
+        "id": "kpi-sla",
+        "label": "On-Time SLA Compliance",
+        "mode": "static",
+        "value": "97.4%",
+        "delta": "+2.1 pts above target",
+        "tone": "gold"
+      },
+      {
+        "id": "kpi-programs",
+        "label": "Active Regional Programs",
+        "mode": "count",
+        "field": "programName",
+        "format": "integer",
+        "delta": "Across 4 service regions",
+        "tone": "primary"
+      }
+    ],
+    "widgets": [
+      {
+        "id": "w-region-cases",
+        "title": "Cases Resolved by Region",
+        "subtitle": "Quarterly volume from BigQuery service table",
+        "chartType": "bar",
+        "span": 6,
+        "groupBy": "region",
+        "metricField": "resolvedCount",
+        "format": "integer",
+        "visible": true
+      },
+      {
+        "id": "w-spend-share",
+        "title": "Budget Allocation by Region ($M)",
+        "subtitle": "Current fiscal quarter distribution",
+        "chartType": "donut",
+        "span": 6,
+        "groupBy": "region",
+        "metricField": "spendMillions",
+        "format": "currency_m",
+        "visible": true
+      },
+      {
+        "id": "w-trend",
+        "title": "Monthly Resolution Velocity",
+        "subtitle": "6-month rolling completion trend",
+        "chartType": "line",
+        "span": 12,
+        "seriesKey": "weeklyTimeline",
+        "format": "integer",
+        "visible": true
+      },
+      {
+        "id": "w-table",
+        "title": "Program Performance Detail",
+        "subtitle": "Searchable regional breakdown",
+        "chartType": "table",
+        "span": 12,
+        "columns": [
+          { "key": "programName", "label": "Program" },
+          { "key": "region", "label": "Region" },
+          { "key": "resolvedCount", "label": "Resolved" },
+          { "key": "spendMillions", "label": "Spend ($M)", "format": "currency_m" },
+          { "key": "status", "label": "Status" }
+        ],
+        "visible": true
+      }
+    ],
+    "queries": {
+      "records": "SELECT program_name AS programName, region, resolved_count AS resolvedCount, spend_millions AS spendMillions, status FROM `analytics_prod.program_summary` WHERE (@region = 'All' OR region = @region) ORDER BY resolved_count DESC LIMIT 250"
+    }
+  },
+  "snapshot": {
+    "sourceMode": "snapshot",
+    "connector": "bigquery",
+    "generatedAt": "2026-11-16T16:00:00Z",
+    "weeklyTimeline": [
+      { "label": "Jun", "value": 1420 },
+      { "label": "Jul", "value": 1580 },
+      { "label": "Aug", "value": 1690 },
+      { "label": "Sep", "value": 1810 },
+      { "label": "Oct", "value": 1940 },
+      { "label": "Nov", "value": 2120 }
+    ],
+    "records": [
+      { "programName": "Broadband Last-Mile Expansion", "region": "Central", "resolvedCount": 640, "spendMillions": 4.2, "status": "On Track" },
+      { "programName": "Industrial Site Utilities", "region": "Eastern Panhandle", "resolvedCount": 590, "spendMillions": 5.1, "status": "On Track" },
+      { "programName": "Workforce Training Grants", "region": "North", "resolvedCount": 510, "spendMillions": 2.8, "status": "Ahead" },
+      { "programName": "Small Business Permitting", "region": "South", "resolvedCount": 380, "spendMillions": 1.9, "status": "Review" }
+    ]
+  }
+}

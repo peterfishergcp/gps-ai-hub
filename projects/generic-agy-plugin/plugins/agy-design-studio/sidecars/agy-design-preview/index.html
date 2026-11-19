@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AGY Design Studio — Serverless Visual Preview</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/preload.js"></script>
+</head>
+<body>
+  <header class="preview-header">
+    <div class="header-top">
+      <div class="brand-row">
+        <span class="agy-badge">AGY</span>
+        <div>
+          <h1>AGY Design Studio Preview</h1>
+          <p class="subtitle">Serverless visual preview of Dashboards, 16:9 Slides &amp; Flyers (Zero local ports needed)</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-secondary" id="refreshListBtn" title="Refresh generated deliverables">↻ Refresh</button>
+        <button type="button" class="btn-primary" id="downloadStandaloneBtn" disabled>Download HTML (Chrome/Edge) ↗</button>
+      </div>
+    </div>
+    <div class="tabs-bar" id="deliverableTabs" role="tablist" aria-label="Generated design deliverables"></div>
+  </header>
+
+  <main class="preview-stage" id="previewStage">
+    <div class="empty-state" id="emptyState">
+      <h2>No Design Deliverables Yet</h2>
+      <p>Run <code>/agy-dashboard</code>, <code>/slides</code>, or <code>/doc-design</code> in chat. Your rendered dashboard, presentation deck, or stakeholder flyer will appear here automatically—and in the Conversation Artifacts list—with zero Python or web servers needed.</p>
+    </div>
+    <iframe id="previewFrame" class="preview-frame" title="Rendered Design Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals" hidden></iframe>
+  </main>
+
+  <div class="toast" id="statusToast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
