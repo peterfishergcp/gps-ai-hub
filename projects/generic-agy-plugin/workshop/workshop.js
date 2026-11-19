@@ -27,13 +27,13 @@
     { id: '/legal-procurement-review', title: 'Public Legal & Procurement Review', category: 'Public Workflows', type: 'SOP Playbook', desc: 'Audits contracts/SOWs for sovereign immunity, fiscal non-appropriation, indemnity, and AI terms (1:3:9 risk).', prompt: '/legal-procurement-review Review this vendor contract against public-sector sovereign immunity and non-appropriation rules.' },
     { id: '/policy-program-audit', title: 'Policy & Cross-Doc Consistency Audit', category: 'Public Workflows', type: 'SOP Playbook', desc: 'Bill/rule impact briefs and cross-document launch checks catching conflicting caps, tiers, or dates.', prompt: '/policy-program-audit Audit our program rules, stakeholder flyer, and web copy for conflicting numbers or dates.' },
 
-    { id: '/document-intake-cleanup-and-validation', title: 'Public Sector Document Intake & Validation', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'Screens uploaded citizen paystubs, leases, and residency proofs for defects and calculates prospective monthly gross income.', prompt: '/document-intake-cleanup-and-validation Validate these citizen proof documents and compute prospective monthly gross income.' },
-    { id: '/expense-auditor', title: 'Grant Expense Auditor (2 CFR Part 200)', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'Audits subrecipient grant expenditure ledgers and receipts against 2 CFR Part 200 Uniform Guidance and award terms.', prompt: '/expense-auditor Audit this quarterly subrecipient grant expenditure ledger against 2 CFR Part 200 and flag questioned costs.' },
-    { id: '/foia-request-processing', title: 'FOIA Request Processing (3-Table Report)', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'First-pass public records scoping across connected systems with Matched Documents, Review Items, and Gaps tables.', prompt: '/foia-request-processing Review this FOIA request, confirm the governing law, evaluate search hits, and generate the 3-table officer report.' },
-    { id: '/plain-language-notice-generator', title: 'Plain Language Notice Generator', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'Rewrites dense regulatory notices into accessible plain language with zero fact invention and 100% citation preservation.', prompt: '/plain-language-notice-generator Rewrite this municipal utility advisory into plain language while preserving all dates, contacts, and regulatory blocks.' },
-    { id: '/policy-and-statute-assistant', title: 'Policy & Statute Assistant', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'Pinpoint federal CFR vs. state administrative code hierarchy analysis with a strict anti-hallucination retrieval gate.', prompt: '/policy-and-statute-assistant Research the controlling federal regulation and state administrative hierarchy for this SNAP eligibility question.' },
-    { id: '/public-records-redaction', title: 'Public Records Redaction (50-State & Federal)', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'Line-by-line first-pass redactions with pinpoint statutory citations, plain-English justifications, and officer flags.', prompt: '/public-records-redaction Draft first-pass public records redactions on this inspection memo with statutory citations and officer review flags.' },
-    { id: '/rfp-vendor-evaluation', title: 'RFP Vendor Evaluation Matrix', category: 'Government Services (public_sector)', type: 'SOP Playbook', desc: 'Compiles page-cited Mandatory Pass/Fail matrices, cross-section contradiction flags, and scored evidence without auto-ranking.', prompt: '/rfp-vendor-evaluation Evaluate these vendor bid packages against our RFP mandatory requirements and flag any cross-section contradictions.' },
+    { id: '/document-intake-cleanup-and-validation', title: 'Public Sector Document Intake & Validation', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'Screens uploaded citizen paystubs, leases, and residency proofs for defects and calculates prospective monthly gross income.', prompt: '/document-intake-cleanup-and-validation Validate these citizen proof documents and compute prospective monthly gross income.' },
+    { id: '/expense-auditor', title: 'Grant Expense Auditor (2 CFR Part 200)', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'Audits subrecipient grant expenditure ledgers and receipts against 2 CFR Part 200 Uniform Guidance and award terms.', prompt: '/expense-auditor Audit this quarterly subrecipient grant expenditure ledger against 2 CFR Part 200 and flag questioned costs.' },
+    { id: '/foia-request-processing', title: 'FOIA Request Processing (3-Table Report)', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'First-pass public records scoping across connected systems with Matched Documents, Review Items, and Gaps tables.', prompt: '/foia-request-processing Review this FOIA request, confirm the governing law, evaluate search hits, and generate the 3-table officer report.' },
+    { id: '/plain-language-notice-generator', title: 'Plain Language Notice Generator', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'Rewrites dense regulatory notices into accessible plain language with zero fact invention and 100% citation preservation.', prompt: '/plain-language-notice-generator Rewrite this municipal utility advisory into plain language while preserving all dates, contacts, and regulatory blocks.' },
+    { id: '/policy-and-statute-assistant', title: 'Policy & Statute Assistant', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'Pinpoint federal CFR vs. state administrative code hierarchy analysis with a strict anti-hallucination retrieval gate.', prompt: '/policy-and-statute-assistant Research the controlling federal regulation and state administrative hierarchy for this SNAP eligibility question.' },
+    { id: '/public-records-redaction', title: 'Public Records Redaction (50-State & Federal)', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'Line-by-line first-pass redactions with pinpoint statutory citations, plain-English justifications, and officer flags.', prompt: '/public-records-redaction Draft first-pass public records redactions on this inspection memo with statutory citations and officer review flags.' },
+    { id: '/rfp-vendor-evaluation', title: 'RFP Vendor Evaluation Matrix', category: 'Government Services', tags: 'public_sector', type: 'SOP Playbook', desc: 'Compiles page-cited Mandatory Pass/Fail matrices, cross-section contradiction flags, and scored evidence without auto-ranking.', prompt: '/rfp-vendor-evaluation Evaluate these vendor bid packages against our RFP mandatory requirements and flag any cross-section contradictions.' },
 
     { id: '/modernize-refactor', title: '3-Stage Legacy App Modernization', category: 'Engineering & Cloud', type: 'Executable Skill', desc: 'Stage 0 Safety Gate -> Stage 1 6-Section Blueprint & Bug Audit -> Stage 2 Crucible + A/B Parity + HTML Report.', prompt: '/modernize-refactor Inspect this legacy app and generate a Stage 1 6-section modernization blueprint.' },
     { id: '/deploy-cloudrun', title: 'Zero-Docker Cloud Run Deploy', category: 'Engineering & Cloud', type: 'SOP Playbook', desc: 'Deploys from source via remote Cloud Build with non-root containers, dedicated service account, and Secret Manager.', prompt: '/deploy-cloudrun Prepare this service for a hardened zero-Docker Cloud Run deployment in us-east4.' },
@@ -50,7 +50,7 @@
     'Federated Connectors',
     'Design Studio',
     'Public Workflows',
-    'Government Services (public_sector)',
+    'Government Services',
     'Engineering & Cloud',
     'Security & IAM'
   ];
@@ -66,12 +66,31 @@
     return n;
   }
 
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+
   function copyWithFeedback(text, btn, label) {
+    var done = function () {
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = label; }, 1600);
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () {
-        btn.textContent = 'Copied!';
-        setTimeout(function () { btn.textContent = label; }, 1600);
+      navigator.clipboard.writeText(text).then(done, function () {
+        fallbackCopy(text);
+        done();
       });
+    } else {
+      fallbackCopy(text);
+      done();
     }
   }
 
@@ -87,10 +106,10 @@
     typeBar.replaceChildren();
     [
       { id: 'All', label: 'All Skills (' + SKILLS.length + ')' },
-      { id: 'Executable Skill', label: 'Executable Skills (' + execCount + ')' },
-      { id: 'SOP Playbook', label: 'SOP Playbooks (' + sopCount + ')' }
+      { id: 'Executable Skill', label: 'Executable & UI/MCP (' + execCount + ')' },
+      { id: 'SOP Playbook', label: 'Domain Playbooks (' + sopCount + ')' }
     ].forEach(function (t) {
-      var b = el('button', 'filter-chip' + (activeType === t.id ? ' active' : ''), t.label);
+      var b = el('button', 'type-pill' + (activeType === t.id ? ' active' : ''), t.label);
       b.type = 'button';
       b.addEventListener('click', function () {
         activeType = t.id;
@@ -101,7 +120,8 @@
 
     catBar.replaceChildren();
     CATEGORIES.forEach(function (cat) {
-      var b = el('button', 'filter-chip' + (activeCategory === cat ? ' active' : ''), cat);
+      var count = cat === 'All' ? SKILLS.length : SKILLS.filter(function (s) { return s.category === cat; }).length;
+      var b = el('button', 'seg-btn' + (activeCategory === cat ? ' active' : ''), cat + ' (' + count + ')');
       b.type = 'button';
       b.addEventListener('click', function () {
         activeCategory = cat;
@@ -119,7 +139,8 @@
         s.id.toLowerCase().includes(q) ||
         s.title.toLowerCase().includes(q) ||
         s.desc.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q)
+        s.category.toLowerCase().includes(q) ||
+        (s.tags && s.tags.toLowerCase().includes(q))
       );
     });
 
@@ -130,19 +151,20 @@
     }
 
     filtered.forEach(function (s) {
-      var card = el('article', 'skill-card');
-      var top = el('div', 'skill-top');
-      top.appendChild(el('span', 'skill-cmd', s.id));
-      top.appendChild(el('span', 'skill-type' + (s.type === 'Executable Skill' ? ' exec' : ''), s.type));
+      var card = el('article', 'm3-skill-card');
+      var top = el('div', 'card-meta-top');
+      var isExec = s.type === 'Executable Skill';
+      top.appendChild(el('span', 'skill-type-badge ' + (isExec ? 'exec' : 'sop'), isExec ? 'Executable' : 'Playbook'));
+      top.appendChild(el('span', 'skill-slash-id', s.id));
       card.appendChild(top);
-      card.appendChild(el('h3', 'skill-title', s.title));
-      card.appendChild(el('p', 'skill-desc', s.desc));
-      var foot = el('div', 'skill-foot');
-      foot.appendChild(el('span', 'skill-cat', s.category));
-      var copyBtn = el('button', 'skill-copy-btn', 'Copy Starter Prompt');
+      card.appendChild(el('h3', '', s.title));
+      card.appendChild(el('p', '', s.desc));
+      var foot = el('div', 'card-footer');
+      foot.appendChild(el('span', 'cat-label', s.category));
+      var copyBtn = el('button', 'copy-prompt-btn', 'Copy Prompt');
       copyBtn.type = 'button';
       copyBtn.addEventListener('click', function () {
-        copyWithFeedback(s.prompt, copyBtn, 'Copy Starter Prompt');
+        copyWithFeedback(s.prompt, copyBtn, 'Copy Prompt');
       });
       foot.appendChild(copyBtn);
       card.appendChild(foot);
@@ -155,8 +177,13 @@
     if (!btn) return;
     btn.addEventListener('click', function () {
       var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-      btn.textContent = isDark ? '☾' : '☀';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        btn.textContent = '☾';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        btn.textContent = '☀';
+      }
     });
   }
 
