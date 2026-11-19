@@ -1,0 +1,274 @@
+{
+  "config": {
+    "id": "public-incident-triage",
+    "eyebrow": "Public Sector \u00b7 Operations Leadership Summary",
+    "title": "Field Safety & Facility Operations Incident Triage",
+    "subtitle": "Automated Critical-Alert Classification & Routine Filing Across Field Inspection and Facility Operations (Synthetic Workshop Dataset)",
+    "connector": "bigquery",
+    "lastUpdatedLabel": "Operations Audit \u00b7 Post-Spam Recovery Check",
+    "themePreset": "civic-official",
+    "theme": {
+      "mode": "light",
+      "fontFamily": "\"Fira Sans\", system-ui, -apple-system, sans-serif",
+      "bg": "#F4F6F8",
+      "surface": "#FFFFFF",
+      "ink": "#1E252B",
+      "muted": "#5A6772",
+      "border": "#D8E0E6",
+      "primary": "#053254",
+      "accent": "#C1452C",
+      "secondary": "#D5A245",
+      "radius": 12,
+      "density": "comfortable"
+    },
+    "filters": [
+      {
+        "field": "stream",
+        "label": "Report Stream",
+        "options": [
+          "All",
+          "Field Safety Reports",
+          "Facility Operations Reports"
+        ]
+      },
+      {
+        "field": "disposition",
+        "label": "Disposition",
+        "options": [
+          "All",
+          "Critical Alert Sent",
+          "Routine Labeled & Archived",
+          "Held in Inbox (Unreadable)"
+        ]
+      }
+    ],
+    "kpis": [
+      {
+        "id": "kpi-backlog",
+        "label": "Legacy Inbox Backlog Cleared",
+        "mode": "static",
+        "value": "11,057",
+        "delta": "10,765 Facility \u00b7 292 Field archived",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-processed",
+        "label": "New Reports Triaged",
+        "mode": "sum",
+        "field": "reportCount",
+        "format": "integer",
+        "delta": "100% automated rule evaluation",
+        "tone": "primary"
+      },
+      {
+        "id": "kpi-alerts",
+        "label": "Director Alerts Triggered",
+        "mode": "sum",
+        "field": "alertCount",
+        "format": "integer",
+        "delta": "3.4 min median delivery SLA",
+        "tone": "accent"
+      },
+      {
+        "id": "kpi-spam",
+        "label": "Reports Remaining in Spam",
+        "mode": "static",
+        "value": "0",
+        "delta": "Auto Spam-recovery check active",
+        "tone": "gold"
+      }
+    ],
+    "widgets": [
+      {
+        "id": "w-stream-volume",
+        "title": "Reports Triaged by Regional Category",
+        "subtitle": "Incoming operational reports evaluated by written threshold rules",
+        "chartType": "bar",
+        "span": 6,
+        "groupBy": "category",
+        "metricField": "reportCount",
+        "format": "integer",
+        "visible": true
+      },
+      {
+        "id": "w-disposition-mix",
+        "title": "Triage Disposition Breakdown",
+        "subtitle": "Routine archive vs. immediate director alerts and fail-safe holds",
+        "chartType": "donut",
+        "span": 6,
+        "groupBy": "disposition",
+        "metricField": "reportCount",
+        "format": "integer",
+        "visible": true
+      },
+      {
+        "id": "w-daily-latency",
+        "title": "Median Processing & Alert Latency (Minutes)",
+        "subtitle": "End-to-end minutes from inbox arrival to rule classification & Spam verification",
+        "chartType": "line",
+        "span": 12,
+        "seriesKey": "weeklyTimeline",
+        "format": "decimal_min",
+        "visible": true
+      },
+      {
+        "id": "w-triage-log",
+        "title": "Operational Rule Classification Summary (Synthetic Audit View)",
+        "subtitle": "Written director rules applied to Field Safety and Facility Operations streams",
+        "chartType": "table",
+        "span": 12,
+        "columns": [
+          {
+            "key": "batchDate",
+            "label": "Date"
+          },
+          {
+            "key": "stream",
+            "label": "Stream"
+          },
+          {
+            "key": "category",
+            "label": "Incident Category"
+          },
+          {
+            "key": "disposition",
+            "label": "Disposition"
+          },
+          {
+            "key": "reportCount",
+            "label": "Reports"
+          },
+          {
+            "key": "alertCount",
+            "label": "Alerts"
+          },
+          {
+            "key": "slaMinutes",
+            "label": "Latency (min)"
+          },
+          {
+            "key": "gmailLabel",
+            "label": "Target Label"
+          }
+        ],
+        "visible": true
+      }
+    ],
+    "queries": {
+      "records": "SELECT batch_date AS batchDate, stream, category, disposition, report_count AS reportCount, alert_count AS alertCount, sla_minutes AS slaMinutes, gmail_label AS gmailLabel FROM `public_ops_analytics.incident_triage_summary` WHERE (@stream = 'All' OR stream = @stream) ORDER BY batch_date DESC LIMIT 250"
+    }
+  },
+  "snapshot": {
+    "sourceMode": "snapshot",
+    "connector": "bigquery",
+    "generatedAt": "2026-11-19T16:00:00Z",
+    "weeklyTimeline": [
+      {
+        "label": "Oct 30",
+        "value": 4.1
+      },
+      {
+        "label": "Nov 02",
+        "value": 3.8
+      },
+      {
+        "label": "Nov 04 (Fix)",
+        "value": 3.6
+      },
+      {
+        "label": "Nov 06",
+        "value": 3.4
+      },
+      {
+        "label": "Nov 09",
+        "value": 3.2
+      },
+      {
+        "label": "Nov 12",
+        "value": 3.1
+      }
+    ],
+    "records": [
+      {
+        "batchDate": "2026-11-12",
+        "stream": "Field Safety Reports",
+        "category": "Minor Equipment Inspection Check",
+        "disposition": "Routine Labeled & Archived",
+        "reportCount": 19,
+        "alertCount": 0,
+        "slaMinutes": 2.9,
+        "gmailLabel": "Field Safety"
+      },
+      {
+        "batchDate": "2026-11-10",
+        "stream": "Field Safety Reports",
+        "category": "Structural / Utility Clearance Note",
+        "disposition": "Routine Labeled & Archived",
+        "reportCount": 16,
+        "alertCount": 0,
+        "slaMinutes": 3.1,
+        "gmailLabel": "Field Safety"
+      },
+      {
+        "batchDate": "2026-11-08",
+        "stream": "Facility Operations Reports",
+        "category": "Critical On-Site Medical Event",
+        "disposition": "Critical Alert Sent",
+        "reportCount": 1,
+        "alertCount": 1,
+        "slaMinutes": 3.0,
+        "gmailLabel": "Facility Ops"
+      },
+      {
+        "batchDate": "2026-11-07",
+        "stream": "Facility Operations Reports",
+        "category": "Routine Facility Shift & Utility Restored",
+        "disposition": "Routine Labeled & Archived",
+        "reportCount": 8,
+        "alertCount": 0,
+        "slaMinutes": 3.3,
+        "gmailLabel": "Facility Ops"
+      },
+      {
+        "batchDate": "2026-11-05",
+        "stream": "Facility Operations Reports",
+        "category": "Facility Evacuation / >2h Utility Threshold",
+        "disposition": "Critical Alert Sent",
+        "reportCount": 1,
+        "alertCount": 1,
+        "slaMinutes": 3.8,
+        "gmailLabel": "Facility Ops"
+      },
+      {
+        "batchDate": "2026-11-05",
+        "stream": "Field Safety Reports",
+        "category": "Blank Copy Fail-Safe Verification",
+        "disposition": "Critical Alert Sent",
+        "reportCount": 2,
+        "alertCount": 2,
+        "slaMinutes": 3.5,
+        "gmailLabel": "Field Safety"
+      },
+      {
+        "batchDate": "2026-11-04",
+        "stream": "Facility Operations Reports",
+        "category": "Medical Transport / Non-Crisis Update",
+        "disposition": "Routine Labeled & Archived",
+        "reportCount": 4,
+        "alertCount": 0,
+        "slaMinutes": 3.4,
+        "gmailLabel": "Facility Ops"
+      },
+      {
+        "batchDate": "2026-11-03",
+        "stream": "Facility Operations Reports",
+        "category": "External Form Link Only (Attachment Missing)",
+        "disposition": "Held in Inbox (Unreadable)",
+        "reportCount": 1,
+        "alertCount": 0,
+        "slaMinutes": 2.8,
+        "gmailLabel": "Inbox Hold"
+      }
+    ]
+  }
+}

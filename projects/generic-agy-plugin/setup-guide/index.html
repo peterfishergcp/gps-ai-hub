@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Public Sector step-by-step setup guide with screenshots: download Google Antigravity, sign in with your organizational Business Account, link your Gemini Enterprise subscription GCP project, and run your first Python app.">
+<title>Google Antigravity · Organization Setup Guide</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%231a73e8'/%3E%3Cpath d='M16 6L8.5 24h4.2l1.5-3.8h3.6L19.3 24h4.2L16 6zm-1 10.6L16 13.8l1 2.8h-2z' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body class="hide-notes">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true">AGY</span>
+      <span class="brand-text">Google Antigravity · Organization Setup Guide</span>
+    </a>
+    <div class="progress" aria-live="polite">
+      <span id="progressText">0 of 7 steps</span>
+      <div class="bar"><span id="progressBar"></span></div>
+    </div>
+    <button class="notes-toggle" type="button" id="notesToggle" aria-pressed="false" hidden>Review notes: off</button>
+  </div>
+  <nav class="chips" aria-label="Jump to a step">
+    <a class="chip" href="#why-business">Why Business Account</a>
+    <a class="chip" data-step-link="1" href="#step-1">1 · Download</a>
+    <a class="chip" data-step-link="2" href="#step-2">2 · Business Login</a>
+    <a class="chip" data-step-link="3" href="#step-3">3 · Org Email Auth</a>
+    <a class="chip" data-step-link="4" href="#step-4">4 · Link GCP Project</a>
+    <a class="chip" data-step-link="5" href="#step-5">5 · Terms</a>
+    <a class="chip" data-step-link="6" href="#step-6">6 · First Prompt</a>
+    <a class="chip" data-step-link="7" href="#step-7">7 · Run Python App</a>
+    <a class="chip" href="#help">Troubleshooting</a>
+  </nav>
+</header>
+
+<div class="shell" id="top">
+  <aside class="rail" aria-label="Setup guide sections">
+    <nav>
+      <div class="label">Setup Overview</div>
+      <a href="#overview"><span class="dot">·</span>Welcome</a>
+      <a href="#why-business"><span class="dot">!</span>Use Business Account</a>
+
+      <div class="label">Step-by-Step Setup</div>
+      <a data-step-link="1" href="#step-1"><span class="dot">1</span>Download &amp; Install</a>
+      <a data-step-link="2" href="#step-2"><span class="dot">2</span>Use Business Account</a>
+      <a data-step-link="3" href="#step-3"><span class="dot">3</span>Sign In with Org Email</a>
+      <a class="l2" data-step-link="4" href="#step-4"><span class="dot">4</span>Link GCP Project (US)</a>
+      <a data-step-link="5" href="#step-5"><span class="dot">5</span>Accept Terms</a>
+      <a data-step-link="6" href="#step-6"><span class="dot">6</span>Create Hello World App</a>
+      <a data-step-link="7" href="#step-7"><span class="dot">7</span>Allow &amp; Run Script</a>
+
+      <div class="label">Support</div>
+      <a href="#help"><span class="dot">?</span>Troubleshooting FAQ</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="banner" role="note">
+      <h2>Facilitator review notes (?review mode)</h2>
+      <ul>
+        <li><b>Complete 7-step visual onboarding walkthrough:</b> Includes all 19 visual screens—covering download, <code>Save As</code>, skipping the post-download survey, organizational Business Account sign-in, tying Antigravity directly to your organization's <b>Subscription</b> on your designated Google Cloud Project ID in the <b>United States</b> region (<b>Gemini Enterprise</b>), onboarding prompts, and both script confirmation prompts.</li>
+        <li><b>Generic &amp; Ready for Any Agency Cohort:</b> Share your cohort's Google Cloud Project ID and domain during the workshop kickoff so attendees can enter them directly in Steps 3 and 4.</li>
+      </ul>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="overview">
+      <span class="eyebrow">Public Sector · Google Antigravity Onboarding</span>
+      <h1>Set Up <span>Google Antigravity</span> for Your Organization</h1>
+      <p class="lede">Follow these 7 visual steps to download and install the <b>Google Antigravity</b> desktop app, sign in with your official <b><code>@your-org.gov</code></b> Business Account, tie your usage to your organization's <b>Gemini Enterprise</b> subscription on your designated Google Cloud Project (<b><code>your-gcp-project-id</code></b>, <b>United States</b> region), and create your first Python app.</p>
+      <div class="facts">
+        <span class="fact"><b>5</b> minutes</span>
+        <span class="fact"><b>7</b> visual steps</span>
+        <span class="fact"><b>@your-org.gov</b> Business Login</span>
+        <span class="fact"><b>Subscription</b> · US Region</span>
+      </div>
+      <div class="cta-row">
+        <a class="btn primary" href="#step-1">Start Step 1</a>
+        <a class="btn ghost" href="#why-business">Why Use Business Account?</a>
+      </div>
+    </section>
+
+    <!-- WHY USE BUSINESS ACCOUNT + QUICK SETTINGS -->
+    <section id="why-business" aria-labelledby="why-h">
+      <div class="sec-head">
+        <h2 id="why-h">Always Select “Use Business Account” &amp; “Subscription”</h2>
+        <p>Every participant uses the configuration settings below (substituting the Google Cloud Project ID and email domain provided by your IT administrator) to connect Antigravity to your organization's Gemini Enterprise subscription.</p>
+      </div>
+
+      <div class="kv-grid" aria-label="Organization Configuration Values">
+        <div class="kv"><span>Sign-In Option</span><b>Use Business Account</b></div>
+        <div class="kv"><span>Email Account</span><b>your.name@your-org.gov</b></div>
+        <div class="kv"><span>Billing Model</span><b>Subscription</b></div>
+        <div class="kv"><span>GCP Project ID</span><b>your-gcp-project-id</b></div>
+        <div class="kv"><span>Region</span><b>United States</b></div>
+        <div class="kv"><span>License Tier</span><b>Gemini Enterprise (Standard / Plus)</b></div>
+      </div>
+
+      <div class="compare-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>Welcome Screen Option</th>
+              <th>Use for Your Agency?</th>
+              <th>What Happens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Use Business Account</b><br><span style="font-size:.82rem;color:var(--muted)">Required for all organizational users</span></td>
+              <td><span class="pill-yes">YES — Always Select</span></td>
+              <td>Authenticates your official <code>@your-org.gov</code> Google Cloud Identity account under <b>Google Cloud Terms of Service</b> and ties Antigravity directly to your organization's <b>Gemini Enterprise</b> subscription on <code>your-gcp-project-id</code> in the <b>United States</b> region. Your prompts, code, and outputs stay inside your project boundary and are never used to train models.</td>
+            </tr>
+            <tr>
+              <td><b>Continue with Google</b><br><span style="font-size:.82rem;color:var(--muted)">Consumer accounts only</span></td>
+              <td><span class="pill-no">DO NOT USE</span></td>
+              <td>Consumer-only sign-in path. Selecting this option prevents connecting to your agency's GCP project and blocks managed enterprise accounts.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- WALKTHROUGH STEPS -->
+    <section id="walkthrough" aria-labelledby="walk-h">
+      <div class="sec-head">
+        <h2 id="walk-h">Step-by-Step Setup Walkthrough</h2>
+        <p>Click any screenshot to enlarge it full-screen, and tick each step checkbox as you go.</p>
+      </div>
+
+      <!-- STEP 1: DOWNLOAD & INSTALL -->
+      <article class="step" id="step-1" data-step="1">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>1</b></span>
+          <div>
+            <h3>Download and install Google Antigravity</h3>
+            <span class="mins">About 1 minute</span>
+          </div>
+        </div>
+        <ol>
+          <li>Open your browser, visit <span class="n">1</span><a href="https://antigravity.google/" target="_blank" rel="noopener">antigravity.google</a> (or go directly to <a href="https://antigravity.google/download" target="_blank" rel="noopener">antigravity.google/download</a>), and click <span class="n">2</span><span class="ui">Download Antigravity</span>.</li>
+          <li><span class="n">3</span>When the <b>Save As</b> window opens, choose a familiar folder on your computer (such as <b>Downloads</b>) and click <span class="ui">Save</span> to store <code>Antigravity-x64.exe</code> (or the macOS/Linux installer for your OS).</li>
+          <li><span class="n">4</span>On the brief <i>“How did you hear about us?”</i> survey, fill it out or click <span class="ui">Skip</span> to move forward.</li>
+          <li>If your download has not started yet on <b>Download Google Antigravity</b>, click <span class="n">5</span><span class="ui">Download for x64</span>, confirm <span class="n">6</span><code>Antigravity-x64.exe</code> has finished in your browser's <b>Recent download history</b>, and run the installer to launch Antigravity.</li>
+        </ol>
+
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-01a-download-site.png" width="1140" height="680" alt="Google Antigravity website showing URL and Download Antigravity button">
+              <span class="hl" style="left:5.79%;top:0.74%;width:28.77%;height:5.00%"><i>1</i></span>
+              <span class="hl" style="left:36.60%;top:79.20%;width:15.60%;height:6.60%"><i>2</i></span>
+            </div>
+            <figcaption>Visit <span class="n">1</span><b>antigravity.google</b> and click <span class="n">2</span><b>Download Antigravity</b>.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-01b-save-installer.png" width="1140" height="680" alt="Windows Save As dialog saving Antigravity-x64.exe to Downloads with Save highlighted">
+              <span class="hl" style="left:68.86%;top:79.63%;width:9.12%;height:5.74%"><i>3</i></span>
+            </div>
+            <figcaption>Save <code>Antigravity-x64.exe</code> to <b>Downloads</b> and click <span class="n">3</span><b>Save</b>.</figcaption>
+          </figure>
+        </div>
+
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-01c-skip-survey.png" width="1140" height="680" alt="How did you hear about us survey dialog with Skip button highlighted" loading="lazy">
+              <span class="hl" style="left:59.91%;top:65.96%;width:5.96%;height:5.74%"><i>4</i></span>
+            </div>
+            <figcaption>Click <span class="n">4</span><b>Skip</b> on the optional survey popup.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-01d-download-x64.png" width="1140" height="680" alt="Download Google Antigravity page with Download for x64 and Antigravity-x64.exe in Recent download history" loading="lazy">
+              <span class="hl" style="left:7.37%;top:49.56%;width:14.60%;height:7.06%"><i>5</i></span>
+              <span class="hl" style="left:71.40%;top:12.94%;width:25.44%;height:8.53%"><i>6</i></span>
+            </div>
+            <figcaption>Click <span class="n">5</span><b>Download for x64</b> and open <span class="n">6</span><code>Antigravity-x64.exe</code> once finished.</figcaption>
+          </figure>
+        </div>
+        <div class="done-row"><label for="done-1"><input type="checkbox" id="done-1" data-done="1">Step 1 done</label></div>
+      </article>
+
+      <!-- STEP 2: USE BUSINESS ACCOUNT & CONTINUE WITH GOOGLE CLOUD -->
+      <article class="step" id="step-2" data-step="2">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>2</b></span>
+          <div>
+            <h3>Select “Use Business Account” → “Continue with Google Cloud”</h3>
+            <span class="mins">About 30 seconds</span>
+          </div>
+        </div>
+        <ol>
+          <li><span class="n">1</span>Upon launching Antigravity to the <b>Welcome to Antigravity!</b> screen, select <span class="ui">Use Business Account</span> to sign in with your organizational credentials <i>(do <b>not</b> click Continue with Google)</i>.</li>
+          <li><span class="n">2</span>On <b>Business Account Sign In</b>, choose <span class="ui">Continue with Google Cloud</span> to securely bridge your business account with Google Cloud authentication.</li>
+        </ol>
+
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-02a-welcome-business.png" width="1140" height="940" alt="Welcome to Antigravity screen with Use Business Account highlighted" loading="lazy">
+              <span class="hl" style="left:30.79%;top:44.12%;width:38.42%;height:4.68%"><i>1</i></span>
+            </div>
+            <figcaption>Click <span class="n">1</span><b>Use Business Account</b> on the welcome screen.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-02b-continue-google-cloud.png" width="1140" height="940" alt="Business Account Sign In screen with Continue with Google Cloud highlighted" loading="lazy">
+              <span class="hl" style="left:30.79%;top:42.87%;width:38.42%;height:4.68%"><i>2</i></span>
+            </div>
+            <figcaption>Click <span class="n">2</span><b>Continue with Google Cloud</b>.</figcaption>
+          </figure>
+        </div>
+        <div class="done-row"><label for="done-2"><input type="checkbox" id="done-2" data-done="2">Step 2 done</label></div>
+      </article>
+
+      <!-- STEP 3: SIGN IN WITH ORG EMAIL IN BROWSER -->
+      <article class="step" id="step-3" data-step="3">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>3</b></span>
+          <div>
+            <h3>Choose your organizational email and return to Antigravity</h3>
+            <span class="mins">About 30 seconds</span>
+          </div>
+        </div>
+        <ol>
+          <li><span class="n">1</span>In your browser on <b>Choose an account</b>, select your official <b><code>@your-org.gov</code></b> organizational email address (or click <i>Use another account</i> to enter it).</li>
+          <li><span class="n">2</span>Verify your identity by clicking <span class="ui">Sign in</span> when prompted by the Google security check (<i>“Make sure that you downloaded this app from Google”</i>).</li>
+          <li><span class="n">3</span>Once your browser confirms <b>You have successfully authenticated</b>, click <span class="ui">Open Antigravity</span> to return to the application and complete your setup.</li>
+        </ol>
+
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-03a-choose-org-account.png" width="1140" height="680" alt="Sign in with Google Choose an account screen with organizational email highlighted" loading="lazy">
+              <span class="hl" style="left:51.23%;top:39.63%;width:31.49%;height:10.88%"><i>1</i></span>
+            </div>
+            <figcaption>Select your official <span class="n">1</span><b><code>@your-org.gov</code></b> organizational email account.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-03b-security-check.png" width="1140" height="680" alt="Google security check screen with Sign in button highlighted" loading="lazy">
+              <span class="hl" style="left:72.26%;top:67.12%;width:10.98%;height:6.76%"><i>2</i></span>
+            </div>
+            <figcaption>Click <span class="n">2</span><b>Sign in</b> on the security check.</figcaption>
+          </figure>
+        </div>
+
+        <figure class="shot">
+          <div class="frame">
+            <img src="./img/agy-03c-open-antigravity.png" width="1140" height="680" alt="Browser dialog prompting Open Antigravity after authentication succeeds" loading="lazy">
+            <span class="hl" style="left:47.67%;top:24.85%;width:12.06%;height:6.03%"><i>3</i></span>
+          </div>
+          <figcaption>Click <span class="n">3</span><b>Open Antigravity</b> to hand the authenticated session back to Antigravity.</figcaption>
+        </figure>
+        <div class="done-row"><label for="done-3"><input type="checkbox" id="done-3" data-done="3">Step 3 done</label></div>
+      </article>
+
+      <!-- STEP 4: SUBSCRIPTION + GCP PROJECT + UNITED STATES + GEMINI ENTERPRISE -->
+      <article class="step" id="step-4" data-step="4">
+        <div class="step-head">
+          <span class="badge l2"><small>STEP</small><b>4</b></span>
+          <div>
+            <h3>Link Subscription to your GCP Project &amp; Region</h3>
+            <span class="mins">About 1 minute</span>
+          </div>
+        </div>
+        <p>Back in Antigravity on <b>Select Billing Model</b>, complete these three screens in order using the Google Cloud Project ID shared by your organization's IT administrator:</p>
+
+        <div class="field">
+          <span>Example Google Cloud Project ID Placeholder (Replace with your agency's Project ID)</span>
+          <div class="copybox">
+            <pre id="c-org-proj">your-gcp-project-id</pre>
+            <button class="copy" type="button" data-copy="c-org-proj">Copy</button>
+          </div>
+        </div>
+
+        <ol>
+          <li><b>Choose Billing Model &amp; Enter Project ID:</b> Select the <span class="n">1</span><span class="ui">Subscription</span> option, enter your organization's designated Google Cloud Project ID under <span class="n">2</span><b>Provide Google Cloud Project</b> (e.g., <code>your-gcp-project-id</code>), and click <span class="n">3</span><span class="ui">Next</span>.</li>
+        </ol>
+        <figure class="shot">
+          <div class="frame">
+            <img src="./img/agy-04a-project-id.png" width="1140" height="940" alt="Select Billing Model with Subscription selected, your-gcp-project-id entered under Provide Google Cloud Project, and Next button highlighted" loading="lazy">
+            <span class="hl" style="left:30.79%;top:38.19%;width:19.04%;height:12.13%"><i>1</i></span>
+            <span class="hl" style="left:30.96%;top:56.06%;width:37.89%;height:4.89%"><i>2</i></span>
+            <span class="hl" style="left:38.42%;top:79.36%;width:23.16%;height:4.68%"><i>3</i></span>
+          </div>
+          <figcaption>Step 4a: Select <span class="n">1</span><b>Subscription</b>, enter <span class="n">2</span><code>your-gcp-project-id</code>, and click <span class="n">3</span><b>Next</b>.</figcaption>
+        </figure>
+
+        <ol start="2">
+          <li><b>Specify Region:</b> Under <b>Choose Region</b>, select <span class="n">1</span><span class="ui">United States</span> (or your organization's assigned region) and click <span class="n">2</span><span class="ui">Next</span>.</li>
+          <li><b>Confirm Subscription &amp; Gemini Enterprise License:</b> Confirm <span class="n">1</span><span class="ui">Subscription</span> is selected to tie your Antigravity usage directly to your organization's Gemini Enterprise subscription. Verify your <span class="n">2</span><b>Gemini Enterprise</b> license (<i>Available for your-gcp-project-id project</i>) is selected, then click <span class="n">3</span><span class="ui">Next</span> to continue.</li>
+        </ol>
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-04b-choose-region.png" width="1140" height="940" alt="Select Billing Model Choose Region screen with United States and Next highlighted" loading="lazy">
+              <span class="hl" style="left:30.96%;top:58.40%;width:37.89%;height:4.89%"><i>1</i></span>
+              <span class="hl" style="left:38.42%;top:79.36%;width:23.16%;height:4.68%"><i>2</i></span>
+            </div>
+            <figcaption>Step 4b: Specify the region as <span class="n">1</span><b>United States</b> and click <span class="n">2</span><b>Next</b>.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-04c-select-license.png" width="1140" height="940" alt="Select Billing Model Select License screen showing Subscription selected, Gemini Enterprise license available for your-gcp-project-id project, and Next button" loading="lazy">
+              <span class="hl" style="left:30.79%;top:38.19%;width:19.04%;height:12.13%"><i>1</i></span>
+              <span class="hl" style="left:30.96%;top:60.37%;width:37.89%;height:8.83%"><i>2</i></span>
+              <span class="hl" style="left:38.42%;top:79.36%;width:23.16%;height:4.68%"><i>3</i></span>
+            </div>
+            <figcaption>Step 4c: Confirm <span class="n">1</span><b>Subscription</b> &amp; <span class="n">2</span><b>Gemini Enterprise</b> license, then click <span class="n">3</span><b>Next</b>.</figcaption>
+          </figure>
+        </div>
+        <div class="done-row"><label for="done-4"><input type="checkbox" id="done-4" data-done="4">Step 4 done</label></div>
+      </article>
+
+      <!-- STEP 5: NOT NOW & ACCEPT TERMS OF SERVICE -->
+      <article class="step" id="step-5" data-step="5">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>5</b></span>
+          <div>
+            <h3>Click “Not now” on Creating a Project &amp; Accept Terms</h3>
+            <span class="mins">About 20 seconds</span>
+          </div>
+        </div>
+        <ol>
+          <li><span class="n">1</span>On the <b>Creating a Project</b> dialog, click <span class="ui">Not now</span> to proceed directly to the main interface.</li>
+          <li><span class="n">2</span>Review and accept the <b>Terms of Service &amp; Data Use</b> by clicking <span class="ui">Continue</span> to start working <i>(you can also click <b>Dismiss</b> on any model announcement card in the corner)</i>.</li>
+        </ol>
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-05a-creating-project.png" width="1140" height="680" alt="Creating a Project dialog with Not now button highlighted" loading="lazy">
+              <span class="hl" style="left:46.45%;top:70.37%;width:7.98%;height:5.74%"><i>1</i></span>
+            </div>
+            <figcaption>Click <span class="n">1</span><b>Not now</b> on <b>Creating a Project</b>.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-05b-terms-continue.png" width="1140" height="940" alt="Terms of Service and Data Use dialog with Continue button highlighted" loading="lazy">
+              <span class="hl" style="left:62.93%;top:67.07%;width:7.68%;height:4.26%"><i>2</i></span>
+            </div>
+            <figcaption>Click <span class="n">2</span><b>Continue</b> on <b>Terms of Service &amp; Data Use</b>.</figcaption>
+          </figure>
+        </div>
+        <div class="done-row"><label for="done-5"><input type="checkbox" id="done-5" data-done="5">Step 5 done</label></div>
+      </article>
+
+      <!-- STEP 6: DISMISS NOTIFICATION & ENTER HELLO WORLD PROMPT -->
+      <article class="step" id="step-6" data-step="6">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>6</b></span>
+          <div>
+            <h3>Dismiss the introductory tip &amp; enter your first Python prompt</h3>
+            <span class="mins">About 30 seconds</span>
+          </div>
+        </div>
+        <ol>
+          <li><span class="n">1</span>Once greeted with the main workspace, click <span class="ui">Dismiss</span> on the <b>Search Across Conversations</b> notification in the bottom-right corner to clear your view.</li>
+          <li><span class="n">2</span>Enter your request directly into the prompt bar—for this example, type <code>create a hello world python app</code>—and click the blue <span class="n">3</span><b>arrow button (<code>→</code>)</b> to initiate generation.</li>
+        </ol>
+
+        <div class="field">
+          <span>Copy Starter Verification Prompt</span>
+          <div class="copybox">
+            <pre id="c-hello">create a hello world python app</pre>
+            <button class="copy" type="button" data-copy="c-hello">Copy</button>
+          </div>
+        </div>
+
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-06a-dismiss-tooltip.png" width="1140" height="680" alt="Main Antigravity workspace with Search Across Conversations Dismiss button highlighted" loading="lazy">
+              <span class="hl" style="left:72.24%;top:88.75%;width:7.28%;height:5.44%"><i>1</i></span>
+            </div>
+            <figcaption>Click <span class="n">1</span><b>Dismiss</b> on the introductory tooltip.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-06b-hello-world-prompt.png" width="1140" height="940" alt="Antigravity prompt bar with create a hello world python app entered and blue submit arrow highlighted" loading="lazy">
+              <span class="hl" style="left:27.15%;top:87.77%;width:67.54%;height:5.53%"><i>2</i></span>
+              <span class="hl" style="left:91.10%;top:92.34%;width:3.33%;height:4.04%"><i>3</i></span>
+            </div>
+            <figcaption>Enter <span class="n">2</span><code>create a hello world python app</code> and click <span class="n">3</span><b><code>→</code></b>.</figcaption>
+          </figure>
+        </div>
+        <div class="done-row"><label for="done-6"><input type="checkbox" id="done-6" data-done="6">Step 6 done</label></div>
+      </article>
+
+      <!-- STEP 7: APPROVE SCRIPT EXECUTION & VERIFY OUTPUT -->
+      <article class="step" id="step-7" data-step="7">
+        <div class="step-head">
+          <span class="badge"><small>STEP</small><b>7</b></span>
+          <div>
+            <h3>Approve script execution &amp; verify your first Python app</h3>
+            <span class="mins">About 30 seconds</span>
+          </div>
+        </div>
+        <ol>
+          <li><span class="n">1</span>When Antigravity asks for permission to run the script (<b>Allow run Hello World Python script?</b>), select <b><code>1 Yes, allow this time</code></b>.</li>
+          <li><span class="n">2</span>Dismiss the <b>Notification Preferences</b> window in the bottom-right corner by clicking <span class="ui">Dismiss</span>, then click <span class="n">3</span><span class="ui">Submit</span> to execute the command and generate your file.</li>
+          <li>If the agent encounters a second prompt while running the script (<b>Allow run script with py launcher?</b>), confirm <span class="n">4</span><b><code>1 Yes, allow this time</code></b> and click <span class="n">5</span><span class="ui">Submit</span> once more so the process completes without interruption.</li>
+          <li><span class="n">✓</span>Antigravity has now created your first Python app (<code>main.py</code>) under <b>Python Hello World App</b>!</li>
+        </ol>
+
+        <div class="two-up">
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-07a-allow-run-script.png" width="1140" height="680" alt="Allow run Hello World Python script permission card with Yes allow this time, Notification Preferences Dismiss, and Submit highlighted" loading="lazy">
+              <span class="hl" style="left:24.47%;top:35.00%;width:45.79%;height:6.76%"><i>1</i></span>
+              <span class="hl" style="left:86.56%;top:90.88%;width:6.23%;height:5.00%"><i>2</i></span>
+              <span class="hl" style="left:61.86%;top:54.12%;width:8.41%;height:5.59%"><i>3</i></span>
+            </div>
+            <figcaption>Select <span class="n">1</span><b>Yes, allow this time</b>, click <span class="n">2</span><b>Dismiss</b>, and click <span class="n">3</span><b>Submit</b>.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="frame">
+              <img src="./img/agy-07b-allow-py-launcher.png" width="1140" height="680" alt="Second permission prompt Allow run script with py launcher with Yes allow this time and Submit highlighted" loading="lazy">
+              <span class="hl" style="left:25.35%;top:33.24%;width:54.56%;height:6.76%"><i>4</i></span>
+              <span class="hl" style="left:71.51%;top:52.35%;width:8.41%;height:5.59%"><i>5</i></span>
+            </div>
+            <figcaption>If prompted for <code>py</code> launcher, confirm <span class="n">4</span><b>Yes, allow this time</b> and click <span class="n">5</span><b>Submit</b> once more.</figcaption>
+          </figure>
+        </div>
+
+        <figure class="shot">
+          <div class="frame">
+            <img src="./img/agy-07c-hello-world-complete.png" width="1140" height="680" alt="Completed Python Hello World App conversation showing generated main.py and 1 file changed" loading="lazy">
+            <span class="hl" style="left:0.70%;top:27.94%;width:18.68%;height:6.03%"><i>✓</i></span>
+            <span class="hl" style="left:26.23%;top:55.21%;width:67.72%;height:8.24%"><i>✓</i></span>
+          </div>
+          <figcaption><b>Setup Complete:</b> Antigravity has created your first Python app (<code>main.py</code>)!</figcaption>
+        </figure>
+
+        <div class="callout check">
+          <b class="t">You're Fully Set Up!</b>
+          Your Google Antigravity desktop app is signed in with your organizational Business Account and tied directly to your organization's <b>Gemini Enterprise</b> subscription in the <b>United States</b> region. Return to the Generic AGY Plugin Launchpad to install the 28-skill suite.
+        </div>
+        <div class="done-row"><label for="done-7"><input type="checkbox" id="done-7" data-done="7">Step 7 done</label></div>
+      </article>
+
+      <div class="finish">
+        <h3>Connected to your Gemini Enterprise subscription and ready to build.</h3>
+        <p>Next step: Open a <b>+ New Conversation</b> in Antigravity, switch to <b>Turbo Mode</b>, and install the <b>Generic AGY Plugin</b> suite.</p>
+      </div>
+    </section>
+
+    <!-- TROUBLESHOOTING -->
+    <section id="help" aria-labelledby="help-h">
+      <div class="sec-head">
+        <h2 id="help-h">Troubleshooting FAQ</h2>
+        <p>Quick fixes for the most common setup questions.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>“Your current account is not eligible for Antigravity”</summary>
+          <p>You clicked <b>Continue with Google</b> instead of <b>Use Business Account</b> on the welcome screen, or selected a personal Gmail profile in the browser instead of your official organizational account. Return to the Welcome screen, click <b>Use Business Account</b> → <b>Continue with Google Cloud</b>, and choose your organizational email.</p>
+        </details>
+        <details>
+          <summary>“No Gemini Enterprise license was found for this project and location”</summary>
+          <p>Double-check three settings on <b>Select Billing Model</b>: (1) <b>Subscription</b> is selected at top-left (never <i>Pay As You Go</i>), (2) the Project ID matches the exact lowercase GCP Project ID provided by your IT administrator (with hyphens, no trailing spaces), and (3) the correct region (such as <b>United States</b>) is selected under <b>Choose Region</b>.</p>
+        </details>
+        <details>
+          <summary>Browser didn't open or “Open Antigravity” didn't redirect back to the app</summary>
+          <p>If Chrome or Edge opened in a personal profile, sign in to your organizational Google Cloud Identity account in that browser first, or use the <b>Copy sign-in link</b> option on the Antigravity sign-in card to paste the link directly into your organizational browser window.</p>
+        </details>
+        <details>
+          <summary>Python is not installed yet when running the Hello World test</summary>
+          <p>That's completely normal on a fresh corporate workstation! Antigravity still creates <code>main.py</code> and shows you how to run it when Python is available—your Antigravity setup and Gemini Enterprise license are already 100% active. Plus, all 28 Generic AGY Plugin skills run with zero Python required.</p>
+        </details>
+      </div>
+    </section>
+
+    <footer>
+      Google Antigravity · Organization Setup Guide (Gemini Enterprise Subscription · United States Region). Click any screenshot to enlarge.
+    </footer>
+  </main>
+</div>
+
+<dialog class="lightbox" id="lightbox" aria-label="Enlarged screenshot">
+  <button type="button" id="lbClose">Close (Esc)</button>
+  <div id="lbBody"></div>
+</dialog>
+
+<script>
+(function () {
+  var KEY = 'agy-generic-org-setup-v1';
+  var state = { done: {}, notes: true };
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) state = Object.assign(state, saved);
+  } catch (e) {}
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var notesBtn = document.getElementById('notesToggle');
+  var reviewMode = /[?&]review(=|&|$)/.test(location.search);
+  function renderNotes() {
+    var on = reviewMode && state.notes;
+    document.body.classList.toggle('hide-notes', !on);
+    notesBtn.textContent = 'Review notes: ' + (on ? 'on' : 'off');
+    notesBtn.setAttribute('aria-pressed', String(on));
+  }
+  if (reviewMode) {
+    notesBtn.hidden = false;
+    notesBtn.addEventListener('click', function () {
+      state.notes = !state.notes;
+      save();
+      renderNotes();
+    });
+  }
+  renderNotes();
+
+  var doneBoxes = document.querySelectorAll('[data-done]');
+  function renderProgress() {
+    var count = 0;
+    doneBoxes.forEach(function (box) {
+      var n = box.getAttribute('data-done');
+      var on = !!state.done[n];
+      box.checked = on;
+      if (on) count++;
+      var art = box.closest('.step');
+      if (art) art.classList.toggle('is-done', on);
+      document.querySelectorAll('[data-step-link="' + n + '"]').forEach(function (a) {
+        a.classList.toggle('done', on);
+      });
+    });
+    var total = doneBoxes.length;
+    document.getElementById('progressText').textContent = count + ' of ' + total + ' steps';
+    document.getElementById('progressBar').style.width = (total ? (100 * count / total) : 0) + '%';
+  }
+  doneBoxes.forEach(function (box) {
+    box.addEventListener('change', function () {
+      state.done[box.getAttribute('data-done')] = box.checked;
+      save();
+      renderProgress();
+    });
+  });
+  renderProgress();
+
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pre = document.getElementById(btn.getAttribute('data-copy'));
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(function () {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('ok');
+        setTimeout(function () {
+          btn.textContent = orig;
+          btn.classList.remove('ok');
+        }, 1400);
+      });
+    });
+  });
+
+  if ('IntersectionObserver' in window) {
+    var links = document.querySelectorAll('.rail a[href^="#"], .chips a[href^="#"]');
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var id = '#' + e.target.id;
+        links.forEach(function (a) {
+          a.classList.toggle('active', a.getAttribute('href') === id);
+        });
+      });
+    }, { rootMargin: '-20% 0px -65% 0px' });
+    document.querySelectorAll('section[id], article.step[id]').forEach(function (el) {
+      obs.observe(el);
+    });
+  }
+
+  var lb = document.getElementById('lightbox');
+  var lbBody = document.getElementById('lbBody');
+  document.querySelectorAll('.shot .frame').forEach(function (frame) {
+    frame.setAttribute('tabindex', '0');
+    frame.setAttribute('role', 'button');
+    frame.setAttribute('aria-label', 'Enlarge screenshot');
+    function openLb() {
+      lbBody.textContent = '';
+      var clone = frame.cloneNode(true);
+      clone.removeAttribute('tabindex');
+      clone.removeAttribute('role');
+      clone.addEventListener('click', function () { lb.close(); });
+      lbBody.appendChild(clone);
+      lb.showModal();
+    }
+    frame.addEventListener('click', openLb);
+    frame.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        openLb();
+      }
+    });
+  });
+  document.getElementById('lbClose').addEventListener('click', function () { lb.close(); });
+  lb.addEventListener('click', function (ev) {
+    if (ev.target === lb) lb.close();
+  });
+})();
+</script>
+</body>
+</html>

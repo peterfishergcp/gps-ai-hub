@@ -1,0 +1,12 @@
+{
+  "name": "agy-connectors",
+  "displayName": "AGY Gemini Enterprise Federated Connectors",
+  "version": "1.0.0",
+  "description": "Default Gemini Enterprise (GE) federated connector bridge for Public Sector cohorts using Azure/Entra-synced Google Identity\u2014unlocking Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery with zero laptop installs.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /connect-ge to link my Public Sector Gemini Enterprise instance and test my federated connectors",
+    "Search my federated SharePoint, OneDrive, and Outlook via Gemini Enterprise for recent grant updates",
+    "Show me how to query Teams threads, GitHub issues, or BigQuery datasets safely from Antigravity"
+  ]
+}

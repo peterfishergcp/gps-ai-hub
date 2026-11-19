@@ -1,0 +1,6 @@
+{
+  "name": "agy_skill_manager",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Zero-dependency Antigravity UI Sidecar for toggling AGY skills and managing Gemini Enterprise connector settings."
+}

@@ -1,0 +1,12 @@
+{
+  "name": "agy-design-studio",
+  "displayName": "AGY Design Studio \u2014 Dashboards, Slides & Branded Docs",
+  "version": "1.0.0",
+  "description": "100% serverless visual dashboards, 16:9 HTML/PDF slide decks, and Public Sector branded flyers/memos\u2014with automatic Side-Pane HTML Artifact rendering, the built-in AGY Preview sidebar panel, and 1-click standalone HTML download (zero Python, zero Node server, and zero firewall ports).",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /agy-dashboard to spin up a Public Sector branded executive dashboard I can view in the Side Pane or download for Chrome/Edge",
+    "Run /slides to build a 16:9 Public Sector leadership presentation deck from my program notes",
+    "Run /doc-design to create a 2-page print-ready stakeholder flyer or 1-page decision memo"
+  ]
+}

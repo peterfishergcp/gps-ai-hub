@@ -1,0 +1,382 @@
+{
+  "suiteName": "generic-agy-plugin",
+  "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
+  "suiteVersion": "1.0.0",
+  "releasedAt": "2026-11-19",
+  "minAntigravityVersion": "1.0.0",
+  "plugins": {
+    "agy-onboarding": {
+      "version": "1.0.0",
+      "category": "Onboarding, Skill Toggle UI Panel (7 Categories), Incremental Skill & Sidecar Sync, Model Guide (Claude + Gemini), Daily Brief & Triage",
+      "skills": [
+        "agy-onboard",
+        "model-guide",
+        "daily-brief",
+        "digital-twin",
+        "inbox-triage",
+        "agy-update"
+      ],
+      "sidecars": [
+        "agy-skill-manager"
+      ]
+    },
+    "agy-connectors": {
+      "version": "1.0.0",
+      "category": "Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
+      "skills": [
+        "connect-ge",
+        "connect-m365-workspace",
+        "connect-github-bigquery"
+      ],
+      "mcpServers": [
+        "agy-ge-bridge"
+      ]
+    },
+    "agy-design-studio": {
+      "version": "1.0.0",
+      "category": "100% Serverless Visual Dashboards, Executive Slides, Branded Public Sector Documents & AGY Preview Panel",
+      "skills": [
+        "agy-dashboard",
+        "slides",
+        "doc-design"
+      ],
+      "agents": [
+        "agy-design-architect"
+      ],
+      "sidecars": [
+        "agy-design-preview"
+      ]
+    },
+    "agy-public-workflows": {
+      "version": "1.0.0",
+      "category": "Public Workflows (3) + Government Services (public_sector) Skills (7)",
+      "skills": [
+        "foia-expert",
+        "legal-procurement-review",
+        "policy-program-audit",
+        "document-intake-cleanup-and-validation",
+        "expense-auditor",
+        "foia-request-processing",
+        "plain-language-notice-generator",
+        "policy-and-statute-assistant",
+        "public-records-redaction",
+        "rfp-vendor-evaluation"
+      ]
+    },
+    "agy-engineering-cloud": {
+      "version": "1.0.0",
+      "category": "Legacy App Refactoring, Cloud Run & BigQuery Architecture",
+      "skills": [
+        "modernize-refactor",
+        "deploy-cloudrun",
+        "bigquery-architect",
+        "find-cloud-skill"
+      ]
+    },
+    "agy-security": {
+      "version": "1.0.0",
+      "category": "OWASP, Google Cloud WAF, Assured Workloads & IAM Hygiene",
+      "skills": [
+        "security-audit",
+        "iam-secret-hygiene"
+      ]
+    }
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-11-19",
+      "highlights": [
+        "Initial generic Public Sector release across all 6 modular plugins, 28 slash-command skills across 7 categories (including the 7 Government Services public_sector skills), and 2 serverless UI sidecars (AGY Skills & AGY Preview).",
+        "Zero-install Gemini Enterprise (GE) Federated Connector Bridge (agy-ge-bridge) running on Antigravity's built-in agy-node runtime for Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub.",
+        "SHA-256 per-skill incremental updater (incremental-sync.mjs + 1-click 'Sync Git Updates' & per-skill refresh buttons inside AGY Skills) so cohorts update changed files in <1s without full re-installs.",
+        "100% serverless Side-Pane visual previews for /agy-dashboard, /slides, and /doc-design with 1-click standalone HTML download and zero local TCP port listeners."
+      ]
+    }
+  ],
+  "skillManifest": {
+    "connect-ge": {
+      "plugin": "agy-connectors",
+      "skill": "connect-ge",
+      "treeSha256": "6398d10e90d280d6",
+      "files": {
+        "SKILL.md": "505b18ce1e7b26831f199dba9ffdcc2c2c77a20557633b6450de3e276915dbb1",
+        "references/entra_google_identity_federated_ge.md": "70376af656df8c5ec19b958f06b5f777bec6a69b392d2f3d9d814f6464886d8d"
+      }
+    },
+    "connect-github-bigquery": {
+      "plugin": "agy-connectors",
+      "skill": "connect-github-bigquery",
+      "treeSha256": "a1a9a5c2eae1c0fd",
+      "files": {
+        "SKILL.md": "f3174df10d38454bf13280c286e82f713096ed7ccc14c911dfa68821b3191865"
+      }
+    },
+    "connect-m365-workspace": {
+      "plugin": "agy-connectors",
+      "skill": "connect-m365-workspace",
+      "treeSha256": "e3f8b0491ab2720c",
+      "files": {
+        "SKILL.md": "356f93b872d758323b15012e64eb699591ad443197c97f8840426ac68360291a",
+        "references/federated_connector_prompts.md": "f45a72fe362483594498fd53fa56860f7be40adea2abc6197ed5521e24a8e2fe"
+      }
+    },
+    "agy-dashboard": {
+      "plugin": "agy-design-studio",
+      "skill": "agy-dashboard",
+      "treeSha256": "809678fc02d7aed2",
+      "files": {
+        "SKILL.md": "7b0269d20813b6f8310ab7c07ae88148f5fcfb495522c0ed711eb5ff68ba4f49",
+        "assets/runtime/app.js": "2ccac517fb47f8e38250106c943b4e2c4a257cf444aac81a91495f8af062520e",
+        "assets/runtime/index.html": "b6e947c8e4e774bc1bc27353e4f2ceb9013487bc06a7951b05d7b4eff2f69d15",
+        "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
+        "assets/runtime/styles.css": "8e222c8af794c3aff874ad7fed9320d02861a98faac0554d520e4a47ea41fcf2",
+        "assets/templates/civic-readiness-command-center.json": "9616d2a99565c13ca2c3c67a4ea22e27d1afaf457406d9ece3d50833e0b7be33",
+        "assets/templates/executive-kpi.json": "371644fb9f63f899d62f5a6500ae900ebc6e0d1d55b57d8bae4db92382b289cc",
+        "assets/templates/public-incident-triage.json": "ad604c1305f6016e19b95ef6b699a6155d0f45800732b8373fa39a3710aa198f",
+        "assets/templates/public-legislative-command-center.json": "10d95b3b9885371322b2fd8acd3dcd8ccf1b484489d2304c3cbdc102cd749f6a",
+        "references/database_and_ge_connectors.md": "4eff0a8946f03bcd566e61e0fbf3a31d1a439b63c606caf0bd4f571d43647831",
+        "scripts/query_connector.mjs": "f3220c5b04e39794cc456ccc4a8ae3ae6703d926e03076781d3f7465d3b8034d",
+        "scripts/scaffold_dashboard.mjs": "5f52edc1759bea8564ad20da4f5cafe825cfcf3c62e2aa5f0ed5615ec32c7f5c"
+      }
+    },
+    "doc-design": {
+      "plugin": "agy-design-studio",
+      "skill": "doc-design",
+      "treeSha256": "af2b654b0bf3ba1b",
+      "files": {
+        "SKILL.md": "fff06539dedaea5407c4d40be2190828698bab7b616ab403e97c356e99a62c39",
+        "references/executive_comms_templates.md": "7db9cd9afa82bb890029de78ad243d045ec4c772a0562ffb84fdb9f98f6ed2cd"
+      }
+    },
+    "slides": {
+      "plugin": "agy-design-studio",
+      "skill": "slides",
+      "treeSha256": "6827939682bc2b58",
+      "files": {
+        "SKILL.md": "278d887c267f59f63528808df9518f49087c463ead6b76f8d7c6ff95673ef604"
+      }
+    },
+    "bigquery-architect": {
+      "plugin": "agy-engineering-cloud",
+      "skill": "bigquery-architect",
+      "treeSha256": "baf1df2bd97e86f0",
+      "files": {
+        "SKILL.md": "3ac17dcadcbb31f822b05dc3ce05301be74e9ec15c540ff000e011d16f1f7223"
+      }
+    },
+    "deploy-cloudrun": {
+      "plugin": "agy-engineering-cloud",
+      "skill": "deploy-cloudrun",
+      "treeSha256": "76988496c767c179",
+      "files": {
+        "SKILL.md": "69b46b194d8b419430140277ec922a14ceca15eee6babc5d1db3748617912b2d"
+      }
+    },
+    "find-cloud-skill": {
+      "plugin": "agy-engineering-cloud",
+      "skill": "find-cloud-skill",
+      "treeSha256": "cf2b6a999d975f1f",
+      "files": {
+        "SKILL.md": "2a8165e82927fd5571638daa2996200147c43aa965bbf77f78a08dcaaca5639a"
+      }
+    },
+    "modernize-refactor": {
+      "plugin": "agy-engineering-cloud",
+      "skill": "modernize-refactor",
+      "treeSha256": "58c426f3bb096486",
+      "files": {
+        "SKILL.md": "253a6c268e5697c5ebaf15961d7c9bba820e6d71d1f94274c764bfe3fa77b4cc",
+        "references/blueprint_and_parity_checklist.md": "6395118bea73237f7ec4ef0a648cec1ae885d703186236389020c09ee23954b5"
+      }
+    },
+    "agy-onboard": {
+      "plugin": "agy-onboarding",
+      "skill": "agy-onboard",
+      "treeSha256": "abefe9c6f058ed52",
+      "files": {
+        "SKILL.md": "02ec366a93fc76a7159d6b639ccf9c7a7bca8ac428b5fdec4540da3cda0642f8",
+        "references/onboarding_sops_playbook.md": "80d0dc02bbe54da4b013534ce165801b153ade1ab343ae1d74238613f5364734"
+      }
+    },
+    "agy-update": {
+      "plugin": "agy-onboarding",
+      "skill": "agy-update",
+      "treeSha256": "571f0bf2398c7c22",
+      "files": {
+        "SKILL.md": "4d9eb35fc665ea7446260cd3e8e0ee78f8016ddb45ff4fc87155d3beb161367b",
+        "scripts/incremental-sync.mjs": "92945d2fa1dd96de91c151693b15fa8f9b413d485d8d3daf7bf9bdc75cf3e9a9",
+        "scripts/install-agy-suite.ps1": "78c0f2370bec5639a66a5329b22f7aba5c9c345a3626634732ef1f4baeacbd01",
+        "scripts/install-agy-suite.sh": "03a24d22bd579d7f028e5a91e5846503ff0a269d5d317952024e834654138d4a"
+      }
+    },
+    "daily-brief": {
+      "plugin": "agy-onboarding",
+      "skill": "daily-brief",
+      "treeSha256": "58cd1070af1de440",
+      "files": {
+        "SKILL.md": "88a41df574d54c29edc0f64e858d21be5f9753c33b110d2b5a7c205beaa71a6d",
+        "references/meetings_project_playbook.md": "6d51098ad9716b726e6668304dd8f2bd2d4d71fd4514c30b14814c40ee112c94"
+      }
+    },
+    "digital-twin": {
+      "plugin": "agy-onboarding",
+      "skill": "digital-twin",
+      "treeSha256": "7fd232d38af1b338",
+      "files": {
+        "SKILL.md": "af8cac32a78510d63bf008bbbd6a40c822b1c5423dd90c35f393d75c78b0ca86",
+        "references/correspondence_playbook.md": "7c75e4f2c09aada7d08668c9c179dcd496359dc5bc82160a3dd93c7027d85d68"
+      }
+    },
+    "inbox-triage": {
+      "plugin": "agy-onboarding",
+      "skill": "inbox-triage",
+      "treeSha256": "66c0d54191bce98f",
+      "files": {
+        "SKILL.md": "e86a117c289ff1700257d89ed8e5bbd9973d1f0318fe1c38820bde5c89f9522f"
+      }
+    },
+    "model-guide": {
+      "plugin": "agy-onboarding",
+      "skill": "model-guide",
+      "treeSha256": "e58a08bf4918ece6",
+      "files": {
+        "SKILL.md": "ebd915a625e4e22b7c37d7083ab4c2649d86e4450d4abcc8b1acb6318dae8578",
+        "references/claude_and_gemini_playbook.md": "7fdd1ee2c55c3e56c2689c3c03fd0aeddbc59acaf8baa03c8cc2951c359d1e1c"
+      }
+    },
+    "document-intake-cleanup-and-validation": {
+      "plugin": "agy-public-workflows",
+      "skill": "document-intake-cleanup-and-validation",
+      "treeSha256": "807918b048ea8e04",
+      "files": {
+        "SKILL.md": "ab302362dad476e0bf8decbc37a5578f309c1d138486e39eb53c8e56639af8fe",
+        "references/domain_standards_and_examples.md": "3d7a83b63d74d42fcca5630c96f897052df19607d9a18f6606a51528b4059af8"
+      }
+    },
+    "expense-auditor": {
+      "plugin": "agy-public-workflows",
+      "skill": "expense-auditor",
+      "treeSha256": "36dd429c38778988",
+      "files": {
+        "SKILL.md": "1b59b8f13d289ddec74fbaf93649556efd47b590917da742161c1532977275ef"
+      }
+    },
+    "foia-expert": {
+      "plugin": "agy-public-workflows",
+      "skill": "foia-expert",
+      "treeSha256": "d127895826c4e892",
+      "files": {
+        "SKILL.md": "1081a37f3cbd1c9708aa2794a20693ce4e979859b7148a6166b9f5b09751672e",
+        "references/public_records_and_federal_foia_exemptions.md": "4c4401905eff884574a456dc267346803948963403f0e789892b04416257c76d"
+      }
+    },
+    "foia-request-processing": {
+      "plugin": "agy-public-workflows",
+      "skill": "foia-request-processing",
+      "treeSha256": "7a32e82a327f260c",
+      "files": {
+        "SKILL.md": "aff34859945a23e2d1ac473ebd11dd05f387362d2ed1469de33708ce3d90e16f",
+        "references/corner_cases.md": "bb5a9359ef40a709b515bb595691328394f1d55a2cf9ae59057c98f34214690c",
+        "references/legal_references.md": "b4d3bd48e59f035c448e92988c4a51f587daeef01427847994adaaa6eb9764d0",
+        "references/search_terms.md": "a70bcd7e31a902b5b455332924f7bb3c442ac9419769ac2aec3de224a3aca042"
+      }
+    },
+    "legal-procurement-review": {
+      "plugin": "agy-public-workflows",
+      "skill": "legal-procurement-review",
+      "treeSha256": "8bf9ed3a2f896097",
+      "files": {
+        "SKILL.md": "6ce435a33477b266006874ec93c8f3dab9d56e97afe7dd5c322948e391108658",
+        "references/procurement_grants_playbook.md": "0f0a3a03fa9ba8e1def56166a4a1c8a7f5f624658dc55fc938f02426eeb70d33"
+      }
+    },
+    "plain-language-notice-generator": {
+      "plugin": "agy-public-workflows",
+      "skill": "plain-language-notice-generator",
+      "treeSha256": "636a13398af471be",
+      "files": {
+        "SKILL.md": "7092b2029c97713b6c062646f8f52ab265265171ae14bc6aec739719c42dc478"
+      }
+    },
+    "policy-and-statute-assistant": {
+      "plugin": "agy-public-workflows",
+      "skill": "policy-and-statute-assistant",
+      "treeSha256": "34b55b1527943496",
+      "files": {
+        "SKILL.md": "88c6b300afeeff649e8b1e1347f68658deda0daa765c8615865c05c90d14b2e5"
+      }
+    },
+    "policy-program-audit": {
+      "plugin": "agy-public-workflows",
+      "skill": "policy-program-audit",
+      "treeSha256": "e86c34ded1524c32",
+      "files": {
+        "SKILL.md": "eb59ffadf0def0244f73711cf3da7f18dfd5b2a94f3eb35a8a0bc75ec44570a0",
+        "references/policy_finance_it_playbook.md": "afeadadfa6ae0c2898f7e877421e1db00c6023d716cfb29bebe92deb603ac35b"
+      }
+    },
+    "public-records-redaction": {
+      "plugin": "agy-public-workflows",
+      "skill": "public-records-redaction",
+      "treeSha256": "0330543623a3db4a",
+      "files": {
+        "SKILL.md": "f598e1966865eb653e097b56c630d3a31e7e1397a0ad525b6b5101631500ec7c",
+        "references/citation_guide.md": "1d5b74951d74a070a25791da799c36d551dcf10f82f3bcf1468f9e2973d17d8a",
+        "references/qa_and_special_inputs.md": "d8a3c15c6317127e8e206b3fd8a8924c7d7c6da9511ec7e963ec8e0798e71e98",
+        "references/record_types.md": "80627d864fdbe995b3612dacb82f77834f55dc2cec473eb5d993b8216dd310b2"
+      }
+    },
+    "rfp-vendor-evaluation": {
+      "plugin": "agy-public-workflows",
+      "skill": "rfp-vendor-evaluation",
+      "treeSha256": "f33f272e3314b3b6",
+      "files": {
+        "SKILL.md": "7309fee226cff3a725dee33888b21af58fa0fdda1aec5afb83b84f8bb19ba896"
+      }
+    },
+    "iam-secret-hygiene": {
+      "plugin": "agy-security",
+      "skill": "iam-secret-hygiene",
+      "treeSha256": "bf38337ebe2a48e9",
+      "files": {
+        "SKILL.md": "c3b1d9a150ce031914116a0205f5b6615327bac7b9c8b5f543c9828abcb548f8"
+      }
+    },
+    "security-audit": {
+      "plugin": "agy-security",
+      "skill": "security-audit",
+      "treeSha256": "144142d9a59ed713",
+      "files": {
+        "SKILL.md": "099c67b6072423d3374a9014ca6b9cd6ef059bf78f8731803581c31745a0f05d",
+        "references/owasp_and_cloud_waf_checklist.md": "4577a31badfc3fcc5264d26394bc2b98492652d202ae3776b57b7d3b4c7f40a7"
+      }
+    }
+  },
+  "sidecarManifest": {
+    "agy-design-preview": {
+      "plugin": "agy-design-studio",
+      "sidecar": "agy-design-preview",
+      "files": {
+        "app.js": "921fd6c40a892b5e5bb08214c05462c1a1b23985781a076aec196fee8a3586ab",
+        "index.html": "43b758959d58fd4e258e4d8c2c7473501205445a42d3af98ac60b1dd8a2eb00a",
+        "main.mjs": "c9eef54ea198a1633e0ca90c01750d6c89af98f15a9d474fe977d7d367dedd6a",
+        "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
+        "sidecar.json": "07c18558e8a8d813f4ebd8d1e708efae72b0a804d18dd92350620a1a006b5f5f",
+        "styles.css": "076aeb5c26020d68530d4bf37cda8a7cb74419fc76a29a7cc700ac0e9b3e6a99"
+      }
+    },
+    "agy-skill-manager": {
+      "plugin": "agy-onboarding",
+      "sidecar": "agy-skill-manager",
+      "files": {
+        "app.js": "f2f8bc39a9fe5b510f4d08a0ea0ebe1084cc630dc69dfdadca470fc304615947",
+        "index.html": "418a35d5d93d27a5ac383896e807d550fb9b694434be046eda4abf5fea91d323",
+        "main.mjs": "4fb7451ad0e92319d60e2300137e28336ccd73d2a7bd7aa2c18fe780c33754e6",
+        "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
+        "sidecar.json": "26c46bcf76399d47e8b40aff36591c7cb4fd9227f3c6c52866d6860099196e60",
+        "styles.css": "21d9a588232873801e51252df9bb189ed777712f935f91e0ffcb38b30b40c28c"
+      }
+    }
+  }
+}
