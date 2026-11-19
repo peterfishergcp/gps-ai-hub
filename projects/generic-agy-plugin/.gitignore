@@ -1,4 +1,5 @@
 # Allow pre-packaged fast-install bundles in Git
+!dist/
 !dist/*.zip
 !workshop/starters/*.zip
 
