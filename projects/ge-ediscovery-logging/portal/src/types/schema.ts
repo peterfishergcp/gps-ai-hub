@@ -287,3 +287,26 @@ export interface UnifiedReviewItem {
   notebook_studio?: NotebookStudioRecord[];
 }
 
+export type PortalSurfaceMode = 'GEMINI_ENTERPRISE_CHAT' | 'NOTEBOOK_LM' | 'AUDITOR_ACTIVITY';
+
+export interface AuditorActivityRecord {
+  event_timestamp: string;
+  portal_service: string;
+  auditor_email: string;
+  action: string;
+  search_query: string;
+  query_length: number;
+  filtered_custodian: string;
+  matched_session_count: number;
+  matched_session_ids: string;
+  viewed_or_exported_session_id: string;
+  session_custodian_email: string;
+  surface: string;
+  export_format: string;
+  target_resource: string;
+  is_file_download: boolean;
+  is_force_refresh: boolean;
+  auditor_remote_ip: string;
+  severity: string;
+}
+

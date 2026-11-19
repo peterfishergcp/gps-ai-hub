@@ -8,6 +8,8 @@ import {
   NotebookStudioRecord,
   ArtifactFile,
   GroundedCitation,
+  PortalSurfaceMode,
+  AuditorActivityRecord,
 } from '../../types/schema';
 import { ensureArray } from '../../utils/arrayUtils';
 import { matchesQuery } from '../../utils/searchUtils';
@@ -48,9 +50,11 @@ import {
   HelpCircle,
   Calendar,
   Loader2,
+  Scale,
 } from 'lucide-react';
 
 import { DateRangeSlider } from '../DateRangeSlider';
+import { AuditorActivityPane } from '../AuditorActivityPane';
 import { EditorialTheme, THEMES } from '../../types/theme';
 export type { EditorialTheme };
 
@@ -58,8 +62,16 @@ interface LegalBriefNarrativeProps {
   users: UserProfile[];
   selectedUserEmail: string | null;
   onSelectUser: (email: string | null) => void;
-  surfaceMode: 'NOTEBOOK_LM' | 'GEMINI_ENTERPRISE_CHAT';
-  onSurfaceChange: (mode: 'NOTEBOOK_LM' | 'GEMINI_ENTERPRISE_CHAT') => void;
+  surfaceMode: PortalSurfaceMode;
+  onSurfaceChange: (mode: PortalSurfaceMode) => void;
+  canViewAuditorLogs?: boolean;
+  auditorEvents?: AuditorActivityRecord[];
+  isLoadingAuditorLogs?: boolean;
+  auditorLogsError?: string | null;
+  selectedAuditorEmail?: string | null;
+  onSelectAuditor?: (email: string | null) => void;
+  onRefreshAuditorLogs?: () => void;
+  onJumpToSessionFromAudit?: (sessionId: string, surfaceHint?: string, custodianEmail?: string) => void;
   items: UnifiedReviewItem[];
   allItems?: UnifiedReviewItem[];
   onSelectItem: (id: string | null) => void;
@@ -262,6 +274,14 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
   onSelectUser,
   surfaceMode,
   onSurfaceChange,
+  canViewAuditorLogs = true,
+  auditorEvents = [],
+  isLoadingAuditorLogs = false,
+  auditorLogsError = null,
+  selectedAuditorEmail = null,
+  onSelectAuditor,
+  onRefreshAuditorLogs,
+  onJumpToSessionFromAudit,
   items,
   allItems,
   onSelectItem,
@@ -318,6 +338,7 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
 
   const lastAuditedSessionSearchRef = useRef<string>('');
   useEffect(() => {
+    if (surfaceMode === 'AUDITOR_ACTIVITY') return;
     const trimmed = sessionSearch.trim();
     if (trimmed.length < 2) {
       lastAuditedSessionSearchRef.current = '';
@@ -342,6 +363,81 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
     }, 500);
     return () => window.clearTimeout(timer);
   }, [sessionSearch, filteredSessions, selectedUserEmail, surfaceMode]);
+
+  const auditorSummaries = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        email: string;
+        totalCount: number;
+        queryCount: number;
+        viewCount: number;
+        lastTimestamp: string;
+        isWif: boolean;
+      }
+    >();
+    for (const ev of auditorEvents) {
+      const em = (ev.auditor_email || '').trim().toLowerCase();
+      if (!em || em === 'system@cloudrun.internal') continue;
+      const isQuery =
+        ev.action === 'SEARCH_COMPLIANCE_LOGS' ||
+        ev.action === 'FILTER_SESSIONS' ||
+        ev.action === 'FILTER_CUSTODIAN' ||
+        ev.action === 'JUMP_TO_SEARCH_RESULT';
+      const isView = ev.action === 'VIEW_SESSION_TRANSCRIPT';
+      const isWif = (ev.portal_service || '').toLowerCase().includes('wif');
+      const existing = map.get(em);
+      if (existing) {
+        existing.totalCount += 1;
+        if (isQuery) existing.queryCount += 1;
+        if (isView) existing.viewCount += 1;
+        if (isWif) existing.isWif = true;
+        if (ev.event_timestamp > existing.lastTimestamp) {
+          existing.lastTimestamp = ev.event_timestamp;
+        }
+      } else {
+        map.set(em, {
+          email: em,
+          totalCount: 1,
+          queryCount: isQuery ? 1 : 0,
+          viewCount: isView ? 1 : 0,
+          lastTimestamp: ev.event_timestamp,
+          isWif,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.lastTimestamp.localeCompare(a.lastTimestamp));
+  }, [auditorEvents]);
+
+  const filteredAuditorEvents = useMemo(() => {
+    const normQuery = sessionSearch.trim().toLowerCase();
+    const targetAuditor = selectedAuditorEmail?.trim().toLowerCase() || '';
+    return auditorEvents.filter((ev) => {
+      const em = (ev.auditor_email || '').trim().toLowerCase();
+      if (em === 'system@cloudrun.internal') return false;
+      if (targetAuditor && em !== targetAuditor) return false;
+      if (selectedStartTime !== undefined) {
+        const t = new Date(ev.event_timestamp).getTime();
+        if (!isNaN(t) && t < selectedStartTime) {
+          return false;
+        }
+      }
+      if (!normQuery) return true;
+      const haystack = [
+        ev.auditor_email,
+        ev.action,
+        ev.search_query,
+        ev.filtered_custodian,
+        ev.session_custodian_email,
+        ev.viewed_or_exported_session_id,
+        ev.target_resource,
+        ev.portal_service,
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normQuery);
+    });
+  }, [auditorEvents, sessionSearch, selectedAuditorEmail, selectedStartTime]);
 
   const isNotebook = activeItem?.surface === 'NOTEBOOK_LM';
 
@@ -483,51 +579,88 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
             </div>
 
             {/* Surface Mode Toggle */}
-            <div className={`grid grid-cols-2 gap-1 font-sans text-[11px] select-none ${currentTheme.segmentedTrackClass}`}>
-              <button
-                type="button"
-                onClick={() => onSurfaceChange('GEMINI_ENTERPRISE_CHAT')}
-                className={`py-1.5 px-2 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  surfaceMode === 'GEMINI_ENTERPRISE_CHAT'
-                    ? currentTheme.segmentedActiveClass
-                    : currentTheme.segmentedInactiveClass
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Chats ({surfaceCounts.chat})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onSurfaceChange('NOTEBOOK_LM')}
-                className={`py-1.5 px-2 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  surfaceMode === 'NOTEBOOK_LM'
-                    ? currentTheme.segmentedActiveClass
-                    : currentTheme.segmentedInactiveClass
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Notebooks ({surfaceCounts.notebook})</span>
-              </button>
+            <div className={`space-y-1 font-sans text-[11px] select-none ${currentTheme.segmentedTrackClass}`}>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => onSurfaceChange('GEMINI_ENTERPRISE_CHAT')}
+                  className={`py-1.5 px-2 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    surfaceMode === 'GEMINI_ENTERPRISE_CHAT'
+                      ? currentTheme.segmentedActiveClass
+                      : currentTheme.segmentedInactiveClass
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Chats ({surfaceCounts.chat})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSurfaceChange('NOTEBOOK_LM')}
+                  className={`py-1.5 px-2 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    surfaceMode === 'NOTEBOOK_LM'
+                      ? currentTheme.segmentedActiveClass
+                      : currentTheme.segmentedInactiveClass
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Notebooks ({surfaceCounts.notebook})</span>
+                </button>
+              </div>
+              {canViewAuditorLogs && (
+                <button
+                  type="button"
+                  onClick={() => onSurfaceChange('AUDITOR_ACTIVITY')}
+                  className={`w-full py-1.5 px-2 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    surfaceMode === 'AUDITOR_ACTIVITY'
+                      ? currentTheme.segmentedActiveClass
+                      : currentTheme.segmentedInactiveClass
+                  }`}
+                  title="Inspect all auditor search queries, custodian filters, session views, and legal exports"
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  <span>Auditor Activity ({filteredAuditorEvents.length})</span>
+                </button>
+              )}
             </div>
 
-            {/* User Filter Picker */}
-            <div className="space-y-1">
-              <label className={`text-[10px] font-mono uppercase tracking-wider font-bold block ${currentTheme.textMuted}`}>
-                Filter by User ({users.length}):
-              </label>
-              <select
-                value={selectedUserEmail || ''}
-                onChange={(e) => onSelectUser(e.target.value || null)}
-                className={`w-full p-1.5 border rounded-lg text-xs font-sans focus:outline-none transition cursor-pointer ${currentTheme.cardClass} ${currentTheme.textPrimary}`}
-              >
-                <option value="">All Users ({users.length})</option>
-                {users.map((c) => (
-                  <option key={c.email} value={c.email}>
-                    {c.display_name} ({c.email})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* User or Auditor Filter Picker */}
+            {surfaceMode === 'AUDITOR_ACTIVITY' ? (
+              <div className="space-y-1">
+                <label className={`text-[10px] font-mono uppercase tracking-wider font-bold block ${currentTheme.textMuted}`}>
+                  Filter by Auditor ({auditorSummaries.length}):
+                </label>
+                <select
+                  value={selectedAuditorEmail || ''}
+                  onChange={(e) => onSelectAuditor?.(e.target.value || null)}
+                  className={`w-full p-1.5 border rounded-lg text-xs font-sans focus:outline-none transition cursor-pointer ${currentTheme.cardClass} ${currentTheme.textPrimary}`}
+                >
+                  <option value="">All Auditors ({auditorSummaries.length})</option>
+                  {auditorSummaries.map((aud) => (
+                    <option key={aud.email} value={aud.email}>
+                      {aud.email} ({aud.totalCount})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className={`text-[10px] font-mono uppercase tracking-wider font-bold block ${currentTheme.textMuted}`}>
+                  Filter by User ({users.length}):
+                </label>
+                <select
+                  value={selectedUserEmail || ''}
+                  onChange={(e) => onSelectUser(e.target.value || null)}
+                  className={`w-full p-1.5 border rounded-lg text-xs font-sans focus:outline-none transition cursor-pointer ${currentTheme.cardClass} ${currentTheme.textPrimary}`}
+                >
+                  <option value="">All Users ({users.length})</option>
+                  {users.map((c) => (
+                    <option key={c.email} value={c.email}>
+                      {c.display_name} ({c.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Date & Time Range Scrubber */}
             {minTimestamp !== undefined && maxTimestamp !== undefined && selectedStartTime !== undefined && onStartTimeChange && (
@@ -537,17 +670,29 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
                 selectedStartTime={selectedStartTime}
                 onStartTimeChange={onStartTimeChange}
                 theme={currentTheme}
-                totalEventsCount={allItems?.length || items.length}
-                filteredEventsCount={filteredSessions.length}
+                totalEventsCount={
+                  surfaceMode === 'AUDITOR_ACTIVITY'
+                    ? auditorEvents.length
+                    : (allItems?.length || items.length)
+                }
+                filteredEventsCount={
+                  surfaceMode === 'AUDITOR_ACTIVITY'
+                    ? filteredAuditorEvents.length
+                    : filteredSessions.length
+                }
               />
             )}
 
-            {/* Session Search Input */}
+            {/* Session / Query Search Input */}
             <div className="relative">
               <Search className={`w-3.5 h-3.5 absolute left-2.5 top-2 ${currentTheme.textMuted}`} />
               <input
                 type="text"
-                placeholder="Filter sessions..."
+                placeholder={
+                  surfaceMode === 'AUDITOR_ACTIVITY'
+                    ? 'Filter queries, custodians...'
+                    : 'Filter sessions...'
+                }
                 value={sessionSearch}
                 onChange={(e) => setSessionSearch(e.target.value)}
                 className={`w-full pl-8 pr-2 py-1 border rounded-lg text-xs font-sans focus:outline-none ${currentTheme.cardClass} ${currentTheme.textPrimary}`}
@@ -555,9 +700,86 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
             </div>
           </div>
 
-          {/* Sessions List */}
+          {/* Sessions or Auditors List */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-            {filteredSessions.length === 0 ? (
+            {surfaceMode === 'AUDITOR_ACTIVITY' ? (
+              <>
+                <div
+                  onClick={() => onSelectAuditor?.(null)}
+                  className={`p-2.5 rounded-xl border transition cursor-pointer space-y-1 select-none ${
+                    !selectedAuditorEmail
+                      ? currentTheme.cardSelectedClass
+                      : `${currentTheme.cardClass} ${currentTheme.cardHoverClass}`
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-[10px] font-mono">
+                    <span className={`font-bold ${currentTheme.textPrimary}`}>All Auditors</span>
+                    <span className={currentTheme.textMuted}>{auditorSummaries.length} active</span>
+                  </div>
+                  <div className={`text-[11px] ${currentTheme.textSecondary}`}>
+                    {filteredAuditorEvents.length} recorded audit events
+                  </div>
+                </div>
+                {auditorSummaries.length === 0 ? (
+                  <div className={`p-4 text-center text-xs ${currentTheme.textMuted}`}>
+                    No auditor events recorded yet.
+                  </div>
+                ) : (
+                  auditorSummaries.map((aud) => {
+                    const isSelected =
+                      selectedAuditorEmail?.toLowerCase() === aud.email.toLowerCase();
+                    const shortName = aud.email.split('@')[0] || aud.email;
+                    return (
+                      <div
+                        key={aud.email}
+                        onClick={() =>
+                          onSelectAuditor?.(isSelected ? null : aud.email)
+                        }
+                        className={`p-2.5 rounded-xl border transition cursor-pointer space-y-1.5 select-none ${
+                          isSelected
+                            ? currentTheme.cardSelectedClass
+                            : `${currentTheme.cardClass} ${currentTheme.cardHoverClass}`
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-mono gap-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`font-bold truncate max-w-[95px] ${currentTheme.textPrimary}`}>
+                              {shortName}
+                            </span>
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium shrink-0 ${
+                                aud.isWif
+                                  ? 'bg-indigo-500/10 text-indigo-700 border-indigo-500/25'
+                                  : 'bg-blue-500/10 text-blue-700 border-blue-500/25'
+                              }`}
+                            >
+                              {aud.isWif ? 'Entra WIF' : 'Google IAP'}
+                            </span>
+                          </div>
+                          <span className={`shrink-0 ${currentTheme.textMuted}`}>
+                            {aud.lastTimestamp
+                              ? formatRelativeTime(aud.lastTimestamp) ||
+                                formatEasternDateTime(aud.lastTimestamp)
+                              : ''}
+                          </span>
+                        </div>
+                        <div className={`text-[11px] truncate font-mono ${currentTheme.textSecondary}`} title={aud.email}>
+                          {aud.email}
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className={currentTheme.textMuted}>
+                            {aud.queryCount} queries · {aud.viewCount} views
+                          </span>
+                          <span className={`font-semibold ${currentTheme.accentText}`}>
+                            {aud.totalCount} total
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
+            ) : filteredSessions.length === 0 ? (
               <div className={`p-4 text-center text-xs ${currentTheme.textMuted}`}>
                 No active records match the filter criteria.
               </div>
@@ -621,6 +843,23 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
           </div>
         </aside>
 
+        {surfaceMode === 'AUDITOR_ACTIVITY' ? (
+          <AuditorActivityPane
+            events={filteredAuditorEvents}
+            isLoading={isLoadingAuditorLogs}
+            error={auditorLogsError}
+            selectedAuditorEmail={selectedAuditorEmail}
+            searchFilter={sessionSearch}
+            onSearchFilterChange={setSessionSearch}
+            onRefresh={() => onRefreshAuditorLogs?.()}
+            allItems={allItems ?? items}
+            onJumpToSession={(sid, surf, cust) =>
+              onJumpToSessionFromAudit?.(sid, surf, cust)
+            }
+            theme={currentTheme}
+          />
+        ) : (
+          <>
         {/* ========================================================================= */}
         {/* COLUMN 2: Structural Facets & Artifacts */}
         {/* ========================================================================= */}
@@ -2230,6 +2469,8 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
         </>
       )}
     </main>
+          </>
+        )}
       </div>
     </div>
   );

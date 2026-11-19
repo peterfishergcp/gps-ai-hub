@@ -841,6 +841,137 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
         self.assertIn("fn_auditor_access_report", ddl_joined)
         self.assertIn("run_googleapis_com_stdout", ddl_joined)
 
+    def test_auditor_activity_workspace_api_and_admin_allowlist(self) -> None:
+        """Verify GET /api/auditor-logs merges BQ + ring buffer, deduplicates +/-5s, and enforces AUDIT_ADMIN_EMAILS."""
+        fake_bq_audit_rows = [
+            {
+                "event_timestamp": "2026-11-19T01:54:04Z",
+                "portal_service": "ge-ediscovery-portal-wif",
+                "auditor_email": "auditor@agency.gov",
+                "action": "SEARCH_COMPLIANCE_LOGS",
+                "search_query": "gold",
+                "query_length": 4,
+                "filtered_custodian": "custodian@agency.gov",
+                "matched_session_count": 3,
+                "matched_session_ids": "sess-1,sess-2,sess-3",
+                "viewed_or_exported_session_id": "",
+                "session_custodian_email": "",
+                "surface": "",
+                "export_format": "",
+                "target_resource": "active-proj.ge_ediscovery.conversation_turns",
+                "is_file_download": "false",
+                "is_force_refresh": "false",
+                "auditor_remote_ip": "127.0.0.1",
+                "severity": "INFO",
+            }
+        ]
+
+        with portal_server._CACHE_LOCK:
+            portal_server._RECENT_AUDIT_RING.clear()
+            # Duplicate of BQ row 1 second earlier -> should deduplicate cleanly
+            portal_server._RECENT_AUDIT_RING.append({
+                "severity": "INFO",
+                "event_type": "ediscovery_portal_access_audit",
+                "portal_service": "ge-ediscovery-portal-wif",
+                "reviewer_email": "auditor@agency.gov",
+                "action": "SEARCH_COMPLIANCE_LOGS",
+                "target": "active-proj.ge_ediscovery.conversation_turns",
+                "query_text": "gold",
+                "query_length": 4,
+                "filtered_user": "custodian@agency.gov",
+                "matched_count": 3,
+                "matched_sessions_csv": "sess-1,sess-2,sess-3",
+                "session_id": "",
+                "custodian_email": "",
+                "surface": "",
+                "export_format": "",
+                "download": False,
+                "force_refresh": False,
+                "remote_ip": "127.0.0.1",
+                "timestamp": "2026-11-19T01:54:03Z",
+            })
+            # Fresh in-memory event not yet flushed to BQ -> should appear immediately
+            portal_server._RECENT_AUDIT_RING.append({
+                "severity": "INFO",
+                "event_type": "ediscovery_portal_access_audit",
+                "portal_service": "ge-ediscovery-portal-wif",
+                "reviewer_email": "auditor@agency.gov",
+                "action": "VIEW_SESSION_TRANSCRIPT",
+                "target": "sess-1",
+                "query_text": "",
+                "query_length": 0,
+                "filtered_user": "",
+                "matched_count": 0,
+                "matched_sessions_csv": "",
+                "session_id": "sess-1",
+                "custodian_email": "custodian@agency.gov",
+                "surface": "GEMINI_ENTERPRISE_CHAT",
+                "export_format": "",
+                "download": False,
+                "force_refresh": False,
+                "remote_ip": "127.0.0.1",
+                "timestamp": "2026-11-19T01:55:10Z",
+            })
+
+        with (
+            mock.patch.dict(
+                os.environ,
+                {
+                    "K_SERVICE": "ge-ediscovery-portal-wif",
+                    "IAP_AUDIENCE": "/projects/111/locations/us-central1/services/ge-ediscovery-portal-wif",
+                    "ALLOWED_WIF_POOLS": "entrapf-auditors-pool",
+                    "AUDIT_ADMIN_EMAILS": "",
+                },
+                clear=False,
+            ),
+            mock.patch.object(portal_server, "PROJECT_ID", "active-proj"),
+            mock.patch.object(portal_server, "_verify_es256_iap_jwt", return_value=("auditor@agency.gov", "auditor")),
+            mock.patch.object(portal_server, "run_bq_query", return_value=fake_bq_audit_rows),
+        ):
+            httpd = HTTPServer(("127.0.0.1", 0), portal_server.PortalRequestHandler)
+            port = httpd.server_address[1]
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.request("GET", "/api/config", headers={"X-Goog-IAP-JWT-Assertion": "valid.es256.jwt"})
+                cfg_resp = conn.getresponse()
+                cfg_body = json.loads(cfg_resp.read().decode("utf-8"))
+                self.assertEqual(cfg_resp.status, 200)
+                self.assertTrue(cfg_body["can_view_auditor_logs"])
+                conn.close()
+
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.request("GET", "/api/auditor-logs?limit=100", headers={"X-Goog-IAP-JWT-Assertion": "valid.es256.jwt"})
+                log_resp = conn.getresponse()
+                log_body = json.loads(log_resp.read().decode("utf-8"))
+                self.assertEqual(log_resp.status, 200)
+                self.assertEqual(log_body["count"], 2)
+                self.assertEqual(log_body["events"][0]["action"], "VIEW_SESSION_TRANSCRIPT")
+                self.assertEqual(log_body["events"][1]["search_query"], "gold")
+                conn.close()
+
+                # Restrict AUDIT_ADMIN_EMAILS to lead-counsel@agency.gov -> auditor@agency.gov gets 403
+                with mock.patch.dict(os.environ, {"AUDIT_ADMIN_EMAILS": "lead-counsel@agency.gov"}, clear=False):
+                    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                    conn.request("GET", "/api/config", headers={"X-Goog-IAP-JWT-Assertion": "valid.es256.jwt"})
+                    cfg_resp2 = conn.getresponse()
+                    cfg_body2 = json.loads(cfg_resp2.read().decode("utf-8"))
+                    self.assertFalse(cfg_body2["can_view_auditor_logs"])
+                    conn.close()
+
+                    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                    conn.request("GET", "/api/auditor-logs", headers={"X-Goog-IAP-JWT-Assertion": "valid.es256.jwt"})
+                    denied_resp = conn.getresponse()
+                    denied_resp.read()
+                    self.assertEqual(denied_resp.status, 403)
+                    conn.close()
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+                with portal_server._CACHE_LOCK:
+                    portal_server._RECENT_AUDIT_RING.clear()
+
 
 if __name__ == "__main__":
     unittest.main()

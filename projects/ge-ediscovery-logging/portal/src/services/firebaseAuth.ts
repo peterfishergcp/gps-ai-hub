@@ -19,6 +19,7 @@ export interface User {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  canViewAuditorLogs?: boolean;
   getIdToken: () => Promise<string>;
 }
 
@@ -31,7 +32,7 @@ let runtimeBearerToken = '';
 let configLoaded = false;
 let lastAuthError: string | null = null;
 
-function buildVerifiedUser(email: string, displayName?: string): User {
+function buildVerifiedUser(email: string, displayName?: string, canViewAuditorLogs = true): User {
   const normalizedEmail = email.trim().toLowerCase();
   const resolvedName =
     (displayName && displayName.trim()) ||
@@ -42,6 +43,7 @@ function buildVerifiedUser(email: string, displayName?: string): User {
     email: normalizedEmail,
     displayName: resolvedName,
     photoURL: null,
+    canViewAuditorLogs,
     getIdToken: async () => runtimeBearerToken,
   };
 }
@@ -63,7 +65,11 @@ async function resolveRuntimeSessionUser(): Promise<User | null> {
       const cfg = await resp.json();
       configLoaded = true;
       if (typeof cfg?.reviewer_email === 'string' && cfg.reviewer_email.includes('@')) {
-        return buildVerifiedUser(cfg.reviewer_email, cfg.reviewer_name);
+        return buildVerifiedUser(
+          cfg.reviewer_email,
+          cfg.reviewer_name,
+          cfg.can_view_auditor_logs !== false
+        );
       }
       lastAuthError = 'Backend did not return a verified reviewer email.';
       return null;
