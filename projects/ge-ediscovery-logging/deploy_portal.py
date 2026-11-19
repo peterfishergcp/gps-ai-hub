@@ -194,6 +194,15 @@ def main() -> None:
     print("======================================================================")
     print(f"Deploying Compliance Review Portal ({args.service_name}) to Cloud Run")
     print("======================================================================")
+    setup_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup_storage_and_bigquery.py")
+    if os.path.isfile(setup_script):
+        run_cmd([
+            sys.executable, setup_script,
+            f"--project-id={args.project_id}",
+            f"--bucket-name={bucket_name}",
+            f"--bq-dataset={args.bq_dataset}",
+            "--sinks-and-views-only",
+        ])
     deploy_cmd = [
         "gcloud", "run", "deploy", args.service_name,
         f"--project={args.project_id}",
@@ -220,6 +229,16 @@ def main() -> None:
             f"--region={args.region}",
             f"--member={args.iap_accessor}",
             "--role=roles/iap.httpsResourceAccessor",
+        ])
+
+    if os.path.isfile(setup_script):
+        time.sleep(5)
+        run_cmd([
+            sys.executable, setup_script,
+            f"--project-id={args.project_id}",
+            f"--bucket-name={bucket_name}",
+            f"--bq-dataset={args.bq_dataset}",
+            "--views-only",
         ])
 
     service_url = run_cmd([

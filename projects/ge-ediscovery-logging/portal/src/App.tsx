@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   buildDynamicUsers,
   getUnifiedReviewItems,
@@ -14,7 +14,7 @@ import {
   isAuthorizedEmail,
   User,
 } from './services/firebaseAuth';
-import { fetchLiveComplianceLogs, searchBigQuery } from './services/complianceApi';
+import { fetchLiveComplianceLogs, searchBigQuery, logAuditorUiEvent } from './services/complianceApi';
 import { matchesQuery } from './utils/searchUtils';
 import { ComplianceDataset, EMPTY_DATASET } from './types/schema';
 import { EditorialTheme, THEMES } from './types/theme';
@@ -226,6 +226,20 @@ export const App: React.FC = () => {
     return filteredItems[0] || null;
   }, [filteredItems, selectedItemId]);
 
+  const lastAuditedSessionRef = useRef<string>('');
+  useEffect(() => {
+    if (!currentUser || !activeItem?.id) return;
+    const auditKey = `${activeItem.surface}:${activeItem.id}`;
+    if (lastAuditedSessionRef.current === auditKey) return;
+    lastAuditedSessionRef.current = auditKey;
+    void logAuditorUiEvent({
+      action: 'VIEW_SESSION_TRANSCRIPT',
+      session_id: activeItem.id,
+      custodian_email: activeItem.user_email,
+      surface: activeItem.surface,
+    });
+  }, [currentUser, activeItem?.id, activeItem?.user_email, activeItem?.surface]);
+
   if (!authInitialized) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-zinc-100 text-zinc-600 font-sans">
@@ -254,6 +268,13 @@ export const App: React.FC = () => {
           selectedTheme={selectedTheme}
           allItems={unifiedItems}
           onSelectSearchResult={(res) => {
+            void logAuditorUiEvent({
+              action: 'JUMP_TO_SEARCH_RESULT',
+              query_text: searchQuery.trim(),
+              session_id: res.sessionId,
+              custodian_email: res.userEmail,
+              surface: res.surface,
+            });
             setSurfaceMode(res.surface);
             setSelectedUserEmail(res.userEmail);
             setSelectedItemId(res.sessionId);
@@ -289,7 +310,16 @@ export const App: React.FC = () => {
             activeItem={activeItem}
             onSelectItem={(id) => setSelectedItemId(id)}
             selectedUserEmail={selectedUserEmail}
-            onSelectUser={setSelectedUserEmail}
+            onSelectUser={(email) => {
+              setSelectedUserEmail(email);
+              if (email) {
+                void logAuditorUiEvent({
+                  action: 'FILTER_CUSTODIAN',
+                  custodian_email: email,
+                  surface: surfaceMode,
+                });
+              }
+            }}
             surfaceMode={surfaceMode}
             onSurfaceChange={(mode) => {
               setSurfaceMode(mode);

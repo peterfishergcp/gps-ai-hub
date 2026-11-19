@@ -162,7 +162,10 @@ def ensure_logging_sink() -> None:
         f'OR (resource.type="businessaicode.googleapis.com/BAICInstance" AND ('
         f'logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Finference_request" '
         f'OR logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Finference_response" '
-        f'OR logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Fclient_telemetry"))'
+        f'OR logName="projects/{PROJECT_ID}/logs/businessaicode.googleapis.com%2Fclient_telemetry")) '
+        f'OR (resource.type="cloud_run_revision" AND '
+        f'logName="projects/{PROJECT_ID}/logs/run.googleapis.com%2Fstdout" AND '
+        f'jsonPayload.event_type="ediscovery_portal_access_audit")'
     )
 
     sink_check = subprocess.run(
@@ -225,6 +228,59 @@ def ensure_logging_sink() -> None:
     else:
         print(f"      {sa_email} already has WRITER access on {BQ_DATASET}.")
 
+    # Also route Compliance Portal auditor logs into the WORM-capable Cloud Storage archive bucket
+    auditor_gcs_sink = "ge-ediscovery-auditor-gcs-sink"
+    gcs_dest = f"storage.googleapis.com/{GCS_BUCKET_NAME}"
+    auditor_only_filter = (
+        f'resource.type="cloud_run_revision" AND '
+        f'logName="projects/{PROJECT_ID}/logs/run.googleapis.com%2Fstdout" AND '
+        f'jsonPayload.event_type="ediscovery_portal_access_audit"'
+    )
+    gcs_sink_check = subprocess.run(
+        ["gcloud", "logging", "sinks", "describe", auditor_gcs_sink, f"--project={PROJECT_ID}", "--format=json", "--quiet"],
+        capture_output=True,
+        text=True,
+    )
+    if gcs_sink_check.returncode != 0:
+        subprocess.run(
+            [
+                "gcloud", "logging", "sinks", "create", auditor_gcs_sink,
+                gcs_dest,
+                f"--log-filter={auditor_only_filter}",
+                f"--project={PROJECT_ID}",
+                "--quiet",
+            ],
+            check=True,
+        )
+    else:
+        subprocess.run(
+            [
+                "gcloud", "logging", "sinks", "update", auditor_gcs_sink,
+                gcs_dest,
+                f"--log-filter={auditor_only_filter}",
+                f"--project={PROJECT_ID}",
+                "--quiet",
+            ],
+            check=True,
+        )
+    gcs_sink_info = json.loads(
+        subprocess.check_output(
+            ["gcloud", "logging", "sinks", "describe", auditor_gcs_sink, f"--project={PROJECT_ID}", "--format=json", "--quiet"]
+        ).decode()
+    )
+    gcs_writer_identity = gcs_sink_info["writerIdentity"]
+    subprocess.run(
+        [
+            "gcloud", "storage", "buckets", "add-iam-policy-binding", GCS_BUCKET,
+            f"--member={gcs_writer_identity}",
+            "--role=roles/storage.objectCreator",
+            f"--project={PROJECT_ID}",
+            "--quiet",
+        ],
+        check=True,
+    )
+    print(f"      Auditor WORM GCS sink '{auditor_gcs_sink}' -> {GCS_BUCKET} active ({gcs_writer_identity}).")
+
 
 def ensure_bq_views_and_functions() -> None:
     print(f"[5/5] Creating BigQuery audit views & parameterized forensic table function in {PROJECT_ID}.{BQ_DATASET}...")
@@ -235,6 +291,83 @@ def ensure_bq_views_and_functions() -> None:
         text=True,
     )
     has_raw_sink_table = sink_tbl_check.returncode == 0
+
+    auditor_sink_table = f"{PROJECT_ID}:{BQ_DATASET}.run_googleapis_com_stdout"
+    auditor_tbl_check = subprocess.run(
+        ["bq", f"--project_id={PROJECT_ID}", "show", "--format=none", auditor_sink_table],
+        capture_output=True,
+        text=True,
+    )
+    has_auditor_sink_table = auditor_tbl_check.returncode == 0
+    if has_auditor_sink_table:
+        auditor_view_ddl = f"""
+    CREATE OR REPLACE VIEW `{PROJECT_ID}.{BQ_DATASET}.v_portal_auditor_activity` AS
+    WITH raw_json AS (
+      SELECT
+        timestamp,
+        severity,
+        resource.labels.service_name AS service_name,
+        TO_JSON(jsonPayload) AS payload
+      FROM `{PROJECT_ID}.{BQ_DATASET}.run_googleapis_com_stdout`
+    )
+    SELECT
+      timestamp AS event_timestamp,
+      COALESCE(NULLIF(JSON_VALUE(payload, '$.portal_service'), ''), service_name) AS portal_service,
+      JSON_VALUE(payload, '$.reviewer_email') AS auditor_email,
+      JSON_VALUE(payload, '$.action') AS action,
+      JSON_VALUE(payload, '$.query_text') AS search_query,
+      LAX_INT64(payload.query_length) AS query_length,
+      JSON_VALUE(payload, '$.filtered_user') AS filtered_custodian,
+      LAX_INT64(payload.matched_count) AS matched_session_count,
+      JSON_VALUE(payload, '$.matched_sessions_csv') AS matched_session_ids,
+      JSON_VALUE(payload, '$.session_id') AS viewed_or_exported_session_id,
+      JSON_VALUE(payload, '$.custodian_email') AS session_custodian_email,
+      JSON_VALUE(payload, '$.surface') AS surface,
+      JSON_VALUE(payload, '$.export_format') AS export_format,
+      JSON_VALUE(payload, '$.target') AS target_resource,
+      LAX_BOOL(payload.download) AS is_file_download,
+      LAX_BOOL(payload.force_refresh) AS is_force_refresh,
+      JSON_VALUE(payload, '$.remote_ip') AS auditor_remote_ip,
+      severity
+    FROM raw_json
+    WHERE JSON_VALUE(payload, '$.event_type') = 'ediscovery_portal_access_audit'
+      AND IFNULL(JSON_VALUE(payload, '$.action'), '') != 'PORTAL_SERVICE_STARTED';
+        """
+    else:
+        auditor_view_ddl = f"""
+    CREATE OR REPLACE VIEW `{PROJECT_ID}.{BQ_DATASET}.v_portal_auditor_activity` AS
+    SELECT
+      CAST(NULL AS TIMESTAMP) AS event_timestamp,
+      CAST(NULL AS STRING) AS portal_service,
+      CAST(NULL AS STRING) AS auditor_email,
+      CAST(NULL AS STRING) AS action,
+      CAST(NULL AS STRING) AS search_query,
+      CAST(NULL AS INT64) AS query_length,
+      CAST(NULL AS STRING) AS filtered_custodian,
+      CAST(NULL AS INT64) AS matched_session_count,
+      CAST(NULL AS STRING) AS matched_session_ids,
+      CAST(NULL AS STRING) AS viewed_or_exported_session_id,
+      CAST(NULL AS STRING) AS session_custodian_email,
+      CAST(NULL AS STRING) AS surface,
+      CAST(NULL AS STRING) AS export_format,
+      CAST(NULL AS STRING) AS target_resource,
+      CAST(NULL AS BOOL) AS is_file_download,
+      CAST(NULL AS BOOL) AS is_force_refresh,
+      CAST(NULL AS STRING) AS auditor_remote_ip,
+      CAST(NULL AS STRING) AS severity
+    FROM (SELECT 1) WHERE FALSE;
+        """
+
+    auditor_tvf_ddl = f"""
+    CREATE OR REPLACE TABLE FUNCTION `{PROJECT_ID}.{BQ_DATASET}.fn_auditor_access_report`(target_auditor STRING) AS (
+      SELECT *
+      FROM `{PROJECT_ID}.{BQ_DATASET}.v_portal_auditor_activity` AS a
+      WHERE
+        UPPER(TRIM(target_auditor)) IN ("ALL", "*", "")
+        OR LOWER(IFNULL(a.auditor_email, "")) = LOWER(TRIM(target_auditor))
+        OR STRPOS(LOWER(IFNULL(a.auditor_email, "")), LOWER(TRIM(target_auditor))) > 0
+    );
+    """
 
     if has_raw_sink_table:
         realtime_view_ddl = f"""
@@ -614,6 +747,10 @@ def ensure_bq_views_and_functions() -> None:
     WHERE STARTS_WITH(t.engine_id, 'notebooklm-enterprise-');
 
     {realtime_view_ddl}
+
+    {auditor_view_ddl}
+
+    {auditor_tvf_ddl}
     """
     subprocess.run(
         ["bq", f"--project_id={PROJECT_ID}", "query", "--use_legacy_sql=false", "--quiet", ddl],
@@ -622,7 +759,8 @@ def ensure_bq_views_and_functions() -> None:
     print(
         "      Created v_ediscovery_file_audit, v_ediscovery_custodian_export, "
         "v_jailbreak_and_security_detections, fn_user_forensic_report, "
-        "v_notebooklm_forensic_audit, and v_realtime_agent_and_file_activity."
+        "v_notebooklm_forensic_audit, v_realtime_agent_and_file_activity, "
+        "v_portal_auditor_activity, and fn_auditor_access_report."
     )
 
 
@@ -662,6 +800,16 @@ if __name__ == "__main__":
         default=os.environ.get("LOCK_GCS_RETENTION_POLICY", "false").lower() == "true",
         help="Irreversibly lock GCS bucket retention policy for SEC 17a-4 / FOIA legal hold compliance",
     )
+    parser.add_argument(
+        "--sinks-and-views-only",
+        action="store_true",
+        help="Only update Cloud Logging sinks and BigQuery views/TVFs (skip bucket/table creation)",
+    )
+    parser.add_argument(
+        "--views-only",
+        action="store_true",
+        help="Only refresh BigQuery analytical views and TVFs",
+    )
     args = parser.parse_args()
     if args.retention_period:
         os.environ["GCS_RETENTION_PERIOD"] = args.retention_period.strip()
@@ -679,8 +827,14 @@ if __name__ == "__main__":
     GCS_BUCKET = f"gs://{GCS_BUCKET_NAME}" if not GCS_BUCKET_NAME.startswith("gs://") else GCS_BUCKET_NAME
     BQ_DATASET = (args.bq_dataset or "ge_ediscovery").strip()
 
-    ensure_gcs_bucket()
-    ensure_bq_dataset_and_table()
-    ensure_logging_sink()
-    ensure_bq_views_and_functions()
+    if args.views_only:
+        ensure_bq_views_and_functions()
+    elif args.sinks_and_views_only:
+        ensure_logging_sink()
+        ensure_bq_views_and_functions()
+    else:
+        ensure_gcs_bucket()
+        ensure_bq_dataset_and_table()
+        ensure_logging_sink()
+        ensure_bq_views_and_functions()
     print("\nAll Cloud Storage, BigQuery, and Cloud Logging sink resources are ready!")

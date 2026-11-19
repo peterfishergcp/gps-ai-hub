@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   UnifiedReviewItem,
   UserProfile,
@@ -16,7 +16,7 @@ import {
   formatRelativeTime,
   formatTimestampWithRelative,
 } from '../../utils/dateUtils';
-import { getDirectMediaUrl, getCleanExtension } from '../../services/complianceApi';
+import { getDirectMediaUrl, getCleanExtension, logAuditorUiEvent } from '../../services/complianceApi';
 import { MarkdownContent } from '../MarkdownContent';
 import { ModalityViewer, detectStudioModality } from '../renderers/ModalityViewer';
 import { PresentationViewer } from '../renderers/PresentationViewer';
@@ -315,6 +315,33 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
   const filteredSessions = useMemo(() => {
     return items.filter((item) => matchesQuery(item, sessionSearch));
   }, [items, sessionSearch]);
+
+  const lastAuditedSessionSearchRef = useRef<string>('');
+  useEffect(() => {
+    const trimmed = sessionSearch.trim();
+    if (trimmed.length < 2) {
+      lastAuditedSessionSearchRef.current = '';
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const auditKey = `${surfaceMode}|${selectedUserEmail || ''}|${trimmed}`;
+      if (lastAuditedSessionSearchRef.current === auditKey) return;
+      lastAuditedSessionSearchRef.current = auditKey;
+      const matchedIds = filteredSessions
+        .slice(0, 50)
+        .map((s) => s.id)
+        .join(',');
+      void logAuditorUiEvent({
+        action: 'FILTER_SESSIONS',
+        query_text: trimmed,
+        filtered_user: selectedUserEmail || '',
+        matched_count: filteredSessions.length,
+        matched_sessions_csv: matchedIds,
+        surface: surfaceMode,
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [sessionSearch, filteredSessions, selectedUserEmail, surfaceMode]);
 
   const isNotebook = activeItem?.surface === 'NOTEBOOK_LM';
 
@@ -995,7 +1022,18 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
                 {/* Export Action */}
                 <div className="flex items-center shrink-0">
                   <button
-                    onClick={() => window.print()}
+                    onClick={() => {
+                      if (activeItem) {
+                        void logAuditorUiEvent({
+                          action: 'EXPORT_LEGAL_BRIEF',
+                          session_id: activeItem.id,
+                          custodian_email: activeItem.user_email,
+                          surface: activeItem.surface,
+                          export_format: 'PDF_PRINT',
+                        });
+                      }
+                      window.print();
+                    }}
                     className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-sans font-semibold transition cursor-pointer shadow-2xs ${currentTheme.cardClass} ${currentTheme.cardHoverClass} ${currentTheme.accentText}`}
                     title="Export or print this brief as a clean PDF"
                   >

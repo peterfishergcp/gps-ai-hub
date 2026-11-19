@@ -181,3 +181,44 @@ export async function searchBigQuery(
   }
   return { matched_sessions: [], matched_notebooks: [], total_matches: 0 };
 }
+
+export type AuditorUiAction =
+  | 'VIEW_SESSION_TRANSCRIPT'
+  | 'EXPORT_LEGAL_BRIEF'
+  | 'FILTER_CUSTODIAN'
+  | 'FILTER_SESSIONS'
+  | 'JUMP_TO_SEARCH_RESULT';
+
+export interface AuditorUiAuditPayload {
+  action: AuditorUiAction;
+  session_id?: string;
+  custodian_email?: string;
+  filtered_user?: string;
+  matched_count?: number;
+  matched_sessions_csv?: string;
+  surface?: string;
+  query_text?: string;
+  export_format?: string;
+}
+
+/**
+ * Emits a tamper-evident server-side audit log (`POST /api/audit`) whenever an auditor
+ * views a session/notebook transcript, filters by custodian, jumps to a search hit,
+ * or prints/exports a Legal Brief PDF.
+ */
+export async function logAuditorUiEvent(payload: AuditorUiAuditPayload): Promise<void> {
+  try {
+    const headers = await getAuthHeaders();
+    headers['Content-Type'] = 'application/json';
+    await fetch('/api/audit', {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      keepalive: true,
+      headers,
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Best-effort client telemetry; server-side API endpoints also log independently.
+  }
+}

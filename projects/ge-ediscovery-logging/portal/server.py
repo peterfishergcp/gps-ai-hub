@@ -924,6 +924,56 @@ def is_reviewer_authorized(reviewer_email: str) -> bool:
     return False
 
 
+ALLOWED_UI_AUDIT_ACTIONS: frozenset[str] = frozenset({
+    "VIEW_SESSION_TRANSCRIPT",
+    "EXPORT_LEGAL_BRIEF",
+    "FILTER_CUSTODIAN",
+    "FILTER_SESSIONS",
+    "JUMP_TO_SEARCH_RESULT",
+})
+
+
+def _sanitize_audit_str(val: object, max_len: int = 512) -> str:
+    """Strips control characters and truncates strings for structured JSON audit logging."""
+    s = str(val or "").replace("\r", " ").replace("\n", " ").strip()
+    return s[:max_len]
+
+
+def _build_canonical_audit_entry(
+    reviewer_email: str,
+    action: str,
+    target: str,
+    remote_ip: str = "",
+    extra: dict | None = None,
+) -> dict[str, object]:
+    """
+    Builds a type-stable, fixed-schema JSON audit entry so Cloud Logging's BigQuery sink
+    (`run_googleapis_com_stdout`) creates every column on Event #1 and never hits schema drift.
+    """
+    ext = extra or {}
+    return {
+        "severity": _sanitize_audit_str(ext.get("severity") or "INFO", 32),
+        "event_type": "ediscovery_portal_access_audit",
+        "portal_service": _sanitize_audit_str(os.environ.get("K_SERVICE") or "ge-ediscovery-portal", 128),
+        "reviewer_email": _sanitize_audit_str(reviewer_email, 320),
+        "action": _sanitize_audit_str(action, 64),
+        "target": _sanitize_audit_str(target, 1024),
+        "query_text": _sanitize_audit_str(ext.get("query_text", ""), 1024),
+        "query_length": int(ext.get("query_length") or 0),
+        "filtered_user": _sanitize_audit_str(ext.get("filtered_user", ""), 320),
+        "matched_count": int(ext.get("matched_count") or 0),
+        "matched_sessions_csv": _sanitize_audit_str(ext.get("matched_sessions_csv", ""), 2048),
+        "session_id": _sanitize_audit_str(ext.get("session_id", ""), 256),
+        "custodian_email": _sanitize_audit_str(ext.get("custodian_email", ""), 320),
+        "surface": _sanitize_audit_str(ext.get("surface", ""), 64),
+        "export_format": _sanitize_audit_str(ext.get("export_format", ""), 64),
+        "download": bool(ext.get("download", False)),
+        "force_refresh": bool(ext.get("force_refresh", False)),
+        "remote_ip": _sanitize_audit_str(remote_ip, 128),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
 class PortalRequestHandler(BaseHTTPRequestHandler):
     def send_security_headers(self, is_media: bool = False, allow_sameorigin_frame: bool = False) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -997,19 +1047,19 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
         return None
 
     def emit_access_audit_log(self, reviewer_email: str, action: str, target: str, extra: dict | None = None) -> None:
-        """Emits a structured Cloud Logging audit entry for every eDiscovery compliance access."""
+        """
+        Emits a canonical, fixed-schema Cloud Logging JSON audit entry for every eDiscovery
+        compliance portal action so Cloud Logging -> BigQuery (`run_googleapis_com_stdout`)
+        and WORM Cloud Storage sinks maintain a complete, type-stable auditor chain of custody.
+        """
         forwarded_for = self.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        entry = {
-            "severity": "INFO",
-            "event_type": "ediscovery_portal_access_audit",
-            "reviewer_email": reviewer_email,
-            "action": action,
-            "target": target,
-            "remote_ip": forwarded_for or self.client_address[0],
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        }
-        if extra:
-            entry.update(extra)
+        entry = _build_canonical_audit_entry(
+            reviewer_email=reviewer_email,
+            action=action,
+            target=target,
+            remote_ip=forwarded_for or self.client_address[0],
+            extra=extra,
+        )
         print(json.dumps(entry), flush=True)
 
     def send_json(self, status_code: int, payload: dict) -> None:
@@ -1086,7 +1136,8 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
             if len(q) < 2 and not user_email:
                 self.send_json(200, {"matched_sessions": [], "matched_notebooks": [], "total_matches": 0})
                 return
-            self.emit_access_audit_log(rev_email, "SEARCH_COMPLIANCE_LOGS", f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}", {"query_length": len(q), "filtered_user": user_email})
+            redact_query = os.environ.get("AUDIT_REDACT_SEARCH_TEXT", "false").strip().lower() == "true"
+            logged_query_text = "[REDACTED]" if (redact_query and q) else _sanitize_audit_str(q, 1024)
             try:
                 sql = f"""
                     WITH matched AS (
@@ -1150,14 +1201,38 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                     for r in rows
                     if str(r.get("engine_id") or "").startswith("notebooklm-enterprise")
                 })
+                all_matched_ids = matched_sessions + matched_notebooks
+                self.emit_access_audit_log(
+                    rev_email,
+                    "SEARCH_COMPLIANCE_LOGS",
+                    f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}",
+                    {
+                        "query_text": logged_query_text,
+                        "query_length": len(q),
+                        "filtered_user": _sanitize_audit_str(user_email, 320),
+                        "matched_count": len(all_matched_ids),
+                        "matched_sessions_csv": ",".join(all_matched_ids[:50]),
+                    },
+                )
                 search_dataset = _transform_bq_rows_to_dataset(rows, PROJECT_ID, get_bucket_name(PROJECT_ID))
                 self.send_json(200, {
                     "matched_sessions": matched_sessions,
                     "matched_notebooks": matched_notebooks,
-                    "total_matches": len(matched_sessions) + len(matched_notebooks),
+                    "total_matches": len(all_matched_ids),
                     "search_dataset": search_dataset,
                 })
             except Exception as e:
+                self.emit_access_audit_log(
+                    rev_email,
+                    "SEARCH_COMPLIANCE_LOGS_ERROR",
+                    f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}",
+                    {
+                        "severity": "WARNING",
+                        "query_text": logged_query_text,
+                        "query_length": len(q),
+                        "filtered_user": _sanitize_audit_str(user_email, 320),
+                    },
+                )
                 print(f"[!] Error in /api/search: {e}")
                 self.send_json(500, {"error": "Search query failed"})
             return
@@ -1273,7 +1348,89 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
     def _reject_unsupported_method(self) -> None:
         self.send_json(405, {"error": "Method Not Allowed"})
 
-    do_POST = _reject_unsupported_method
+    def do_POST(self) -> None:
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path != "/api/audit":
+            self._reject_unsupported_method()
+            return
+
+        reviewer = self.get_authenticated_reviewer()
+        if reviewer is None:
+            self.send_json(
+                401,
+                {"error": "Unauthorized: Missing or invalid cryptographic IAP / OIDC identity token"},
+            )
+            return
+        rev_email, _rev_name = reviewer
+        if not is_reviewer_authorized(rev_email):
+            self.emit_access_audit_log(
+                rev_email,
+                "DENIED_UNAUTHORIZED_REVIEWER",
+                "/api/audit",
+                {"severity": "WARNING"},
+            )
+            self.send_json(
+                403,
+                {"error": "Forbidden: Identity is not authorized in ALLOWED_REVIEWER_EMAILS / ALLOWED_REVIEWER_DOMAINS"},
+            )
+            return
+
+        try:
+            content_len = int(self.headers.get("Content-Length") or "0")
+        except ValueError:
+            self.send_json(400, {"error": "Invalid Content-Length header"})
+            return
+        if content_len <= 0 or content_len > 16384:
+            self.send_json(400, {"error": "Audit payload must be between 1 and 16384 bytes"})
+            return
+
+        try:
+            raw_body = self.rfile.read(content_len).decode("utf-8")
+            payload = json.loads(raw_body)
+            if not isinstance(payload, dict):
+                raise ValueError("Payload must be a JSON object")
+        except Exception:
+            self.send_json(400, {"error": "Malformed JSON audit payload"})
+            return
+
+        ui_action = _sanitize_audit_str(payload.get("action"), 64).upper()
+        if ui_action not in ALLOWED_UI_AUDIT_ACTIONS:
+            self.send_json(400, {"error": f"Unsupported audit action: {ui_action!r}"})
+            return
+
+        redact_query = os.environ.get("AUDIT_REDACT_SEARCH_TEXT", "false").strip().lower() == "true"
+        raw_q = _sanitize_audit_str(payload.get("query_text", ""), 1024)
+        logged_q = "[REDACTED]" if (redact_query and raw_q) else raw_q
+        sess_id = _sanitize_audit_str(payload.get("session_id", ""), 256)
+        cust_email = _sanitize_audit_str(payload.get("custodian_email", ""), 320).lower()
+        explicit_filtered_user = _sanitize_audit_str(payload.get("filtered_user", ""), 320).lower()
+        surface = _sanitize_audit_str(payload.get("surface", ""), 64)
+        exp_fmt = _sanitize_audit_str(payload.get("export_format", ""), 64)
+        try:
+            matched_cnt = max(0, min(10000, int(payload.get("matched_count") or 0)))
+        except (TypeError, ValueError):
+            matched_cnt = 0
+        matched_csv = _sanitize_audit_str(payload.get("matched_sessions_csv", ""), 2048)
+        target_res = sess_id or cust_email or explicit_filtered_user or f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
+
+        self.emit_access_audit_log(
+            rev_email,
+            ui_action,
+            target_res,
+            {
+                "query_text": logged_q,
+                "query_length": len(raw_q),
+                "filtered_user": explicit_filtered_user or (cust_email if ui_action == "FILTER_CUSTODIAN" else ""),
+                "matched_count": matched_cnt,
+                "matched_sessions_csv": matched_csv,
+                "session_id": sess_id,
+                "custodian_email": cust_email,
+                "surface": surface,
+                "export_format": exp_fmt,
+            },
+        )
+        self.send_json(200, {"status": "logged", "action": ui_action})
+
     do_PUT = _reject_unsupported_method
     do_DELETE = _reject_unsupported_method
     do_PATCH = _reject_unsupported_method
@@ -1283,6 +1440,17 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     bind_host = "0.0.0.0" if os.environ.get("K_SERVICE") else os.environ.get("BIND_HOST", "127.0.0.1")
+    if os.environ.get("K_SERVICE"):
+        print(
+            json.dumps(
+                _build_canonical_audit_entry(
+                    reviewer_email="system@cloudrun.internal",
+                    action="PORTAL_SERVICE_STARTED",
+                    target=f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}",
+                )
+            ),
+            flush=True,
+        )
     server = ThreadingHTTPServer((bind_host, port), PortalRequestHandler)
     print(f"[*] Gemini Enterprise eDiscovery Review Portal listening on http://{bind_host}:{port}")
     server.serve_forever()

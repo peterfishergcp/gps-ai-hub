@@ -371,3 +371,14 @@ When the user asks to add one or more reviewers to the Compliance Review Portal 
    gcloud run services describe ge-ediscovery-portal --project="$GCP_PROJECT_ID" --region="$REGION" --format="value(status.url)"
    gcloud iap web get-iam-policy --project="$GCP_PROJECT_ID" --resource-type=cloud-run --service=ge-ediscovery-portal --region="$REGION"
    ```
+
+---
+
+## 7. Querying Compliance Portal Auditor Activity ("Audit the Auditors")
+
+Both `ge-ediscovery-portal` and `ge-ediscovery-portal-wif` automatically emit structured `ediscovery_portal_access_audit` events (`SEARCH_COMPLIANCE_LOGS` with exact `query_text` + `matched_sessions_csv`, `VIEW_SESSION_TRANSCRIPT`, `EXPORT_LEGAL_BRIEF`, `FILTER_CUSTODIAN`, `JUMP_TO_SEARCH_RESULT`, `STREAM_ARCHIVE_MEDIA`, `LIST_COMPLIANCE_LOGS`, and `DENIED_UNAUTHORIZED_REVIEWER`) routed into BigQuery (`v_portal_auditor_activity` / `fn_auditor_access_report`) and WORM GCS (`ge-ediscovery-auditor-gcs-sink`):
+
+```bash
+bq query --project_id="$GCP_PROJECT_ID" --use_legacy_sql=false \
+  "SELECT event_timestamp, portal_service, auditor_email, action, search_query, filtered_custodian, viewed_or_exported_session_id, session_custodian_email, export_format, target_resource FROM \`${GCP_PROJECT_ID}.ge_ediscovery.fn_auditor_access_report\`('ALL') ORDER BY event_timestamp DESC LIMIT 50"
+```
