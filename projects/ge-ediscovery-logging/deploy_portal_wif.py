@@ -524,6 +524,15 @@ def main() -> None:
     print("======================================================================")
     print(f"2. Deploying WIF Compliance Review Portal ({args.service_name}) to Cloud Run")
     print("======================================================================")
+    setup_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup_storage_and_bigquery.py")
+    if os.path.isfile(setup_script):
+        run_cmd([
+            sys.executable, setup_script,
+            f"--project-id={args.project_id}",
+            f"--bucket-name={bucket_name}",
+            f"--bq-dataset={args.bq_dataset}",
+            "--sinks-and-views-only",
+        ])
     run_cmd(["gcloud", "services", "enable", "iap.googleapis.com", f"--project={args.project_id}", "--quiet"])
     run_cmd([
         "gcloud", "run", "deploy", args.service_name,
@@ -592,6 +601,16 @@ def main() -> None:
         "--role=roles/run.invoker",
         "--quiet",
     ])
+
+    if os.path.isfile(setup_script):
+        time.sleep(5)
+        run_cmd([
+            sys.executable, setup_script,
+            f"--project-id={args.project_id}",
+            f"--bucket-name={bucket_name}",
+            f"--bq-dataset={args.bq_dataset}",
+            "--views-only",
+        ])
 
     service_url = run_cmd([
         "gcloud", "run", "services", "describe", args.service_name,
