@@ -14,9 +14,19 @@ import {
   isAuthorizedEmail,
   User,
 } from './services/firebaseAuth';
-import { fetchLiveComplianceLogs, searchBigQuery, logAuditorUiEvent } from './services/complianceApi';
+import {
+  fetchLiveComplianceLogs,
+  searchBigQuery,
+  logAuditorUiEvent,
+  fetchAuditorActivityLogs,
+} from './services/complianceApi';
 import { matchesQuery } from './utils/searchUtils';
-import { ComplianceDataset, EMPTY_DATASET } from './types/schema';
+import {
+  ComplianceDataset,
+  EMPTY_DATASET,
+  PortalSurfaceMode,
+  AuditorActivityRecord,
+} from './types/schema';
 import { EditorialTheme, THEMES } from './types/theme';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -51,11 +61,34 @@ export const App: React.FC = () => {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Surface & Filters State
-  const [surfaceMode, setSurfaceMode] = useState<'NOTEBOOK_LM' | 'GEMINI_ENTERPRISE_CHAT'>('GEMINI_ENTERPRISE_CHAT');
+  const [surfaceMode, setSurfaceMode] = useState<PortalSurfaceMode>('GEMINI_ENTERPRISE_CHAT');
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState<number | null>(null);
+
+  // Auditor Activity State
+  const [auditorEvents, setAuditorEvents] = useState<AuditorActivityRecord[]>([]);
+  const [isLoadingAuditorLogs, setIsLoadingAuditorLogs] = useState(false);
+  const [auditorLogsError, setAuditorLogsError] = useState<string | null>(null);
+  const [selectedAuditorEmail, setSelectedAuditorEmail] = useState<string | null>(null);
+
+  const syncAuditorLogs = useCallback(async () => {
+    setIsLoadingAuditorLogs(true);
+    setAuditorLogsError(null);
+    try {
+      const res = await fetchAuditorActivityLogs(500);
+      if (res.error) {
+        setAuditorLogsError(res.error);
+      } else {
+        setAuditorEvents(res.events || []);
+      }
+    } catch {
+      setAuditorLogsError('Unexpected error loading auditor activity logs.');
+    } finally {
+      setIsLoadingAuditorLogs(false);
+    }
+  }, []);
 
   // Live BigQuery Sync Function
   const syncWithBigQuery = useCallback(async (forceRefresh = false) => {
@@ -104,13 +137,22 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (currentUser) {
       syncWithBigQuery(false);
+      if (currentUser.canViewAuditorLogs !== false) {
+        void syncAuditorLogs();
+      }
     }
-  }, [currentUser, syncWithBigQuery]);
+  }, [currentUser, syncWithBigQuery, syncAuditorLogs]);
+
+  // Refresh auditor logs whenever switching into the Auditor Activity workspace
+  useEffect(() => {
+    if (currentUser && surfaceMode === 'AUDITOR_ACTIVITY' && currentUser.canViewAuditorLogs !== false) {
+      void syncAuditorLogs();
+    }
+  }, [currentUser, surfaceMode, syncAuditorLogs]);
 
   // Query server-side BigQuery /api/search (debounced) so records older than LIMIT 2000 are discoverable
   useEffect(() => {
-    if (!currentUser) {
-      setServerSearchDataset(null);
+    if (!currentUser || surfaceMode === 'AUDITOR_ACTIVITY') {
       return;
     }
     const trimmed = searchQuery.trim();
@@ -228,7 +270,7 @@ export const App: React.FC = () => {
 
   const lastAuditedSessionRef = useRef<string>('');
   useEffect(() => {
-    if (!currentUser || !activeItem?.id) return;
+    if (!currentUser || surfaceMode === 'AUDITOR_ACTIVITY' || !activeItem?.id) return;
     const auditKey = `${activeItem.surface}:${activeItem.id}`;
     if (lastAuditedSessionRef.current === auditKey) return;
     lastAuditedSessionRef.current = auditKey;
@@ -238,7 +280,7 @@ export const App: React.FC = () => {
       custodian_email: activeItem.user_email,
       surface: activeItem.surface,
     });
-  }, [currentUser, activeItem?.id, activeItem?.user_email, activeItem?.surface]);
+  }, [currentUser, surfaceMode, activeItem?.id, activeItem?.user_email, activeItem?.surface]);
 
   if (!authInitialized) {
     return (
@@ -262,7 +304,12 @@ export const App: React.FC = () => {
           onSearchChange={setSearchQuery}
           currentUser={currentUser}
           onSignOut={handleSignOut}
-          onSyncBigQuery={() => syncWithBigQuery(true)}
+          onSyncBigQuery={() => {
+            void syncWithBigQuery(true);
+            if (currentUser.canViewAuditorLogs !== false) {
+              void syncAuditorLogs();
+            }
+          }}
           isSyncing={isSyncing}
           lastSyncedTime={lastSyncedTime || undefined}
           selectedTheme={selectedTheme}
@@ -324,6 +371,21 @@ export const App: React.FC = () => {
             onSurfaceChange={(mode) => {
               setSurfaceMode(mode);
               setSelectedItemId(null);
+            }}
+            canViewAuditorLogs={currentUser.canViewAuditorLogs !== false}
+            auditorEvents={auditorEvents}
+            isLoadingAuditorLogs={isLoadingAuditorLogs}
+            auditorLogsError={auditorLogsError}
+            selectedAuditorEmail={selectedAuditorEmail}
+            onSelectAuditor={setSelectedAuditorEmail}
+            onRefreshAuditorLogs={syncAuditorLogs}
+            onJumpToSessionFromAudit={(sessId, surfaceHint, custodianEmail) => {
+              const targetSurface: PortalSurfaceMode =
+                surfaceHint === 'NOTEBOOK_LM' ? 'NOTEBOOK_LM' : 'GEMINI_ENTERPRISE_CHAT';
+              setSurfaceMode(targetSurface);
+              setSelectedUserEmail(custodianEmail || null);
+              setSelectedStartTime(null);
+              setSelectedItemId(sessId);
             }}
             selectedTheme={selectedTheme}
             onSelectTheme={handleSelectTheme}
