@@ -186,12 +186,16 @@ export type AuditorUiAction =
   | 'VIEW_SESSION_TRANSCRIPT'
   | 'EXPORT_LEGAL_BRIEF'
   | 'FILTER_CUSTODIAN'
+  | 'FILTER_SESSIONS'
   | 'JUMP_TO_SEARCH_RESULT';
 
 export interface AuditorUiAuditPayload {
   action: AuditorUiAction;
   session_id?: string;
   custodian_email?: string;
+  filtered_user?: string;
+  matched_count?: number;
+  matched_sessions_csv?: string;
   surface?: string;
   query_text?: string;
   export_format?: string;

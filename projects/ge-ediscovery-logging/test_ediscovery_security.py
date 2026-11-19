@@ -749,6 +749,14 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
                         "surface": "GEMINI_ENTERPRISE_CHAT",
                         "export_format": "PDF_PRINT",
                     },
+                    {
+                        "action": "FILTER_SESSIONS",
+                        "query_text": "FOIA",
+                        "filtered_user": "custodian@agency.gov",
+                        "matched_count": 3,
+                        "matched_sessions_csv": "sess-audit-1,sess-audit-2,sess-audit-3",
+                        "surface": "GEMINI_ENTERPRISE_CHAT",
+                    },
                 ):
                     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
                     conn.request(
@@ -784,7 +792,7 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
                 httpd.shutdown()
                 httpd.server_close()
 
-        self.assertEqual(len(emitted_entries), 3)
+        self.assertEqual(len(emitted_entries), 4)
         search_entry = emitted_entries[0]
         self.assertEqual(search_entry["action"], "SEARCH_COMPLIANCE_LOGS")
         self.assertEqual(search_entry["query_text"], "procurement memo")
@@ -800,6 +808,13 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
         export_entry = emitted_entries[2]
         self.assertEqual(export_entry["action"], "EXPORT_LEGAL_BRIEF")
         self.assertEqual(export_entry["export_format"], "PDF_PRINT")
+
+        filter_sess_entry = emitted_entries[3]
+        self.assertEqual(filter_sess_entry["action"], "FILTER_SESSIONS")
+        self.assertEqual(filter_sess_entry["query_text"], "FOIA")
+        self.assertEqual(filter_sess_entry["filtered_user"], "custodian@agency.gov")
+        self.assertEqual(filter_sess_entry["matched_count"], 3)
+        self.assertEqual(filter_sess_entry["matched_sessions_csv"], "sess-audit-1,sess-audit-2,sess-audit-3")
 
         # 4. Verify setup_storage_and_bigquery.py emits v_portal_auditor_activity + fn_auditor_access_report
         #    when run_googleapis_com_stdout exists
