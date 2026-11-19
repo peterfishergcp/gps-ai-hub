@@ -783,6 +783,45 @@ LIMIT 100;
 
 ---
 
+### 9. Compliance Portal Auditor Activity & Chain-of-Custody Audit (`v_portal_auditor_activity` & `fn_auditor_access_report`)
+
+Every interaction inside the Compliance Review Portal (`ge-ediscovery-portal` and `ge-ediscovery-portal-wif`) emits a tamper-evident structured JSON audit log (`event_type="ediscovery_portal_access_audit"`) under the cryptographically verified IAP / Workforce Identity Federation reviewer identity. Because `ge-ediscovery-portal-sa` has **read-only** permissions, the portal container cannot alter or delete its own audit history; Google Cloud Logging's managed sink service account streams every event simultaneously to:
+1. **BigQuery (`<YOUR_GCP_PROJECT_ID>.ge_ediscovery.run_googleapis_com_stdout`)**, surfaced through the pre-built view `v_portal_auditor_activity` and parameterized TVF `fn_auditor_access_report(target_auditor STRING)`.
+2. **WORM Cloud Storage (`gs://<YOUR_GCP_PROJECT_ID>-ge-ediscovery/run.googleapis.com/stdout/...`)** via `ge-ediscovery-auditor-gcs-sink` for multi-year immutable retention.
+
+Actions captured include:
+- `SEARCH_COMPLIANCE_LOGS`: Exact `search_query` text (`AUDIT_REDACT_SEARCH_TEXT=true` optional if redaction is desired), `filtered_custodian`, `matched_session_count`, and `matched_session_ids`.
+- `JUMP_TO_SEARCH_RESULT`: Search bar jump target (`search_query`, `viewed_or_exported_session_id`, `session_custodian_email`).
+- `FILTER_CUSTODIAN`: Custodian dropdown filter selection (`session_custodian_email`, `surface`).
+- `VIEW_SESSION_TRANSCRIPT`: Every session or NotebookLM transcript opened (`viewed_or_exported_session_id`, `session_custodian_email`, `surface`).
+- `EXPORT_LEGAL_BRIEF`: Every PDF / print export clicked (`viewed_or_exported_session_id`, `session_custodian_email`, `export_format`).
+- `STREAM_ARCHIVE_MEDIA`: Every preserved PDF, image, audio/video, or JSON snapshot streamed or downloaded (`target_resource`, `is_file_download`).
+- `LIST_COMPLIANCE_LOGS` & `DENIED_UNAUTHORIZED_REVIEWER`: Portal loads, manual refreshes, and `403` blocked access attempts.
+
+```sql
+-- Query all auditor searches, viewed transcripts, PDF brief exports, and file downloads
+SELECT
+  event_timestamp,
+  portal_service,
+  auditor_email,
+  action,
+  search_query,
+  filtered_custodian,
+  matched_session_count,
+  viewed_or_exported_session_id,
+  session_custodian_email,
+  surface,
+  export_format,
+  target_resource,
+  is_file_download,
+  auditor_remote_ip
+FROM `<YOUR_GCP_PROJECT_ID>.ge_ediscovery.fn_auditor_access_report`('ALL')
+ORDER BY event_timestamp DESC
+LIMIT 200;
+```
+
+---
+
 ## Further Reading
 
 See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for:

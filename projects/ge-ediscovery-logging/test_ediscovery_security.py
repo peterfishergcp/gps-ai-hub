@@ -664,6 +664,168 @@ class TestEdiscoveryAntiSpoliationAndSecurity(unittest.TestCase):
         ):
             self.assertTrue(portal_server.is_reviewer_authorized("auditor@agency.gov"))
 
+    def test_auditor_query_session_view_export_and_bq_sink_views(self) -> None:
+        """Verify full auditor search query logging, POST /api/audit events, and v_portal_auditor_activity DDL."""
+        emitted_entries: list[dict] = []
+
+        def capture_audit(handler_self, reviewer_email: str, action: str, target: str, extra: dict | None = None):
+            entry = portal_server._build_canonical_audit_entry(
+                reviewer_email=reviewer_email,
+                action=action,
+                target=target,
+                remote_ip="127.0.0.1",
+                extra=extra,
+            )
+            emitted_entries.append(entry)
+
+        fake_bq_rows = [
+            {
+                "session_id": "sess-audit-1",
+                "turn_index": 1,
+                "query_id": "q1",
+                "assist_answer_id": "a1",
+                "engine_id": "ge-engine-1",
+                "location": "global",
+                "user_iam_principal": "custodian@agency.gov",
+                "session_display_name": "FOIA Review",
+                "prompt_text": "Confidential procurement memo",
+                "response_text": "Summary response",
+                "thought_text": "",
+                "model_name": "gemini-3.8-flash",
+                "session_transcript_gcs_uri": "gs://proj-ge-ediscovery/raw_sessions/sess-audit-1.json",
+                "session_transcript_console_url": "",
+                "files": [],
+                "event_timestamp": "2026-11-18T12:00:00Z",
+                "harvested_at": "2026-11-18T12:00:05Z",
+            }
+        ]
+
+        with (
+            mock.patch.dict(
+                os.environ,
+                {
+                    "K_SERVICE": "ge-ediscovery-portal-wif",
+                    "IAP_AUDIENCE": "/projects/111/locations/us-central1/services/ge-ediscovery-portal-wif",
+                    "ALLOWED_WIF_POOLS": "entrapf-auditors-pool",
+                    "ALLOWED_REVIEWER_EMAILS": "",
+                    "ALLOWED_REVIEWER_DOMAINS": "",
+                    "AUDIT_REDACT_SEARCH_TEXT": "false",
+                },
+                clear=False,
+            ),
+            mock.patch.object(portal_server, "_verify_es256_iap_jwt", return_value=("auditor@agency.gov", "auditor")),
+            mock.patch.object(portal_server, "run_bq_query", return_value=fake_bq_rows),
+            mock.patch.object(portal_server.PortalRequestHandler, "emit_access_audit_log", capture_audit),
+        ):
+            httpd = HTTPServer(("127.0.0.1", 0), portal_server.PortalRequestHandler)
+            port = httpd.server_address[1]
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                # 1. GET /api/search captures exact query_text, matched_count, and matched_sessions_csv
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.request(
+                    "GET",
+                    "/api/search?q=procurement+memo&user_email=custodian%40agency.gov",
+                    headers={"X-Goog-IAP-JWT-Assertion": "valid.es256.jwt"},
+                )
+                resp = conn.getresponse()
+                resp.read()
+                self.assertEqual(resp.status, 200)
+                conn.close()
+
+                # 2. POST /api/audit logs VIEW_SESSION_TRANSCRIPT and EXPORT_LEGAL_BRIEF
+                for payload in (
+                    {
+                        "action": "VIEW_SESSION_TRANSCRIPT",
+                        "session_id": "sess-audit-1",
+                        "custodian_email": "custodian@agency.gov",
+                        "surface": "GEMINI_ENTERPRISE_CHAT",
+                    },
+                    {
+                        "action": "EXPORT_LEGAL_BRIEF",
+                        "session_id": "sess-audit-1",
+                        "custodian_email": "custodian@agency.gov",
+                        "surface": "GEMINI_ENTERPRISE_CHAT",
+                        "export_format": "PDF_PRINT",
+                    },
+                ):
+                    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                    conn.request(
+                        "POST",
+                        "/api/audit",
+                        body=json.dumps(payload).encode("utf-8"),
+                        headers={
+                            "Content-Type": "application/json",
+                            "X-Goog-IAP-JWT-Assertion": "valid.es256.jwt",
+                        },
+                    )
+                    resp = conn.getresponse()
+                    resp.read()
+                    self.assertEqual(resp.status, 200)
+                    conn.close()
+
+                # 3. Unsupported audit action returns 400
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.request(
+                    "POST",
+                    "/api/audit",
+                    body=json.dumps({"action": "DROP_TABLE"}).encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Goog-IAP-JWT-Assertion": "valid.es256.jwt",
+                    },
+                )
+                resp = conn.getresponse()
+                resp.read()
+                self.assertEqual(resp.status, 400)
+                conn.close()
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+
+        self.assertEqual(len(emitted_entries), 3)
+        search_entry = emitted_entries[0]
+        self.assertEqual(search_entry["action"], "SEARCH_COMPLIANCE_LOGS")
+        self.assertEqual(search_entry["query_text"], "procurement memo")
+        self.assertEqual(search_entry["filtered_user"], "custodian@agency.gov")
+        self.assertEqual(search_entry["matched_count"], 1)
+        self.assertEqual(search_entry["matched_sessions_csv"], "sess-audit-1")
+
+        view_entry = emitted_entries[1]
+        self.assertEqual(view_entry["action"], "VIEW_SESSION_TRANSCRIPT")
+        self.assertEqual(view_entry["session_id"], "sess-audit-1")
+        self.assertEqual(view_entry["custodian_email"], "custodian@agency.gov")
+
+        export_entry = emitted_entries[2]
+        self.assertEqual(export_entry["action"], "EXPORT_LEGAL_BRIEF")
+        self.assertEqual(export_entry["export_format"], "PDF_PRINT")
+
+        # 4. Verify setup_storage_and_bigquery.py emits v_portal_auditor_activity + fn_auditor_access_report
+        #    when run_googleapis_com_stdout exists
+        captured_ddl: list[str] = []
+
+        def fake_bq_run_with_stdout_table(cmd, *args, **kwargs):
+            if cmd and cmd[0] == "bq" and "show" in cmd:
+                return mock.MagicMock(returncode=0, stdout="", stderr="")
+            if cmd and cmd[0] == "bq" and "query" in cmd:
+                captured_ddl.append(cmd[-1])
+                return mock.MagicMock(returncode=0, stdout="", stderr="")
+            return mock.MagicMock(returncode=0, stdout="", stderr="")
+
+        orig_proj = setup_storage_and_bigquery.PROJECT_ID
+        try:
+            setup_storage_and_bigquery.PROJECT_ID = "active-proj"
+            with mock.patch("subprocess.run", side_effect=fake_bq_run_with_stdout_table):
+                setup_storage_and_bigquery.ensure_bq_views_and_functions()
+        finally:
+            setup_storage_and_bigquery.PROJECT_ID = orig_proj
+
+        ddl_joined = "\n".join(captured_ddl)
+        self.assertIn("v_portal_auditor_activity", ddl_joined)
+        self.assertIn("fn_auditor_access_report", ddl_joined)
+        self.assertIn("run_googleapis_com_stdout", ddl_joined)
+
 
 if __name__ == "__main__":
     unittest.main()

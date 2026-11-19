@@ -16,7 +16,7 @@ import {
   formatRelativeTime,
   formatTimestampWithRelative,
 } from '../../utils/dateUtils';
-import { getDirectMediaUrl, getCleanExtension } from '../../services/complianceApi';
+import { getDirectMediaUrl, getCleanExtension, logAuditorUiEvent } from '../../services/complianceApi';
 import { MarkdownContent } from '../MarkdownContent';
 import { ModalityViewer, detectStudioModality } from '../renderers/ModalityViewer';
 import { PresentationViewer } from '../renderers/PresentationViewer';
@@ -995,7 +995,18 @@ export const LegalBriefNarrative: React.FC<LegalBriefNarrativeProps> = ({
                 {/* Export Action */}
                 <div className="flex items-center shrink-0">
                   <button
-                    onClick={() => window.print()}
+                    onClick={() => {
+                      if (activeItem) {
+                        void logAuditorUiEvent({
+                          action: 'EXPORT_LEGAL_BRIEF',
+                          session_id: activeItem.id,
+                          custodian_email: activeItem.user_email,
+                          surface: activeItem.surface,
+                          export_format: 'PDF_PRINT',
+                        });
+                      }
+                      window.print();
+                    }}
                     className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-sans font-semibold transition cursor-pointer shadow-2xs ${currentTheme.cardClass} ${currentTheme.cardHoverClass} ${currentTheme.accentText}`}
                     title="Export or print this brief as a clean PDF"
                   >
