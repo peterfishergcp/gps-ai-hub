@@ -15,6 +15,7 @@ Serves:
 """
 
 import base64
+import calendar
 import json
 import mimetypes
 import os
@@ -64,6 +65,8 @@ _IAP_PUBKEYS_CACHE: dict[str, object] = {"keys": {}, "parsed": {}, "expires_at":
 _GOOGLE_OIDC_CERTS_CACHE: dict[str, object] = {"certs": {}, "parsed": {}, "expires_at": 0.0}
 _LOGS_CACHE: dict[str, object] = {"data": None, "timestamp": 0.0}
 _NB_ARCHIVE_CACHE: dict[str, dict] = {}
+_RECENT_AUDIT_RING: list[dict[str, object]] = []
+MAX_RECENT_AUDIT_RING = 250
 MAX_NB_ARCHIVE_CACHE_ENTRIES = 128
 CACHE_TTL_SECONDS = 30.0
 
@@ -924,6 +927,28 @@ def is_reviewer_authorized(reviewer_email: str) -> bool:
     return False
 
 
+def is_auditor_log_viewer_authorized(reviewer_email: str) -> bool:
+    """
+    Checks whether an authorized compliance reviewer is permitted to view the
+    in-portal `Auditor Activity` workspace (`GET /api/auditor-logs`).
+    Defaults to True for all authorized portal reviewers when `AUDIT_ADMIN_EMAILS`
+    is unset; restricts to `AUDIT_ADMIN_EMAILS` when explicitly configured.
+    """
+    if not is_reviewer_authorized(reviewer_email):
+        return False
+    raw_admins = os.environ.get("AUDIT_ADMIN_EMAILS", "").strip()
+    if not raw_admins:
+        return True
+    admin_emails = {
+        e.strip().lower()
+        for e in raw_admins.split(",")
+        if e.strip() and not e.strip().startswith("<")
+    }
+    if not admin_emails:
+        return True
+    return (reviewer_email or "").strip().lower() in admin_emails
+
+
 ALLOWED_UI_AUDIT_ACTIONS: frozenset[str] = frozenset({
     "VIEW_SESSION_TRANSCRIPT",
     "EXPORT_LEGAL_BRIEF",
@@ -972,6 +997,147 @@ def _build_canonical_audit_entry(
         "remote_ip": _sanitize_audit_str(remote_ip, 128),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+
+
+def _ring_entry_to_auditor_record(entry: dict[str, object]) -> dict[str, object]:
+    return {
+        "event_timestamp": str(entry.get("timestamp") or ""),
+        "portal_service": str(entry.get("portal_service") or ""),
+        "auditor_email": str(entry.get("reviewer_email") or ""),
+        "action": str(entry.get("action") or ""),
+        "search_query": str(entry.get("query_text") or ""),
+        "query_length": int(entry.get("query_length") or 0),
+        "filtered_custodian": str(entry.get("filtered_user") or ""),
+        "matched_session_count": int(entry.get("matched_count") or 0),
+        "matched_session_ids": str(entry.get("matched_sessions_csv") or ""),
+        "viewed_or_exported_session_id": str(entry.get("session_id") or ""),
+        "session_custodian_email": str(entry.get("custodian_email") or ""),
+        "surface": str(entry.get("surface") or ""),
+        "export_format": str(entry.get("export_format") or ""),
+        "target_resource": str(entry.get("target") or ""),
+        "is_file_download": bool(entry.get("download", False)),
+        "is_force_refresh": bool(entry.get("force_refresh", False)),
+        "auditor_remote_ip": str(entry.get("remote_ip") or ""),
+        "severity": str(entry.get("severity") or "INFO"),
+    }
+
+
+def fetch_auditor_activity_logs(project_id: str, limit: int = 500) -> list[dict[str, object]]:
+    """
+    Queries BigQuery `v_portal_auditor_activity` and merges in-memory `_RECENT_AUDIT_RING`
+    so auditor queries/views appear with 0ms latency while retaining full BigQuery history.
+    """
+    clamped_limit = max(1, min(1000, int(limit)))
+    bq_records: list[dict[str, object]] = []
+    if project_id:
+        sql = f"""
+            SELECT
+              FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', event_timestamp) AS event_timestamp,
+              IFNULL(portal_service, '') AS portal_service,
+              IFNULL(auditor_email, '') AS auditor_email,
+              IFNULL(action, '') AS action,
+              IFNULL(search_query, '') AS search_query,
+              IFNULL(query_length, 0) AS query_length,
+              IFNULL(filtered_custodian, '') AS filtered_custodian,
+              IFNULL(matched_session_count, 0) AS matched_session_count,
+              IFNULL(matched_session_ids, '') AS matched_session_ids,
+              IFNULL(viewed_or_exported_session_id, '') AS viewed_or_exported_session_id,
+              IFNULL(session_custodian_email, '') AS session_custodian_email,
+              IFNULL(surface, '') AS surface,
+              IFNULL(export_format, '') AS export_format,
+              IFNULL(target_resource, '') AS target_resource,
+              IFNULL(is_file_download, false) AS is_file_download,
+              IFNULL(is_force_refresh, false) AS is_force_refresh,
+              IFNULL(auditor_remote_ip, '') AS auditor_remote_ip,
+              IFNULL(severity, 'INFO') AS severity
+            FROM `{project_id}.{BQ_DATASET}.v_portal_auditor_activity`
+            WHERE IFNULL(action, '') NOT IN ('PORTAL_SERVICE_STARTED', 'VIEW_AUDITOR_ACTIVITY_LOG')
+            ORDER BY event_timestamp DESC
+            LIMIT @row_limit
+        """
+        params = [
+            {
+                "name": "row_limit",
+                "parameterType": {"type": "INT64"},
+                "parameterValue": {"value": str(clamped_limit)},
+            }
+        ]
+        try:
+            raw_rows = run_bq_query(project_id, sql, params)
+            for r in raw_rows:
+                bq_records.append({
+                    "event_timestamp": str(r.get("event_timestamp") or ""),
+                    "portal_service": str(r.get("portal_service") or ""),
+                    "auditor_email": str(r.get("auditor_email") or ""),
+                    "action": str(r.get("action") or ""),
+                    "search_query": str(r.get("search_query") or ""),
+                    "query_length": int(r.get("query_length") or 0),
+                    "filtered_custodian": str(r.get("filtered_custodian") or ""),
+                    "matched_session_count": int(r.get("matched_session_count") or 0),
+                    "matched_session_ids": str(r.get("matched_session_ids") or ""),
+                    "viewed_or_exported_session_id": str(r.get("viewed_or_exported_session_id") or ""),
+                    "session_custodian_email": str(r.get("session_custodian_email") or ""),
+                    "surface": str(r.get("surface") or ""),
+                    "export_format": str(r.get("export_format") or ""),
+                    "target_resource": str(r.get("target_resource") or ""),
+                    "is_file_download": str(r.get("is_file_download")).lower() == "true",
+                    "is_force_refresh": str(r.get("is_force_refresh")).lower() == "true",
+                    "auditor_remote_ip": str(r.get("auditor_remote_ip") or ""),
+                    "severity": str(r.get("severity") or "INFO"),
+                })
+        except Exception as e:
+            print(f"[!] Info: v_portal_auditor_activity query fallback to in-memory ring: {e}")
+
+    with _CACHE_LOCK:
+        ring_snapshot = [
+            _ring_entry_to_auditor_record(x)
+            for x in reversed(_RECENT_AUDIT_RING)
+            if str(x.get("action") or "") not in ("PORTAL_SERVICE_STARTED", "VIEW_AUDITOR_ACTIVITY_LOG")
+        ]
+
+    seen_bq_buckets: dict[tuple[str, ...], list[int]] = {}
+    merged: list[dict[str, object]] = []
+
+    def _sig(item: dict[str, object]) -> tuple[str, ...]:
+        return (
+            str(item.get("auditor_email") or "").lower(),
+            str(item.get("action") or ""),
+            str(item.get("search_query") or ""),
+            str(item.get("viewed_or_exported_session_id") or ""),
+            str(item.get("filtered_custodian") or ""),
+            str(item.get("target_resource") or ""),
+        )
+
+    def _epoch_sec(ts_raw: object) -> int | None:
+        s = str(ts_raw or "")[:19]
+        if len(s) < 19:
+            return None
+        try:
+            return int(calendar.timegm(time.strptime(s, "%Y-%m-%dT%H:%M:%S")))
+        except ValueError:
+            return None
+
+    for bq_item in bq_records:
+        sig = _sig(bq_item)
+        ep = _epoch_sec(bq_item.get("event_timestamp"))
+        if ep is not None:
+            seen_bq_buckets.setdefault(sig, []).append(ep)
+        merged.append(bq_item)
+
+    seen_ring_exact: set[tuple[str, ...]] = set()
+    for ring_item in ring_snapshot:
+        sig = _sig(ring_item)
+        ep = _epoch_sec(ring_item.get("event_timestamp"))
+        if ep is not None and any(abs(ep - bq_ep) <= 5 for bq_ep in seen_bq_buckets.get(sig, [])):
+            continue
+        exact_key = (str(ring_item.get("event_timestamp") or "")[:19], *sig)
+        if exact_key in seen_ring_exact:
+            continue
+        seen_ring_exact.add(exact_key)
+        merged.append(ring_item)
+
+    merged.sort(key=lambda r: str(r.get("event_timestamp") or ""), reverse=True)
+    return merged[:clamped_limit]
 
 
 class PortalRequestHandler(BaseHTTPRequestHandler):
@@ -1060,6 +1226,10 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
             remote_ip=forwarded_for or self.client_address[0],
             extra=extra,
         )
+        with _CACHE_LOCK:
+            _RECENT_AUDIT_RING.append(entry)
+            if len(_RECENT_AUDIT_RING) > MAX_RECENT_AUDIT_RING:
+                del _RECENT_AUDIT_RING[:-MAX_RECENT_AUDIT_RING]
         print(json.dumps(entry), flush=True)
 
     def send_json(self, status_code: int, payload: dict) -> None:
@@ -1116,7 +1286,45 @@ class PortalRequestHandler(BaseHTTPRequestHandler):
                 "gcs_bucket": get_bucket_name(PROJECT_ID),
                 "reviewer_email": rev_email,
                 "reviewer_name": rev_name,
+                "can_view_auditor_logs": is_auditor_log_viewer_authorized(rev_email),
             })
+            return
+
+        if path == "/api/auditor-logs":
+            if not is_auditor_log_viewer_authorized(rev_email):
+                self.emit_access_audit_log(
+                    rev_email,
+                    "DENIED_AUDITOR_LOGS_VIEWER",
+                    "/api/auditor-logs",
+                    {"severity": "WARNING"},
+                )
+                self.send_json(
+                    403,
+                    {"error": "Forbidden: Identity is not listed in AUDIT_ADMIN_EMAILS"},
+                )
+                return
+            try:
+                raw_lim = int((qs.get("limit", ["500"])[0] or "500").strip())
+            except ValueError:
+                raw_lim = 500
+            self.emit_access_audit_log(
+                rev_email,
+                "VIEW_AUDITOR_ACTIVITY_LOG",
+                f"{PROJECT_ID}.{BQ_DATASET}.v_portal_auditor_activity",
+            )
+            try:
+                events = fetch_auditor_activity_logs(PROJECT_ID, limit=raw_lim)
+                self.send_json(
+                    200,
+                    {
+                        "events": events,
+                        "count": len(events),
+                        "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    },
+                )
+            except Exception as e:
+                print(f"[!] Error in /api/auditor-logs: {e}")
+                self.send_json(500, {"error": "Failed to fetch auditor activity logs"})
             return
 
         if path == "/api/logs":

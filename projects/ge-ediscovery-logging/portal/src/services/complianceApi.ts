@@ -1,4 +1,5 @@
 import { getActiveAuthToken } from './firebaseAuth';
+import { AuditorActivityRecord } from '../types/schema';
 
 export interface ComplianceDataResponse {
   processed_logs: any[];
@@ -220,5 +221,36 @@ export async function logAuditorUiEvent(payload: AuditorUiAuditPayload): Promise
     });
   } catch {
     // Best-effort client telemetry; server-side API endpoints also log independently.
+  }
+}
+
+export async function fetchAuditorActivityLogs(limit = 500): Promise<{
+  events: AuditorActivityRecord[];
+  error?: string;
+}> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/auditor-logs?limit=${encodeURIComponent(String(limit))}`, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return { events: Array.isArray(data?.events) ? data.events : [] };
+    }
+    let errMsg = `Auditor log API returned HTTP ${res.status}.`;
+    try {
+      const errBody = await res.json();
+      if (typeof errBody?.error === 'string' && errBody.error.trim()) {
+        errMsg = errBody.error.trim();
+      }
+    } catch {
+      // Keep HTTP status message.
+    }
+    return { events: [], error: errMsg };
+  } catch {
+    return { events: [], error: 'Network error while fetching auditor activity logs.' };
   }
 }
