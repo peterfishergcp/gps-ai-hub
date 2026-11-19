@@ -1,0 +1,84 @@
+{
+  "erg2024": [
+    {
+      "un": "UN1005",
+      "material": "Anhydrous Ammonia",
+      "guide": "125",
+      "smallIsolationFt": 100,
+      "smallDownwindDayMi": 0.1,
+      "smallDownwindNightMi": 0.2,
+      "largeIsolationFt": 500,
+      "largeDownwindDayMi": 0.5,
+      "largeDownwindNightMi": 1.3,
+      "notes": "Corrosive & toxic inhalation hazard (TIH); water fog/spray on vapor cloud, do NOT apply water directly into liquid spill."
+    },
+    {
+      "un": "UN1017",
+      "material": "Chlorine",
+      "guide": "124",
+      "smallIsolationFt": 200,
+      "smallDownwindDayMi": 0.3,
+      "smallDownwindNightMi": 1.1,
+      "largeIsolationFt": 1000,
+      "largeDownwindDayMi": 1.9,
+      "largeDownwindNightMi": 4.9,
+      "notes": "Heavy greenish-yellow TIH gas; settles in low river valleys; shelter-in-place with HVAC shutoff when evacuation would cross plume."
+    },
+    {
+      "un": "UN1170",
+      "material": "Ethanol / Ethyl Alcohol Solutions",
+      "guide": "127",
+      "smallIsolationFt": 150,
+      "smallDownwindDayMi": 0.0,
+      "smallDownwindNightMi": 0.0,
+      "largeIsolationFt": 1000,
+      "largeDownwindDayMi": 0.5,
+      "largeDownwindNightMi": 0.5,
+      "notes": "Polar solvent \u2014 requires Alcohol-Resistant Aqueous Film-Forming Foam (AR-AFFF); tank car in fire: isolate 0.5 mile (800 m) in all directions."
+    },
+    {
+      "un": "UN1075",
+      "material": "Liquefied Petroleum Gas (Propane)",
+      "guide": "115",
+      "smallIsolationFt": 330,
+      "smallDownwindDayMi": 0.0,
+      "smallDownwindNightMi": 0.0,
+      "largeIsolationFt": 2640,
+      "largeDownwindDayMi": 0.5,
+      "largeDownwindNightMi": 0.5,
+      "notes": "BLEVE hazard if tank car/vessel exposed to flame; isolate 1 mile (1600 m) in all directions if tank is involved in fire."
+    }
+  ],
+  "wvStatutesAndDoctrine": [
+    {
+      "cite": "W. Va. Code \u00a7 15-5-6",
+      "topic": "Governor's State of Emergency & Preparedness Proclamation",
+      "rule": "Authorizes Governor (or Legislature by concurrent resolution) to proclaim a state of emergency; activates emergency powers and state EOP."
+    },
+    {
+      "cite": "W. Va. Code \u00a7 15-5-8 & \u00a7 15-5-11",
+      "topic": "Local Emergency Organization & Mutual Aid Arrangements",
+      "rule": "Authorizes county/municipal emergency services directors and reciprocal intrastate mutual aid across West Virginia political subdivisions."
+    },
+    {
+      "cite": "W. Va. Code \u00a7 15-5-22",
+      "topic": "Emergency Management Assistance Compact (EMAC)",
+      "rule": "Governs interstate mutual aid requests, credential reciprocity, tort liability, and reimbursement through WVEMD."
+    },
+    {
+      "cite": "WV HB 5638 / WVOT Cyber Incident Protocol",
+      "topic": "Public Sector Cybersecurity & Ransomware Reporting",
+      "rule": "Requires immediate isolation of compromised OT/IT segments, preservation of forensic logs, and coordination with WVOT CISO / WV Fusion Center\u2014prohibits unapproved ransom payments."
+    },
+    {
+      "cite": "FEMA FY2025 EMPG Manual \u00a7\u00a7 12.8.2 & 12.10",
+      "topic": "HSEEP Exercise & 90-Day AAR/IP Mandate",
+      "rule": "EMPG recipients must maintain a progressive HSEEP exercise program and submit a completed After-Action Report / Improvement Plan (AAR/IP) within 90 calendar days."
+    },
+    {
+      "cite": "2 CFR \u00a7\u00a7 200.318\u2013200.327 & FEMA PAPPG",
+      "topic": "Emergency Debris Time-and-Materials (T&M) Ceiling",
+      "rule": "T&M contracts are restricted to a reasonable initial emergency window (typically <= 70 hours under FEMA PA guidance), require a strict dollar ceiling, and require independent load/scale/monitor verification."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="no-referrer">
+  <title>WV Field Readiness, Forensic Crosswalk &amp; 55-County Regional Kit</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell" id="app-shell">
+    <header class="cmd-header" role="banner">
+      <div class="cmd-header-inner">
+        <div class="cmd-brand-row">
+          <div class="cmd-seal" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="44" height="44" focusable="false">
+              <circle cx="24" cy="24" r="22" fill="#16243A" stroke="#D5A245" stroke-width="2.5"></circle>
+              <polygon points="24,8 28,18 39,18 30,24.5 33.5,35 24,28.5 14.5,35 18,24.5 9,18 20,18" fill="#D5A245"></polygon>
+              <circle cx="24" cy="24" r="5" fill="#0F1A2A" stroke="#F3E5C3" stroke-width="1.4"></circle>
+            </svg>
+          </div>
+          <div class="cmd-title-group">
+            <div class="cmd-eyebrow-row">
+              <span class="cmd-eyebrow">STATE &amp; COUNTY EMERGENCY OPERATIONS · AUDIT-DEFENSIBLE FIELD KIT</span>
+              <span class="cmd-offline-pill">OFFLINE SERVERLESS · ZERO EXTERNAL NETWORK</span>
+            </div>
+            <h1 class="cmd-title" id="kit-title">West Virginia Disaster Field Readiness, Forensic Crosswalk &amp; 55-County Regional Kit</h1>
+            <p class="cmd-subtitle" id="kit-subtitle">2 CFR Part 200 · FEMA PAPPG Category A/B · 33 CFR Parts 203/208 · W. Va. Code § 15-5 · 55-County SEOC Matrix</p>
+          </div>
+          <div class="cmd-header-actions">
+            <button type="button" class="btn btn-gold-outline" id="btn-print-kit" title="Print current operational view or save as PDF">Print / Save PDF</button>
+          </div>
+        </div>
+
+        <nav class="top-tabs" role="tablist" aria-label="Operational Kit Modules" id="primary-tablist">
+          <button type="button" role="tab" class="top-tab is-active" id="tab-btn-binder" aria-selected="true" aria-controls="panel-binder" data-view="binder">
+            <span class="top-tab-label">1. 7-TAB DISASTER TIMELINE BINDER</span>
+            <span class="top-tab-badge" id="badge-binder-count">24 Tools</span>
+          </button>
+          <button type="button" role="tab" class="top-tab" id="tab-btn-selfcheck" aria-selected="false" aria-controls="panel-selfcheck" data-view="selfcheck">
+            <span class="top-tab-label">2. 25-QUESTION COUNTY SELF-CHECK</span>
+            <span class="top-tab-badge" id="badge-selfcheck-score">56% Ready</span>
+          </button>
+          <button type="button" role="tab" class="top-tab" id="tab-btn-forensic" aria-selected="false" aria-controls="panel-forensic" data-view="forensic">
+            <span class="top-tab-label">3. FORENSIC RECORD-GAP CROSSWALK</span>
+            <span class="top-tab-badge" id="badge-forensic-summary">15/18 Verified</span>
+          </button>
+          <button type="button" role="tab" class="top-tab" id="tab-btn-regional" aria-selected="false" aria-controls="panel-regional" data-view="regional">
+            <span class="top-tab-label">4. 55-COUNTY / 28-REGION CROSSWALK</span>
+            <span class="top-tab-badge" id="badge-regional-count">55 Counties</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="cmd-main" id="cmd-main">
+      <section id="panel-binder" role="tabpanel" aria-labelledby="tab-btn-binder" class="view-panel is-active"></section>
+      <section id="panel-selfcheck" role="tabpanel" aria-labelledby="tab-btn-selfcheck" class="view-panel" hidden></section>
+      <section id="panel-forensic" role="tabpanel" aria-labelledby="tab-btn-forensic" class="view-panel" hidden></section>
+      <section id="panel-regional" role="tabpanel" aria-labelledby="tab-btn-regional" class="view-panel" hidden></section>
+    </main>
+
+    <footer class="cmd-footer">
+      <div class="cmd-footer-inner">
+        <span>Statutory Baseline: 2 CFR Part 200 · 44 CFR Part 206 · 33 CFR Parts 203 &amp; 208 · W. Va. Code § 15-5 &amp; § 22-15 · PHMSA ERG 2024</span>
+        <span>Serverless Standalone Field Operations Kit · Built with Zero External Requests</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Operational Document Preview</h2>
+        <button type="button" class="btn btn-sm btn-ghost" id="btn-close-modal">Close</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <script id="ops-kit-data" type="application/json">__OPS_KIT_JSON_PAYLOAD__</script>
+  <script src="./app.js" defer></script>
+</body>
+</html>

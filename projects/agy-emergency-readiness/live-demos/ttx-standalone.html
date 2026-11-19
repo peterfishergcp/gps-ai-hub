@@ -1,0 +1,3359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pW5kZtAXhuR/UUpYNqzVB/5l8icRJIjcPcuQXw2PT3M='; style-src 'sha256-oC9U/VknaKj03UWvTTIiaRE+NFCa8oHAUkQNihwWU8M='; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none';">
+  <title>WV HSEEP Tabletop &amp; Crisis Simulator — Operation Winter Gorge</title>
+  <style id="ttx-inline-styles">:root {
+  --navy-950: #09111E;
+  --navy-900: #0F1A2A;
+  --navy-800: #17273E;
+  --navy-700: #213654;
+  --navy-600: #2D4970;
+  --gold-600: #B8872D;
+  --gold-500: #D5A245;
+  --gold-400: #E5B964;
+  --gold-100: #FCF6E8;
+  --bg: #F1F5FA;
+  --surface: #FFFFFF;
+  --surface-alt: #F7FAFD;
+  --ink: #0F1A2A;
+  --ink-secondary: #34445B;
+  --muted: #5A6B84;
+  --border: #D4DFEC;
+  --border-strong: #B8C8DC;
+  --emerald-700: #0E6F42;
+  --emerald-100: #EAFBF2;
+  --emerald-border: #82E0B0;
+  --amber-700: #9A4A06;
+  --amber-100: #FFF8E6;
+  --amber-border: #F5C663;
+  --crimson-700: #B41C1C;
+  --crimson-600: #DC2626;
+  --crimson-100: #FEF2F2;
+  --crimson-border: #F89898;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --shadow-card: 0 2px 8px rgba(15, 26, 42, 0.06);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.48;
+  -webkit-font-smoothing: antialiased;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+/* Toast Notification */
+.ttx-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  background: var(--navy-900);
+  color: #FFFFFF;
+  border-left: 4px solid var(--gold-500);
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 26px rgba(9, 17, 30, 0.32);
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 420px;
+}
+
+/* Command Header */
+.command-header {
+  background: var(--navy-900);
+  color: #FFFFFF;
+  border-bottom: 3px solid var(--gold-500);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(9, 17, 30, 0.22);
+}
+
+.header-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 20px 10px;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+
+.brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  flex: 1 1 360px;
+}
+
+.wv-seal-slot {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.classification-kicker {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-400);
+  text-transform: uppercase;
+}
+
+.app-title {
+  margin: 1px 0 2px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: #C7D4E6;
+}
+
+.header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-group {
+  background: var(--navy-800);
+  border: 1px solid var(--navy-600);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.clock-control {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.clock-readout-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.control-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9FB2CD;
+}
+
+.county-select {
+  background: var(--navy-950);
+  color: #FFFFFF;
+  border: 1px solid var(--gold-500);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 215px;
+  cursor: pointer;
+}
+
+.county-select:focus {
+  outline: 2px solid var(--gold-400);
+  outline-offset: 1px;
+}
+
+.clock-display {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gold-400);
+  letter-spacing: 0.03em;
+}
+
+.clock-display.is-running {
+  color: #5CE6A0;
+}
+
+.clock-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Buttons */
+.btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.08s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 11.5px;
+}
+
+.btn-gold-primary {
+  background: var(--gold-500);
+  color: var(--navy-950);
+  border-color: var(--gold-400);
+}
+
+.btn-gold-primary:hover {
+  background: var(--gold-400);
+}
+
+.btn-gold-outline {
+  background: rgba(213, 162, 69, 0.12);
+  color: var(--gold-400);
+  border-color: rgba(213, 162, 69, 0.55);
+}
+
+.btn-gold-outline:hover {
+  background: rgba(213, 162, 69, 0.24);
+}
+
+.btn-navy-action {
+  background: var(--navy-800);
+  color: #E8EFF8;
+  border-color: var(--navy-600);
+}
+
+.btn-navy-action:hover {
+  background: var(--navy-700);
+  border-color: var(--gold-500);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #AEC0D8;
+  border-color: rgba(174, 192, 216, 0.3);
+}
+
+.btn-ghost:hover {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+.btn-surface {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+
+.btn-surface:hover {
+  background: var(--surface-alt);
+  border-color: var(--navy-700);
+}
+
+/* Crosswalk Ribbon */
+.crosswalk-ribbon {
+  background: var(--navy-950);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.crosswalk-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 11.5px;
+}
+
+.crosswalk-key {
+  color: #8EA4C2;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.crosswalk-val {
+  color: #F4F7FC;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.crosswalk-val-gold {
+  color: var(--gold-400);
+}
+
+/* Role Selector Bar */
+.role-selector-bar {
+  background: var(--navy-800);
+  padding: 7px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  justify-content: center;
+}
+
+.role-bar-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--gold-400);
+  margin-right: 4px;
+}
+
+.role-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.role-pill {
+  background: rgba(9, 17, 30, 0.55);
+  color: #D7E2F0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.role-pill:hover {
+  border-color: var(--gold-400);
+  color: #FFFFFF;
+}
+
+.role-pill.is-active {
+  background: var(--gold-500);
+  color: var(--navy-950);
+  border-color: var(--gold-400);
+  font-weight: 800;
+  box-shadow: 0 0 0 2px rgba(213, 162, 69, 0.25);
+}
+
+/* Tab Bar */
+.tab-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 2px;
+  padding: 0 20px;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+
+.tab-btn {
+  background: transparent;
+  color: #B9CAE0;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 9px 12px 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+
+.tab-btn:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.is-active {
+  color: var(--gold-400);
+  border-bottom-color: var(--gold-500);
+  background: rgba(213, 162, 69, 0.09);
+}
+
+.tab-num {
+  font-family: var(--font-mono);
+  color: var(--gold-500);
+}
+
+.tab-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--navy-700);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.tab-pill.pill-good {
+  background: var(--emerald-700);
+}
+
+.tab-pill.pill-warn {
+  background: var(--amber-700);
+}
+
+.tab-pill.pill-bad {
+  background: var(--crimson-700);
+}
+
+/* Main Workspace */
+.workspace-main {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 18px 20px 32px;
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--navy-900);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.kpi-card.kpi-gold {
+  border-top-color: var(--gold-500);
+}
+
+.kpi-card.kpi-crimson {
+  border-top-color: var(--crimson-600);
+}
+
+.kpi-card.kpi-emerald {
+  border-top-color: var(--emerald-700);
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.kpi-value {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 3px 0 2px;
+  font-family: var(--font-mono);
+}
+
+.kpi-sub {
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+
+/* Cards & Grids */
+.grid-two-col {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.grid-tactical {
+  display: grid;
+  grid-template-columns: 560px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-navy-accent {
+  border-top: 4px solid var(--navy-900);
+}
+
+.card-gold-accent {
+  border-top: 4px solid var(--gold-500);
+}
+
+.card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--navy-900);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge-navy {
+  background: var(--navy-900);
+  color: var(--gold-400);
+}
+
+.badge-gold {
+  background: var(--gold-100);
+  color: #7A5411;
+  border: 1px solid var(--gold-500);
+}
+
+.badge-good {
+  background: var(--emerald-100);
+  color: var(--emerald-700);
+  border: 1px solid var(--emerald-border);
+}
+
+.badge-warn {
+  background: var(--amber-100);
+  color: var(--amber-700);
+  border: 1px solid var(--amber-border);
+}
+
+.badge-bad {
+  background: var(--crimson-100);
+  color: var(--crimson-700);
+  border: 1px solid var(--crimson-border);
+}
+
+.prose-p {
+  margin: 0 0 12px;
+  color: var(--ink-secondary);
+  font-size: 13.5px;
+  line-height: 1.56;
+}
+
+.erg-rule-callout {
+  background: #FFF9EB;
+  border: 1px solid var(--gold-500);
+  border-left: 4px solid var(--crimson-600);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--navy-900);
+}
+
+.section-subhead {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--navy-700);
+  margin: 12px 0 6px;
+}
+
+.timeline-list, .intel-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 6px 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.timeline-time {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--navy-900);
+}
+
+.intel-item {
+  position: relative;
+  padding: 7px 10px 7px 24px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.8px;
+  color: var(--ink);
+}
+
+.intel-item::before {
+  content: "\25B8";
+  position: absolute;
+  left: 9px;
+  top: 7px;
+  color: var(--gold-600);
+  font-weight: 800;
+}
+
+.blindspot-box {
+  background: var(--crimson-100);
+  border: 1px solid var(--crimson-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-size: 12.5px;
+  color: var(--crimson-700);
+  font-weight: 600;
+}
+
+.anchor-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Resource Dispatch Table */
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-pill {
+  background: var(--surface-alt);
+  color: var(--ink-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-pill.is-active {
+  background: var(--navy-900);
+  color: var(--gold-400);
+  border-color: var(--navy-900);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: var(--surface-alt);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border);
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tr:hover td {
+  background: #F8FAFE;
+}
+
+.unit-name {
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.mono-cell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.dispatch-btn-group {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* Tactical SVG Map */
+.tactical-sticky {
+  position: sticky;
+  top: 162px;
+}
+
+.map-layer-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.layer-toggle {
+  background: var(--surface-alt);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.layer-toggle.is-active {
+  background: var(--navy-900);
+  color: var(--gold-400);
+  border-color: var(--navy-900);
+}
+
+.svg-map-frame {
+  background: #0A1422;
+  border: 2px solid var(--navy-700);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tactical-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.plotter-readout-bar {
+  margin-top: 8px;
+  background: var(--navy-900);
+  color: #E8EFF8;
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  border-left: 4px solid var(--gold-500);
+}
+
+.facility-detail-box {
+  margin-top: 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  font-size: 12.5px;
+}
+
+/* Timed Inject Cards & Dynamic Cascade Alerts */
+.inject-jump-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.inject-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inject-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--navy-900);
+  border-radius: var(--radius-lg);
+  padding: 15px 17px;
+  box-shadow: var(--shadow-card);
+}
+
+.inject-card.is-due {
+  border-left-color: var(--gold-500);
+}
+
+.cascade-banner {
+  background: var(--crimson-100);
+  border: 1.5px solid var(--crimson-600);
+  border-left: 6px solid var(--crimson-700);
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  margin-bottom: 12px;
+}
+
+.cascade-banner-title {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--crimson-700);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.cascade-banner-item {
+  font-size: 12.5px;
+  color: #6E1111;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.option-btn {
+  text-align: left;
+  background: var(--surface-alt);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.option-btn:hover {
+  border-color: var(--navy-700);
+  background: #EEF4FC;
+}
+
+.option-btn.selected-RECOMMENDED {
+  background: var(--emerald-100);
+  border-color: var(--emerald-700);
+}
+
+.option-btn.selected-ACCEPTABLE {
+  background: var(--amber-100);
+  border-color: var(--amber-700);
+}
+
+.option-btn.selected-NOT_RECOMMENDED {
+  background: var(--crimson-100);
+  border-color: var(--crimson-700);
+}
+
+.option-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.option-label {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--navy-900);
+}
+
+.option-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.evaluation-feedback {
+  margin-top: 10px;
+  padding: 11px 13px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-alt);
+  font-size: 12.8px;
+}
+
+.evaluation-cite {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--navy-800);
+}
+
+/* Tab 3: Media Broadcast & 7-Essentials Scorer */
+.broadcast-screen {
+  background: var(--navy-950);
+  color: #FFFFFF;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--crimson-600);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.broadcast-top-bar {
+  background: var(--crimson-700);
+  color: #FFFFFF;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.broadcast-body {
+  padding: 14px 15px;
+}
+
+.broadcast-headline {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gold-400);
+}
+
+.broadcast-quote {
+  margin: 0;
+  font-size: 13px;
+  color: #DCE6F5;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.warning-textarea {
+  width: 100%;
+  min-height: 132px;
+  padding: 11px 12px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+
+.warning-textarea:focus {
+  outline: 2px solid var(--navy-700);
+  border-color: var(--navy-700);
+}
+
+.scorer-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  background: var(--navy-900);
+  color: #FFFFFF;
+  border-radius: var(--radius-md);
+}
+
+.score-big {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--gold-400);
+}
+
+.rubric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rubric-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  font-size: 12.5px;
+}
+
+.rubric-title {
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.rubric-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Tab 4: HSEEP AAR/IP */
+.rating-btn-group {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.rating-btn {
+  width: 30px;
+  height: 28px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.rating-btn.active-P {
+  background: var(--emerald-700);
+  color: #FFFFFF;
+  border-color: var(--emerald-700);
+}
+
+.rating-btn.active-S {
+  background: var(--gold-500);
+  color: var(--navy-950);
+  border-color: var(--gold-600);
+}
+
+.rating-btn.active-M {
+  background: var(--amber-700);
+  color: #FFFFFF;
+  border-color: var(--amber-700);
+}
+
+.rating-btn.active-U {
+  background: var(--crimson-700);
+  color: #FFFFFF;
+  border-color: var(--crimson-700);
+}
+
+.inline-input, .inline-select {
+  width: 100%;
+  min-width: 112px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+}
+
+.add-ca-form {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.4fr 1fr 0.8fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.command-footer {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 12px 20px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 1180px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-two-col, .grid-tactical {
+    grid-template-columns: 1fr;
+  }
+  .tactical-sticky {
+    position: static;
+  }
+  .add-ca-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media print {
+  .command-header {
+    position: static;
+    box-shadow: none;
+  }
+  .header-actions, .clock-btn-row, .tab-bar, .add-ca-form {
+    display: none !important;
+  }
+  .tab-panel.is-hidden {
+    display: block !important;
+    margin-top: 18px;
+    page-break-before: always;
+  }
+  body {
+    background: #FFFFFF;
+  }
+  .card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
+</style>
+</head>
+<body>
+  <div id="ttx-toast" class="ttx-toast is-hidden" role="status" aria-live="polite"></div>
+
+  <header class="command-header">
+    <div class="header-row-main">
+      <div class="brand-cluster">
+        <div id="wv-seal-slot" class="wv-seal-slot" aria-hidden="true"></div>
+        <div class="brand-titles">
+          <div id="classification-banner" class="classification-kicker">HSEEP TABLETOP EXERCISE (TTX)</div>
+          <h1 id="app-title" class="app-title">WV HSEEP Tabletop &amp; Crisis Simulator</h1>
+          <p id="app-subtitle" class="app-subtitle">Operation Winter Gorge</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="control-group county-control">
+          <label for="county-select" class="control-label">WV Jurisdiction (55 Counties + Training)</label>
+          <select id="county-select" class="county-select" aria-label="Select West Virginia County or Anonymized Town"></select>
+        </div>
+
+        <div class="control-group clock-control" role="group" aria-label="Exercise Clock Controls">
+          <div class="clock-readout-wrap">
+            <span class="control-label">Exercise Clock</span>
+            <span id="clock-display" class="clock-display">T+00:00</span>
+          </div>
+          <div class="clock-btn-row">
+            <button type="button" id="btn-clock-toggle" class="btn btn-gold-outline btn-sm">Start</button>
+            <button type="button" id="btn-clock-plus5" class="btn btn-gold-outline btn-sm">+5m</button>
+            <button type="button" id="btn-clock-reset" class="btn btn-ghost btn-sm" title="Reset Exercise Clock">Reset</button>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" id="btn-print-aar" class="btn btn-navy-action">Print SitMan / AAR</button>
+          <button type="button" id="btn-export-json" class="btn btn-navy-action">Export AAR to Command Center (.json)</button>
+          <button type="button" id="btn-download-html" class="btn btn-gold-primary">Open / Download HTML &#8599;</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="crosswalk-ribbon" class="crosswalk-ribbon" aria-label="West Virginia Regional Jurisdiction Crosswalk"></div>
+
+    <div class="role-selector-bar" role="navigation" aria-label="Agency Fog-of-War Role Seats">
+      <span class="role-bar-label">ACTIVE SEAT (FOG-OF-WAR):</span>
+      <div id="role-pills-container" class="role-pills-container"></div>
+    </div>
+
+    <nav class="tab-bar" role="tablist" aria-label="Simulator Modules">
+      <button type="button" id="tab-btn-1" class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="tab-panel-1" data-tab="1">
+        <span class="tab-num">1.</span> BRIEFING, ROLES &amp; DISPATCH
+      </button>
+      <button type="button" id="tab-btn-2" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-2" data-tab="2">
+        <span class="tab-num">2.</span> TIMED INJECTS &amp; TACTICAL MAP
+        <span id="tab-badge-injects" class="tab-pill">0/4</span>
+      </button>
+      <button type="button" id="tab-btn-3" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-3" data-tab="3">
+        <span class="tab-num">3.</span> MEDIA INJECT &amp; 7-ESSENTIALS SCORER
+        <span id="tab-badge-scorer" class="tab-pill">0/100</span>
+      </button>
+      <button type="button" id="tab-btn-4" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-4" data-tab="4">
+        <span class="tab-num">4.</span> HSEEP DEBRIEF &amp; 90-DAY AAR/IP
+      </button>
+    </nav>
+  </header>
+
+  <main class="workspace-main">
+    <section id="tab-panel-1" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-1"></section>
+    <section id="tab-panel-2" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-2"></section>
+    <section id="tab-panel-3" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-3"></section>
+    <section id="tab-panel-4" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-4"></section>
+  </main>
+
+  <footer class="command-footer">
+    <div id="footer-meta-left">State of West Virginia · HSEEP Multi-Role Tabletop &amp; Crisis Simulator</div>
+    <div id="footer-meta-right">Offline Deterministic Runtime · ERG 2024 · W. Va. Code § 15-5-6 · WV HB 5638 · FEMA EMPG 90-Day AAR/IP</div>
+  </footer>
+
+  <script id="ttx-config-data" type="application/json">{"schemaVersion":"1.0.0","templateId":"wv-operation-winter-gorge","meta":{"exerciseId":"WV-TTX-2026-WINTER-GORGE","operationName":"Operation Winter Gorge","title":"WV HSEEP Tabletop & Crisis Simulator — Operation Winter Gorge","subtitle":"Ice Storm, Anhydrous Ammonia Cold-Storage Leak (UN1005, 9,000 lb) & Municipal Water SCADA Cyber Intrusion","classificationBanner":"HSEEP TABLETOP EXERCISE (TTX) · STATE OF WEST VIRGINIA MULTI-AGENCY READINESS","defaultCounty":"Kanawha","operationalPeriod":"Operational Period 1 · 06:00–14:00 EST (Winter Readiness Cycle)","weatherSummary":"0.65 in. radial ice · 24°F valley inversion · Wind from WSW (245°) at 9–14 mph pushing plume ENE (065°)","hazmatProfile":{"un":"UN1005","material":"Anhydrous Ammonia","guide":"125","releaseQuantityLb":9000,"spillCategory":"Large Spill (9,000 lb high-pressure receiver manifold fracture)","initialIsolationFt":500,"downwindDayMi":0.5,"downwindNightMi":1.3,"windFrom":"WSW (245°)","plumeBearingDeg":65,"plumeBearingText":"ENE (065°) along {RIVER_BASIN} terrace","tacticalRule":"ERG 2024 Guide 125 (UN1005 Large Spill): Isolate 500 ft in all directions; protect 0.5 mi (day) / 1.3 mi (night) downwind. Use water fog/spray downwind on vapor cloud only — NEVER apply direct water stream into liquid ammonia pool."}},"theme":{"navy":"#0F1A2A","navyLight":"#182840","gold":"#D5A245","goldLight":"#E6BC6A","bg":"#F2F5FA","surface":"#FFFFFF","ink":"#0F1A2A","muted":"#4B5B73","border":"#D5DFEC"},"jurisdictions":[{"county":"Barbour","seat":"Philippi","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 7","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Pittsburgh","riverBasin":"Tygart Valley / Monongahela","legacyFloodWorks":2},{"county":"Berkeley","seat":"Martinsburg","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region IX","usaceDistrict":"Baltimore","riverBasin":"Potomac / Opequon","legacyFloodWorks":1},{"county":"Boone","seat":"Madison","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 1","wvspTroop":"Troop 4","rpdc":"Region III","usaceDistrict":"Huntington","riverBasin":"Coal / Kanawha","legacyFloodWorks":3},{"county":"Braxton","seat":"Sutton","wvemdArea":"Area 4 (Central)","wvdohDistrict":"District 7","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Huntington","riverBasin":"Elk / Little Kanawha","legacyFloodWorks":2},{"county":"Brooke","seat":"Wellsburg","wvemdArea":"Area 1 (Northern Panhandle)","wvdohDistrict":"District 6","wvspTroop":"Troop 1","rpdc":"Region XI","usaceDistrict":"Pittsburgh","riverBasin":"Upper Ohio","legacyFloodWorks":3},{"county":"Cabell","seat":"Huntington","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 2","wvspTroop":"Troop 5","rpdc":"Region II","usaceDistrict":"Huntington","riverBasin":"Ohio / Guyandotte","legacyFloodWorks":13},{"county":"Calhoun","seat":"Grantsville","wvemdArea":"Area 4 (Central)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Little Kanawha","legacyFloodWorks":1},{"county":"Clay","seat":"Clay","wvemdArea":"Area 4 (Central)","wvdohDistrict":"District 1","wvspTroop":"Troop 4","rpdc":"Region III","usaceDistrict":"Huntington","riverBasin":"Elk River","legacyFloodWorks":2},{"county":"Doddridge","seat":"West Union","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 4","wvspTroop":"Troop 1","rpdc":"Region VI","usaceDistrict":"Pittsburgh","riverBasin":"Middle Island Creek","legacyFloodWorks":1},{"county":"Fayette","seat":"Fayetteville","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 9","wvspTroop":"Troop 6","rpdc":"Region IV","usaceDistrict":"Huntington","riverBasin":"New / Gauley / Kanawha","legacyFloodWorks":3},{"county":"Gilmer","seat":"Glenville","wvemdArea":"Area 4 (Central)","wvdohDistrict":"District 7","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Huntington","riverBasin":"Little Kanawha","legacyFloodWorks":2},{"county":"Grant","seat":"Petersburg","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region VIII","usaceDistrict":"Baltimore","riverBasin":"South Branch Potomac","legacyFloodWorks":3},{"county":"Greenbrier","seat":"Lewisburg","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 9","wvspTroop":"Troop 6","rpdc":"Region IV","usaceDistrict":"Huntington","riverBasin":"Greenbrier River","legacyFloodWorks":4},{"county":"Hampshire","seat":"Romney","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region VIII","usaceDistrict":"Baltimore","riverBasin":"South Branch Potomac","legacyFloodWorks":2},{"county":"Hancock","seat":"New Cumberland","wvemdArea":"Area 1 (Northern Panhandle)","wvdohDistrict":"District 6","wvspTroop":"Troop 1","rpdc":"Region XI","usaceDistrict":"Pittsburgh","riverBasin":"Upper Ohio","legacyFloodWorks":2},{"county":"Hardy","seat":"Moorefield","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region VIII","usaceDistrict":"Baltimore","riverBasin":"South Branch Potomac","legacyFloodWorks":3},{"county":"Harrison","seat":"Clarksburg","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 4","wvspTroop":"Troop 1","rpdc":"Region VI","usaceDistrict":"Pittsburgh","riverBasin":"West Fork / Monongahela","legacyFloodWorks":5},{"county":"Jackson","seat":"Ripley","wvemdArea":"Area 4 (Central)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Ohio / Mill Creek","legacyFloodWorks":2},{"county":"Jefferson","seat":"Charles Town","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region IX","usaceDistrict":"Baltimore","riverBasin":"Shenandoah / Potomac","legacyFloodWorks":1},{"county":"Kanawha","seat":"Charleston","wvemdArea":"Area 5 (Metro Valley)","wvdohDistrict":"District 1","wvspTroop":"Troop 4","rpdc":"Region III","usaceDistrict":"Huntington","riverBasin":"Kanawha / Elk / Coal","legacyFloodWorks":14},{"county":"Lewis","seat":"Weston","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 7","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Pittsburgh","riverBasin":"West Fork River","legacyFloodWorks":2},{"county":"Lincoln","seat":"Hamlin","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 2","wvspTroop":"Troop 5","rpdc":"Region II","usaceDistrict":"Huntington","riverBasin":"Guyandotte / Mud River","legacyFloodWorks":2},{"county":"Logan","seat":"Logan","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 2","wvspTroop":"Troop 5","rpdc":"Region II","usaceDistrict":"Huntington","riverBasin":"Guyandotte River","legacyFloodWorks":5},{"county":"Marion","seat":"Fairmont","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 4","wvspTroop":"Troop 1","rpdc":"Region VI","usaceDistrict":"Pittsburgh","riverBasin":"Monongahela / Tygart","legacyFloodWorks":3},{"county":"Marshall","seat":"Moundsville","wvemdArea":"Area 1 (Northern Panhandle)","wvdohDistrict":"District 6","wvspTroop":"Troop 1","rpdc":"Region X","usaceDistrict":"Pittsburgh","riverBasin":"Upper Ohio","legacyFloodWorks":3},{"county":"Mason","seat":"Point Pleasant","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 1","wvspTroop":"Troop 4","rpdc":"Region II","usaceDistrict":"Huntington","riverBasin":"Ohio / Lower Kanawha","legacyFloodWorks":4},{"county":"McDowell","seat":"Welch","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 10","wvspTroop":"Troop 6","rpdc":"Region I","usaceDistrict":"Huntington","riverBasin":"Tug Fork","legacyFloodWorks":15},{"county":"Mercer","seat":"Princeton","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 10","wvspTroop":"Troop 6","rpdc":"Region I","usaceDistrict":"Huntington","riverBasin":"Bluestone / New River","legacyFloodWorks":4},{"county":"Mineral","seat":"Keyser","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region VIII","usaceDistrict":"Baltimore","riverBasin":"North Branch Potomac","legacyFloodWorks":3},{"county":"Mingo","seat":"Williamson","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 2","wvspTroop":"Troop 5","rpdc":"Region II","usaceDistrict":"Huntington","riverBasin":"Tug Fork","legacyFloodWorks":9},{"county":"Monongalia","seat":"Morgantown","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 4","wvspTroop":"Troop 1","rpdc":"Region VI","usaceDistrict":"Pittsburgh","riverBasin":"Monongahela / Cheat","legacyFloodWorks":3},{"county":"Monroe","seat":"Union","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 9","wvspTroop":"Troop 6","rpdc":"Region I","usaceDistrict":"Huntington","riverBasin":"Greenbrier / Indian Creek","legacyFloodWorks":1},{"county":"Morgan","seat":"Berkeley Springs","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 5","wvspTroop":"Troop 2","rpdc":"Region IX","usaceDistrict":"Baltimore","riverBasin":"Potomac / Cacapon","legacyFloodWorks":1},{"county":"Nicholas","seat":"Summersville","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 9","wvspTroop":"Troop 6","rpdc":"Region IV","usaceDistrict":"Huntington","riverBasin":"Gauley / Meadow River","legacyFloodWorks":3},{"county":"Ohio","seat":"Wheeling","wvemdArea":"Area 1 (Northern Panhandle)","wvdohDistrict":"District 6","wvspTroop":"Troop 1","rpdc":"Region X","usaceDistrict":"Pittsburgh","riverBasin":"Upper Ohio / Wheeling Creek","legacyFloodWorks":6},{"county":"Pendleton","seat":"Franklin","wvemdArea":"Area 3 (Eastern Panhandle)","wvdohDistrict":"District 8","wvspTroop":"Troop 3","rpdc":"Region VIII","usaceDistrict":"Baltimore","riverBasin":"South Branch Potomac","legacyFloodWorks":2},{"county":"Pleasants","seat":"St. Marys","wvemdArea":"Area 4 (Mid-Ohio Valley)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Mid-Ohio River","legacyFloodWorks":1},{"county":"Pocahontas","seat":"Marlinton","wvemdArea":"Area 6 (Mountain)","wvdohDistrict":"District 8","wvspTroop":"Troop 3","rpdc":"Region IV","usaceDistrict":"Huntington","riverBasin":"Upper Greenbrier","legacyFloodWorks":2},{"county":"Preston","seat":"Kingwood","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 4","wvspTroop":"Troop 1","rpdc":"Region VI","usaceDistrict":"Pittsburgh","riverBasin":"Cheat River","legacyFloodWorks":2},{"county":"Putnam","seat":"Winfield","wvemdArea":"Area 5 (Metro Valley)","wvdohDistrict":"District 1","wvspTroop":"Troop 4","rpdc":"Region III","usaceDistrict":"Huntington","riverBasin":"Lower Kanawha","legacyFloodWorks":2},{"county":"Raleigh","seat":"Beckley","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 10","wvspTroop":"Troop 6","rpdc":"Region I","usaceDistrict":"Huntington","riverBasin":"Piney Creek / New River","legacyFloodWorks":3},{"county":"Randolph","seat":"Elkins","wvemdArea":"Area 2 (Mountain)","wvdohDistrict":"District 8","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Pittsburgh","riverBasin":"Tygart Valley / Cheat","legacyFloodWorks":4},{"county":"Ritchie","seat":"Harrisville","wvemdArea":"Area 4 (Mid-Ohio Valley)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Hughes River","legacyFloodWorks":1},{"county":"Roane","seat":"Spencer","wvemdArea":"Area 4 (Central)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Spring Creek / Little Kanawha","legacyFloodWorks":2},{"county":"Summers","seat":"Hinton","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 9","wvspTroop":"Troop 6","rpdc":"Region I","usaceDistrict":"Huntington","riverBasin":"New / Greenbrier / Bluestone","legacyFloodWorks":2},{"county":"Taylor","seat":"Grafton","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 4","wvspTroop":"Troop 1","rpdc":"Region VI","usaceDistrict":"Pittsburgh","riverBasin":"Tygart Valley River","legacyFloodWorks":2},{"county":"Tucker","seat":"Parsons","wvemdArea":"Area 2 (Mountain)","wvdohDistrict":"District 8","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Pittsburgh","riverBasin":"Cheat / Blackwater","legacyFloodWorks":2},{"county":"Tyler","seat":"Middlebourne","wvemdArea":"Area 1 (Mid-Ohio Valley)","wvdohDistrict":"District 6","wvspTroop":"Troop 1","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Mid-Ohio / Middle Island","legacyFloodWorks":1},{"county":"Upshur","seat":"Buckhannon","wvemdArea":"Area 2 (North-Central)","wvdohDistrict":"District 7","wvspTroop":"Troop 3","rpdc":"Region VII","usaceDistrict":"Pittsburgh","riverBasin":"Buckhannon River","legacyFloodWorks":3},{"county":"Wayne","seat":"Wayne","wvemdArea":"Area 5 (Southwest)","wvdohDistrict":"District 2","wvspTroop":"Troop 5","rpdc":"Region II","usaceDistrict":"Huntington","riverBasin":"Twelvepole / Tug Fork / Ohio","legacyFloodWorks":4},{"county":"Webster","seat":"Webster Springs","wvemdArea":"Area 6 (Central Mountain)","wvdohDistrict":"District 7","wvspTroop":"Troop 3","rpdc":"Region IV","usaceDistrict":"Huntington","riverBasin":"Elk / Gauley Headwaters","legacyFloodWorks":2},{"county":"Wetzel","seat":"New Martinsville","wvemdArea":"Area 1 (Northern Panhandle)","wvdohDistrict":"District 6","wvspTroop":"Troop 1","rpdc":"Region X","usaceDistrict":"Huntington","riverBasin":"Upper Ohio / Fishing Creek","legacyFloodWorks":2},{"county":"Wirt","seat":"Elizabeth","wvemdArea":"Area 4 (Mid-Ohio Valley)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Little Kanawha","legacyFloodWorks":1},{"county":"Wood","seat":"Parkersburg","wvemdArea":"Area 4 (Mid-Ohio Valley)","wvdohDistrict":"District 3","wvspTroop":"Troop 4","rpdc":"Region V","usaceDistrict":"Huntington","riverBasin":"Ohio / Little Kanawha","legacyFloodWorks":5},{"county":"Wyoming","seat":"Pineville","wvemdArea":"Area 6 (Southern)","wvdohDistrict":"District 10","wvspTroop":"Troop 6","rpdc":"Region I","usaceDistrict":"Huntington","riverBasin":"Guyandotte River","legacyFloodWorks":3},{"county":"Anonymized WV Valley Town","seat":"Riverbend","wvemdArea":"Area X (Multi-County Training)","wvdohDistrict":"District X (Regional)","wvspTroop":"Troop X","rpdc":"Appalachian Regional Council","usaceDistrict":"Huntington / Pittsburgh","riverBasin":"Appalachian Valley River","legacyFloodWorks":4}],"verifierReference":{"erg2024":[{"un":"UN1005","material":"Anhydrous Ammonia","guide":"125","smallIsolationFt":100,"smallDownwindDayMi":0.1,"smallDownwindNightMi":0.2,"largeIsolationFt":500,"largeDownwindDayMi":0.5,"largeDownwindNightMi":1.3,"notes":"Corrosive & toxic inhalation hazard (TIH); water fog/spray on vapor cloud, do NOT apply water directly into liquid spill."},{"un":"UN1017","material":"Chlorine","guide":"124","smallIsolationFt":200,"smallDownwindDayMi":0.3,"smallDownwindNightMi":1.1,"largeIsolationFt":1000,"largeDownwindDayMi":1.9,"largeDownwindNightMi":4.9,"notes":"Heavy greenish-yellow TIH gas; settles in low river valleys; shelter-in-place with HVAC shutoff when evacuation would cross plume."},{"un":"UN1170","material":"Ethanol / Ethyl Alcohol Solutions","guide":"127","smallIsolationFt":150,"smallDownwindDayMi":0,"smallDownwindNightMi":0,"largeIsolationFt":1000,"largeDownwindDayMi":0.5,"largeDownwindNightMi":0.5,"notes":"Polar solvent — requires Alcohol-Resistant Aqueous Film-Forming Foam (AR-AFFF); tank car in fire: isolate 0.5 mile (800 m) in all directions."},{"un":"UN1075","material":"Liquefied Petroleum Gas (Propane)","guide":"115","smallIsolationFt":330,"smallDownwindDayMi":0,"smallDownwindNightMi":0,"largeIsolationFt":2640,"largeDownwindDayMi":0.5,"largeDownwindNightMi":0.5,"notes":"BLEVE hazard if tank car/vessel exposed to flame; isolate 1 mile (1600 m) in all directions if tank is involved in fire."}],"wvStatutesAndDoctrine":[{"cite":"W. Va. Code § 15-5-6","topic":"Governor's State of Emergency & Preparedness Proclamation","rule":"Authorizes Governor (or Legislature by concurrent resolution) to proclaim a state of emergency; activates emergency powers and state EOP."},{"cite":"W. Va. Code § 15-5-8 & § 15-5-11","topic":"Local Emergency Organization & Mutual Aid Arrangements","rule":"Authorizes county/municipal emergency services directors and reciprocal intrastate mutual aid across West Virginia political subdivisions."},{"cite":"W. Va. Code § 15-5-22","topic":"Emergency Management Assistance Compact (EMAC)","rule":"Governs interstate mutual aid requests, credential reciprocity, tort liability, and reimbursement through WVEMD."},{"cite":"WV HB 5638 / WVOT Cyber Incident Protocol","topic":"Public Sector Cybersecurity & Ransomware Reporting","rule":"Requires immediate isolation of compromised OT/IT segments, preservation of forensic logs, and coordination with WVOT CISO / WV Fusion Center—prohibits unapproved ransom payments."},{"cite":"FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10","topic":"HSEEP Exercise & 90-Day AAR/IP Mandate","rule":"EMPG recipients must maintain a progressive HSEEP exercise program and submit a completed After-Action Report / Improvement Plan (AAR/IP) within 90 calendar days."},{"cite":"2 CFR §§ 200.318–200.327 & FEMA PAPPG","topic":"Emergency Debris Time-and-Materials (T&M) Ceiling","rule":"T&M contracts are restricted to a reasonable initial emergency window (typically \u003c= 70 hours under FEMA PA guidance), require a strict dollar ceiling, and require independent load/scale/monitor verification."}]},"femaCapabilitiesCatalog":[{"id":"planning","name":"Planning","missionArea":"All Mission Areas"},{"id":"public-information-warning","name":"Public Information and Warning","missionArea":"All Mission Areas"},{"id":"operational-coordination","name":"Operational Coordination","missionArea":"All Mission Areas"},{"id":"intelligence-info-sharing","name":"Intelligence and Information Sharing","missionArea":"Prevention & Protection"},{"id":"interdiction-disruption","name":"Interdiction and Disruption","missionArea":"Prevention & Protection"},{"id":"screening-search-detection","name":"Screening, Search, and Detection","missionArea":"Prevention & Protection"},{"id":"forensics-attribution","name":"Forensics and Attribution","missionArea":"Prevention"},{"id":"access-control-identity","name":"Access Control and Identity Verification","missionArea":"Protection"},{"id":"cybersecurity","name":"Cybersecurity","missionArea":"Protection"},{"id":"physical-protective-measures","name":"Physical Protective Measures","missionArea":"Protection"},{"id":"risk-management-protection","name":"Risk Management for Protection Programs and Activities","missionArea":"Protection"},{"id":"supply-chain-integrity","name":"Supply Chain Integrity and Security","missionArea":"Protection"},{"id":"community-resilience","name":"Community Resilience","missionArea":"Mitigation"},{"id":"long-term-vulnerability-reduction","name":"Long-Term Vulnerability Reduction","missionArea":"Mitigation"},{"id":"risk-disaster-resilience-assessment","name":"Risk and Disaster Resilience Assessment","missionArea":"Mitigation"},{"id":"threats-hazards-identification","name":"Threats and Hazards Identification","missionArea":"Mitigation"},{"id":"critical-transportation","name":"Critical Transportation","missionArea":"Response"},{"id":"environmental-response-health-safety","name":"Environmental Response/Health and Safety","missionArea":"Response"},{"id":"fatality-management","name":"Fatality Management Services","missionArea":"Response"},{"id":"fire-management-suppression","name":"Fire Management and Suppression","missionArea":"Response"},{"id":"logistics-supply-chain","name":"Logistics and Supply Chain Management","missionArea":"Response"},{"id":"mass-care-services","name":"Mass Care Services","missionArea":"Response"},{"id":"mass-search-rescue","name":"Mass Search and Rescue Operations","missionArea":"Response"},{"id":"on-scene-security-protection","name":"On-Scene Security, Protection, and Law Enforcement","missionArea":"Response"},{"id":"operational-communications","name":"Operational Communications","missionArea":"Response"},{"id":"public-health-healthcare-ems","name":"Public Health, Healthcare, and Emergency Medical Services","missionArea":"Response"},{"id":"situational-assessment","name":"Situational Assessment","missionArea":"Response"},{"id":"infrastructure-systems","name":"Infrastructure Systems","missionArea":"Response & Recovery"},{"id":"economic-recovery","name":"Economic Recovery","missionArea":"Recovery"},{"id":"health-social-services","name":"Health and Social Services","missionArea":"Recovery"},{"id":"housing","name":"Housing","missionArea":"Recovery"},{"id":"natural-cultural-resources","name":"Natural and Cultural Resources","missionArea":"Recovery"}],"briefing":{"executiveSummary":"At 05:42 EST, a severe Appalachian ice storm snaps a 34.5 kV feeder serving the {SEAT} riverfront industrial corridor in {COUNTY} County ({WVEMD_AREA}). When backup diesel power transfers at Valley Cold Storage, hydraulic shock fractures a corroded relief manifold on a 9,000 lb Anhydrous Ammonia (UN1005) receiver, releasing a dense white toxic inhalation hazard (TIH) cloud hugging the {RIVER_BASIN} terrace under a 24°F temperature inversion. Sixteen minutes later (05:58 EST), operators at the {SEAT} Municipal Water Treatment Plant discover their SCADA HMI locked by ransomware after unauthorized commands throttled High-Service Pumps 2 and 3—dropping distribution main pressure toward 18 psi just as Fire/Hazmat crews, the Regional Medical Center, and an 84-bed nursing home 0.38 miles downwind require coordinated protective action.","keyTimelines":[{"time":"05:42 EST","event":"0.65 in. radial ice downs primary feeder in {SEAT}; Valley Cold Storage receiver manifold fractures (UN1005, 9,000 lb)."},{"time":"05:50 EST","event":"911 receives pungent ammonia odor reports along Riverview Terrace; icy secondary grades slow mutual-aid response."},{"time":"05:58 EST","event":"Municipal Water SCADA HMI displays ransom note; High-Service Pumps 2 & 3 throttled; main pressure drops from 62 psi toward 19 psi."},{"time":"06:00 EST","event":"{COUNTY} County EOC activates ({WVEMD_AREA}); Exercise Clock starts at T+00m across 6 agency seats."}],"objectives":[{"code":"OBJ-1","capability":"Environmental Response/Health and Safety","text":"Execute ERG 2024 Guide 125 protective actions for a 9,000 lb UN1005 release (500 ft isolation, 0.5 mi daytime shelter-in-place with HVAC shutoff, vapor-only fog knockdown) within 10 minutes of arrival."},{"code":"OBJ-2","capability":"Cybersecurity & Infrastructure Systems","text":"Isolate compromised water SCADA OT/IT segments, restore manual pump pressure above 20 psi, preserve forensic artifacts, and report to WVOT CISO / WV Fusion Center per WV HB 5638."},{"code":"OBJ-3","capability":"Public Information and Warning","text":"Counter viral evacuation misinformation on iced valley bridges with a verified \u003c= 120-word IPAWS/WEA warning meeting all 7 HSEEP Public Warning Essentials."},{"code":"OBJ-4","capability":"Operational Coordination","text":"Align county mutual aid (W. Va. Code § 15-5-8 & § 15-5-11), Governor State of Emergency escalation (§ 15-5-6), FEMA-compliant \u003c= 70-hour T&M debris caps (2 CFR §§ 200.318–200.327), and 90-day EMPG AAR/IP tracking."}],"groundRules":["HSEEP No-Fault Environment: Evaluate systems, plans, and cross-agency handoffs—not individual personnel.","Fog-of-War Discipline: Switch your Role Pill above to view seat-specific intelligence; share critical dependencies verbally across agencies.","Statutory & Technical Grounding: Anchor tactical calls in ERG 2024 Guide 125, W. Va. Code Chapter 15 Article 5, WV HB 5638, and 2 CFR Part 200."]},"roles":[{"id":"facilitator","shortLabel":"Master Facilitator","title":"Master Facilitator & White Cell Evaluator","badge":"ALL-SOURCE TRUTH","summary":"Full visibility across hazmat dispersion, water SCADA pressure dependencies, hospital walk-in surge, and statutory compliance gates.","knownFacts":["HIDDEN INTERDEPENDENCY #1: Fire Engine 11 hydrant supply in the industrial corridor is fed by the exact municipal water zone losing pressure from the SCADA cyber intrusion.","HIDDEN INTERDEPENDENCY #2: Valley Nursing Home (84 oxygen-dependent residents) sits at 0.38 mi ENE—inside the 0.5 mi UN1005 plume—where 0.65 in. road ice makes evacuation into open air far deadlier than Shelter-in-Place + HVAC shutoff.","HIDDEN INTERDEPENDENCY #3: 14 self-evacuated motorists are walking straight into the {SEAT} Regional Medical Center ED wearing ammonia-saturated winter coats.","PROCUREMENT & STATUTORY TRAP: At T+48m, an ice-debris contractor will push an uncapped 30-day Time-and-Materials contract; FEMA PA caps emergency T&M at \u003c= 70 hours with a hard dollar ceiling and independent load monitoring."],"blindSpots":["Facilitator note: Watch whether Water SCADA notifies Fire IC and Hospital BEFORE hydrant and decon pressure drops below 20 psi."],"priorityQuestions":["Which seat first identifies the shared dependency between SCADA pump throttling, Hazmat decon water, and Hospital chillers?","Does the PIO explicitly refute the false Valley Bridge evacuation rumor inside 120 words?","Does County Commission / EOC enforce the \u003c= 70-hour T&M ceiling and route state requests through WVEMD?"],"statutoryAnchors":"FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10 · ERG 2024 Guide 125 · W. Va. Code § 15-5-6 · WV HB 5638"},{"id":"eoc-wvemd","shortLabel":"County EOC & WVEMD","title":"{COUNTY} County EOC Director & WVEMD {WVEMD_AREA} Liaison","badge":"EOC COMMAND","summary":"Coordinates multi-agency resource priorities, intrastate mutual aid, Governor proclamation requests, and FEMA grant/procurement guardrails.","knownFacts":["{COUNTY} County EOC is activated at Level 1 (Full Multi-Agency) in {SEAT}, linked with WVEMD {WVEMD_AREA} and State EOC Watch.","Secondary ridge roads have 0.65 in. ice accumulation and downed limbs; {WVDOH_DIST} reports primary salt convoys need priority corridor tasking.","Neighboring WV counties within {RPDC} have 1 Hazmat decon unit and 3 potable water tankers available under W. Va. Code § 15-5-8 & § 15-5-11.","{COUNTY} County maintains {LEGACY_FLOOD_WORKS} legacy flood-control / drainage structures along {RIVER_BASIN} where ice-melt and ammonia runoff require environmental awareness."],"blindSpots":["You do NOT yet have confirmed SCADA root cause from the Water Board or exact walk-in patient counts from the Hospital ED unless those seats brief you."],"priorityQuestions":["When do we elevate a local emergency declaration to request a Governor State of Emergency under W. Va. Code § 15-5-6?","How do we sequence {WVDOH_DIST} de-icing between the upwind Hazmat staging corridor and the Hospital ambulance apron?","What contract ceiling and monitoring controls must be attached before signing any emergency debris clearance contract?"],"statutoryAnchors":"W. Va. Code § 15-5-6, § 15-5-8, § 15-5-11, § 15-5-22 (EMAC) · 2 CFR §§ 200.318–200.327"},{"id":"fire-hazmat","shortLabel":"Fire & Hazmat IC","title":"On-Scene Fire & Regional Hazmat Incident Commander","badge":"INCIDENT COMMAND","summary":"Commands hot-zone isolation, vapor suppression, Level A entry, technical decontamination, and downwind protective action zones.","knownFacts":["Valley Cold Storage facility manifest confirms 9,000 lb Anhydrous Ammonia (UN1005) receiver manifold fracture — classified as a LARGE SPILL under ERG 2024 Guide 125.","ERG 2024 Guide 125 mandates 500 ft initial isolation in all directions and 0.5 mi daytime (1.3 mi nighttime) downwind protective action ENE (065°).","Engine 11 crew wears structural turnout gear + SCBA (NOT vapor-tight against corrosive ammonia skin absorption; Level A suits on Regional Hazmat Task Force 3 are ETA 22m).","Engine 11 pump operator just reported industrial yard hydrant static pressure sagging from 62 psi down to 24 psi."],"blindSpots":["You do NOT know WHY hydrant pressure is dropping (water main break vs. cyber/pump issue) until Water Utility / WVOT shares intelligence."],"priorityQuestions":["How do we enforce water fog strictly on downwind vapor while prohibiting straight streams onto the pooled liquid UN1005?","Should Valley Nursing Home (0.38 mi ENE) evacuate onto icy roads or Shelter-in-Place with HVAC shutoff?","What backup water supply do we stage if municipal hydrants drop below 20 psi?"],"statutoryAnchors":"ERG 2024 Guide 125 (UN1005) · OSHA 29 CFR 1910.120 (HAZWOPER Level A)"},{"id":"wvot-scada","shortLabel":"WVOT Cyber & Water SCADA","title":"WVOT Cyber Incident Response & Municipal Water SCADA Lead","badge":"CYBER / OT OPS","summary":"Contains ransomware intrusion on water treatment OT/IT systems, restores manual pumping pressure, and preserves forensic evidence.","knownFacts":["At 05:58 EST, the SCADA engineering workstation displayed a ransom note demanding 0.8 BTC; remote RDP session originated via a vendor VPN jump host.","Unauthorized Modbus commands throttled High-Service Pumps 2 & 3 to 15%, dropping clearwell discharge pressure to 19 psi (regulatory Boil Water threshold is \u003c 20 psi).","Plant electricians confirm High-Service Pumps 2 & 3 have physical HAND-OFF-AUTO switches allowing local manual VFD operation once disconnected from the SCADA PLC network.","WV HB 5638 & WVOT Cyber Incident Protocol mandate immediate network isolation, forensic log preservation, CISO/WV Fusion Center notification, and zero unapproved ransom payment."],"blindSpots":["You do NOT initially know that Fire/Hazmat is actively drawing water for UN1005 vapor fogging and winter mass decon unless coordinated through EOC."],"priorityQuestions":["How fast can we air-gap the OT PLC cabinet and switch pumps to manual local control without wiping volatile forensic memory?","Which zones dropped below 20 psi requiring an immediate precautionary Boil Water Advisory via DoHS / PIO?","Have WVOT CISO and the WV Fusion Center been formally notified under WV HB 5638?"],"statutoryAnchors":"WV HB 5638 · WVOT Cyber Incident Protocol · WV Bureau for Public Health \u003c20 psi Rule"},{"id":"hospital-dohs","shortLabel":"Hospital & DoHS Health","title":"{SEAT} Regional Medical Center EM & WV DoHS Public Health","badge":"MEDICAL / PUBLIC HEALTH","summary":"Protects hospital clinical environment from secondary off-gassing, manages TIH airway surge, oversees cold-weather decon, and tracks vulnerable facilities.","knownFacts":["14 walk-in patients just arrived at the ED ambulance vestibule in private cars wearing heavy winter coats smelling strongly of ammonia (zero field decon performed).","Warm indoor hospital air rapidly volatilizes ammonia trapped in winter wool/synthetics—if admitted straight into the ED, secondary off-gassing can incapacitate staff and force ED closure.","Valley Nursing Home (0.38 mi ENE of leak) houses 84 residents (19 on continuous oxygen); transferring frail seniors onto iced roads through the plume carries high mortality risk.","Hospital domestic water pressure gauge just triggered a low-pressure alarm; internal emergency water tank holds ~6 hours at surge consumption."],"blindSpots":["You do NOT know how long municipal water pressure will remain impaired or whether more walk-in casualties are inbound from Valley Bridge."],"priorityQuestions":["How do we lock down ED doors/HVAC and stand up heated exterior winter decon (24°F) so patients avoid both secondary off-gassing and hypothermia?","How do we verify Valley Nursing Home maintenance has shut off fresh-air HVAC intakes and sealed dampers?","Do we need the Potable Water Tanker Task Force dispatched to the hospital manifold now?"],"statutoryAnchors":"ERG 2024 Guide 125 First Aid/Decon · EMTALA (42 U.S.C. § 1395dd) · WV DoHS Surge Annex"},{"id":"pio-commission","shortLabel":"PIO & County Commission","title":"Joint Information Center (PIO) & {COUNTY} County Commission","badge":"PUBLIC INFO & GOVERNANCE","summary":"Issues verified \u003c=120-word emergency warnings, counters social media rumors, authorizes local declarations, and enforces fiscal guardrails.","knownFacts":["A viral livestream (\"Mountain State 8 News / Valley Scanner\") is falsely telling residents to jump in their cars and evacuate east across the iced Valley Bridge—straight into the 0.5 mi plume!","Residents are flooding 911 lines asking if \"hackers poisoned the city water\" because faucets are sputtering.","IPAWS/WEA psychological research and HSEEP warning standards require hitting all 7 Public Warning Essentials in \u003c= 120 plain-language words.","A regional contractor is texting Commissioners offering to start clearing ice debris in 30 minutes if the County signs an uncapped 30-day Time-and-Materials (T&M) agreement."],"blindSpots":["Never release protective distances or water safety instructions until verified with Fire IC and Water Utility / DoHS Health!"],"priorityQuestions":["Does our \u003c= 120-word public alert clearly instruct Shelter-in-Place + HVAC shutoff + Boil Water while directly refuting the false Valley Bridge evacuation rumor?","How do we coordinate with {WVSP_TROOP} to ensure roadblock messaging matches the IPAWS alert?","How do we structure the local emergency declaration and cap emergency T&M contracts at \u003c= 70 hours?"],"statutoryAnchors":"HSEEP Public Information & Warning · W. Va. Code § 15-5-6 & § 15-5-8 · 2 CFR § 200.318(j)"}],"resources":[{"id":"res-eng11","unitName":"Engine 11 (First-Due Suppression)","agency":"{SEAT} Fire Department","category":"Fire & Hazmat","etaMin":4,"capability":"Initial 500 ft hot-zone isolation & upwind/downwind vapor fog curtain","defaultStatus":"Dispatched","assignedZone":"Upwind Perimeter (Grid B3)"},{"id":"res-hm3","unitName":"Regional Hazmat Task Force 3 (Level A)","agency":"WV Regional Response Team","category":"Fire & Hazmat","etaMin":22,"capability":"Level A vapor-tight entry, NH3 PID telemetry & manifold isolation valve shutoff","defaultStatus":"Staged","assignedZone":"Cold Storage Hot Zone (Grid B3)"},{"id":"res-lad4","unitName":"Ladder 4 (Elevated Fog Monitor)","agency":"{SEAT} Fire Department","category":"Fire & Hazmat","etaMin":9,"capability":"High-volume downwind water fog knockdown (strictly away from liquid pool)","defaultStatus":"Available","assignedZone":"Crosswind Corridor (Grid B2)"},{"id":"res-decon2","unitName":"Mass Decon Trailer 2 (Heated)","agency":"{COUNTY} County Fire Association","category":"Fire & Hazmat","etaMin":18,"capability":"24°F heated dual-corridor shelter tent & warm tepid water washdown","defaultStatus":"Available","assignedZone":"Hospital / Upwind Decon (Grid B1)"},{"id":"res-med7","unitName":"Medic 7 & Medic 12 (ALS Airway Surge)","agency":"{COUNTY} County EMS","category":"EMS & Medical","etaMin":6,"capability":"TIH respiratory distress, humidified O2, bronchodilators & ocular irrigation","defaultStatus":"Dispatched","assignedZone":"Upwind Triage (Grid A3)"},{"id":"res-medstrike","unitName":"Regional Medical Strike Team","agency":"WV DoHS Healthcare Coalition","category":"EMS & Medical","etaMin":28,"capability":"Hospital ED exterior walk-in decon triage & nursing home clinical check","defaultStatus":"Available","assignedZone":"{SEAT} Regional Medical Ctr (Grid B1)"},{"id":"res-tankers","unitName":"Potable Water Tanker Task Force (3x 4,000 gal)","agency":"Mutual Aid VFD / WVNG Liaison","category":"EMS & Medical","etaMin":35,"capability":"Emergency potable supply for Hospital manifold & heated decon showers","defaultStatus":"Available","assignedZone":"Hospital & Decon Manifold (Grid B1)"},{"id":"res-wvsp","unitName":"WV State Police {WVSP_TROOP} (4 Cruisers)","agency":"West Virginia State Police","category":"Law Enforcement","etaMin":8,"capability":"Close Valley Bridge & Route 60 approaches to stop vehicles entering 0.5 mi plume","defaultStatus":"Staged","assignedZone":"Valley Bridge Checkpoint (Grid C3)"},{"id":"res-sheriff","unitName":"{COUNTY} County Sheriff Perimeter Detail","agency":"{COUNTY} County Sheriff","category":"Law Enforcement","etaMin":7,"capability":"500 ft isolation perimeter enforcement, ICP security & PA system shelter alerts","defaultStatus":"Dispatched","assignedZone":"Outer Perimeter & ICP (Grid A3)"},{"id":"res-uas","unitName":"UAS Thermal & Plume Recon Unit","agency":"{COUNTY} County Emergency Mgmt","category":"Law Enforcement","etaMin":14,"capability":"Aerial inversion plume tracking & iced bridge stranded-vehicle check","defaultStatus":"Available","assignedZone":"Upwind Launch Pad (Grid A3)"},{"id":"res-wvot-cirt","unitName":"WVOT Cyber Incident Response Team (CIRT)","agency":"WV Office of Technology","category":"WVOT Cyber & Water","etaMin":15,"capability":"WV HB 5638 OT/IT network containment, volatile forensic capture & CISO reporting","defaultStatus":"Available","assignedZone":"Municipal Water Plant (Grid C4)"},{"id":"res-fusion","unitName":"WV Fusion Center Cyber Intelligence Desk","agency":"WV Dept. of Homeland Security","category":"WVOT Cyber & Water","etaMin":10,"capability":"Ransomware IOC correlation, CISA Water ISAC coordination & law enforcement link","defaultStatus":"Available","assignedZone":"Remote / EOC Cyber Bridge"},{"id":"res-scada-crew","unitName":"Water Utility Manual VFD Override Crew","agency":"{SEAT} Municipal Water Board","category":"WVOT Cyber & Water","etaMin":11,"capability":"Air-gap compromised PLC, switch High-Service Pumps 2 & 3 to manual >45 psi & sample Cl2","defaultStatus":"Staged","assignedZone":"Municipal Water Plant (Grid C4)"},{"id":"res-wvdoh","unitName":"WVDOH {WVDOH_DIST} Salt & Heavy Grader Convoy","agency":"WV Division of Highways","category":"WVDOH & EOC Logistics","etaMin":16,"capability":"Priority de-icing of upwind staging corridor, water plant access & ED apron","defaultStatus":"Available","assignedZone":"Upwind Access & Hospital Apron"},{"id":"res-wvemd","unitName":"WVEMD {WVEMD_AREA} Regional Coordinator","agency":"WV Emergency Management Division","category":"WVDOH & EOC Logistics","etaMin":12,"capability":"State EOC resource tasking, W. Va. Code § 15-5-6 proclamation & § 15-5-22 EMAC prep","defaultStatus":"Dispatched","assignedZone":"{COUNTY} County EOC"},{"id":"res-jic","unitName":"Joint Information Center (IPAWS / WEA Desk)","agency":"{COUNTY} County PIO & 911","category":"WVDOH & EOC Logistics","etaMin":2,"capability":"\u003c=120-word Wireless Emergency Alert, EAS broadcast & rumor-control press bulletin","defaultStatus":"Staged","assignedZone":"{COUNTY} County EOC / JIC"}],"tacticalMap":{"gridCols":["A","B","C","D"],"gridRows":["1","2","3","4"],"windBadge":"WIND: WSW 245° @ 9–14 mph · PLUME -> ENE 065° · 24°F INVERSION","facilities":[{"id":"fac-source","code":"NH3","name":"Valley Cold Storage (UN1005 Source)","sheet":"Sheet 3 (SW)","grid":"B3","x":255,"y":255,"type":"hazard","distanceMi":"0.00 mi (Release Origin)","note":"9,000 lb Anhydrous Ammonia manifold leak. Isolate 500 ft in all directions; NEVER apply straight water stream into liquid pool (ERG 2024 Guide 125)."},{"id":"fac-icp","code":"ICP","name":"Unified Incident Command Post","sheet":"Sheet 3 (SW)","grid":"A3","x":112,"y":278,"type":"command","distanceMi":"0.32 mi WSW (Upwind)","note":"Upwind clear of 500 ft Hot Zone and valley drainage; primary link to {COUNTY} County EOC and {WVSP_TROOP}."},{"id":"fac-staging","code":"STG","name":"Upwind Staging & Heated Decon","sheet":"Sheet 3 (SW)","grid":"A4","x":135,"y":342,"type":"staging","distanceMi":"0.41 mi SW (Upwind)","note":"Priority de-icing target for {WVDOH_DIST}; staging for Regional Hazmat Task Force 3 and Mutual Aid Tankers."},{"id":"fac-nursing","code":"SNF","name":"Valley Nursing Home (84 Beds)","sheet":"Sheet 2 (NE)","grid":"C2","x":432,"y":186,"type":"vulnerable","distanceMi":"0.38 mi ENE (IN 0.5 MI PLUME)","note":"84 frail residents (19 on O2) inside daytime 0.5 mi downwind protective zone. ORDER SHELTER-IN-PLACE + IMMEDIATE HVAC SHUTOFF."},{"id":"fac-bridge","code":"BRG","name":"Valley Bridge Checkpoint ({WVSP_TROOP})","sheet":"Sheet 2 (NE)","grid":"C3","x":392,"y":235,"type":"checkpoint","distanceMi":"0.29 mi ENE (IN PLUME)","note":"Iced river span directly beneath UN1005 vapor plume. Close approaches immediately and refute viral evacuation rumor!"},{"id":"fac-water","code":"WTP","name":"{SEAT} Municipal Water Plant (SCADA)","sheet":"Sheet 4 (SE)","grid":"C4","x":448,"y":332,"type":"utility","distanceMi":"0.44 mi ESE (Crosswind)","note":"SCADA HMI locked by ransomware; High-Service Pumps throttled (\u003c20 psi). Air-gap OT PLC and restore manual local pump control per WV HB 5638."},{"id":"fac-hospital","code":"HOSP","name":"{SEAT} Regional Medical Center (ED)","sheet":"Sheet 1 (NW)","grid":"B1","x":228,"y":88,"type":"medical","distanceMi":"0.62 mi NNW (Cross-Upwind)","note":"14 un-decontaminated walk-in patients at ED vestibule. Lock down doors/HVAC, establish heated exterior decon, and connect emergency water tanker."}]},"injects":[{"id":"inject-1","clock":"T+06m","domain":"HAZMAT / ERG 2024","targetSeat":"Fire & Hazmat IC + County EOC","title":"Engine 11 On-Scene Size-Up & ERG 2024 UN1005 Protective Action","prompt":"Engine 11 arrives upwind of Valley Cold Storage in {SEAT}. Facility engineers confirm a fractured manifold on a 9,000 lb Anhydrous Ammonia (UN1005) receiver venting a low, dense white cloud ENE (065°) along {RIVER_BASIN} toward the iced Valley Bridge (0.29 mi) and Valley Nursing Home (0.38 mi, 84 residents). Crew wears structural bunker gear + SCBA; Regional Hazmat Level A entry is 22 minutes out. What immediate tactical order does Unified Command issue?","options":[{"id":"inj1-a","label":"Option A","grade":"RECOMMENDED","summary":"Isolate 500 ft in all directions; order 0.5 mi ENE Shelter-in-Place + HVAC shutoff; apply downwind water fog on vapor cloud ONLY (never on liquid pool); hold Level A entry.","rationale":"Matches ERG 2024 Guide 125 for a Large Spill of UN1005 (500 ft initial isolation; 0.5 mi daytime downwind protection). Shelter-in-place with HVAC shutoff protects 84 nursing home residents without exposing them on iced roads, and fogging vapor (not pooled liquid ammonia) prevents violent exothermic boil-off and structural-gear skin burns.","citation":"ERG 2024 Guide 125 (UN1005 Large Spill: 500 ft Isolation / 0.5 mi Day Downwind; Water Fog on Vapor Only)","cascadeAlert":null},{"id":"inj1-b","label":"Option B","grade":"ACCEPTABLE WITH LIMITS","summary":"Set a 100 ft small-spill perimeter and begin loading ambulatory nursing home residents onto transit buses while Engine 11 stands by.","rationale":"Misapplies the ERG 2024 Small Spill row (100 ft / 0.1 mi) to a 9,000 lb Large Spill (500 ft / 0.5 mi) and exposes frail seniors to outdoor plume concentrations during slow icy boarding.","citation":"ERG 2024 Guide 125 (Small vs. Large Spill Table Mismatch — 9,000 lb requires 500 ft / 0.5 mi)","cascadeAlert":"UNDER-SIZED 100 FT PERIMETER & OUTDOOR BUS EXPOSURE (Inject 1 — Option B): Low inversion held UN1005 vapor across the 150–450 ft zone and nursing home loading ramp, generating 11 additional acute inhalation patients and straining EMS!"},{"id":"inj1-c","label":"Option C","grade":"NOT RECOMMENDED","summary":"Advance Engine 11 in structural bunker gear + SCBA to flow a straight 500 gpm master stream directly into the liquid ammonia manifold pit to dilute the leak.","rationale":"Direct water into pooled liquid anhydrous ammonia triggers an exothermic reaction that violently accelerates toxic vapor generation, rapidly drains failing water mains, and exposes firefighters in non-vapor-tight structural gear to severe chemical skin burns.","citation":"ERG 2024 Guide 125 CRITICAL WARNING (\"Do NOT direct water at spill or source of leak\"; Level A required)","cascadeAlert":"VIOLENT AMMONIA VAPOR SURGE & FIREFIGHTER BURNS (Inject 1 — Option C): Direct water stream into liquid UN1005 boiled off a concentrated plume surge across the nursing home, injured two Engine 11 personnel, and accelerated municipal water pressure collapse!"},{"id":"inj1-d","label":"Option D","grade":"NOT RECOMMENDED","summary":"Order an immediate general evacuation of all valley residents and facilities eastward across the Valley Bridge.","rationale":"Directs civilian vehicles onto 0.65 in. of ice straight through the 0.5 mi ENE toxic inhalation plume with car defrosters pulling outside air into cabins.","citation":"ERG 2024 Guide 125 Protective Action Decision Factors (In-Place Protection vs. Evacuation Through Plume)","cascadeAlert":"ICY VALLEY BRIDGE GRIDLOCK INSIDE PLUME (Inject 1 — Option D): Over 60 civilian cars slid to a standstill on the iced Valley Bridge directly inside the 0.5 mi UN1005 plume, creating a multi-vehicle mass-casualty rescue crisis!"}]},{"id":"inject-2","clock":"T+18m","domain":"CYBER / WATER SCADA","targetSeat":"WVOT Cyber & Water SCADA + County EOC","title":"Municipal Water SCADA Ransomware & Distribution Pressure Drop (\u003c20 psi)","prompt":"The {SEAT} Municipal Water Plant Chief Operator reports the SCADA HMI screen is locked with a 0.8 BTC ransom demand. Unauthorized commands throttled High-Service Pumps 2 & 3, dropping distribution pressure from 62 psi to 19 psi—threatening Engine 11 fog lines, heated decon showers, Regional Medical Center chillers, and crossing the \u003c20 psi regulatory backflow threshold. How do WVOT Cyber and Water Operations respond?","options":[{"id":"inj2-a","label":"Option A","grade":"RECOMMENDED","summary":"Sever IT/OT network bridge immediately (preserving forensic memory/logs), switch High-Service Pumps to local manual VFD hand-control (>45 psi), report to WVOT CISO & WV Fusion Center, refuse ransom, and issue precautionary Boil Water Advisory for \u003c20 psi zones.","rationale":"Satisfies WV HB 5638 and WVOT Cyber Incident Protocol (containment, forensic preservation, mandatory reporting, zero unapproved ransom payment) while restoring hydraulic pressure for Fire/Hazmat and Hospital operations within minutes and protecting public health under the \u003c20 psi Boil Water rule.","citation":"WV HB 5638 / WVOT Cyber Incident Protocol & WV Bureau for Public Health (\u003c20 psi Boil Water Rule)","cascadeAlert":null},{"id":"inj2-b","label":"Option B","grade":"ACCEPTABLE WITH LIMITS","summary":"Shut down all water treatment plant electrical breakers completely and wait 2 hours for an outside cyber contractor before restarting any pumps.","rationale":"Contains lateral cyber movement, but shutting off all pumping drops municipal mains to 0 psi during an active hazmat decon and hospital surge emergency.","citation":"WV HB 5638 & FEMA Core Capability: Infrastructure Systems (Containment without Manual Continuity)","cascadeAlert":"ZERO-PSI HYDRANT & HOSPITAL WATER LOSS (Inject 2 — Option B): Full plant power-down collapsed municipal mains to 0 psi—cutting water to Hazmat decon showers and forcing {SEAT} Regional Medical Center onto its 6-hour reserve tank!"},{"id":"inj2-c","label":"Option C","grade":"NOT RECOMMENDED","summary":"Keep the SCADA network online so the utility business office can wire 0.8 BTC emergency ransom and obtain the decryption key quickly.","rationale":"Violates WV HB 5638 / WVOT incident rules prohibiting unapproved ransom payments, leaves the threat actor in active control of water treatment actuators, and offers no guarantee of restoration.","citation":"WV HB 5638 / WVOT Cyber Incident Protocol (Prohibits Unapproved Ransom Payment; Requires Immediate Isolation)","cascadeAlert":"ACTIVE SCADA LATERAL INCURSION (Inject 2 — Option C): Leaving compromised OT networks live allowed the adversary to close Clearwell Discharge Valve 4 and exfiltrate credentials while ransom talks stalled, triggering a countywide Boil Water Order!"},{"id":"inj2-d","label":"Option D","grade":"NOT RECOMMENDED","summary":"Format and factory-wipe all SCADA servers and PLC logs immediately, then bridge the consoles onto municipal Wi-Fi to reboot.","rationale":"Destroys volatile forensic evidence required by WVOT CIRT / WV Fusion Center under WV HB 5638 and re-exposes unsegmented OT controls to immediate re-compromise.","citation":"WV HB 5638 Forensic Preservation & OT Network Segmentation Mandate","cascadeAlert":"FORENSIC LOGS DESTROYED & OT RE-LOCKED (Inject 2 — Option D): Wiping HMI drives erased attacker IOCs needed by WVOT CIRT, and bridging over unsegmented Wi-Fi re-encrypted the console 9 minutes later!"}]},{"id":"inject-3","clock":"T+32m","domain":"HOSPITAL SURGE & DECON","targetSeat":"Hospital & DoHS Health + Fire & Hazmat IC","title":"Hospital ED Walk-In Contamination Surge & 24°F HVAC/Decon Decision","prompt":"Fourteen self-referred motorists and plant workers arrive unannounced at {SEAT} Regional Medical Center’s ED vestibule coughing with watering eyes, wearing heavy winter coats saturated with pungent ammonia vapor. Outside temperature is 24°F and municipal water pressure remains unstable. What protocol do Hospital Command and DoHS Health execute?","options":[{"id":"inj3-a","label":"Option A","grade":"RECOMMENDED","summary":"Lock down main ED entrances & isolate ED zone HVAC return air; route walk-ins through a heated exterior decon tent (remove outer winter garments + tepid eye/skin flush); hook Potable Water Tanker to hospital manifold; coordinate DoHS surge triage.","rationale":"Prevents secondary ammonia off-gassing from shutting down the county’s trauma/emergency department, removes 80–90% of contaminant immediately via outer garment removal in a heated shelter (preventing 24°F hypothermia), and sustains hospital water continuity.","citation":"ERG 2024 Guide 125 Decontamination · FEMA Core Capability: Public Health, Healthcare, and EMS","cascadeAlert":null},{"id":"inj3-b","label":"Option B","grade":"ACCEPTABLE WITH LIMITS","summary":"Lock ED doors and wash walk-in patients outdoors on the open 24°F concrete apron using an unheated fire engine booster hose.","rationale":"Protects the interior ED from secondary contamination, but cold-water drenching in 24°F freezing wind induces rapid hypothermia.","citation":"Cold-Weather Mass Decontamination Doctrine & ERG 2024 Guide 125","cascadeAlert":"ACUTE HYPOTHERMIA ADMISSIONS (Inject 3 — Option B): Unheated 24°F outdoor hosedown caused 5 cold-exposure admissions and slowed walk-in compliance at the hospital perimeter!"},{"id":"inj3-c","label":"Option C","grade":"NOT RECOMMENDED","summary":"Bring all 14 patients in their winter coats directly into the warm central ED waiting room and trauma bays to triage out of the freezing weather.","rationale":"Ammonia trapped in heavy winter clothing rapidly volatilizes in warm indoor hospital air, incapacitating unprotected ED clinicians and forcing full Emergency Department closure.","citation":"ERG 2024 Guide 125 Secondary Contamination Warning & Hospital HAZMAT Lockdown Standard","cascadeAlert":"EMERGENCY DEPARTMENT FORCED ON FULL DIVERSION (Inject 3 — Option C): Secondary NH3 off-gassing inside the warm ED sickened 6 nurses and forced {SEAT} Regional Medical Center onto full ambulance diversion!"},{"id":"inj3-d","label":"Option D","grade":"NOT RECOMMENDED","summary":"Lock hospital gates and instruct symptomatic walk-ins to get back in their cars and drive 1.2 miles across iced streets to Fire Station 1.","rationale":"Turning away unstable respiratory patients presenting on hospital property violates federal EMTALA screening/stabilization duties and puts impaired drivers onto iced streets.","citation":"EMTALA (42 U.S.C. § 1395dd) & WV DoHS Hospital Surge Standard","cascadeAlert":"EMTALA COMPLIANCE BREACH & MULTI-CAR SLIDEOFF (Inject 3 — Option D): Turning away symptomatic walk-ins triggered regulatory escalation and caused a secondary crash two blocks from the hospital!"}]},{"id":"inject-4","clock":"T+48m","domain":"STATUTORY / MUTUAL AID / FEMA PA","targetSeat":"County EOC & WVEMD + PIO & County Commission","title":"Intrastate Mutual Aid, Debris T&M Ceiling & State of Emergency Proclamation","prompt":"Radial ice hits 0.75 in., blocking ridge feeders across {COUNTY} County. Overtime and mutual-aid costs mount. A private contractor offers the County Commission immediate tree/ice debris crews if Commissioners sign an uncapped 30-day Time-and-Materials (T&M) contract right now. How do County EOC and Commissioners structure statutory escalation and emergency contracting?","options":[{"id":"inj4-a","label":"Option A","grade":"RECOMMENDED","summary":"Activate WV intrastate mutual aid (§ 15-5-8 & § 15-5-11), submit local declaration to WVEMD requesting a Governor State of Emergency Proclamation (§ 15-5-6; pre-staging EMAC § 15-5-22), and cap emergency T&M debris work strictly at \u003c= 70 hours with a hard dollar ceiling and independent load monitors.","rationale":"Aligns West Virginia emergency powers and mutual aid reimbursement channels while strictly preserving FEMA Public Assistance eligibility under 2 CFR §§ 200.318–200.327 and FEMA PAPPG.","citation":"W. Va. Code § 15-5-6, § 15-5-8, § 15-5-11, § 15-5-22 & 2 CFR §§ 200.318–200.327 (\u003c=70-hr T&M Cap)","cascadeAlert":null},{"id":"inj4-b","label":"Option B","grade":"ACCEPTABLE WITH LIMITS","summary":"Enforce the \u003c= 70-hour T&M contract cap locally, but hold off notifying WVEMD or requesting a W. Va. Code § 15-5-6 State Proclamation until next week’s damage tally.","rationale":"Protects federal procurement compliance, but delaying WVEMD escalation bottlenecks state potable water tankers, WVOT on-site support, and {WVDOH_DIST} heavy equipment prioritization.","citation":"W. Va. Code § 15-5-6 & § 15-5-8 (Delayed State EOC Escalation)","cascadeAlert":"STATE RESOURCE BOTTLENECK (Inject 4 — Option B): Delaying W. Va. Code § 15-5-6 escalation through WVEMD pushed state tanker and heavy grader tasking back by 6+ hours."},{"id":"inj4-c","label":"Option C","grade":"NOT RECOMMENDED","summary":"Sign the uncapped 30-day Time-and-Materials debris contract immediately using contractor self-certified load tickets so saws start rolling now.","rationale":"Uncapped T&M contracts exceeding the ~70-hour initial emergency window without a not-to-exceed ceiling and independent monitoring are one of the top causes of FEMA Public Assistance audit clawbacks.","citation":"2 CFR §§ 200.318–200.327 & FEMA PAPPG (Uncapped T&M Cost Disallowance)","cascadeAlert":"SEVERE FEMA PA AUDIT EXPOSURE (Inject 4 — Option C): Uncapped 30-day T&M debris contracting without independent load verification jeopardizes federal reimbursement under 2 CFR § 200.318(j)!"},{"id":"inj4-d","label":"Option D","grade":"NOT RECOMMENDED","summary":"Bypass WVEMD and phone an out-of-state private/municipal hazmat team directly across the state border to self-deploy immediately.","rationale":"Interstate mutual aid deployed outside WVEMD Emergency Management Assistance Compact (EMAC) procedures lacks statutory tort immunity, credential reciprocity, and reimbursement authority.","citation":"W. Va. Code § 15-5-22 (Emergency Management Assistance Compact — EMAC)","cascadeAlert":"INTERSTATE LIABILITY & REIMBURSEMENT GAP (Inject 4 — Option D): Self-deploying out-of-state units outside WVEMD EMAC channels (W. Va. Code § 15-5-22) voided statutory liability protection and cost recovery!"}]}],"mediaInject":{"outlet":"LIVE · Mountain State 8 News & Valley Scanner Livestream","clock":"T+24m · VIRAL BROADCAST & SOCIAL RUMOR INJECT","headline":"FALSE RUMOR SPREADING: \"County Secretly Evacuating All of {SEAT} East Across Iced Valley Bridge After Plant Explosion & Water Poisoning\"","transcript":"\"BREAKING AT 6:24 AM — Thousands are sharing livestream clips of white vapor near the riverfront industrial park while taps sputter downtown. Viral posts claim officials are ordering everyone in {SEAT} to get into their cars immediately and drive east across the Valley Bridge! Commenters also claim hackers dumped chemicals into city tap water. Residents are backing up toward the iced bridge approach right now...\"","pioTask":"Draft an authoritative \u003c= 120-word unified public emergency warning (IPAWS / WEA / Press Bulletin) that satisfies all 7 HSEEP Public Warning Essentials, keeps drivers OFF the iced Valley Bridge, specifies indoor Shelter-in-Place + HVAC shutoff + Boil Water steps, and directly refutes the false evacuation/poisoning rumors.","sampleGoldDraft":"{COUNTY} County Emergency Management & Fire Command ALERT: An anhydrous ammonia leak at the {SEAT} riverfront cold-storage plant and a water pump outage are affecting areas within 0.5 miles east-northeast of the industrial corridor, including Valley Nursing Home and Riverview Terrace. DO NOT EVACUATE—social media claims of a Valley Bridge evacuation order are FALSE. SHELTER IN PLACE now: go indoors, close windows, and shut off heating/HVAC systems. Boil tap water 1 minute before drinking until pressure returns. Check verified updates at wvemd.wv.gov and County 911 radio. Next update at 7:00 AM EST.","sampleWeakDraft":"URGENT NOTICE! Do not panic! We are experiencing a catastrophic UN1005 TIH incident and cyber event in the area. People near the river should be careful, avoid the bridge if icy, and stay tuned for more information whenever crews finish assessing the situation under EMAC and PAPPG rules."},"aarConfig":{"empgCitation":"FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10 — Completed HSEEP AAR/IP due to WVEMD within 90 calendar days of exercise conduct.","evaluatedCapabilities":[{"id":"environmental-response-health-safety","name":"Environmental Response/Health and Safety","missionArea":"Response","rating":"S","observation":"ERG 2024 Guide 125 isolation (500 ft) and 0.5 mi shelter-in-place parameters verified; early hydrant pressure drop highlighted need for pre-staged tanker shuttle SOP."},{"id":"cybersecurity","name":"Cybersecurity","missionArea":"Protection","rating":"S","observation":"WV HB 5638 OT/IT disconnect and manual VFD pump handover executed; municipal water plant needs pre-rehearsed memory-capture checklist with WVOT CIRT."},{"id":"public-information-warning","name":"Public Information and Warning","missionArea":"All Mission Areas","rating":"P","observation":"7-Essentials \u003c=120-word IPAWS template rapidly countered false Valley Bridge evacuation rumor and paired HVAC shutoff with precautionary Boil Water instructions."},{"id":"public-health-healthcare-ems","name":"Public Health, Healthcare, and Emergency Medical Services","missionArea":"Response","rating":"S","observation":"ED vestibule lockdown and HVAC isolation prevented secondary off-gassing; cold-weather (24°F) heated decon trailer staging time requires tighter mutual-aid pre-alerting."},{"id":"infrastructure-systems","name":"Infrastructure Systems","missionArea":"Response & Recovery","rating":"S","observation":"Cross-utility notification between Water SCADA, Fire IC, and Regional Hospital reduced zero-pressure risk once EOC established a unified infrastructure desk."},{"id":"operational-coordination","name":"Operational Coordination","missionArea":"All Mission Areas","rating":"P","observation":"County EOC aligned W. Va. Code § 15-5-8 mutual aid, § 15-5-6 Governor proclamation routing via WVEMD, and \u003c=70-hour FEMA PA T&M debris contract ceiling."}],"starterCorrectiveActions":[{"id":"CA-01","capability":"Environmental Response/Health and Safety","issue":"Industrial hydrant pressure sagged below 25 psi during simultaneous UN1005 vapor fogging and SCADA pump throttling.","action":"Establish automatic dual-dispatch of Potable/Drafting Tanker Task Force whenever Tier II TIH facilities activate within municipal pressure zones.","owner":"{SEAT} Fire Dept & {COUNTY} County EOC","authority":"ERG 2024 Guide 125","dueWindow":"30 Days","status":"Assigned"},{"id":"CA-02","capability":"Cybersecurity","issue":"12-minute communication lag between Water Plant SCADA anomaly detection and Fire IC / Hospital notification.","action":"Adopt out-of-band radio + WVOT CIRT / WV Fusion Center bridge checklist triggering immediate EOC alert whenever OT pumps deviate >15% or pressure approaches 25 psi.","owner":"{SEAT} Water Board & WVOT Cyber Liaison","authority":"WV HB 5638","dueWindow":"60 Days","status":"In Progress"},{"id":"CA-03","capability":"Public Health, Healthcare, and Emergency Medical Services","issue":"Self-referred walk-in TIH patients arrived in ammonia-saturated winter coats prior to Mass Decon Trailer arrival.","action":"Pre-stage heated quick-erect vestibule decon kit and exterior speaker signage at {SEAT} Regional Medical Center ED with quarterly HVAC isolation drills.","owner":"{SEAT} Regional Medical Center & WV DoHS","authority":"ERG 2024 Guide 125 / EMTALA","dueWindow":"60 Days","status":"Assigned"},{"id":"CA-04","capability":"Public Information and Warning","issue":"Viral livestream misinformation nearly drew civilian traffic onto iced Valley Bridge inside 0.5 mi plume.","action":"Pre-load 7-Essentials \u003c=120-word IPAWS/WEA templates (Shelter + Shut Off HVAC + Rumor Refutation + Boil Water) in County 911/JIC binder.","owner":"{COUNTY} County PIO & 911 Director","authority":"HSEEP Public Warning Standard","dueWindow":"30 Days","status":"Validated"},{"id":"CA-05","capability":"Operational Coordination","issue":"Emergency debris contractors offered uncapped 30-day Time-and-Materials terms during peak ice storm pressure.","action":"Adopt pre-vetted County Commission emergency contract rider enforcing \u003c= 70-hour T&M cap, hard dollar ceiling, and independent load monitors.","owner":"{COUNTY} County Commission & Purchasing","authority":"2 CFR §§ 200.318–200.327 & W. Va. Code § 15-5-6","dueWindow":"90 Days (EMPG AAR/IP Gate)","status":"Assigned"}]}}</script>
+  <script id="ttx-inline-script">(function () {
+  'use strict';
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) {
+      node.className = className;
+    }
+    if (text !== undefined && text !== null) {
+      node.textContent = String(text);
+    }
+    return node;
+  }
+
+  function svgEl(tag, attrs) {
+    var node = document.createElementNS(SVG_NS, tag);
+    if (attrs) {
+      var keys = Object.keys(attrs);
+      for (var i = 0; i < keys.length; i += 1) {
+        var k = keys[i];
+        if (attrs[k] !== undefined && attrs[k] !== null) {
+          node.setAttribute(k, String(attrs[k]));
+        }
+      }
+    }
+    return node;
+  }
+
+  function clearNode(node) {
+    if (node) {
+      node.replaceChildren();
+    }
+  }
+
+  var toastTimer = null;
+  function showToast(message) {
+    var toast = document.getElementById('ttx-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.remove('is-hidden');
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+    toastTimer = setTimeout(function () {
+      toast.classList.add('is-hidden');
+    }, 3600);
+  }
+
+  function parseClockMinutes(clockStr) {
+    var m = /T\+(\d+)m/i.exec(String(clockStr || ''));
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function formatElapsedClock(totalSeconds) {
+    var mins = Math.floor(totalSeconds / 60);
+    var secs = totalSeconds % 60;
+    var mm = mins < 10 ? '0' + mins : String(mins);
+    var ss = secs < 10 ? '0' + secs : String(secs);
+    return 'T+' + mm + ':' + ss;
+  }
+
+  function computeEmpgDeadlineDate() {
+    var now = new Date();
+    var due = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    var yyyy = due.getFullYear();
+    var mm = String(due.getMonth() + 1).padStart(2, '0');
+    var dd = String(due.getDate()).padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd;
+  }
+
+  function loadEmbeddedConfig() {
+    var dataEl = document.getElementById('ttx-config-data');
+    if (dataEl && dataEl.textContent && dataEl.textContent.trim().length > 2) {
+      try {
+        return JSON.parse(dataEl.textContent);
+      } catch (_err) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function buildWvSealSvg() {
+    var svg = svgEl('svg', {
+      viewBox: '0 0 64 64',
+      width: '46',
+      height: '46',
+      role: 'img',
+      'aria-label': 'West Virginia Capitol Command Seal'
+    });
+    svg.appendChild(svgEl('circle', {
+      cx: 32,
+      cy: 32,
+      r: 30,
+      fill: '#09111E',
+      stroke: '#D5A245',
+      'stroke-width': 2.5
+    }));
+    svg.appendChild(svgEl('circle', {
+      cx: 32,
+      cy: 32,
+      r: 25,
+      fill: 'none',
+      stroke: '#D5A245',
+      'stroke-width': 1,
+      'stroke-dasharray': '2,2'
+    }));
+    svg.appendChild(svgEl('polygon', {
+      points: '12,42 25,22 33,33 42,19 52,42',
+      fill: '#1D3352',
+      stroke: '#E5B964',
+      'stroke-width': 1.5
+    }));
+    var textTop = svgEl('text', {
+      x: 32,
+      y: 17,
+      'text-anchor': 'middle',
+      fill: '#E5B964',
+      'font-size': '7.5',
+      'font-weight': '800',
+      'font-family': 'monospace'
+    });
+    textTop.textContent = 'WV · 1863';
+    svg.appendChild(textTop);
+
+    var textBot = svgEl('text', {
+      x: 32,
+      y: 52,
+      'text-anchor': 'middle',
+      fill: '#FFFFFF',
+      'font-size': '7.5',
+      'font-weight': '800',
+      'font-family': 'sans-serif'
+    });
+    textBot.textContent = 'HSEEP TTX';
+    svg.appendChild(textBot);
+    return svg;
+  }
+
+  function scorePublicWarning(rawText, jur) {
+    var text = String(rawText || '').trim();
+    var lower = text.toLowerCase();
+    var words = text ? text.split(/\s+/).filter(Boolean) : [];
+    var wordCount = words.length;
+    var seatLower = String(jur.seat || '').toLowerCase();
+    var countyLower = String(jur.county || '').toLowerCase();
+
+    var rows = [];
+    var total = 0;
+
+    // 1. Who is speaking (12 pts)
+    var hasSource = /(emergency management|eoc|fire command|unified command|county commission|sheriff|health department|wvemd|911|official alert)/i.test(text);
+    var p1 = hasSource ? 12 : 0;
+    total += p1;
+    rows.push({
+      name: '1. Issuing Authority (Who Is Speaking)',
+      earned: p1,
+      max: 12,
+      status: hasSource ? 'PASS' : 'MISSING',
+      hint: hasSource
+        ? 'Identifies authoritative county/emergency command sender.'
+        : 'Name the official authority up front (e.g., "' + jur.county + ' County Emergency Management & Fire Command").'
+    });
+
+    // 2. What happened (12 pts)
+    var hasAmmonia = /(ammonia|chemical leak|vapor release|hazardous gas)/i.test(text);
+    var hasWater = /(water pump|water pressure|water outage|water main|water system|tap water)/i.test(text);
+    var p2 = (hasAmmonia ? 8 : 0) + (hasWater ? 4 : 0);
+    total += p2;
+    rows.push({
+      name: '2. Hazard Description (What Happened)',
+      earned: p2,
+      max: 12,
+      status: p2 === 12 ? 'PASS' : (p2 > 0 ? 'PARTIAL' : 'MISSING'),
+      hint: p2 === 12
+        ? 'Names both the anhydrous ammonia leak and municipal water pump/pressure issue in plain English.'
+        : 'State both hazards clearly: anhydrous ammonia leak + water pump/pressure drop.'
+    });
+
+    // 3. Where / Who is affected (12 pts)
+    var hasRadius = /(0\.5\s*mile|half[- ]mile|500\s*f(ee|oo)?t|east[- ]northeast|ene|downwind|industrial|corridor|terrace|nursing home)/i.test(text) ||
+      (seatLower && lower.indexOf(seatLower) !== -1) ||
+      (countyLower && lower.indexOf(countyLower) !== -1);
+    var hasSpecificZone = /(0\.5\s*mile|half[- ]mile|east[- ]northeast|industrial|terrace|nursing home)/i.test(text);
+    var p3 = hasSpecificZone ? 12 : (hasRadius ? 6 : 0);
+    total += p3;
+    rows.push({
+      name: '3. Affected Geography & Population (Where / Who)',
+      earned: p3,
+      max: 12,
+      status: p3 === 12 ? 'PASS' : (p3 > 0 ? 'PARTIAL' : 'MISSING'),
+      hint: p3 === 12
+        ? 'Defines concrete 0.5-mile ENE / riverfront corridor boundary.'
+        : 'Specify the exact protective boundary (within 0.5 miles east-northeast of the ' + jur.seat + ' riverfront industrial corridor).'
+    });
+
+    // 4. Protective Action: Shelter-in-Place + Shut off HVAC + Boil Water (16 pts)
+    var hasShelter = /(shelter in place|shelter-in-place|go indoors|stay indoors|stay inside)/i.test(text);
+    var hasHvac = /(shut off.*hvac|turn off.*hvac|hvac|heating|air conditioning|close windows|seal)/i.test(text);
+    var hasBoil = /(boil.*water|boil tap|bottled water)/i.test(text);
+    var p4 = (hasShelter ? 6 : 0) + (hasHvac ? 5 : 0) + (hasBoil ? 5 : 0);
+    total += p4;
+    rows.push({
+      name: '4. Protective Action (Shelter + Shut Off HVAC + Boil Water)',
+      earned: p4,
+      max: 16,
+      status: p4 === 16 ? 'PASS' : (p4 >= 6 ? 'PARTIAL' : 'MISSING'),
+      hint: p4 === 16
+        ? 'Covers indoor shelter-in-place, window/HVAC shutoff, and 1-minute boil-water guidance.'
+        : 'Include all 3 life-safety actions: Shelter in Place indoors, close windows/shut off HVAC, and boil tap water.'
+    });
+
+    // 5. Corrects False Evacuation Rumor (14 pts)
+    var refutesEvac = /(do not evacuate|don't evacuate|no evacuation|evacuation.*false|false.*evacuation|rumor|stay off.*bridge)/i.test(text);
+    var namesBridgeOrFalse = /(bridge|false|rumor|social media)/i.test(text);
+    var p5 = (refutesEvac && namesBridgeOrFalse) ? 14 : (refutesEvac ? 9 : 0);
+    total += p5;
+    rows.push({
+      name: '5. Rumor Control (Refutes False Valley Bridge Evacuation)',
+      earned: p5,
+      max: 14,
+      status: p5 === 14 ? 'PASS' : (p5 > 0 ? 'PARTIAL' : 'MISSING'),
+      hint: p5 === 14
+        ? 'Directly refutes the false Valley Bridge evacuation rumor.'
+        : 'Explicitly state: DO NOT EVACUATE — social media claims of a Valley Bridge evacuation order are FALSE.'
+    });
+
+    // 6. Official Channels for Updates (10 pts)
+    var hasChannel = /(wvemd|\.gov|911|radio|eas|hotline|official updates|county website)/i.test(text);
+    var p6 = hasChannel ? 10 : 0;
+    total += p6;
+    rows.push({
+      name: '6. Verified Information Source (Where to Get Updates)',
+      earned: p6,
+      max: 10,
+      status: hasChannel ? 'PASS' : 'MISSING',
+      hint: hasChannel
+        ? 'Directs public to verified .gov / 911 / EAS broadcast channels.'
+        : 'Point residents to official channels (e.g., wvemd.wv.gov and County 911 radio).'
+    });
+
+    // 7. Time of Next Update (10 pts)
+    var hasNextTime = /(next.*update|update at|\b\d{1,2}:\d{2}\s*(am|pm|est)?\b|within \d+\s*min)/i.test(text);
+    var p7 = hasNextTime ? 10 : 0;
+    total += p7;
+    rows.push({
+      name: '7. Next Update Commitment (When Next Briefing Arrives)',
+      earned: p7,
+      max: 10,
+      status: hasNextTime ? 'PASS' : 'MISSING',
+      hint: hasNextTime
+        ? 'Sets a concrete timestamp/interval for the next confirmed briefing.'
+        : 'Commit to a specific next update time (e.g., "Next update at 7:00 AM EST").'
+    });
+
+    // 8. Word Count Gate <= 120 words (8 pts)
+    var p8 = 0;
+    var wcStatus = 'MISSING';
+    var wcHint = '';
+    if (wordCount >= 25 && wordCount <= 120) {
+      p8 = 8;
+      wcStatus = 'PASS';
+      wcHint = wordCount + ' / 120 words — crisp IPAWS/WEA length.';
+    } else if (wordCount > 120 && wordCount <= 145) {
+      p8 = 4;
+      wcStatus = 'PARTIAL';
+      wcHint = wordCount + ' words — trim ' + (wordCount - 120) + ' words to meet the <= 120-word gate.';
+    } else if (wordCount > 145) {
+      p8 = 0;
+      wcStatus = 'MISSING';
+      wcHint = wordCount + ' words — exceeds 120-word emergency alert cap by ' + (wordCount - 120) + ' words.';
+    } else {
+      p8 = 0;
+      wcStatus = 'MISSING';
+      wcHint = wordCount + ' words — message is too short to cover essential protective instructions.';
+    }
+    total += p8;
+    rows.push({
+      name: '8. Brevity Gate (<= 120 Words)',
+      earned: p8,
+      max: 8,
+      status: wcStatus,
+      hint: wcHint
+    });
+
+    // 9. Calm, Plain-Language Tone Check (6 pts)
+    var hasJargon = /\b(tih|pappg|emac|2\s*cfr|scba)\b/i.test(text) || (/\bun1005\b/i.test(text) && !/ammonia/i.test(text));
+    var hasPanic = /(do not panic|don't panic|catastrophic|deadly doom|massacre)/i.test(text);
+    var p9 = 6 - (hasJargon ? 3 : 0) - (hasPanic ? 3 : 0);
+    if (wordCount === 0) p9 = 0;
+    total += p9;
+    rows.push({
+      name: '9. Plain-Language & Non-Panic Tone Check',
+      earned: p9,
+      max: 6,
+      status: p9 === 6 ? 'PASS' : (p9 > 0 ? 'PARTIAL' : 'MISSING'),
+      hint: p9 === 6
+        ? 'Clear, authoritative plain English with zero unexpanded acronyms or panic phrases.'
+        : 'Avoid unexpanded acronyms (TIH, EMAC, PAPPG, bare UN1005) and avoid saying "Do not panic".'
+    });
+
+    return {
+      score: total,
+      wordCount: wordCount,
+      toneOk: p9 === 6,
+      rows: rows
+    };
+  }
+
+  function startApp(config) {
+    var jurisdictions = config.jurisdictions || [];
+    var saved = config.savedSessionState || {};
+
+    var state = {
+      selectedCounty: saved.selectedCounty || (config.meta && config.meta.defaultCounty) || 'Kanawha',
+      activeRoleId: saved.activeRoleId || (config.roles && config.roles[0] && config.roles[0].id) || 'facilitator',
+      activeTab: saved.activeTab || '1',
+      clockSeconds: typeof saved.clockSeconds === 'number' ? saved.clockSeconds : 0,
+      clockRunning: false,
+      resourceCategoryFilter: 'ALL',
+      resourceStatus: Object.assign({}, saved.resourceStatus || {}),
+      mapLayers: Object.assign({
+        isolation500: true,
+        plumeDay05: true,
+        plumeNight13: false,
+        facilities: true
+      }, saved.mapLayers || {}),
+      selectedFacilityId: saved.selectedFacilityId || 'fac-nursing',
+      plotterReadout: 'Sheet 2 (NE) · Grid C2 · 0.38 mi ENE of UN1005 Source',
+      injectChoices: Object.assign({}, saved.injectChoices || {}),
+      warningDraftRaw: saved.warningDraftRaw || '',
+      warningCustomized: Boolean(saved.warningCustomized),
+      capabilityRatings: Object.assign({}, saved.capabilityRatings || {}),
+      capabilityNotes: Object.assign({}, saved.capabilityNotes || {}),
+      correctiveActions: Array.isArray(saved.correctiveActions)
+        ? saved.correctiveActions.slice()
+        : (config.aarConfig && config.aarConfig.starterCorrectiveActions
+            ? JSON.parse(JSON.stringify(config.aarConfig.starterCorrectiveActions))
+            : [])
+    };
+
+    var resourcesList = config.resources || [];
+    for (var rIdx = 0; rIdx < resourcesList.length; rIdx += 1) {
+      var res = resourcesList[rIdx];
+      if (!state.resourceStatus[res.id]) {
+        state.resourceStatus[res.id] = res.defaultStatus || 'Available';
+      }
+    }
+
+    var evalCaps = (config.aarConfig && config.aarConfig.evaluatedCapabilities) || [];
+    for (var cIdx = 0; cIdx < evalCaps.length; cIdx += 1) {
+      var cap = evalCaps[cIdx];
+      if (!state.capabilityRatings[cap.id]) {
+        state.capabilityRatings[cap.id] = cap.rating || 'S';
+      }
+      if (state.capabilityNotes[cap.id] === undefined) {
+        state.capabilityNotes[cap.id] = cap.observation || '';
+      }
+    }
+
+    function getJurisdiction() {
+      for (var i = 0; i < jurisdictions.length; i += 1) {
+        if (jurisdictions[i].county === state.selectedCounty) {
+          return jurisdictions[i];
+        }
+      }
+      return jurisdictions[0] || {
+        county: 'Kanawha',
+        seat: 'Charleston',
+        wvemdArea: 'Area 5 (Metro Valley)',
+        wvdohDistrict: 'District 1',
+        wvspTroop: 'Troop 4',
+        rpdc: 'Region III',
+        usaceDistrict: 'Huntington',
+        riverBasin: 'Kanawha / Elk / Coal',
+        legacyFloodWorks: 14
+      };
+    }
+
+    function localize(templateStr) {
+      var jur = getJurisdiction();
+      return String(templateStr || '')
+        .replace(/\{COUNTY\}/g, function () { return jur.county; })
+        .replace(/\{SEAT\}/g, function () { return jur.seat; })
+        .replace(/\{WVEMD_AREA\}/g, function () { return jur.wvemdArea; })
+        .replace(/\{WVDOH_DIST\}/g, function () { return jur.wvdohDistrict; })
+        .replace(/\{WVSP_TROOP\}/g, function () { return jur.wvspTroop; })
+        .replace(/\{RPDC\}/g, function () { return jur.rpdc; })
+        .replace(/\{USACE_DIST\}/g, function () { return jur.usaceDistrict; })
+        .replace(/\{RIVER_BASIN\}/g, function () { return jur.riverBasin; })
+        .replace(/\{LEGACY_FLOOD_WORKS\}/g, function () { return String(jur.legacyFloodWorks); });
+    }
+
+    if (!state.warningCustomized) {
+      state.warningDraftRaw = localize(config.mediaInject && config.mediaInject.sampleGoldDraft);
+    }
+
+    // Mount WV Seal
+    var sealSlot = document.getElementById('wv-seal-slot');
+    if (sealSlot) {
+      clearNode(sealSlot);
+      sealSlot.appendChild(buildWvSealSvg());
+    }
+
+    // Header Titles
+    var bannerEl = document.getElementById('classification-banner');
+    var titleEl = document.getElementById('app-title');
+    var subtitleEl = document.getElementById('app-subtitle');
+    if (bannerEl && config.meta) bannerEl.textContent = config.meta.classificationBanner;
+    if (titleEl && config.meta) titleEl.textContent = config.meta.title;
+    if (subtitleEl && config.meta) subtitleEl.textContent = config.meta.subtitle;
+
+    // Populate 55-County + Anonymized Selector
+    var countySelect = document.getElementById('county-select');
+    if (countySelect) {
+      clearNode(countySelect);
+      for (var j = 0; j < jurisdictions.length; j += 1) {
+        var jItem = jurisdictions[j];
+        var opt = el(
+          'option',
+          null,
+          jItem.county === 'Anonymized WV Valley Town'
+            ? 'Anonymized WV Valley Town (' + jItem.seat + ')'
+            : jItem.county + ' County — ' + jItem.seat
+        );
+        opt.value = jItem.county;
+        if (jItem.county === state.selectedCounty) {
+          opt.selected = true;
+        }
+        countySelect.appendChild(opt);
+      }
+      countySelect.addEventListener('change', function () {
+        state.selectedCounty = countySelect.value;
+        if (!state.warningCustomized && config.mediaInject) {
+          state.warningDraftRaw = localize(config.mediaInject.sampleGoldDraft);
+        }
+        renderAll();
+        showToast('Switched jurisdiction to ' + state.selectedCounty + ' (' + getJurisdiction().seat + ').');
+      });
+    }
+
+    // Clock Controls
+    var clockInterval = null;
+    var clockDisplay = document.getElementById('clock-display');
+    var btnClockToggle = document.getElementById('btn-clock-toggle');
+    var btnClockPlus5 = document.getElementById('btn-clock-plus5');
+    var btnClockReset = document.getElementById('btn-clock-reset');
+
+    function updateClockUi() {
+      if (clockDisplay) {
+        clockDisplay.textContent = formatElapsedClock(state.clockSeconds);
+        clockDisplay.classList.toggle('is-running', state.clockRunning);
+      }
+      if (btnClockToggle) {
+        btnClockToggle.textContent = state.clockRunning ? 'Pause' : 'Start';
+      }
+    }
+
+    if (btnClockToggle) {
+      btnClockToggle.addEventListener('click', function () {
+        state.clockRunning = !state.clockRunning;
+        if (state.clockRunning) {
+          clockInterval = setInterval(function () {
+            state.clockSeconds += 1;
+            updateClockUi();
+            if (state.clockSeconds % 60 === 0 && state.activeTab === '2') {
+              renderTab2();
+            }
+          }, 1000);
+        } else if (clockInterval) {
+          clearInterval(clockInterval);
+          clockInterval = null;
+        }
+        updateClockUi();
+      });
+    }
+
+    if (btnClockPlus5) {
+      btnClockPlus5.addEventListener('click', function () {
+        state.clockSeconds += 300;
+        updateClockUi();
+        renderTab2();
+        renderTab4();
+        showToast('Advanced exercise clock +5 minutes to ' + formatElapsedClock(state.clockSeconds) + '.');
+      });
+    }
+
+    if (btnClockReset) {
+      btnClockReset.addEventListener('click', function () {
+        state.clockSeconds = 0;
+        state.clockRunning = false;
+        if (clockInterval) {
+          clearInterval(clockInterval);
+          clockInterval = null;
+        }
+        updateClockUi();
+        renderTab2();
+      });
+    }
+
+    // Tab Navigation
+    var tabBtns = [
+      document.getElementById('tab-btn-1'),
+      document.getElementById('tab-btn-2'),
+      document.getElementById('tab-btn-3'),
+      document.getElementById('tab-btn-4')
+    ];
+    var tabPanels = [
+      document.getElementById('tab-panel-1'),
+      document.getElementById('tab-panel-2'),
+      document.getElementById('tab-panel-3'),
+      document.getElementById('tab-panel-4')
+    ];
+
+    function setActiveTab(tabId) {
+      state.activeTab = String(tabId);
+      for (var t = 0; t < 4; t += 1) {
+        var isMatch = String(t + 1) === state.activeTab;
+        if (tabBtns[t]) {
+          tabBtns[t].classList.toggle('is-active', isMatch);
+          tabBtns[t].setAttribute('aria-selected', isMatch ? 'true' : 'false');
+        }
+        if (tabPanels[t]) {
+          tabPanels[t].classList.toggle('is-hidden', !isMatch);
+        }
+      }
+    }
+
+    for (var tb = 0; tb < tabBtns.length; tb += 1) {
+      if (tabBtns[tb]) {
+        (function (idx) {
+          tabBtns[idx].addEventListener('click', function () {
+            setActiveTab(String(idx + 1));
+          });
+        })(tb);
+      }
+    }
+
+    // Helper: Collect active cascade alerts prior to inject index
+    function getPriorCascades(upToInjectIndex) {
+      var cascades = [];
+      var injects = config.injects || [];
+      var limit = typeof upToInjectIndex === 'number' ? upToInjectIndex : injects.length;
+      for (var i = 0; i < limit; i += 1) {
+        var inj = injects[i];
+        var pickedId = state.injectChoices[inj.id];
+        if (!pickedId) continue;
+        var opts = inj.options || [];
+        for (var k = 0; k < opts.length; k += 1) {
+          if (opts[k].id === pickedId && opts[k].cascadeAlert) {
+            cascades.push({
+              injectClock: inj.clock,
+              grade: opts[k].grade,
+              alertText: localize(opts[k].cascadeAlert)
+            });
+          }
+        }
+      }
+      return cascades;
+    }
+
+    function renderCrosswalkRibbon() {
+      var ribbon = document.getElementById('crosswalk-ribbon');
+      if (!ribbon) return;
+      clearNode(ribbon);
+      var sm = config.stateMeta || {};
+      var jurLabelEl = document.querySelector('label[for="county-select"]');
+      if (jurLabelEl && sm.selectLabel) {
+        jurLabelEl.textContent = sm.selectLabel;
+      }
+      var footerLeft = document.getElementById('footer-meta-left');
+      if (footerLeft && sm.stateTitle) {
+        footerLeft.textContent = sm.stateTitle + ' · HSEEP Multi-Role Tabletop & Crisis Simulator';
+      }
+      var footerRight = document.getElementById('footer-meta-right');
+      if (footerRight && sm.statutoryFooter) {
+        footerRight.textContent = sm.statutoryFooter;
+      }
+      var jur = getJurisdiction();
+      var pairs = [
+        [sm.seatLabel || 'County Seat', jur.seat, true],
+        [sm.emaLabel || 'WVEMD Area', jur.wvemdArea, false],
+        [sm.dotLabel || 'WVDOH District', jur.wvdohDistrict, false],
+        [sm.policeLabel || 'WVSP Troop', jur.wvspTroop, false],
+        [sm.rpdcLabel || 'RPDC', jur.rpdc, false],
+        ['USACE District', jur.usaceDistrict, false],
+        ['River Basin', jur.riverBasin, false],
+        ['Legacy Flood Works', String(jur.legacyFloodWorks) + ' Structures', true]
+      ];
+      for (var i = 0; i < pairs.length; i += 1) {
+        var item = el('div', 'crosswalk-item');
+        item.appendChild(el('span', 'crosswalk-key', pairs[i][0] + ':'));
+        item.appendChild(
+          el('span', pairs[i][2] ? 'crosswalk-val crosswalk-val-gold' : 'crosswalk-val', pairs[i][1])
+        );
+        ribbon.appendChild(item);
+      }
+    }
+
+    function renderRoleBar() {
+      var container = document.getElementById('role-pills-container');
+      if (!container) return;
+      clearNode(container);
+      var roles = config.roles || [];
+      for (var i = 0; i < roles.length; i += 1) {
+        (function (role) {
+          var btn = el(
+            'button',
+            role.id === state.activeRoleId ? 'role-pill is-active' : 'role-pill',
+            role.shortLabel
+          );
+          btn.type = 'button';
+          btn.addEventListener('click', function () {
+            state.activeRoleId = role.id;
+            renderRoleBar();
+            renderTab1();
+            renderTab2();
+            showToast('Switched Fog-of-War view to: ' + role.shortLabel);
+          });
+          container.appendChild(btn);
+        })(roles[i]);
+      }
+    }
+
+    function updateHeaderBadges() {
+      var injBadge = document.getElementById('tab-badge-injects');
+      var injects = config.injects || [];
+      var answered = Object.keys(state.injectChoices).length;
+      var activeCascades = getPriorCascades(injects.length).length;
+      if (injBadge) {
+        injBadge.textContent = activeCascades > 0
+          ? answered + '/' + injects.length + ' · ' + activeCascades + ' CASCADE'
+          : answered + '/' + injects.length;
+        injBadge.className = 'tab-pill ' + (activeCascades > 0 ? 'pill-bad' : (answered === injects.length ? 'pill-good' : ''));
+      }
+
+      var scorerBadge = document.getElementById('tab-badge-scorer');
+      var warningEval = scorePublicWarning(state.warningDraftRaw, getJurisdiction());
+      if (scorerBadge) {
+        scorerBadge.textContent = warningEval.score + '/100';
+        scorerBadge.className = 'tab-pill ' + (warningEval.score >= 85 ? 'pill-good' : (warningEval.score >= 60 ? 'pill-warn' : 'pill-bad'));
+      }
+    }
+
+    // TAB 1: Briefing, Roles & Dispatch
+    function renderTab1() {
+      var panel = document.getElementById('tab-panel-1');
+      if (!panel) return;
+      clearNode(panel);
+
+      var haz = (config.meta && config.meta.hazmatProfile) || {};
+      var dispatchedCount = 0;
+      var stagedCount = 0;
+      var etaSum = 0;
+      for (var r = 0; r < resourcesList.length; r += 1) {
+        var st = state.resourceStatus[resourcesList[r].id];
+        if (st === 'Dispatched') {
+          dispatchedCount += 1;
+          etaSum += resourcesList[r].etaMin;
+        } else if (st === 'Staged') {
+          stagedCount += 1;
+        }
+      }
+      var avgEta = dispatchedCount > 0 ? Math.round(etaSum / dispatchedCount) + ' min avg ETA' : 'Ready for tasking';
+
+      // KPI Strip
+      var kpiStrip = el('div', 'kpi-strip');
+      var kpis = [
+        {
+          cls: 'kpi-card kpi-crimson',
+          label: 'Primary Hazmat Release',
+          val: haz.un + ' · ' + Number(haz.releaseQuantityLb || 9000).toLocaleString() + ' lb',
+          sub: haz.material + ' · ERG 2024 Guide ' + haz.guide
+        },
+        {
+          cls: 'kpi-card kpi-gold',
+          label: 'ERG 2024 Protective Zones',
+          val: haz.initialIsolationFt + ' ft / ' + haz.downwindDayMi + ' mi ENE',
+          sub: 'Large Spill Isolation · ' + haz.downwindNightMi + ' mi Night Inversion'
+        },
+        {
+          cls: 'kpi-card',
+          label: 'Cyber & Utility Compound',
+          val: 'SCADA < 20 psi Alert',
+          sub: 'WV HB 5638 OT Isolation · Boil-Water Threshold'
+        },
+        {
+          cls: 'kpi-card kpi-emerald',
+          label: 'WV Resource Mobilization',
+          val: dispatchedCount + ' Dispatched · ' + stagedCount + ' Staged',
+          sub: resourcesList.length + ' Total WV Units · ' + avgEta
+        }
+      ];
+      for (var k = 0; k < kpis.length; k += 1) {
+        var kc = el('div', kpis[k].cls);
+        kc.appendChild(el('div', 'kpi-label', kpis[k].label));
+        kc.appendChild(el('div', 'kpi-value', kpis[k].val));
+        kc.appendChild(el('div', 'kpi-sub', kpis[k].sub));
+        kpiStrip.appendChild(kc);
+      }
+      panel.appendChild(kpiStrip);
+
+      // 2-Column Briefing + Role Fog-of-War Intel
+      var twoCol = el('div', 'grid-two-col');
+
+      // Left Card: Situation Briefing
+      var briefCard = el('div', 'card card-navy-accent');
+      var briefHdr = el('div', 'card-header');
+      briefHdr.appendChild(el('h2', 'card-title', 'Situation Manual (SitMan) Briefing — ' + localize('{COUNTY} County ({SEAT})')));
+      briefHdr.appendChild(el('span', 'badge badge-navy', config.meta ? config.meta.operationalPeriod : 'OP PERIOD 1'));
+      briefCard.appendChild(briefHdr);
+
+      briefCard.appendChild(el('p', 'prose-p', localize(config.briefing && config.briefing.executiveSummary)));
+      briefCard.appendChild(el('div', 'erg-rule-callout', localize(haz.tacticalRule)));
+
+      briefCard.appendChild(el('div', 'section-subhead', 'Incident Chronology (EST)'));
+      var tlList = el('ul', 'timeline-list');
+      var timelines = (config.briefing && config.briefing.keyTimelines) || [];
+      for (var tl = 0; tl < timelines.length; tl += 1) {
+        var row = el('li', 'timeline-row');
+        row.appendChild(el('span', 'timeline-time', timelines[tl].time));
+        row.appendChild(el('span', null, localize(timelines[tl].event)));
+        tlList.appendChild(row);
+      }
+      briefCard.appendChild(tlList);
+
+      briefCard.appendChild(el('div', 'section-subhead', 'HSEEP Exercise Objectives'));
+      var objList = el('ul', 'intel-list');
+      var objs = (config.briefing && config.briefing.objectives) || [];
+      for (var ob = 0; ob < objs.length; ob += 1) {
+        objList.appendChild(
+          el('li', 'intel-item', objs[ob].code + ' [' + objs[ob].capability + ']: ' + localize(objs[ob].text))
+        );
+      }
+      briefCard.appendChild(objList);
+      twoCol.appendChild(briefCard);
+
+      // Right Card: Active Seat Fog-of-War Intelligence
+      var activeRole = (config.roles || [])[0];
+      for (var rl = 0; rl < (config.roles || []).length; rl += 1) {
+        if (config.roles[rl].id === state.activeRoleId) {
+          activeRole = config.roles[rl];
+          break;
+        }
+      }
+
+      var roleCard = el('div', 'card card-gold-accent');
+      var roleHdr = el('div', 'card-header');
+      roleHdr.appendChild(el('h2', 'card-title', localize(activeRole.title)));
+      roleHdr.appendChild(el('span', 'badge badge-gold', activeRole.badge));
+      roleCard.appendChild(roleHdr);
+
+      roleCard.appendChild(el('p', 'prose-p', localize(activeRole.summary)));
+
+      roleCard.appendChild(el('div', 'section-subhead', 'Seat-Specific Fog-of-War Intelligence'));
+      var factsList = el('ul', 'intel-list');
+      var facts = activeRole.knownFacts || [];
+      for (var fi = 0; fi < facts.length; fi += 1) {
+        factsList.appendChild(el('li', 'intel-item', localize(facts[fi])));
+      }
+      roleCard.appendChild(factsList);
+
+      if (activeRole.blindSpots && activeRole.blindSpots.length > 0) {
+        roleCard.appendChild(el('div', 'section-subhead', 'Cross-Agency Blind Spot (Requires Table Coordination)'));
+        roleCard.appendChild(el('div', 'blindspot-box', localize(activeRole.blindSpots[0])));
+      }
+
+      roleCard.appendChild(el('div', 'section-subhead', 'Key Decisions & Prompts for Your Seat'));
+      var qList = el('ul', 'intel-list');
+      var pqs = activeRole.priorityQuestions || [];
+      for (var qi = 0; qi < pqs.length; qi += 1) {
+        qList.appendChild(el('li', 'intel-item', localize(pqs[qi])));
+      }
+      roleCard.appendChild(qList);
+
+      roleCard.appendChild(el('div', 'anchor-footer', 'Statutory & Doctrine Anchors: ' + localize(activeRole.statutoryAnchors)));
+      twoCol.appendChild(roleCard);
+      panel.appendChild(twoCol);
+
+      // Dispatchable Resource Roster
+      var smRoster = config.stateMeta || {};
+      var shortState = smRoster.shortState || 'West Virginia';
+      var shortCode = smRoster.stateCode || 'WV';
+      var rosterCard = el('div', 'card');
+      var rosterHdr = el('div', 'card-header');
+      rosterHdr.appendChild(
+        el('h2', 'card-title', 'Dispatchable ' + shortState + ' Multi-Agency Resource Roster (' + resourcesList.length + ' Units)')
+      );
+
+      var categories = ['ALL'];
+      for (var rc = 0; rc < resourcesList.length; rc += 1) {
+        if (categories.indexOf(resourcesList[rc].category) === -1) {
+          categories.push(resourcesList[rc].category);
+        }
+      }
+      var filterWrap = el('div', 'filter-pills');
+      for (var ci = 0; ci < categories.length; ci += 1) {
+        (function (catName) {
+          var fp = el(
+            'button',
+            state.resourceCategoryFilter === catName ? 'filter-pill is-active' : 'filter-pill',
+            catName === 'ALL' ? 'All ' + shortCode + ' Units (' + resourcesList.length + ')' : catName
+          );
+          fp.type = 'button';
+          fp.addEventListener('click', function () {
+            state.resourceCategoryFilter = catName;
+            renderTab1();
+          });
+          filterWrap.appendChild(fp);
+        })(categories[ci]);
+      }
+      rosterHdr.appendChild(filterWrap);
+      rosterCard.appendChild(rosterHdr);
+
+      var scrollWrap = el('div', 'table-scroll');
+      var table = el('table', 'data-table');
+      var thead = el('thead');
+      var trHead = el('tr');
+      var cols = ['Unit / Asset', 'WV Agency', 'Discipline', 'ETA', 'Assigned Tactical Zone', 'Operational Capability', 'Status', 'Command Action'];
+      for (var ch = 0; ch < cols.length; ch += 1) {
+        trHead.appendChild(el('th', null, cols[ch]));
+      }
+      thead.appendChild(trHead);
+      table.appendChild(thead);
+
+      var tbody = el('tbody');
+      for (var u = 0; u < resourcesList.length; u += 1) {
+        var unit = resourcesList[u];
+        if (state.resourceCategoryFilter !== 'ALL' && unit.category !== state.resourceCategoryFilter) {
+          continue;
+        }
+        var curStatus = state.resourceStatus[unit.id] || 'Available';
+        var tr = el('tr');
+        tr.appendChild(el('td', 'unit-name', localize(unit.unitName)));
+        tr.appendChild(el('td', null, localize(unit.agency)));
+        tr.appendChild(el('td', null, unit.category));
+        tr.appendChild(el('td', 'mono-cell', unit.etaMin + 'm'));
+        tr.appendChild(el('td', null, localize(unit.assignedZone)));
+        tr.appendChild(el('td', null, localize(unit.capability)));
+
+        var tdBadge = el('td');
+        var badgeCls = curStatus === 'Dispatched' ? 'badge badge-good' : (curStatus === 'Staged' ? 'badge badge-warn' : 'badge badge-navy');
+        tdBadge.appendChild(el('span', badgeCls, curStatus));
+        tr.appendChild(tdBadge);
+
+        var tdAct = el('td');
+        var btnGrp = el('div', 'dispatch-btn-group');
+        (function (unitObj) {
+          var bDisp = el('button', 'btn btn-gold-primary btn-sm', 'Dispatch');
+          bDisp.type = 'button';
+          bDisp.addEventListener('click', function () {
+            state.resourceStatus[unitObj.id] = 'Dispatched';
+            renderTab1();
+            renderTab4();
+            showToast('Dispatched ' + localize(unitObj.unitName) + ' (ETA ' + unitObj.etaMin + 'm).');
+          });
+
+          var bStg = el('button', 'btn btn-surface btn-sm', 'Stage');
+          bStg.type = 'button';
+          bStg.addEventListener('click', function () {
+            state.resourceStatus[unitObj.id] = 'Staged';
+            renderTab1();
+            renderTab4();
+          });
+
+          var bAvl = el('button', 'btn btn-surface btn-sm', 'Hold');
+          bAvl.type = 'button';
+          bAvl.addEventListener('click', function () {
+            state.resourceStatus[unitObj.id] = 'Available';
+            renderTab1();
+            renderTab4();
+          });
+
+          btnGrp.appendChild(bDisp);
+          btnGrp.appendChild(bStg);
+          btnGrp.appendChild(bAvl);
+        })(unit);
+        tdAct.appendChild(btnGrp);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      scrollWrap.appendChild(table);
+      rosterCard.appendChild(scrollWrap);
+      panel.appendChild(rosterCard);
+    }
+
+    // Build Interactive SVG Tactical Map (createElementNS exclusively)
+    function buildTacticalSvg(readoutSpan, facilityBox) {
+      var mapCfg = config.tacticalMap || {};
+      var facilities = mapCfg.facilities || [];
+      var svg = svgEl('svg', {
+        viewBox: '0 0 620 420',
+        class: 'tactical-svg',
+        role: 'img',
+        'aria-label': 'ERG 2024 UN1005 Plume and 4-Sheet Tactical Plotter Map'
+      });
+
+      // Background dark tactical slate
+      svg.appendChild(svgEl('rect', { x: 0, y: 0, width: 620, height: 420, fill: '#0A1525' }));
+
+      // Valley contour shading
+      svg.appendChild(svgEl('path', {
+        d: 'M 0,310 Q 190,265 360,215 T 620,130 L 620,255 Q 390,305 210,360 L 0,400 Z',
+        fill: '#102138',
+        opacity: '0.75'
+      }));
+
+      // River Basin Channel
+      svg.appendChild(svgEl('path', {
+        d: 'M 0,342 Q 195,288 375,232 T 620,152',
+        fill: 'none',
+        stroke: '#1E4E79',
+        'stroke-width': 22,
+        'stroke-linecap': 'round'
+      }));
+      svg.appendChild(svgEl('path', {
+        d: 'M 0,342 Q 195,288 375,232 T 620,152',
+        fill: 'none',
+        stroke: '#38bdf8',
+        'stroke-width': 2,
+        'stroke-dasharray': '6,6',
+        opacity: '0.55'
+      }));
+
+      // Secondary Upwind Ridge Access Road + Main Valley Highway & Valley Bridge
+      svg.appendChild(svgEl('path', {
+        d: 'M 30,385 L 135,342 L 112,278 L 228,88',
+        fill: 'none',
+        stroke: '#64748B',
+        'stroke-width': 3,
+        'stroke-dasharray': '5,4'
+      }));
+      svg.appendChild(svgEl('path', {
+        d: 'M 40,260 L 255,255 L 392,235 L 585,195',
+        fill: 'none',
+        stroke: '#94A3B8',
+        'stroke-width': 4
+      }));
+      // Valley Bridge span marker
+      svg.appendChild(svgEl('line', {
+        x1: 374,
+        y1: 218,
+        x2: 410,
+        y2: 252,
+        stroke: '#F59E0B',
+        'stroke-width': 5
+      }));
+
+      // 4-Sheet Plotter Grid (Cols A-D: 155px each; Rows 1-4: 105px each)
+      for (var c = 1; c < 4; c += 1) {
+        svg.appendChild(svgEl('line', {
+          x1: c * 155,
+          y1: 0,
+          x2: c * 155,
+          y2: 420,
+          stroke: c === 2 ? '#D5A245' : '#233854',
+          'stroke-width': c === 2 ? 1.4 : 1,
+          'stroke-dasharray': c === 2 ? '6,4' : '2,4',
+          opacity: c === 2 ? '0.65' : '0.8'
+        }));
+      }
+      for (var r = 1; r < 4; r += 1) {
+        svg.appendChild(svgEl('line', {
+          x1: 0,
+          y1: r * 105,
+          x2: 620,
+          y2: r * 105,
+          stroke: r === 2 ? '#D5A245' : '#233854',
+          'stroke-width': r === 2 ? 1.4 : 1,
+          'stroke-dasharray': r === 2 ? '6,4' : '2,4',
+          opacity: r === 2 ? '0.65' : '0.8'
+        }));
+      }
+
+      // Grid Col & Row Labels + 4-Sheet Labels
+      var colLetters = ['A', 'B', 'C', 'D'];
+      for (var cl = 0; cl < 4; cl += 1) {
+        var cTxt = svgEl('text', {
+          x: cl * 155 + 77,
+          y: 15,
+          'text-anchor': 'middle',
+          fill: '#8EA4C2',
+          'font-size': '10',
+          'font-family': 'monospace',
+          'font-weight': '700'
+        });
+        cTxt.textContent = 'COL ' + colLetters[cl];
+        svg.appendChild(cTxt);
+      }
+      for (var rl = 0; rl < 4; rl += 1) {
+        var rTxt = svgEl('text', {
+          x: 10,
+          y: rl * 105 + 56,
+          fill: '#8EA4C2',
+          'font-size': '10',
+          'font-family': 'monospace',
+          'font-weight': '700'
+        });
+        rTxt.textContent = String(rl + 1);
+        svg.appendChild(rTxt);
+      }
+
+      var sheetTags = [
+        { x: 32, y: 32, t: 'SHEET 1 (NW)' },
+        { x: 320, y: 32, t: 'SHEET 2 (NE)' },
+        { x: 32, y: 408, t: 'SHEET 3 (SW)' },
+        { x: 320, y: 408, t: 'SHEET 4 (SE)' }
+      ];
+      for (var st = 0; st < sheetTags.length; st += 1) {
+        var sTxt = svgEl('text', {
+          x: sheetTags[st].x,
+          y: sheetTags[st].y,
+          fill: '#D5A245',
+          opacity: '0.72',
+          'font-size': '9.5',
+          'font-family': 'monospace',
+          'font-weight': '700'
+        });
+        sTxt.textContent = sheetTags[st].t;
+        svg.appendChild(sTxt);
+      }
+
+      // Optional 1.3 mi Nighttime Inversion Plume Layer
+      if (state.mapLayers.plumeNight13) {
+        svg.appendChild(svgEl('polygon', {
+          points: '255,255 598,42 618,225',
+          fill: '#A855F7',
+          opacity: '0.16',
+          stroke: '#C084FC',
+          'stroke-width': 1.5,
+          'stroke-dasharray': '6,4'
+        }));
+        var nightLbl = svgEl('text', {
+          x: 525,
+          y: 92,
+          'text-anchor': 'middle',
+          fill: '#E9D5FF',
+          'font-size': '9.5',
+          'font-family': 'monospace',
+          'font-weight': '700'
+        });
+        nightLbl.textContent = '1.3 MI NIGHT PLUME';
+        svg.appendChild(nightLbl);
+      }
+
+      // 0.5 mi Daytime Downwind Plume Cone (WSW -> ENE 065 deg)
+      if (state.mapLayers.plumeDay05) {
+        svg.appendChild(svgEl('polygon', {
+          points: '255,255 478,118 516,246',
+          fill: '#F59E0B',
+          opacity: '0.26',
+          stroke: '#FBBF24',
+          'stroke-width': 2
+        }));
+        svg.appendChild(svgEl('polygon', {
+          points: '255,255 415,166 438,236',
+          fill: '#EF4444',
+          opacity: '0.30',
+          stroke: '#F87171',
+          'stroke-width': 1.2,
+          'stroke-dasharray': '4,3'
+        }));
+        var plumeLbl = svgEl('text', {
+          x: 438,
+          y: 146,
+          'text-anchor': 'middle',
+          fill: '#FDE68A',
+          'font-size': '10',
+          'font-family': 'monospace',
+          'font-weight': '800'
+        });
+        plumeLbl.textContent = '0.5 MI ENE PLUME (GUIDE 125)';
+        svg.appendChild(plumeLbl);
+      }
+
+      // 500 ft Initial Isolation Circle around Cold Storage (255, 255)
+      if (state.mapLayers.isolation500) {
+        svg.appendChild(svgEl('circle', {
+          cx: 255,
+          cy: 255,
+          r: 44,
+          fill: '#DC2626',
+          opacity: '0.26',
+          stroke: '#F87171',
+          'stroke-width': 2,
+          'stroke-dasharray': '5,3'
+        }));
+        var isoLbl = svgEl('text', {
+          x: 255,
+          y: 204,
+          'text-anchor': 'middle',
+          fill: '#FCA5A5',
+          'font-size': '9.5',
+          'font-family': 'monospace',
+          'font-weight': '800'
+        });
+        isoLbl.textContent = '500 FT ISOLATION';
+        svg.appendChild(isoLbl);
+      }
+
+      // Critical Facilities Layer
+      if (state.mapLayers.facilities) {
+        var colorByType = {
+          hazard: '#EF4444',
+          vulnerable: '#F59E0B',
+          checkpoint: '#FB923C',
+          utility: '#38BDF8',
+          medical: '#34D399',
+          command: '#D5A245',
+          staging: '#A3E635'
+        };
+
+        for (var f = 0; f < facilities.length; f += 1) {
+          (function (fac) {
+            var isSelected = fac.id === state.selectedFacilityId;
+            var grp = svgEl('g', {
+              class: 'fac-node',
+              tabindex: '0',
+              role: 'button',
+              'aria-label': localize(fac.name) + ' (' + fac.grid + ')'
+            });
+
+            if (isSelected) {
+              grp.appendChild(svgEl('circle', {
+                cx: fac.x,
+                cy: fac.y,
+                r: 16,
+                fill: 'none',
+                stroke: '#FFFFFF',
+                'stroke-width': 2
+              }));
+            }
+
+            grp.appendChild(svgEl('circle', {
+              cx: fac.x,
+              cy: fac.y,
+              r: 10,
+              fill: colorByType[fac.type] || '#D5A245',
+              stroke: '#09111E',
+              'stroke-width': 2
+            }));
+
+            var codeTxt = svgEl('text', {
+              x: fac.x,
+              y: fac.y + 3.5,
+              'text-anchor': 'middle',
+              fill: '#09111E',
+              'font-size': '7.5',
+              'font-family': 'monospace',
+              'font-weight': '900'
+            });
+            codeTxt.textContent = fac.code;
+            grp.appendChild(codeTxt);
+
+            var nameBg = svgEl('rect', {
+              x: fac.x - 54,
+              y: fac.y + 13,
+              width: 108,
+              height: 15,
+              rx: 3,
+              fill: '#09111E',
+              opacity: '0.86'
+            });
+            grp.appendChild(nameBg);
+
+            var nameTxt = svgEl('text', {
+              x: fac.x,
+              y: fac.y + 23.5,
+              'text-anchor': 'middle',
+              fill: '#F8FAFC',
+              'font-size': '8.5',
+              'font-family': 'sans-serif',
+              'font-weight': '700'
+            });
+            var shortName = localize(fac.name);
+            if (shortName.length > 22) {
+              shortName = shortName.slice(0, 21) + '…';
+            }
+            nameTxt.textContent = shortName;
+            grp.appendChild(nameTxt);
+
+            grp.addEventListener('click', function (ev) {
+              ev.stopPropagation();
+              state.selectedFacilityId = fac.id;
+              state.plotterReadout = fac.sheet + ' · Grid ' + fac.grid + ' · ' + fac.distanceMi;
+              renderTab2();
+            });
+            svg.appendChild(grp);
+          })(facilities[f]);
+        }
+      }
+
+      // River label
+      var rivTxt = svgEl('text', {
+        x: 530,
+        y: 190,
+        fill: '#7DD3FC',
+        'font-size': '9.5',
+        'font-family': 'monospace',
+        'font-weight': '700',
+        transform: 'rotate(-16 530 190)'
+      });
+      rivTxt.textContent = localize('{RIVER_BASIN}');
+      svg.appendChild(rivTxt);
+
+      // Wind & Inversion Badge (Top-Right)
+      svg.appendChild(svgEl('rect', {
+        x: 278,
+        y: 38,
+        width: 332,
+        height: 24,
+        rx: 4,
+        fill: '#09111E',
+        stroke: '#D5A245',
+        'stroke-width': 1.2,
+        opacity: '0.94'
+      }));
+      var windTxt = svgEl('text', {
+        x: 444,
+        y: 53.5,
+        'text-anchor': 'middle',
+        fill: '#E5B964',
+        'font-size': '8.4',
+        'font-family': 'monospace',
+        'font-weight': '800'
+      });
+      windTxt.textContent = mapCfg.windBadge || 'WIND WSW 245° -> PLUME ENE 065°';
+      svg.appendChild(windTxt);
+
+      // Interactive 4-Sheet Plotter Coordinate Hover/Click
+      function handlePointer(evt) {
+        var pt = svg.getBoundingClientRect();
+        if (!pt.width || !pt.height) return;
+        var sx = ((evt.clientX - pt.left) / pt.width) * 620;
+        var sy = ((evt.clientY - pt.top) / pt.height) * 420;
+        var cIdx = Math.min(3, Math.max(0, Math.floor(sx / 155)));
+        var rIdx = Math.min(3, Math.max(0, Math.floor(sy / 105)));
+        var gridCode = colLetters[cIdx] + String(rIdx + 1);
+        var sheetNum = (rIdx < 2 ? (cIdx < 2 ? 'Sheet 1 (NW)' : 'Sheet 2 (NE)') : (cIdx < 2 ? 'Sheet 3 (SW)' : 'Sheet 4 (SE)'));
+        var dx = sx - 255;
+        var dy = sy - 255;
+        // 245 px ~= 0.50 mi scale
+        var distMi = (Math.sqrt(dx * dx + dy * dy) / 490).toFixed(2);
+        var text = sheetNum + ' · Grid ' + gridCode + ' · ' + distMi + ' mi from UN1005 Source';
+        state.plotterReadout = text;
+        if (readoutSpan) {
+          readoutSpan.textContent = text;
+        }
+      }
+
+      svg.addEventListener('mousemove', handlePointer);
+      svg.addEventListener('click', handlePointer);
+
+      // Populate Selected Facility Detail Box
+      if (facilityBox) {
+        clearNode(facilityBox);
+        var selFac = facilities[0];
+        for (var sf = 0; sf < facilities.length; sf += 1) {
+          if (facilities[sf].id === state.selectedFacilityId) {
+            selFac = facilities[sf];
+            break;
+          }
+        }
+        if (selFac) {
+          var topLine = el('div', 'option-top-row');
+          topLine.appendChild(el('strong', null, localize(selFac.name) + ' [' + selFac.sheet + ' · Grid ' + selFac.grid + ']'));
+          topLine.appendChild(el('span', 'badge badge-navy', selFac.distanceMi));
+          facilityBox.appendChild(topLine);
+          facilityBox.appendChild(el('div', null, localize(selFac.note)));
+        }
+      }
+
+      return svg;
+    }
+
+    // TAB 2: Timed Injects & Tactical SVG Map
+    function renderTab2() {
+      var panel = document.getElementById('tab-panel-2');
+      if (!panel) return;
+      clearNode(panel);
+
+      var grid = el('div', 'grid-tactical');
+
+      // Left Column: Tactical Plotter Map
+      var mapCard = el('div', 'card card-navy-accent tactical-sticky');
+      var mapHdr = el('div', 'card-header');
+      mapHdr.appendChild(el('h2', 'card-title', 'Tactical Plume & 4-Sheet Plotter — ' + localize('{SEAT} Corridor')));
+      mapHdr.appendChild(el('span', 'badge badge-gold', 'ERG 2024 GUIDE 125'));
+      mapCard.appendChild(mapHdr);
+
+      var layerBar = el('div', 'map-layer-toggles');
+      var layerDefs = [
+        ['isolation500', '500 ft Isolation Circle'],
+        ['plumeDay05', '0.5 mi Downwind Plume'],
+        ['plumeNight13', '1.3 mi Night Inversion'],
+        ['facilities', 'Critical Facilities (7)']
+      ];
+      for (var ld = 0; ld < layerDefs.length; ld += 1) {
+        (function (key, label) {
+          var btn = el(
+            'button',
+            state.mapLayers[key] ? 'layer-toggle is-active' : 'layer-toggle',
+            (state.mapLayers[key] ? '\u2713 ' : '') + label
+          );
+          btn.type = 'button';
+          btn.addEventListener('click', function () {
+            state.mapLayers[key] = !state.mapLayers[key];
+            renderTab2();
+          });
+          layerBar.appendChild(btn);
+        })(layerDefs[ld][0], layerDefs[ld][1]);
+      }
+      mapCard.appendChild(layerBar);
+
+      var svgFrame = el('div', 'svg-map-frame');
+      var readoutBar = el('div', 'plotter-readout-bar');
+      readoutBar.appendChild(el('span', null, '4-SHEET PLOTTER REF:'));
+      var readoutSpan = el('span', 'crosswalk-val-gold', state.plotterReadout);
+      readoutBar.appendChild(readoutSpan);
+
+      var facilityBox = el('div', 'facility-detail-box');
+      svgFrame.appendChild(buildTacticalSvg(readoutSpan, facilityBox));
+      mapCard.appendChild(svgFrame);
+      mapCard.appendChild(readoutBar);
+      mapCard.appendChild(facilityBox);
+      grid.appendChild(mapCard);
+
+      // Right Column: 4 Timed Multi-Domain Injects + Dynamic Consequence Branching
+      var injectCol = el('div');
+      var injects = config.injects || [];
+      var elapsedMins = Math.floor(state.clockSeconds / 60);
+
+      var jumpBar = el('div', 'inject-jump-bar');
+      for (var jb = 0; jb < injects.length; jb += 1) {
+        (function (injItem) {
+          var picked = state.injectChoices[injItem.id];
+          var pill = el(
+            'button',
+            picked ? 'filter-pill is-active' : 'filter-pill',
+            injItem.clock + ' · ' + injItem.domain + (picked ? ' \u2713' : '')
+          );
+          pill.type = 'button';
+          pill.addEventListener('click', function () {
+            var targetNode = document.getElementById('card-' + injItem.id);
+            if (targetNode && targetNode.scrollIntoView) {
+              targetNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          });
+          jumpBar.appendChild(pill);
+        })(injects[jb]);
+      }
+      injectCol.appendChild(jumpBar);
+
+      var stack = el('div', 'inject-stack');
+      for (var i = 0; i < injects.length; i += 1) {
+        (function (inj, idx) {
+          var injMins = parseClockMinutes(inj.clock);
+          var isDue = elapsedMins >= injMins;
+          var card = el('article', isDue ? 'inject-card is-due' : 'inject-card');
+          card.id = 'card-' + inj.id;
+
+          var hdr = el('div', 'card-header');
+          hdr.appendChild(el('h3', 'card-title', inj.clock + ' — ' + localize(inj.title)));
+          var metaBadges = el('div', 'dispatch-btn-group');
+          metaBadges.appendChild(el('span', 'badge badge-navy', inj.domain));
+          metaBadges.appendChild(el('span', 'badge badge-gold', inj.targetSeat));
+          hdr.appendChild(metaBadges);
+          card.appendChild(hdr);
+
+          // DYNAMIC CONSEQUENCE BRANCHING BANNER from earlier injects!
+          var priorCascades = getPriorCascades(idx);
+          if (priorCascades.length > 0) {
+            var cBanner = el('div', 'cascade-banner');
+            cBanner.appendChild(
+              el('div', 'cascade-banner-title', '\u26A0 DYNAMIC CASCADE ALERT — COMPOUND OPERATIONAL CONSEQUENCE (' + priorCascades.length + ')')
+            );
+            for (var pc = 0; pc < priorCascades.length; pc += 1) {
+              cBanner.appendChild(el('div', 'cascade-banner-item', '\u2022 ' + priorCascades[pc].alertText));
+            }
+            card.appendChild(cBanner);
+          }
+
+          card.appendChild(el('p', 'prose-p', localize(inj.prompt)));
+
+          var optGrid = el('div', 'options-grid');
+          var chosenOption = null;
+          var opts = inj.options || [];
+
+          for (var o = 0; o < opts.length; o += 1) {
+            (function (opt) {
+              var isPicked = state.injectChoices[inj.id] === opt.id;
+              if (isPicked) {
+                chosenOption = opt;
+              }
+              var selClass = '';
+              if (isPicked) {
+                if (opt.grade === 'RECOMMENDED') selClass = ' selected-RECOMMENDED';
+                else if (opt.grade === 'ACCEPTABLE WITH LIMITS') selClass = ' selected-ACCEPTABLE';
+                else selClass = ' selected-NOT_RECOMMENDED';
+              }
+
+              var oBtn = el('button', 'option-btn' + selClass);
+              oBtn.type = 'button';
+
+              var topRow = el('div', 'option-top-row');
+              topRow.appendChild(el('span', 'option-label', opt.label));
+              if (isPicked) {
+                var gCls = opt.grade === 'RECOMMENDED'
+                  ? 'badge badge-good'
+                  : (opt.grade === 'ACCEPTABLE WITH LIMITS' ? 'badge badge-warn' : 'badge badge-bad');
+                topRow.appendChild(el('span', gCls, opt.grade));
+              }
+              oBtn.appendChild(topRow);
+              oBtn.appendChild(el('div', 'option-summary', localize(opt.summary)));
+
+              oBtn.addEventListener('click', function () {
+                state.injectChoices[inj.id] = opt.id;
+                updateHeaderBadges();
+                renderTab2();
+                renderTab4();
+                showToast(inj.clock + ' decision logged: ' + opt.label + ' (' + opt.grade + ')');
+              });
+
+              optGrid.appendChild(oBtn);
+            })(opts[o]);
+          }
+          card.appendChild(optGrid);
+
+          if (chosenOption) {
+            var fb = el('div', 'evaluation-feedback');
+            var fbBadgeCls = chosenOption.grade === 'RECOMMENDED'
+              ? 'badge badge-good'
+              : (chosenOption.grade === 'ACCEPTABLE WITH LIMITS' ? 'badge badge-warn' : 'badge badge-bad');
+            var fbHeader = el('div', 'option-top-row');
+            fbHeader.appendChild(el('strong', null, 'HSEEP Evaluator Finding — ' + chosenOption.label));
+            fbHeader.appendChild(el('span', fbBadgeCls, chosenOption.grade));
+            fb.appendChild(fbHeader);
+            fb.appendChild(el('div', null, localize(chosenOption.rationale)));
+            fb.appendChild(el('div', 'evaluation-cite', 'Authority / Citation: ' + localize(chosenOption.citation)));
+            card.appendChild(fb);
+          }
+
+          stack.appendChild(card);
+        })(injects[i], i);
+      }
+
+      injectCol.appendChild(stack);
+      grid.appendChild(injectCol);
+      panel.appendChild(grid);
+    }
+
+    // TAB 3: Media Inject & 7-Essentials Public Warning Auto-Scorer
+    function renderTab3() {
+      var panel = document.getElementById('tab-panel-3');
+      if (!panel) return;
+      clearNode(panel);
+
+      var media = config.mediaInject || {};
+      var twoCol = el('div', 'grid-two-col');
+
+      // Left Card: Live Broadcast Media Inject
+      var mediaCard = el('div', 'card card-navy-accent');
+      var mediaHdr = el('div', 'card-header');
+      mediaHdr.appendChild(el('h2', 'card-title', 'Broadcast & Social Rumor Inject'));
+      mediaHdr.appendChild(el('span', 'badge badge-bad', 'RUMOR CONTROL GATE'));
+      mediaCard.appendChild(mediaHdr);
+
+      var screen = el('div', 'broadcast-screen');
+      var topBar = el('div', 'broadcast-top-bar');
+      topBar.appendChild(el('span', null, media.outlet || 'LIVE · Mountain State 8 News'));
+      topBar.appendChild(el('span', null, media.clock || 'T+24m'));
+      screen.appendChild(topBar);
+
+      var bBody = el('div', 'broadcast-body');
+      bBody.appendChild(el('h3', 'broadcast-headline', localize(media.headline)));
+      bBody.appendChild(el('p', 'broadcast-quote', localize(media.transcript)));
+      screen.appendChild(bBody);
+      mediaCard.appendChild(screen);
+
+      mediaCard.appendChild(el('div', 'section-subhead', 'PIO & County Commission Mission'));
+      mediaCard.appendChild(el('p', 'prose-p', localize(media.pioTask)));
+
+      var presetRow = el('div', 'dispatch-btn-group');
+      var btnGoldSample = el('button', 'btn btn-gold-primary btn-sm', 'Load Gold-Standard <=120w Draft');
+      btnGoldSample.type = 'button';
+      btnGoldSample.addEventListener('click', function () {
+        state.warningCustomized = false;
+        state.warningDraftRaw = localize(media.sampleGoldDraft);
+        updateHeaderBadges();
+        renderTab3();
+        renderTab4();
+      });
+
+      var btnWeakSample = el('button', 'btn btn-surface btn-sm', 'Load Weak Jargon Draft (Demo)');
+      btnWeakSample.type = 'button';
+      btnWeakSample.addEventListener('click', function () {
+        state.warningCustomized = true;
+        state.warningDraftRaw = localize(media.sampleWeakDraft);
+        updateHeaderBadges();
+        renderTab3();
+        renderTab4();
+      });
+
+      var btnClearDraft = el('button', 'btn btn-surface btn-sm', 'Clear Draft');
+      btnClearDraft.type = 'button';
+      btnClearDraft.addEventListener('click', function () {
+        state.warningCustomized = true;
+        state.warningDraftRaw = '';
+        updateHeaderBadges();
+        renderTab3();
+        renderTab4();
+      });
+
+      presetRow.appendChild(btnGoldSample);
+      presetRow.appendChild(btnWeakSample);
+      presetRow.appendChild(btnClearDraft);
+      mediaCard.appendChild(presetRow);
+      twoCol.appendChild(mediaCard);
+
+      // Right Card: Live 7-Essentials Scorer (0-100)
+      var scorerCard = el('div', 'card card-gold-accent');
+      var scorerHdr = el('div', 'card-header');
+      scorerHdr.appendChild(el('h2', 'card-title', '7-Essentials <=120-Word Public Warning Auto-Scorer'));
+      scorerHdr.appendChild(el('span', 'badge badge-navy', 'LIVE 0–100 RUBRIC'));
+      scorerCard.appendChild(scorerHdr);
+
+      var textarea = el('textarea', 'warning-textarea');
+      textarea.id = 'warning-draft-input';
+      textarea.setAttribute('aria-label', 'Public Emergency Warning Draft');
+      textarea.value = state.warningDraftRaw;
+      scorerCard.appendChild(textarea);
+
+      var liveResultsWrap = el('div');
+      scorerCard.appendChild(liveResultsWrap);
+
+      function refreshScorerView() {
+        clearNode(liveResultsWrap);
+        var res = scorePublicWarning(state.warningDraftRaw, getJurisdiction());
+
+        var sumRow = el('div', 'scorer-summary-row');
+        var leftScore = el('div');
+        leftScore.appendChild(el('div', 'control-label', 'HSEEP PUBLIC WARNING SCORE'));
+        leftScore.appendChild(el('div', 'score-big', res.score + ' / 100'));
+        sumRow.appendChild(leftScore);
+
+        // SVG Progress Bar (zero inline style attributes!)
+        var barSvg = svgEl('svg', {
+          viewBox: '0 0 220 18',
+          width: '220',
+          height: '18',
+          'aria-hidden': 'true'
+        });
+        barSvg.appendChild(svgEl('rect', { x: 0, y: 3, width: 220, height: 12, rx: 6, fill: '#213654' }));
+        var fillW = Math.max(0, Math.min(220, Math.round((res.score / 100) * 220)));
+        var barColor = res.score >= 85 ? '#34D399' : (res.score >= 60 ? '#FBBF24' : '#F87171');
+        barSvg.appendChild(svgEl('rect', { x: 0, y: 3, width: fillW, height: 12, rx: 6, fill: barColor }));
+        sumRow.appendChild(barSvg);
+
+        var rightPills = el('div', 'dispatch-btn-group');
+        rightPills.appendChild(
+          el('span', res.wordCount <= 120 && res.wordCount >= 25 ? 'badge badge-good' : 'badge badge-bad', res.wordCount + ' / 120 words')
+        );
+        rightPills.appendChild(
+          el('span', res.toneOk ? 'badge badge-good' : 'badge badge-warn', res.toneOk ? 'Tone: Calm' : 'Tone: Review')
+        );
+        sumRow.appendChild(rightPills);
+        liveResultsWrap.appendChild(sumRow);
+
+        var rList = el('div', 'rubric-list');
+        for (var i = 0; i < res.rows.length; i += 1) {
+          var item = res.rows[i];
+          var rRow = el('div', 'rubric-row');
+          var textWrap = el('div');
+          textWrap.appendChild(el('div', 'rubric-title', item.name));
+          textWrap.appendChild(el('div', 'rubric-hint', item.hint));
+          rRow.appendChild(textWrap);
+
+          var bCls = item.status === 'PASS' ? 'badge badge-good' : (item.status === 'PARTIAL' ? 'badge badge-warn' : 'badge badge-bad');
+          rRow.appendChild(el('span', bCls, item.earned + '/' + item.max + ' · ' + item.status));
+          rList.appendChild(rRow);
+        }
+        liveResultsWrap.appendChild(rList);
+      }
+
+      textarea.addEventListener('input', function () {
+        state.warningCustomized = true;
+        state.warningDraftRaw = textarea.value;
+        updateHeaderBadges();
+        refreshScorerView();
+      });
+
+      refreshScorerView();
+      twoCol.appendChild(scorerCard);
+      panel.appendChild(twoCol);
+    }
+
+    // TAB 4: HSEEP Debrief & 90-Day AAR/IP
+    function renderTab4() {
+      var panel = document.getElementById('tab-panel-4');
+      if (!panel) return;
+      clearNode(panel);
+
+      var injects = config.injects || [];
+      var recCount = 0;
+      var answeredCount = 0;
+      for (var ic = 0; ic < injects.length; ic += 1) {
+        var pid = state.injectChoices[injects[ic].id];
+        if (pid) {
+          answeredCount += 1;
+          var opts = injects[ic].options || [];
+          for (var op = 0; op < opts.length; op += 1) {
+            if (opts[op].id === pid && opts[op].grade === 'RECOMMENDED') {
+              recCount += 1;
+            }
+          }
+        }
+      }
+      var allCascades = getPriorCascades(injects.length);
+      var warnScore = scorePublicWarning(state.warningDraftRaw, getJurisdiction());
+      var due90 = computeEmpgDeadlineDate();
+
+      // Debrief Summary KPIs
+      var kpiStrip = el('div', 'kpi-strip');
+      var debriefKpis = [
+        {
+          cls: 'kpi-card kpi-emerald',
+          label: 'Inject Tactical Alignment',
+          val: recCount + ' / ' + injects.length + ' Recommended',
+          sub: answeredCount + ' of ' + injects.length + ' injects adjudicated · ' + allCascades.length + ' cascades'
+        },
+        {
+          cls: 'kpi-card kpi-gold',
+          label: 'Public Warning 7-Essentials',
+          val: warnScore.score + ' / 100 pts',
+          sub: warnScore.wordCount + ' words (<=120 gate)'
+        },
+        {
+          cls: 'kpi-card',
+          label: 'Jurisdiction & Clock',
+          val: localize('{COUNTY} County'),
+          sub: 'Seat: ' + localize('{SEAT}') + ' · Clock ' + formatElapsedClock(state.clockSeconds)
+        },
+        {
+          cls: 'kpi-card kpi-crimson',
+          label: '90-Day EMPG AAR/IP Deadline',
+          val: due90,
+          sub: 'FEMA FY2025 EMPG Manual §§ 12.8.2 & 12.10'
+        }
+      ];
+      for (var dk = 0; dk < debriefKpis.length; dk += 1) {
+        var cardK = el('div', debriefKpis[dk].cls);
+        cardK.appendChild(el('div', 'kpi-label', debriefKpis[dk].label));
+        cardK.appendChild(el('div', 'kpi-value', debriefKpis[dk].val));
+        cardK.appendChild(el('div', 'kpi-sub', debriefKpis[dk].sub));
+        kpiStrip.appendChild(cardK);
+      }
+      panel.appendChild(kpiStrip);
+
+      // Core Capabilities Assessment Card
+      var capCard = el('div', 'card card-navy-accent');
+      var capHdr = el('div', 'card-header');
+      capHdr.appendChild(el('h2', 'card-title', 'FEMA Core Capabilities HSEEP Performance Ratings (P / S / M / U)'));
+      capHdr.appendChild(
+        el('span', 'badge badge-navy', 'P=No Challenges · S=Some · M=Major · U=Unable')
+      );
+      capCard.appendChild(capHdr);
+
+      var capScroll = el('div', 'table-scroll');
+      var capTable = el('table', 'data-table');
+      var capHead = el('thead');
+      var capHeadRow = el('tr');
+      var capCols = ['FEMA Core Capability', 'Mission Area', 'HSEEP Rating', 'Evaluator Observation / Local Notes'];
+      for (var cc = 0; cc < capCols.length; cc += 1) {
+        capHeadRow.appendChild(el('th', null, capCols[cc]));
+      }
+      capHead.appendChild(capHeadRow);
+      capTable.appendChild(capHead);
+
+      var capBody = el('tbody');
+      for (var ci = 0; ci < evalCaps.length; ci += 1) {
+        (function (capItem) {
+          var tr = el('tr');
+          tr.appendChild(el('td', 'unit-name', capItem.name));
+          tr.appendChild(el('td', null, capItem.missionArea));
+
+          var tdRate = el('td');
+          var rGrp = el('div', 'rating-btn-group');
+          var codes = ['P', 'S', 'M', 'U'];
+          for (var rIdx2 = 0; rIdx2 < codes.length; rIdx2 += 1) {
+            (function (letter) {
+              var active = state.capabilityRatings[capItem.id] === letter;
+              var rb = el('button', active ? 'rating-btn active-' + letter : 'rating-btn', letter);
+              rb.type = 'button';
+              rb.addEventListener('click', function () {
+                state.capabilityRatings[capItem.id] = letter;
+                renderTab4();
+              });
+              rGrp.appendChild(rb);
+            })(codes[rIdx2]);
+          }
+          tdRate.appendChild(rGrp);
+          tr.appendChild(tdRate);
+
+          var tdObs = el('td');
+          var obsInput = el('input', 'inline-input');
+          obsInput.type = 'text';
+          obsInput.value = localize(state.capabilityNotes[capItem.id] || '');
+          obsInput.addEventListener('input', function () {
+            state.capabilityNotes[capItem.id] = obsInput.value;
+          });
+          tdObs.appendChild(obsInput);
+          tr.appendChild(tdObs);
+          capBody.appendChild(tr);
+        })(evalCaps[ci]);
+      }
+      capTable.appendChild(capBody);
+      capScroll.appendChild(capTable);
+      capCard.appendChild(capScroll);
+      panel.appendChild(capCard);
+
+      // Spacer + Improvement Plan (Corrective Action Matrix)
+      var ipCard = el('div', 'card card-gold-accent');
+      var ipHdr = el('div', 'card-header');
+      ipHdr.appendChild(el('h2', 'card-title', '90-Day Improvement Plan (IP) — Corrective Action Matrix'));
+      ipHdr.appendChild(el('span', 'badge badge-gold', config.aarConfig ? config.aarConfig.empgCitation : '90-DAY EMPG MANDATE'));
+      ipCard.appendChild(ipHdr);
+
+      var ipScroll = el('div', 'table-scroll');
+      var ipTable = el('table', 'data-table');
+      var ipHead = el('thead');
+      var ipHeadRow = el('tr');
+      var ipCols = ['ID', 'Core Capability', 'Observation / Gap', 'Corrective Action', 'Responsible WV Agency', 'Authority', 'Due Window', 'Status'];
+      for (var icl = 0; icl < ipCols.length; icl += 1) {
+        ipHeadRow.appendChild(el('th', null, ipCols[icl]));
+      }
+      ipHead.appendChild(ipHeadRow);
+      ipTable.appendChild(ipHead);
+
+      var ipBody = el('tbody');
+      for (var ca = 0; ca < state.correctiveActions.length; ca += 1) {
+        (function (caItem) {
+          var tr = el('tr');
+          tr.appendChild(el('td', 'mono-cell', caItem.id));
+          tr.appendChild(el('td', 'unit-name', caItem.capability));
+          tr.appendChild(el('td', null, localize(caItem.issue)));
+          tr.appendChild(el('td', null, localize(caItem.action)));
+          tr.appendChild(el('td', null, localize(caItem.owner)));
+          tr.appendChild(el('td', 'mono-cell', caItem.authority || 'HSEEP'));
+          tr.appendChild(el('td', 'mono-cell', caItem.dueWindow));
+
+          var tdSt = el('td');
+          var stSel = el('select', 'inline-select');
+          var statuses = ['Assigned', 'In Progress', 'Validated'];
+          for (var s = 0; s < statuses.length; s += 1) {
+            var sOpt = el('option', null, statuses[s]);
+            sOpt.value = statuses[s];
+            if (caItem.status === statuses[s]) sOpt.selected = true;
+            stSel.appendChild(sOpt);
+          }
+          stSel.addEventListener('change', function () {
+            caItem.status = stSel.value;
+          });
+          tdSt.appendChild(stSel);
+          tr.appendChild(tdSt);
+          ipBody.appendChild(tr);
+        })(state.correctiveActions[ca]);
+      }
+      ipTable.appendChild(ipBody);
+      ipScroll.appendChild(ipTable);
+      ipCard.appendChild(ipScroll);
+
+      // Add Custom Corrective Action Form
+      var formRow = el('div', 'add-ca-form');
+
+      function makeField(labelTxt, inputNode) {
+        var wrap = el('div');
+        wrap.appendChild(el('label', 'field-label', labelTxt));
+        wrap.appendChild(inputNode);
+        return wrap;
+      }
+
+      var capSelect = el('select', 'inline-select');
+      var allCaps = config.femaCapabilitiesCatalog || evalCaps;
+      for (var ac = 0; ac < allCaps.length; ac += 1) {
+        var cOpt = el('option', null, allCaps[ac].name);
+        cOpt.value = allCaps[ac].name;
+        capSelect.appendChild(cOpt);
+      }
+
+      var inIssue = el('input', 'inline-input');
+      inIssue.placeholder = 'Observed gap during TTX...';
+      var inAction = el('input', 'inline-input');
+      inAction.placeholder = 'Concrete SOP / training / equipment fix...';
+      var inOwner = el('input', 'inline-input');
+      inOwner.placeholder = localize('{COUNTY} County EOC / Agency');
+
+      var winSelect = el('select', 'inline-select');
+      var wins = ['30 Days', '60 Days', '90 Days (EMPG AAR/IP Gate)'];
+      for (var w = 0; w < wins.length; w += 1) {
+        var wOpt = el('option', null, wins[w]);
+        wOpt.value = wins[w];
+        winSelect.appendChild(wOpt);
+      }
+
+      var btnAddCa = el('button', 'btn btn-gold-primary', '+ Add Action');
+      btnAddCa.type = 'button';
+      btnAddCa.addEventListener('click', function () {
+        if (!inIssue.value.trim() || !inAction.value.trim()) {
+          showToast('Enter both an Observation/Gap and a Corrective Action first.');
+          return;
+        }
+        var nextNum = state.correctiveActions.length + 1;
+        var nextId = 'CA-' + (nextNum < 10 ? '0' + nextNum : String(nextNum));
+        state.correctiveActions.push({
+          id: nextId,
+          capability: capSelect.value,
+          issue: inIssue.value.trim(),
+          action: inAction.value.trim(),
+          owner: inOwner.value.trim() || localize('{COUNTY} County EOC'),
+          authority: 'FEMA EMPG 90-Day AAR/IP',
+          dueWindow: winSelect.value,
+          status: 'Assigned'
+        });
+        renderTab4();
+        showToast('Added ' + nextId + ' to the 90-Day Improvement Plan.');
+      });
+
+      formRow.appendChild(makeField('FEMA Core Capability', capSelect));
+      formRow.appendChild(makeField('Issue / Observation', inIssue));
+      formRow.appendChild(makeField('Corrective Action', inAction));
+      formRow.appendChild(makeField('Responsible WV Agency', inOwner));
+      formRow.appendChild(makeField('Target Window', winSelect));
+      formRow.appendChild(btnAddCa);
+      ipCard.appendChild(formRow);
+      panel.appendChild(ipCard);
+    }
+
+    function buildAarExportPayload() {
+      var jur = getJurisdiction();
+      var warnEval = scorePublicWarning(state.warningDraftRaw, jur);
+      var injects = config.injects || [];
+      var decisions = [];
+      for (var i = 0; i < injects.length; i += 1) {
+        var inj = injects[i];
+        var chosenId = state.injectChoices[inj.id] || null;
+        var chosenObj = null;
+        for (var o = 0; o < (inj.options || []).length; o += 1) {
+          if (inj.options[o].id === chosenId) {
+            chosenObj = inj.options[o];
+            break;
+          }
+        }
+        decisions.push({
+          injectId: inj.id,
+          clock: inj.clock,
+          domain: inj.domain,
+          selectedOption: chosenObj ? chosenObj.label : 'UNANSWERED',
+          grade: chosenObj ? chosenObj.grade : 'PENDING',
+          citation: chosenObj ? chosenObj.citation : null,
+          cascadeTriggered: chosenObj ? Boolean(chosenObj.cascadeAlert) : false
+        });
+      }
+
+      return {
+        exportFormat: 'wv-readiness-command-center-aar/v1',
+        exportedAtIso: new Date().toISOString(),
+        empg90DaySubmissionDue: computeEmpgDeadlineDate(),
+        exerciseId: config.meta && config.meta.exerciseId,
+        operationName: config.meta && config.meta.operationName,
+        elapsedExerciseClock: formatElapsedClock(state.clockSeconds),
+        jurisdiction: jur,
+        publicWarningEvaluation: {
+          scoreOutOf100: warnEval.score,
+          wordCount: warnEval.wordCount,
+          draftText: state.warningDraftRaw
+        },
+        injectDecisions: decisions,
+        activeDynamicCascades: getPriorCascades(injects.length),
+        resourceMobilization: state.resourceStatus,
+        femaCoreCapabilityRatings: evalCaps.map(function (c) {
+          return {
+            id: c.id,
+            name: c.name,
+            missionArea: c.missionArea,
+            hseepRating: state.capabilityRatings[c.id] || c.rating,
+            observation: localize(state.capabilityNotes[c.id] || '')
+          };
+        }),
+        improvementPlanCorrectiveActions: state.correctiveActions.map(function (ca) {
+          return {
+            id: ca.id,
+            capability: ca.capability,
+            issue: localize(ca.issue),
+            action: localize(ca.action),
+            owner: localize(ca.owner),
+            authority: ca.authority,
+            dueWindow: ca.dueWindow,
+            status: ca.status
+          };
+        })
+      };
+    }
+
+    function triggerDownload(filename, mimeType, contentStr) {
+      var blob = new Blob([contentStr], { type: mimeType });
+      var url = URL.createObjectURL(blob);
+      var link = el('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(function () {
+        URL.revokeObjectURL(url);
+      }, 2000);
+    }
+
+    // Header Action Buttons: Print, Export JSON, Download Clean Standalone HTML
+    var btnPrint = document.getElementById('btn-print-aar');
+    if (btnPrint) {
+      btnPrint.addEventListener('click', function () {
+        window.print();
+      });
+    }
+
+    var btnExportJson = document.getElementById('btn-export-json');
+    if (btnExportJson) {
+      btnExportJson.addEventListener('click', function () {
+        var payload = buildAarExportPayload();
+        var slug = state.selectedCounty.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        var fname = 'wv-ttx-aar-' + slug + '.json';
+        triggerDownload(fname, 'application/json;charset=utf-8', JSON.stringify(payload, null, 2) + '\n');
+        showToast('Exported HSEEP AAR/IP package: ' + fname);
+      });
+    }
+
+    var btnDownloadHtml = document.getElementById('btn-download-html');
+    if (btnDownloadHtml) {
+      btnDownloadHtml.addEventListener('click', function () {
+        // Clean serialization from static template + escaped JSON payload (zero unsafe DOM serialization)
+        var snapshotConfig = JSON.parse(JSON.stringify(config));
+        snapshotConfig.savedSessionState = {
+          selectedCounty: state.selectedCounty,
+          activeRoleId: state.activeRoleId,
+          activeTab: state.activeTab,
+          clockSeconds: state.clockSeconds,
+          resourceStatus: state.resourceStatus,
+          mapLayers: state.mapLayers,
+          selectedFacilityId: state.selectedFacilityId,
+          injectChoices: state.injectChoices,
+          warningDraftRaw: state.warningDraftRaw,
+          warningCustomized: state.warningCustomized,
+          capabilityRatings: state.capabilityRatings,
+          capabilityNotes: state.capabilityNotes,
+          correctiveActions: state.correctiveActions
+        };
+
+        var safeJson = JSON.stringify(snapshotConfig).replace(/</g, '\\u003c');
+        var styleNode = document.getElementById('ttx-inline-styles');
+        var scriptNode = document.getElementById('ttx-inline-script');
+        var cspMetaNode = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+
+        var cssText = styleNode ? styleNode.textContent : '';
+        var jsText = scriptNode ? scriptNode.textContent : '';
+        var cspTag = cspMetaNode
+          ? '<meta http-equiv="Content-Security-Policy" content="' + cspMetaNode.getAttribute('content') + '">'
+          : '';
+
+        var htmlParts = [
+          '<!DOCTYPE html>',
+          '<html lang="en">',
+          '<head>',
+          '  <meta charset="UTF-8">',
+          '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+          cspTag ? '  ' + cspTag : '',
+          '  <title>WV HSEEP Tabletop &amp; Crisis Simulator — ' + localize('{COUNTY} County') + '</title>',
+          cssText ? '  <style id="ttx-inline-styles">' + cssText + '<' + '/style>' : '  <link rel="stylesheet" href="./styles.css">',
+          '</head>',
+          '<body>',
+          '  <div id="ttx-toast" class="ttx-toast is-hidden" role="status" aria-live="polite"></div>',
+          '  <header class="command-header">',
+          '    <div class="header-row-main">',
+          '      <div class="brand-cluster">',
+          '        <div id="wv-seal-slot" class="wv-seal-slot" aria-hidden="true"></div>',
+          '        <div class="brand-titles">',
+          '          <div id="classification-banner" class="classification-kicker">HSEEP TABLETOP EXERCISE (TTX)</div>',
+          '          <h1 id="app-title" class="app-title">WV HSEEP Tabletop &amp; Crisis Simulator</h1>',
+          '          <p id="app-subtitle" class="app-subtitle">Operation Winter Gorge</p>',
+          '        </div>',
+          '      </div>',
+          '      <div class="header-controls">',
+          '        <div class="control-group county-control">',
+          '          <label for="county-select" class="control-label">WV Jurisdiction (55 Counties + Training)</label>',
+          '          <select id="county-select" class="county-select" aria-label="Select West Virginia County or Anonymized Town"></select>',
+          '        </div>',
+          '        <div class="control-group clock-control" role="group" aria-label="Exercise Clock Controls">',
+          '          <div class="clock-readout-wrap">',
+          '            <span class="control-label">Exercise Clock</span>',
+          '            <span id="clock-display" class="clock-display">T+00:00</span>',
+          '          </div>',
+          '          <div class="clock-btn-row">',
+          '            <button type="button" id="btn-clock-toggle" class="btn btn-gold-outline btn-sm">Start</button>',
+          '            <button type="button" id="btn-clock-plus5" class="btn btn-gold-outline btn-sm">+5m</button>',
+          '            <button type="button" id="btn-clock-reset" class="btn btn-ghost btn-sm" title="Reset Exercise Clock">Reset</button>',
+          '          </div>',
+          '        </div>',
+          '        <div class="header-actions">',
+          '          <button type="button" id="btn-print-aar" class="btn btn-navy-action">Print SitMan / AAR</button>',
+          '          <button type="button" id="btn-export-json" class="btn btn-navy-action">Export AAR to Command Center (.json)</button>',
+          '          <button type="button" id="btn-download-html" class="btn btn-gold-primary">Open / Download HTML &#8599;</button>',
+          '        </div>',
+          '      </div>',
+          '    </div>',
+          '    <div id="crosswalk-ribbon" class="crosswalk-ribbon" aria-label="West Virginia Regional Jurisdiction Crosswalk"></div>',
+          '    <div class="role-selector-bar" role="navigation" aria-label="Agency Fog-of-War Role Seats">',
+          '      <span class="role-bar-label">ACTIVE SEAT (FOG-OF-WAR):</span>',
+          '      <div id="role-pills-container" class="role-pills-container"></div>',
+          '    </div>',
+          '    <nav class="tab-bar" role="tablist" aria-label="Simulator Modules">',
+          '      <button type="button" id="tab-btn-1" class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="tab-panel-1" data-tab="1"><span class="tab-num">1.</span> BRIEFING, ROLES &amp; DISPATCH</button>',
+          '      <button type="button" id="tab-btn-2" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-2" data-tab="2"><span class="tab-num">2.</span> TIMED INJECTS &amp; TACTICAL MAP <span id="tab-badge-injects" class="tab-pill">0/4</span></button>',
+          '      <button type="button" id="tab-btn-3" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-3" data-tab="3"><span class="tab-num">3.</span> MEDIA INJECT &amp; 7-ESSENTIALS SCORER <span id="tab-badge-scorer" class="tab-pill">0/100</span></button>',
+          '      <button type="button" id="tab-btn-4" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-4" data-tab="4"><span class="tab-num">4.</span> HSEEP DEBRIEF &amp; 90-DAY AAR/IP</button>',
+          '    </nav>',
+          '  </header>',
+          '  <main class="workspace-main">',
+          '    <section id="tab-panel-1" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-1"></section>',
+          '    <section id="tab-panel-2" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-2"></section>',
+          '    <section id="tab-panel-3" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-3"></section>',
+          '    <section id="tab-panel-4" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-4"></section>',
+          '  </main>',
+          '  <footer class="command-footer">',
+          '    <div id="footer-meta-left">State of West Virginia · HSEEP Multi-Role Tabletop &amp; Crisis Simulator</div>',
+          '    <div id="footer-meta-right">Offline Deterministic Runtime · ERG 2024 · W. Va. Code § 15-5-6 · WV HB 5638 · FEMA EMPG 90-Day AAR/IP</div>',
+          '  </footer>',
+          '  <script id="ttx-config-data" type="application/json">' + safeJson + '<' + '/script>',
+          jsText ? '  <script id="ttx-inline-script">' + jsText + '<' + '/script>' : '  <script src="./app.js"><' + '/script>',
+          '</body>',
+          '</html>'
+        ];
+
+        var slug = state.selectedCounty.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        var outName = 'wv-ttx-standalone-' + slug + '.html';
+        triggerDownload(outName, 'text/html;charset=utf-8', htmlParts.join('\n') + '\n');
+        showToast('Downloaded standalone offline simulator: ' + outName);
+      });
+    }
+
+    function renderAll() {
+      renderCrosswalkRibbon();
+      renderRoleBar();
+      updateClockUi();
+      updateHeaderBadges();
+      renderTab1();
+      renderTab2();
+      renderTab3();
+      renderTab4();
+      setActiveTab(state.activeTab);
+    }
+
+    renderAll();
+  }
+
+  function boot() {
+    var embedded = loadEmbeddedConfig();
+    if (embedded) {
+      startApp(embedded);
+      return;
+    }
+    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+      fetch('./ttx.config.json')
+        .then(function (r) { return r.json(); })
+        .then(function (cfg) { startApp(cfg); })
+        .catch(function () {
+          showToast('Unable to load ttx.config.json.');
+        });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- __CSP_META__ -->
+  <title>WV HSEEP Tabletop &amp; Crisis Simulator — Operation Winter Gorge</title>
+  <!-- __STYLES_TAG__ -->
+</head>
+<body>
+  <div id="ttx-toast" class="ttx-toast is-hidden" role="status" aria-live="polite"></div>
+
+  <header class="command-header">
+    <div class="header-row-main">
+      <div class="brand-cluster">
+        <div id="wv-seal-slot" class="wv-seal-slot" aria-hidden="true"></div>
+        <div class="brand-titles">
+          <div id="classification-banner" class="classification-kicker">HSEEP TABLETOP EXERCISE (TTX)</div>
+          <h1 id="app-title" class="app-title">WV HSEEP Tabletop &amp; Crisis Simulator</h1>
+          <p id="app-subtitle" class="app-subtitle">Operation Winter Gorge</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="control-group county-control">
+          <label for="county-select" class="control-label">WV Jurisdiction (55 Counties + Training)</label>
+          <select id="county-select" class="county-select" aria-label="Select West Virginia County or Anonymized Town"></select>
+        </div>
+
+        <div class="control-group clock-control" role="group" aria-label="Exercise Clock Controls">
+          <div class="clock-readout-wrap">
+            <span class="control-label">Exercise Clock</span>
+            <span id="clock-display" class="clock-display">T+00:00</span>
+          </div>
+          <div class="clock-btn-row">
+            <button type="button" id="btn-clock-toggle" class="btn btn-gold-outline btn-sm">Start</button>
+            <button type="button" id="btn-clock-plus5" class="btn btn-gold-outline btn-sm">+5m</button>
+            <button type="button" id="btn-clock-reset" class="btn btn-ghost btn-sm" title="Reset Exercise Clock">Reset</button>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" id="btn-print-aar" class="btn btn-navy-action">Print SitMan / AAR</button>
+          <button type="button" id="btn-export-json" class="btn btn-navy-action">Export AAR to Command Center (.json)</button>
+          <button type="button" id="btn-download-html" class="btn btn-gold-primary">Open / Download HTML &#8599;</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="crosswalk-ribbon" class="crosswalk-ribbon" aria-label="West Virginia Regional Jurisdiction Crosswalk"></div>
+
+    <div class="role-selector-bar" role="navigation" aria-label="Agency Fog-of-War Role Seats">
+      <span class="role-bar-label">ACTIVE SEAT (FOG-OF-WAR):</span>
+      <div id="role-pills-container" class="role-pills-container"></div>
+    </div>
+
+    <nav class="tab-bar" role="tablist" aria-label="Simulator Modules">
+      <button type="button" id="tab-btn-1" class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="tab-panel-1" data-tab="1">
+        <span class="tab-num">1.</span> BRIEFING, ROLES &amp; DISPATCH
+      </button>
+      <button type="button" id="tab-btn-2" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-2" data-tab="2">
+        <span class="tab-num">2.</span> TIMED INJECTS &amp; TACTICAL MAP
+        <span id="tab-badge-injects" class="tab-pill">0/4</span>
+      </button>
+      <button type="button" id="tab-btn-3" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-3" data-tab="3">
+        <span class="tab-num">3.</span> MEDIA INJECT &amp; 7-ESSENTIALS SCORER
+        <span id="tab-badge-scorer" class="tab-pill">0/100</span>
+      </button>
+      <button type="button" id="tab-btn-4" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-panel-4" data-tab="4">
+        <span class="tab-num">4.</span> HSEEP DEBRIEF &amp; 90-DAY AAR/IP
+      </button>
+    </nav>
+  </header>
+
+  <main class="workspace-main">
+    <section id="tab-panel-1" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-1"></section>
+    <section id="tab-panel-2" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-2"></section>
+    <section id="tab-panel-3" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-3"></section>
+    <section id="tab-panel-4" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-btn-4"></section>
+  </main>
+
+  <footer class="command-footer">
+    <div id="footer-meta-left">State of West Virginia · HSEEP Multi-Role Tabletop &amp; Crisis Simulator</div>
+    <div id="footer-meta-right">Offline Deterministic Runtime · ERG 2024 · W. Va. Code § 15-5-6 · WV HB 5638 · FEMA EMPG 90-Day AAR/IP</div>
+  </footer>
+
+  <!-- __CONFIG_SCRIPT__ -->
+  <!-- __APP_SCRIPT__ -->
+</body>
+</html>

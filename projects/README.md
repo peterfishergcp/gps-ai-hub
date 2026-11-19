@@ -54,6 +54,15 @@ Welcome to the **Google Cloud Public Sector AI Hub** reference architecture cata
 
 ---
 
+## 🚨 Google Antigravity Emergency Readiness & HSEEP Crisis Studio (`./agy-emergency-readiness`)
+
+- 🛡️ **[Emergency Readiness & HSEEP Crisis Studio Plugin (`emergency-readiness`), Offline HTML Demos & 120-Minute Workshop](./agy-emergency-readiness)**:
+  - Strict-validated **Google Antigravity Plugin** (`plugin.json`, `/ttx-simulator` skill, `/field-ops-kit` skill, and `rules/AGENTS.md` statutory/life-safety guardrails) built for State, County, Municipal, Tribal, and Federal Emergency Management cohorts on locked-down laptops (`0` Python/`npm` dependencies, `0` external CDNs, `0` `innerHTML` sinks, `< 0.5s` air-gapped EOC rendering).
+  - **`/ttx-simulator`**: Generates interactive **HSEEP Multi-Role Tabletop & Crisis Simulators** with 6 **Fog-of-War** agency seats, a 16-unit dispatchable multi-agency resource roster, cascading consequence injects (`cascadeAlert`), an **ERG 2024** SVG plume and 4-sheet plotter map, a live **`<= 120`-Word 7-Essentials Public Warning Auto-Scorer (`0–100`)**, and a **90-Day FEMA EMPG `AAR/IP`** exporter.
+  - **`/field-ops-kit`**: Compiles agency SOPs and hauling records into a **7-Tab Disaster Timeline Binder** (`24` county tools), **25-Question County Readiness Self-Check**, **6-Check Forensic Debris Record-Gap Crosswalk** (with live `35–65 min` transit slider + auto-drafted **Federal Reviewer Justification Memo** under `2 CFR § 200.403`), and **Multi-Region SEOC Crosswalk Matrix**—pre-loaded with **State of West Virginia (`55` counties)** flagship demos (`live-demos/`) and **1-prompt `"Swap to My State"`** recipes (`workshop/SWAP_TO_MY_STATE_PROMPTS.md`).
+
+---
+
 ## 📊 Gemini Enterprise Token Consumption & WIF Usage Telemetry (`./ge-token-tracking`)
 
 - 📈 **[Gemini Enterprise Token Consumption, Model Breakdown & Workforce Identity (WIF) Usage Dashboard](./ge-token-tracking)**:

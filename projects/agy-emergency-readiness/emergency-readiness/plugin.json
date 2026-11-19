@@ -1,0 +1,12 @@
+{
+  "name": "emergency-readiness",
+  "displayName": "Emergency Readiness & HSEEP Crisis Studio",
+  "version": "1.0.0",
+  "description": "Build offline-ready HSEEP Multi-Role Tabletop & Crisis Simulators (/ttx-simulator) and FEMA Public Assistance Field Readiness, Forensic Debris Crosswalk & Regional SEOC Kits (/field-ops-kit) for any US state or county.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /ttx-simulator to spin up Operation Winter Gorge (UN1005 Anhydrous Ammonia + Water SCADA Cyber Intrusion) and open the standalone simulator",
+    "Run /field-ops-kit to launch the 7-Tab Disaster Timeline Binder, 25-Question County Readiness Self-Check, and 6-Check Forensic Debris Crosswalk",
+    "Adapt /ttx-simulator to my state: build a Category 4 Hurricane & Wastewater SCADA Tabletop Exercise across Florida FDEM Regions with ERG 2024 chlorine checks"
+  ]
+}
