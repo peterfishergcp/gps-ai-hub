@@ -1,33 +1,24 @@
-# Government Services (`public_sector`) Skills — 7 Guided Test Prompts (`v1.0.0`)
+# Government Services Prompts — 7 Role-Based Workflows (`v1.0.1`)
 
-These **7 copy-paste test prompts** exercise every skill in the **`Government Services (public_sector) Skills`** category inside **`Extensions → AGY Skills`** (bundled inside your `agy-public-workflows` plugin—no extra plugin install required).
+These 7 tests are built for common government tasks: checking applicant documents, rewriting public notices in plain language, redacting records, reviewing vendor bids, auditing expenses, and answering policy questions. Pick the ones that match your work.
 
----
-
-## Important Note on MCP Connectors vs. Standalone Testing
-
-In Google Cloud Gemini Enterprise, several `public_sector` skills are designed to call optional **Federal Regulatory MCP servers** (`Federal Register`, `eCFR`, `SAM`, `Data.gov`) or **Enterprise Connectors** (`SharePoint`, `Outlook`, `Drive`, `ServiceNow`, `Salesforce`).
-
-Because **no Federal Regulatory MCP server is attached by default on tester laptops**, each prompt below embeds self-contained public-sector test records so you can test all 7 skills immediately—and here is what to expect for MCP-dependent steps:
-
-| Prompt & Slash Skill | Works Without an MCP Server? | Expected Behavior When No MCP Server Is Connected |
-| :--- | :--- | :--- |
-| **PS-1:** `/document-intake-cleanup-and-validation` | **Yes — 100% Standalone** | Evaluates pasted/uploaded paystubs, leases, and residency proofs directly; runs deterministic gross-income math with zero MCP calls needed. |
-| **PS-2:** `/plain-language-notice-generator` | **Yes — 100% Standalone** | Rewrites pasted municipal/state public advisories into plain language while preserving 100% of dates, phone numbers, and regulatory citations. |
-| **PS-3:** `/public-records-redaction` | **Yes — 100% Standalone** | Redacts pasted records line-by-line using its bundled Federal + State statutory citation guide with pinpoint citations and officer flags. |
-| **PS-4:** `/foia-request-processing` | **Yes (with Pasted Records or `agy-ge-bridge`)** | Treats pasted repository search hits (or `agy-ge-bridge` Federated GE results) as connected search results to build the 3-table officer report, and **correctly logs unconnected systems (e.g., ServiceNow / SMS) in the `Gaps` table**. |
-| **PS-5:** `/rfp-vendor-evaluation` | **Yes — Partial External Flag by Design** | Evaluates pasted vendor proposals against the RFP rubric and builds a cited compliance matrix, while **intentionally marking external database checks (federal debarment / exclusions) as `Cannot Verify — No External Connector`**. |
-| **PS-6:** `/expense-auditor` | **Tier-2 `.gov` Web Fallback (or Pasted Rules)** | Looks for a Federal Regulatory MCP (`2 CFR Part 200`) first; when absent, falls back to official `.gov` web lookup if internet search is enabled—or flags unverified rate lookups cleanly while auditing all ledger math. |
-| **PS-7:** `/policy-and-statute-assistant` | **Strict Anti-Hallucination Gate (Web Fallback or Timeout Banner)** | Looks for the Federal Regulatory MCP first, then official `.gov` search. **If neither an MCP server nor `.gov` web search is reachable, it intentionally refuses to quote statutes from model memory** and outputs `[⚠️ RETRIEVAL TIMEOUT: Official endpoint unreachable...]` + a drafted Policy Clarification Request (`PCR`). **Seeing that banner offline means the safety gate passed!** |
+> [!NOTE]
+> **Heads up: some tests may show a warning, and that's OK.**
+>
+> All 7 tests below work right out of the box using the sample information included inside each prompt.
+>
+> A few tests (`PS-4`, `PS-5`, `PS-6`, and `PS-7`) also check whether optional government databases or official `.gov` websites are reachable online. If an external system isn't connected on your computer, Antigravity will display a clear warning banner or mark that check `Cannot Verify` instead of guessing. **That warning means the safety check is working—please don't report it as a bug.** *(IT teams can view the full connector matrix in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
 
 ---
 
-## Prompt PS-1 — Public Sector Document Intake & Validation (`/document-intake-cleanup-and-validation`)
+## Prompt PS-1 — Check Applicant Documents & Calculate Monthly Income
 
-### What This Tests
-- Optical/structural quality screening, missing-signature/page detection, and deterministic prospective monthly gross income calculation from citizen-submitted proof documents (zero MCP server required).
+- **What you'll try:** Screen two sample bi-weekly paystubs and an incomplete residential lease for a county utility-assistance applicant, and calculate monthly gross income.
+- **What success looks like:** Antigravity verifies the paystub math and year-to-date totals, calculates prospective monthly gross income from the two complete paystubs, and flags the missing signature page (`Page 3 of 3`) and blurry utility addendum on the lease for caseworker follow-up.
+- **About how long:** 1–2 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /document-intake-cleanup-and-validation Act as an intake validation assistant for a county constituent benefits & emergency utility assistance portal. Validate these 3 uploaded/OCR'd proof documents submitted by applicant "Marcus Vance (Riverbend County)" and calculate prospective monthly gross income:
 
@@ -40,12 +31,14 @@ Check math continuity across YTD totals, compute prospective monthly gross incom
 
 ---
 
-## Prompt PS-2 — Plain Language Notice Generator (`/plain-language-notice-generator`)
+## Prompt PS-2 — Rewrite a Dense Public Notice in Plain Language
 
-### What This Tests
-- Rewriting dense, bureaucratic regulatory notices into clear, active-voice plain language with **zero fact invention** and **100% preservation** of dates, times, phone numbers, streets, and regulatory blocks (zero MCP server required).
+- **What you'll try:** Turn a dense, technical boil-water utility notice into clear, everyday language for residents without losing any required details.
+- **What success looks like:** A shorter notice a resident could easily understand, with every date, street boundary, address, phone number (`800-555-0148` / `TTY 711`), and required health paragraph preserved intact. *Please check: did it change or drop any facts?*
+- **About how long:** 1–2 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /plain-language-notice-generator Rewrite this dense municipal water utility notice into clear, accessible plain language for affected residents, preserving every single street boundary, date, time, contact number, and 40 CFR 141.205 health block requirement without inventing any facts:
 
@@ -54,12 +47,14 @@ Check math continuity across YTD totals, compute prospective monthly gross incom
 
 ---
 
-## Prompt PS-3 — Public Records Redaction (`/public-records-redaction`)
+## Prompt PS-3 — Draft First-Pass Redactions on a Public Record
 
-### What This Tests
-- Line-by-line first-pass redactions under **Federal FOIA (`5 U.S.C. § 552`)** and state open-records rules using the skill's bundled `citation_guide.md`, returning exact statutory citations, plain-English reasons, and officer review flags (zero MCP server required).
+- **What you'll try:** Prepare first-pass public records redactions on a sample site-inspection memo containing personal information, a minor child's name, vendor banking/trade secrets, internal network credentials, and draft legal advice.
+- **What success looks like:** A clearly labeled draft for officer review that leaves the public engineer's inspection summary open while redacting or flagging every private address, SSN, child's name, bank account, trade secret, internal IP/password, and attorney note—with plain-English reasons and statutory citations.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /public-records-redaction Prepare first-pass public records redactions on this uploaded agency incident & grant site inspection memo before public release under Federal FOIA (5 U.S.C. § 552) and applicable State Public Records law:
 
@@ -80,13 +75,14 @@ From: J. Miller, Senior Field Engineer (Work Email: j.miller@agency.gov | Work D
 
 ---
 
-## Prompt PS-4 — FOIA Request Processing (`/foia-request-processing`)
+## Prompt PS-4 — Triage Records Search Hits & Log Missing Systems
 
-### What This Tests
-- First-pass FOIA scoping, governing-law confirmation, and generating the mandatory **3-table FOIA Officer Report** (`Matched Documents`, `Review Items`, and `Gaps`).
-- **MCP Behavior Check:** Because `foia-request-processing` treats pasted connector results as search hits and logs unconnected systems in `Gaps`, this prompt passes 3 sample SharePoint/Email hits directly and verifies that unconnected systems (`ServiceNow`, `SMS archives`) are properly flagged in **Gaps** rather than hallucinated!
+- **What you'll try:** Review 3 sample SharePoint and email search results against a reporter's public records request when two other systems (`ServiceNow` and `SMS` text archives) aren't connected yet.
+- **What success looks like:** A 3-table officer report that matches the two October/November 2026 records (flagging one for SSN redaction and one for legal privilege review), excludes the unrelated 2025 paving file, and **explicitly lists `ServiceNow` and `SMS` under `Gaps`** so nothing is overlooked.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /foia-request-processing We are public records staff at the Infrastructure Site Readiness Grant Council (ISRG). Today (November 18, 2026) we received FOIA Request #ISRG-2026-118 from reporter Dana Hollis asking for:
 "All emails, SharePoint engineering memos, and ServiceNow change tickets between October 1, 2026 and November 15, 2026 referencing 'North Corridor Water Extension' or Contract #ISRG-2026-44."
@@ -101,12 +97,14 @@ Confirm the governing public records law, evaluate each record (in-scope vs. out
 
 ---
 
-## Prompt PS-5 — RFP Vendor Evaluation (`/rfp-vendor-evaluation`)
+## Prompt PS-5 — Compare Vendor RFP Bids & Catch Contradictions
 
-### What This Tests
-- Screening multiple vendor proposals against a government RFP's **Mandatory Pass/Fail Qualifications** vs. **Scored Technical Criteria**, spotting cross-section contradictions inside a vendor's bid, and **correctly marking external database checks (federal debarment / exclusions) as `Cannot Verify` when no external procurement MCP connector is present**.
+- **What you'll try:** Screen two sample vendor proposals against mandatory Pass/Fail rules and technical requirements without letting the AI score or pick a winner.
+- **What success looks like:** A page-cited compliance table that catches Vendor A's non-US backup site in Montréal, Canada (`Page 19` vs. `Page 6`), catches Vendor B's missing Purchasing Affidavit and conflicting `99.99%` vs. `99.5%` uptime terms, leaves scoring to human evaluators, and marks external federal debarment checks `Cannot Verify`.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /rfp-vendor-evaluation Act as procurement evaluation support for the Agency Office of Technology on Solicitation #CRFP-IT27004 ("Cloud Contact Center Modernization"). Do NOT assign numeric scores or rank vendors—compile the page-cited Mandatory Pass/Fail Compliance Matrix, cross-document contradiction flags, and Scored Criterion Evidence table for our human evaluation committee:
 
@@ -132,13 +130,14 @@ SUBMITTED VENDOR PACKAGES:
 
 ---
 
-## Prompt PS-6 — Expense Auditor (`/expense-auditor`)
+## Prompt PS-6 — Audit a Grant Expense Ledger (`2 CFR Part 200`)
 
-### What This Tests
-- Auditing a subrecipient grant expenditure ledger against **2 CFR Part 200 (Uniform Guidance)** and award terms, testing allowability/allocability/period-of-performance, calculating exact **Questioned Costs**, and generating a 3-part Audit Dossier.
-- **MCP Note:** Without a Federal Regulatory MCP server, the skill will use its Tier-2 `.gov` web fallback if network search is available, or flag external per-diem lookups while deterministically auditing every line item against the award rules below.
+- **What you'll try:** Audit a 6-line quarterly grant expense ledger totaling `$18,045.00` against federal grant rules and award caps.
+- **What success looks like:** An itemized audit report that approves valid instructor hours (`$3,400`) and capped lodging (`$220`), and flags every unallowable or questioned charge: pre-award printing (`$1,250`), alcohol and live music (`$315`) + unsubstantiated dinner (`$410`), unapproved `$8,900` equipment, `$150` hotel overage, and a `$3,400` duplicate invoice.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /expense-auditor Audit this quarterly subrecipient grant expenditure ledger for Rural Broadband Training Subgrant #GPS-BB-2026-09 against 2 CFR Part 200 (Uniform Guidance) and our Grant Award Terms, calculate total Allowable vs. Questioned Costs, and produce the 3-part Audit Dossier:
 
@@ -160,13 +159,14 @@ SUBMITTED Q1 LEDGER (`Subrecipient_Q1_Ledger.csv`):
 
 ---
 
-## Prompt PS-7 — Policy and Statute Assistant (`/policy-and-statute-assistant`)
+## Prompt PS-7 — Research Federal vs. State SNAP Policy Rules
 
-### What This Tests
-- Pinpoint federal-versus-state regulatory hierarchy analysis (`7 CFR` SNAP rules vs. state administrative policy) and **strict anti-hallucination citation discipline**.
-- **MCP & Firewall Behavior Check:** This skill checks for a Federal Regulatory MCP (`Federal Register / eCFR`) first, then falls back to official `.gov` search. **If your laptop/environment has neither an MCP connector nor `.gov` web access, the skill is designed to withhold unverified statutory quotes and output `[⚠️ RETRIEVAL TIMEOUT: Official endpoint unreachable. Quote withheld to prevent unverified citation.]` + a drafted Policy Clarification Request (`PCR`) — which confirms its anti-hallucination guardrail is working!**
+- **What you'll try:** Ask a policy research question comparing federal SNAP regulations (`7 CFR`) with state administrative manual procedures on lump-sum payments and income reporting thresholds.
+- **What success looks like:** When `.gov` websites are reachable, Antigravity cites the exact federal rules (one-time lump sums count as resources rather than monthly income; 130% FPL reporting baseline cannot be overridden by a state manual). If `.gov` websites are blocked on your network, it displays a `[⚠️ RETRIEVAL TIMEOUT]` warning and drafts a Policy Clarification Request instead of guessing from memory.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
+
 ```text
 /policy-and-statute-assistant A Department of Human Services policy analyst needs the controlling federal-versus-state regulatory hierarchy (as of November 2026) on two SNAP eligibility questions:
 
@@ -175,3 +175,9 @@ SUBMITTED Q1 LEDGER (`Subrecipient_Q1_Ledger.csv`):
 
 Follow your strict retrieval hierarchy (use official `.gov` fallback sources if no Federal Regulatory MCP connector is attached in this session, and emit your standard `[⚠️ RETRIEVAL TIMEOUT]` + Policy Clarification Request for any citation whose live official text cannot be retrieved).
 ```
+
+---
+
+## Send Your Feedback
+
+After trying the prompts that match your role, please submit your feedback (`[Feedback Form Link]`) *(Questions? Contact `[Name / Email / Chat Space]` · Target completion date: `[Testing Target Date]` · IT details: [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md))*.

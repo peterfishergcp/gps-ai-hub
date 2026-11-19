@@ -1,34 +1,69 @@
-# Generic AGY Plugin — Antigravity Suite (v1.0.0) Guided Test Prompts
+# Google Antigravity — Public Sector Skill Suite (`v1.0.1`) Guided Test Prompts
+
+## Before You Begin
+
+**Antigravity** is Google's AI assistant app that you install on your computer.
+
+- **What you'll need:** A work computer with permission to install applications (check with your IT team if you're not sure), your official organization Google account, and about **30–45 minutes**.
+- **This is a test using sample data:** Everything in these prompts is made up. **Never paste real constituent, employee, or case information into Antigravity during this pilot.**
+- **There are no wrong answers:** We want to know what's clear, what's useful for your job, what's confusing, and what breaks.
+- **Questions?** Contact your agency pilot coordinator (`[Name / Email / Chat Space]`).
+
+---
 
 ## Quick 3-Step Setup
 
-1. **Step 1 — Complete AGY Download & Install:** Follow the [Google Antigravity Organization Setup Guide](../setup-guide/index.html).
-2. **Step 2 — Install Plugin (From a New Conversation in AGY + Switch to Turbo Mode):** Click **+ New Conversation** in AGY, switch **Request Review** (bottom-right of prompt box) to **Turbo** (*"Run all commands without restrictions"*) to eliminate repetitive approval prompts during install, and paste:
-   ```text
+### Step 1 — Download and Install Antigravity
+
+Open the [Google Antigravity Organization Setup Guide](../setup-guide/index.html) and complete the 7 visual sign-in steps *(you can also bookmark the [Public Sector Skill Launchpad](../workshop/index.html) for extra 1-click starter prompts)*.
+
+### Step 2 — Add the Public Sector Skills to Antigravity
+
+1. Open **Antigravity** on your computer.
+2. Click **+ New Conversation** (top left).
+3. Copy the line in the code box below:
+   ```bash
    agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
    ```
-   **Fast `<1s` Incremental Skill Updates (No Full Re-Install Needed!):** Click **Sync Git Updates** (or the `↻` icon next to any skill) in the **AGY Skills** sidebar panel (`Extensions -> AGY Skills`), or type `/agy-update` (all changed skills) or `/agy-update agy-dashboard` (single skill) in chat.
-3. **Step 3 — Test the Plugin:** Use the 7 copy-paste test prompts below (plus the 7 Government Services prompts in [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md)) to test all 6 plugins and 28 skills.
+4. Click inside the **chat box at the bottom of the Antigravity window**, paste (`Ctrl+V` on Windows or `⌘+V` on Mac), and press **Enter**.
+5. Leave the default permission setting on: **you may be asked to click Accept a few times during install—that's normal.** *(If your IT team specifically instructed you to switch **Request Review** at the bottom-right of the chat box to **Turbo** for setup, click **Turbo ▾** afterward and switch it back to **Default** once installation finishes.)*
+6. **You'll know it worked when** you see a chat message confirming installation is complete (or **AGY Skills** appears under **Extensions** on the left sidebar). This takes about **1–2 minutes**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
+
+### Step 3 — Pick the Tests That Match Your Job
+
+Pick the tests that match your day-to-day work:
+
+- **Everyone** should try **Prompts 1–4** below (plus any matching role prompts in [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md)).
+- **Prompts 5–7** are for **IT, developer, and security staff** and are optional.
+- Each test takes about **2–5 minutes** (including reading the output). **You do not need to finish all of them.**
 
 ---
 
 ## Order of Tests
 
-1. **Prompt 1 (Start Here): Visual Dashboards, 16:9 Slides & Branded Flyers** (`agy-design-studio` — verifies rendered visual previews in the Side Pane + 1-click HTML download, with **zero** raw `</> index.html` code views)
-2. **Prompt 2: Using Anthropic Claude & Google Gemini Models in AGY** (`agy-onboarding /model-guide` — switching models, Claude vs. Gemini routing, 2-Pass Dual-Model Review, and Agency IT Vertex AI setup)
-3. **Prompt 3: 60-Second Onboarding, Daily Brief, Digital Twin & Inbox Triage** (`agy-onboarding`)
-4. **Prompt 4: Public Records / FOIA, Legal Contract Redlining & Policy Audit** (`agy-public-workflows`)
-5. **Prompt 5: Legacy App Refactoring, Cloud Run & BigQuery SQL** (`agy-engineering-cloud`)
-6. **Prompt 6: Security & Cloud Readiness ("Catch the 4 Real-World Security Mistakes")** (`agy-security`)
-7. **Prompt 7 (Last): Federated Gemini Enterprise (GE) Connectors** (`agy-connectors` — placed last for when you are ready to test live or pre-filled GE instance connectivity)
+1. **Prompt 1 (Start Here): Build a Dashboard, Slides, and a Flyer** *(Everyone)* — Create sample visuals for a made-up public infrastructure program. *You'll see: a sample dashboard, 5-slide presentation deck, and 1-page flyer appear on the right side of the screen.*
+2. **Prompt 2: Switch Between AI Models (Claude and Gemini)** *(Everyone; IT section optional)* — Learn how to change which AI model is helping you and when to use each one. *You'll see: a plain step-by-step model switching guide, a task cheat sheet, and a follow-up review prompt you can try.*
+3. **Prompt 3: Your Morning Assistant (Inbox Triage, Daily Brief & Draft Reply)** *(Everyone)* — Sort a sample inbox, get a morning brief, and draft a reply in your voice. *You'll see: 3 sample emails sorted by urgency (safely holding a broken attachment for human review), a 1-page brief, and a Draft-Only reply.*
+4. **Prompt 4: Records Requests, Contracts, and Policy Checks** *(Legal, records, procurement, and policy staff)* — Redact a sample record, review a risky vendor contract clause, and catch conflicting numbers. *You'll see: search filters, a redacted memo with exemption reasons, contract edits, and a mismatch warning catching `$18M` vs. `$15M`.*
+5. **Prompt 5: Update Old Code, Cloud Deployment & Database Queries** *(IT / developers only, optional)* — Fix bugs in an old Python script, generate a cloud deployment command, and modernize a database query. *You'll see: 3 hidden code bugs identified and fixed with passing tests, plus ready-to-use cloud and SQL commands.*
+6. **Prompt 6: Catch 4 Common Security Mistakes** *(IT / security only, optional)* — Scan sample code and cloud commands containing 4 intentional security flaws. *You'll see: all 4 security risks explained in plain English for security leadership, followed by corrected code and commands.*
+7. **Prompt 7 (Run Last): Connect to Gemini Enterprise** *(Optional — only if IT has set this up)* — Check whether Antigravity is connected to your organization's shared search hub. *You'll see: your current connection status and a walkthrough of how single sign-on search works across email, files, and code.*
+
+> [!NOTE]
+> **How to Run Any Test**
+> 1. Start a **+ New Conversation** (top left of Antigravity) for each test.
+> 2. Copy **all** of the text inside the prompt code box below (if reading in Google Docs, drag your mouse across the gray box rather than pressing `Ctrl+A` / `⌘+A`, which selects the entire document).
+> 3. Click inside the **Antigravity chat box** at the bottom of the window, paste (`Ctrl+V` / `⌘+V`), and press **Enter**.
+> 4. **Wait 1–3 minutes** while Antigravity works—please don't type in the chat box while it is running.
+> 5. Review the result on screen, then share your feedback using the section at the bottom of this guide.
 
 ---
 
-## Prompt 1 — Dashboards, 16:9 Slides & Branded Flyers (`agy-design-studio`)
+## Prompt 1 — Build a Dashboard, 16:9 Slides & a 1-Page Flyer
 
-### What This Tests
-- **`/agy-dashboard`**, **`/slides`**, **`/doc-design`**, and the **`AGY Preview` (`agy-design-preview`)** sidecar.
-- **Visual Output Check:** Verifies that clicking the output in chat opens the **rendered visual Dashboard, Slide Deck, and Flyer** in Antigravity's right-hand Side Pane (and includes an `Open / Download HTML` button in the top bar for Chrome/Edge—with zero Python, zero local web servers, and zero `127.0.0.1` firewall ports) instead of opening raw `</> index.html` source code.
+- **What you'll try:** Ask Antigravity to create an executive dashboard, a 5-slide briefing deck, and a 1-page fact sheet for a sample `$40.0M` public infrastructure program.
+- **What success looks like:** Rendered visual previews of the dashboard, slide deck, and flyer open directly in the panel on the right side of Antigravity (not raw website code), each with a button to open or download it in Chrome or Edge.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
 
@@ -44,11 +79,11 @@ IMPORTANT — Follow the AGY Design Studio visual preview rules:
 
 ---
 
-## Prompt 2 — Using Anthropic Claude & Google Gemini in AGY (`/model-guide`)
+## Prompt 2 — Switch Between AI Models (Anthropic Claude & Google Gemini)
 
-### What This Tests
-- **`/model-guide`** (inside `agy-onboarding`).
-- Shows public sector staff and developers **how to switch to Anthropic Claude (`Claude Sonnet` / `Claude Opus`)** in the Antigravity Desktop picker or CLI (`/model`), **which tasks to run on Claude vs. Gemini**, **how Agency IT enables Claude in Google Cloud Vertex AI Model Garden (`us-east5`)**, and gives you a live **Pass-2 Claude Adversarial Review prompt** to try right after.
+- **What you'll try:** Ask Antigravity how to switch between Google Gemini and Anthropic Claude models, and which model fits different government tasks.
+- **What success looks like:** A clear step-by-step switching guide, a plain task-to-model cheat sheet, an optional IT setup checklist, and a ready-to-paste follow-up review prompt at the end. *(Optional 10-second bonus: switch the model menu at the bottom of the Antigravity chat box to **Claude Sonnet** or **Claude Opus** and paste that follow-up prompt to watch Claude review your Prompt 1 visuals.)*
+- **About how long:** 1–2 minutes.
 
 ### Copy & Paste Into Antigravity
 
@@ -61,15 +96,13 @@ Please give me:
 4. A ready-to-paste "Pass-2 Claude Cross-Review" prompt I can run right now after switching my model picker to Claude Sonnet or Claude Opus to audit the dashboard and flyer we just built in Prompt 1.
 ```
 
-**Hands-On Claude Follow-Up (10 Seconds):** After the agent replies, click the **Model Selector dropdown** at the bottom of your Antigravity prompt box, switch to **Claude Sonnet** (or **Claude Opus**), and paste the Pass-2 review prompt it generated to watch Claude audit your Prompt 1 deliverables in the same thread.
-
 ---
 
-## Prompt 3 — Onboarding, Daily Brief, Digital Twin & Inbox Triage (`agy-onboarding`)
+## Prompt 3 — Your Morning Assistant (Inbox Triage, Daily Brief & Draft Reply)
 
-### What This Tests
-- **`/agy-onboard`**, **`/daily-brief`**, **`/digital-twin`**, **`/inbox-triage`**, and **`/agy-update`**.
-- Specifically tests whether **`/inbox-triage`** catches urgent leadership escalations **and** enforces the **unreadable-attachment fail-safe hold** (never auto-clearing an email when an attachment fails to parse), while **`/digital-twin`** drafts a reply in your voice with `[Draft-Only — Do Not Auto-Send]` tags.
+- **What you'll try:** Set up a brief executive writing profile, triage 3 sample emails (including one broken PDF attachment), build a morning brief, and draft a reply.
+- **What success looks like:** Email A (`$1.4M` county request) is flagged urgent, Email B (newsletter) is set aside, Email C (corrupted 0-byte PDF) is **held for human review** instead of cleared by mistake, and the reply to Email A is clearly labeled **Draft-Only** (nothing is ever sent automatically).
+- **About how long:** 1–2 minutes.
 
 ### Copy & Paste Into Antigravity
 
@@ -87,12 +120,11 @@ Run a combined test of our `agy-onboarding` skills (`/agy-onboard`, `/daily-brie
 
 ---
 
-## Prompt 4 — Public Records / FOIA, Legal Review & Policy Consistency (`agy-public-workflows`)
+## Prompt 4 — Records Requests, Vendor Contracts & Policy Consistency Checks
 
-### What This Tests
-- **`/foia-expert`** (Google Vault + Microsoft Purview KQL search strings, **Federal FOIA `5 U.S.C. § 552`** & applicable State Public Records line-by-line segregability redaction, and a formal **Vaughn Index**),
-- **`/legal-procurement-review`** (catches vendor clauses that violate government sovereign immunity, multi-year fiscal non-appropriation rules, and AI model training on government data using `1:3:9` risk scoring),
-- **`/policy-program-audit`** (catches conflicting dollar caps or dates across documents).
+- **What you'll try:** Generate search filters and redactions for a sample records request, review a risky vendor contract clause, and check a draft press release for conflicting numbers.
+- **What success looks like:** Ready-to-use email/file search strings, a redacted version of Paragraph 2 hiding the `$820,000` negotiation ceiling and personal phone/SSN while keeping Paragraph 1 open, redlined contract language fixing all 4 risky vendor terms, and a clear alert catching **`$18M` vs. `$15M`** and **Jan 15, 2027 vs. Dec 31, 2026**.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
 
@@ -109,12 +141,11 @@ Test all 3 `agy-public-workflows` core skills (`/foia-expert`, `/legal-procureme
 
 ---
 
-## Prompt 5 — Legacy App Refactoring, Cloud Run & BigQuery (`agy-engineering-cloud`)
+## Prompt 5 — Update Old Code, Cloud Run & BigQuery SQL *(IT / Developers — Optional)*
 
-### What This Tests
-- **`/modernize-refactor`** (3-stage modernization workflow adapted from Google's `migrate-to-rust` skill: Stage 1 6-Section Blueprint & Legacy Bug Audit → Stage 2 Crucible & Parity Verification),
-- **`/deploy-cloudrun`** (zero-Docker source deployment with non-root user, dedicated service account, and Secret Manager),
-- **`/bigquery-architect`** (migrating legacy T-SQL to partitioned BigQuery Standard SQL with `@param` bindings and a `1 GB maximumBytesBilled` cost cap).
+- **What you'll try:** Ask Antigravity to audit and rewrite a buggy legacy grant-calculation script, generate a secure cloud deployment command, and translate a legacy SQL Server query to BigQuery.
+- **What success looks like:** A 6-part modernization plan that catches the subtle logic bugs (including `or "Oakridge"` always evaluating true and exact `500000` crashing), clean tested Python code, a hardened Cloud Run deploy command, and a parameterized BigQuery query with a 1 GB scan cap.
+- **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
 
@@ -136,17 +167,13 @@ Test `agy-engineering-cloud` (`/modernize-refactor`, `/deploy-cloudrun`, and `/b
 
 ---
 
-## Prompt 6 — Security & Cloud Readiness: "Catch the 4 Real-World Mistakes" (`agy-security`)
+## Prompt 6 — Catch 4 Real-World Security Mistakes *(IT / Security — Optional)*
 
-### What This Is Actually Testing (In Plain English)
-When an agency developer or contractor writes code or Cloud Run deployment scripts, `agy-security` (`/security-audit`, `/iam-secret-hygiene`, and its always-on `rules/AGENTS.md`) scans for **4 high-risk mistakes that cause real government data breaches**:
+- **What you'll try:** Give Antigravity a sample web endpoint and cloud deployment script containing 4 common security mistakes (unsafe webpage text rendering, unsafe database query building, exposed passwords/keys, and overly broad cloud permissions).
+- **What success looks like:** Antigravity flags all 4 mistakes, explains each risk in plain English suitable for an agency security briefing, and provides corrected copy-paste-ready code and `gcloud` commands.
+- **About how long:** 1–2 minutes.
 
-1. **SQL Injection (`CWE-89`):** Pasting user input directly into a SQL string (`WHERE county = '${county}'`) instead of using safe `@county` parameters.
-2. **Cross-Site Scripting / XSS (`CWE-79`):** Rendering untrusted user text with `.innerHTML = ...` instead of `.textContent = ...`.
-3. **Exposed Passwords & API Keys (`CWE-798`):** Hardcoding secrets in code or passing `--set-env-vars API_KEY=...` in plain text instead of Google Cloud Secret Manager (`--set-secrets`).
-4. **Over-Privileged Cloud IAM:** Deploying a service publicly (`--allow-unauthenticated`) with the default compute service account (`*-compute@developer.gserviceaccount.com`) and primitive `roles/editor` instead of an Entra-synced Google Identity group with least-privilege roles.
-
-### Copy & Paste Into Antigravity (Includes the 4 Intentional Mistakes to Catch!)
+### Copy & Paste Into Antigravity
 
 ```text
 Run `/security-audit` and `/iam-secret-hygiene` on this draft citizen grant status endpoint and deployment command.
@@ -176,11 +203,11 @@ gcloud run deploy agency-grant-portal \
 
 ---
 
-## Prompt 7 (Run Last) — Federated Gemini Enterprise (GE) Connectors (`agy-connectors`)
+## Prompt 7 (Run Last) — Federated Gemini Enterprise (GE) Connectors *(Optional — IT Setup Required)*
 
-### What This Tests
-- **`/connect-ge`**, **`/connect-m365-workspace`**, **`/connect-github-bigquery`**, and the **`agy-ge-bridge` MCP server** (`ge_instance_status`, `ge_configure_instance`, `ge_ask_instance`, `ge_search_records`).
-- Works whether you **have** a live Gemini Enterprise Resource Path ready to paste OR want to verify the connector bridge status and walkthrough first.
+- **What you'll try:** Check whether Antigravity is connected to your organization's shared Gemini Enterprise search hub and review how single sign-on search works.
+- **What success looks like:** Antigravity reports whether a Gemini Enterprise instance is configured on your computer (even if IT hasn't connected yours yet) and explains in clear steps how single sign-on connects Outlook, SharePoint, OneDrive, Teams, Google Drive, and GitHub while respecting each employee's file permissions.
+- **About how long:** 1–2 minutes.
 
 ### Copy & Paste Into Antigravity
 
@@ -189,3 +216,25 @@ gcloud run deploy agency-grant-portal \
 1. Show me whether a default Gemini Enterprise (`GE`) instance is configured yet in `~/.gemini/config/plugin_data/agy-connectors/ge-instance.json`, and which authentication tier (`gcloud` ADC, Google Identity Browser PKCE OAuth, or Central Cloud Run Gateway) is active.
 2. Walk me through how our Azure/Entra-synced Google Identity connects to our federated Outlook, SharePoint, OneDrive, Microsoft Teams, Google Drive, and GitHub data stores through a single GE instance—and if my GE instance is already configured, run a quick test query via `/connect-m365-workspace`.
 ```
+
+---
+
+## Send Your Feedback
+
+After trying your chosen prompts, please take **2 minutes** to share what you saw in your agency's pilot feedback form (`[Feedback Form Link]`):
+- **Did it work as expected?**
+- **Would this be useful in your day-to-day work?**
+- **What felt confusing or should be improved?**
+
+**Target completion date:** `[Testing Target Date]`
+
+---
+
+## Troubleshooting & Updates
+
+- **Nothing happens after I press Enter:** Wait 2 minutes; if Antigravity is still idle, click **+ New Conversation** and paste the prompt again.
+- **Antigravity asks for permission:** Click **Accept**. Being asked to click Accept a few times is normal when Default review mode is on.
+- **I see an error message:** Take a screenshot and attach it to your feedback submission.
+- **How to get skill updates:** If your coordinator announces an update to the skills, type `/agy-update` in the Antigravity chat box and press **Enter** (updates take about 1 second—no full re-install needed).
+- **IT & Security Architecture Details:** See [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).
+- **Still stuck?** Contact `[Name / Email / Chat Space]`.

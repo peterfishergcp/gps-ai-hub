@@ -16,8 +16,8 @@ Designed specifically for **strict government corporate laptop policies**:
 
 ## 3 Frictionless Ways to Install (Pick One)
 
-### 1. Native Antigravity CLI 1-Command Bulk Install (Recommended)
-Open a **+ New Conversation** in Antigravity, switch **Request Review** (bottom-right of prompt box) to **Turbo**, and paste:
+### 1. Native Antigravity 1-Command Bulk Install (Recommended)
+Open a **+ New Conversation** in Antigravity, paste the command below into the chat box at the bottom of the window, and press **Enter** *(leave Default permissions on—you may be asked to click **Accept** a few times during installation)*:
 ```bash
 agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
 ```
@@ -77,6 +77,7 @@ Whenever new skills, FOIA templates, dashboard themes, or connector improvements
 - **Generic 7-Step AGY Download & Setup Guide Source:** [`setup-guide/`](./setup-guide/index.html)
 - **Guided Test Prompts (Core 7):** [`docs/TEST_PROMPTS.md`](./docs/TEST_PROMPTS.md)
 - **Government Services (`public_sector`) Test Prompts (7):** [`docs/PUBLIC_SECTOR_TEST_PROMPTS.md`](./docs/PUBLIC_SECTOR_TEST_PROMPTS.md)
+- **IT & Technical Appendix (Offline `.zip`, Security Policy & MCP Matrix):** [`docs/IT_AND_TECHNICAL_APPENDIX.md`](./docs/IT_AND_TECHNICAL_APPENDIX.md)
 
 ---
 
