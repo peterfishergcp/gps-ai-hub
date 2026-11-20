@@ -248,6 +248,41 @@ h1 {
   line-height: 1.35;
 }
 
+.seed-prompt-pill {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  text-align: left;
+  background: var(--agy-chip-bg);
+  color: var(--agy-fg);
+  border: 1px dashed var(--agy-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.seed-prompt-pill:hover {
+  border-style: solid;
+  border-color: var(--agy-toggle-on);
+}
+
+.seed-prompt-tag {
+  color: var(--agy-toggle-on);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.seed-prompt-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cmd-col {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;

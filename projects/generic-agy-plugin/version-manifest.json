@@ -1,7 +1,7 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.1.0",
+  "suiteVersion": "1.1.1",
   "releasedAt": "2026-11-20",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
@@ -120,6 +120,13 @@
     }
   },
   "changelog": [
+    {
+      "version": "1.1.1",
+      "date": "2026-11-20",
+      "highlights": [
+        "Added 1-Click 'Skills' Seed Prompt tab inside Twin Vault (right in front of Markdown Files) covering all 37 installed skills across 9 categories, plus clickable 1-click seed prompt pills in AGY Skills."
+      ]
+    },
     {
       "version": "1.1.0",
       "date": "2026-11-20",
@@ -489,24 +496,25 @@
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "e7e8723cc076e27bae9b1b5510afb37f14f3902fcb92a45589d025ba156fb8bf",
+        "app.js": "4d55a687ad76c1cc70eabe6b4925e0e9fa82e632e4c1e3f5df8d25edb07f039e",
         "index.html": "418a35d5d93d27a5ac383896e807d550fb9b694434be046eda4abf5fea91d323",
         "main.mjs": "26087348ec67a4550bae094563ca6a98f541a1c1872cec772da9f2bc10d1928c",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "sidecar.json": "26c46bcf76399d47e8b40aff36591c7cb4fd9227f3c6c52866d6860099196e60",
-        "styles.css": "21d9a588232873801e51252df9bb189ed777712f935f91e0ffcb38b30b40c28c"
+        "styles.css": "2b8f2d066cf68c1a05e26e889d8c91626c2a70f97b3db3022bf6bd74c8f837ea"
       }
     },
     "twin-vault-ui": {
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "c24cb00fbdf35a29093b9a10d05d56e1b72c9a1e8bb8aa86f18cf3ce1ab4ee1f",
-        "index.html": "f64ac262be82fcf9e094479548df619f3195b103fc46aee12394c0c8d8f916e1",
-        "main.mjs": "1734d6af4ce9920b02e89cf03ddf735fa02ea4b2546dd19001ccfe2ec975bedf",
+        "app.js": "52462a7c7e2c67b3c284dd00783e96173caa0dceba4961593cca38f7236dcfe0",
+        "index.html": "44e18167a51c521f3166f1fc1467eaeefacf16c5b2811ecf7949692a63877f3e",
+        "main.mjs": "c17783080c23873c243e556e446066a0382f8508ca31a59e2bcbc6d6ccf5ac34",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
+        "seed_prompts_catalog.mjs": "f74f2d99f46d8dc3c58591dad4b4ba8a29c9bf272d98f650da73aa749a31924d",
         "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
-        "styles.css": "992d03f4c9ae7626b24e38f71006af06d77ead0cc8b4a40955283c28c8324ef9"
+        "styles.css": "764332b1991304e55f21b2e22341d6730dddd6e0d26648700bd2f000cfa7513a"
       }
     },
     "friday-weekly-impact": {
