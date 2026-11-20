@@ -100,6 +100,49 @@ try {
     throw "Could not locate plugins/ directory to install."
   }
 
+  # Protect any stock SKILL.md that the user customized locally before upgrading plugin folders
+  $BaselineJsonPath = Join-Path $TargetConfigDir "plugin_data\agy-onboarding\baseline-hashes.json"
+  $BaselineRaw = if (Test-Path $BaselineJsonPath) { Get-Content -Raw -Path $BaselineJsonPath } else { "" }
+  $PersonalSkillsDir = Join-Path $TargetConfigDir "skills"
+  if ((-not [string]::IsNullOrWhiteSpace($BaselineRaw)) -and (Test-Path $PluginsDest)) {
+    foreach ($newPdir in (Get-ChildItem -Path $SourcePluginsDir -Directory)) {
+      $skillsSub = Join-Path $newPdir.FullName "skills"
+      if (-not (Test-Path $skillsSub)) { continue }
+      foreach ($newSdir in (Get-ChildItem -Path $skillsSub -Directory)) {
+        $sid = $newSdir.Name
+        $oldSdir = Join-Path $PluginsDest "$($newPdir.Name)\skills\$sid"
+        $oldMd = Join-Path $oldSdir "SKILL.md"
+        $newMd = Join-Path $newSdir.FullName "SKILL.md"
+        if ((Test-Path $oldMd) -and (Test-Path $newMd)) {
+          $oldSha = (Get-FileHash -Algorithm SHA256 -Path $oldMd).Hash.ToLowerInvariant()
+          $newSha = (Get-FileHash -Algorithm SHA256 -Path $newMd).Hash.ToLowerInvariant()
+          if (($oldSha -ne $newSha) -and (-not $BaselineRaw.Contains($oldSha))) {
+            New-Item -ItemType Directory -Force -Path $PersonalSkillsDir | Out-Null
+            $backupSlug = "$sid-saved"
+            if (Test-Path (Join-Path $PersonalSkillsDir $backupSlug)) {
+              $backupSlug = "$sid-saved-" + (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss")
+            }
+            $backupDest = Join-Path $PersonalSkillsDir $backupSlug
+            Copy-Item -Recurse -Force -Path $oldSdir -Destination $backupDest
+            $metaObj = @{
+              slug         = $backupSlug
+              forkedFrom   = $sid
+              sourcePlugin = $newPdir.Name
+              mode         = "copy"
+              title        = "$sid (Saved Local Edits)"
+              subtitle     = "Auto-preserved local edits before plugin upgrade"
+              seedPrompt   = "/$backupSlug Run my customized workflow."
+              createdAt    = (Get-Date).ToUniversalTime().ToString("o")
+              updatedAt    = (Get-Date).ToUniversalTime().ToString("o")
+            } | ConvertTo-Json -Depth 4
+            Set-Content -Path (Join-Path $backupDest ".twin-skill-meta.json") -Value $metaObj -Encoding UTF8
+            Write-Host "Protected your local edits to /$sid -> $backupDest" -ForegroundColor Yellow
+          }
+        }
+      }
+    }
+  }
+
   # Prefer native `agy plugin install` when agy CLI is on PATH so manifest tracking stays in sync
   $AgyCmd = Get-Command "agy" -ErrorAction SilentlyContinue
   $ParentOfPlugins = Split-Path -Parent $SourcePluginsDir

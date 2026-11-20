@@ -4,12 +4,11 @@
  *
  * Runs natively on Antigravity Desktop's built-in Node runtime via `sidecar_sdk`
  * (zero npm packages or external Python installs required).
+ * 100% User-Driven Refresh — zero automatic sidecar restarts or background reloads.
  */
 
-import crypto from 'node:crypto';
 import fs from 'node:fs';
-import http from 'node:http';
-import https from 'node:https';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
@@ -30,202 +29,88 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
 const PLUGIN_NAME = path.basename(PLUGIN_ROOT);
 const PLUGINS_SUITE_ROOT = path.resolve(PLUGIN_ROOT, '..');
+const SUITE_MODE = PLUGIN_NAME === 'agy-twin-memory' ? 'twin-kit' : 'generic';
+const DEFAULT_ROLE = SUITE_MODE === 'twin-kit' ? 'pm' : 'public-sector';
 const WRITABLE_EXTENSIONS = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
-const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
-const SAFE_SEG_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
-const SUITE_REPO_PROJECT = PLUGIN_NAME === 'agy-twin-memory' ? 'agy-digital-twin-kit' : 'generic-agy-plugin';
-const RAW_SYNC_BASE = `https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/${SUITE_REPO_PROJECT}`;
+const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,62}$/;
+const SAFE_SKILL_SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,62}$/;
+const MAX_FORK_BYTES = 5 * 1024 * 1024;
 
-function computeLocalUiSignature() {
-  const h = crypto.createHash('sha256');
-  for (const fname of ['index.html', 'app.js', 'styles.css', 'main.mjs', 'seed_prompts_catalog.mjs']) {
-    const p = path.join(__dirname, fname);
-    try {
-      if (fs.existsSync(p) && fs.lstatSync(p).isFile()) {
-        h.update(fname).update(fs.readFileSync(p));
-      }
-    } catch {}
+function getPersonalSkillsRoot() {
+  const custom = process.env.ANTIGRAVITY_PERSONAL_SKILLS_DIR;
+  if (custom && custom.trim()) {
+    return path.resolve(custom.trim());
   }
-  return h.digest('hex');
-}
-
-const BOOT_UI_SIGNATURE = computeLocalUiSignature();
-
-function callLanguageServerRpc(method, bodyObj) {
-  return new Promise((resolve) => {
-    const lsAddr = process.env.ANTIGRAVITY_LS_ADDRESS || '';
-    const csrf = process.env.ANTIGRAVITY_CSRF_TOKEN || '';
-    if (!lsAddr || !csrf || lsAddr === 'mock') {
-      resolve({ ok: false, skipped: true });
-      return;
-    }
-    const [host, portStr] = lsAddr.split(':');
-    const payload = JSON.stringify(bodyObj);
-    const req = http.request(
-      {
-        hostname: host || '127.0.0.1',
-        port: Number(portStr || 5387),
-        path: `/exa.language_server_pb.LanguageServerService/${method}`,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-codeium-csrf-token': csrf,
-          'Content-Length': Buffer.byteLength(payload),
-        },
-        timeout: 4000,
-      },
-      (res) => {
-        res.resume();
-        resolve({ ok: res.statusCode === 200 });
-      }
-    );
-    req.on('error', () => resolve({ ok: false }));
-    req.on('timeout', () => {
-      req.destroy();
-      resolve({ ok: false });
-    });
-    req.write(payload);
-    req.end();
-  });
-}
-
-function httpsGetBuffer(urlStr, redirectsLeft = 4) {
-  return new Promise((resolve, reject) => {
-    const u = new URL(urlStr);
-    if (u.protocol !== 'https:') return reject(new Error('HTTPS required'));
-    const req = https.get(
-      u,
-      { headers: { 'User-Agent': 'AGY-Twin-Vault-Sidecar/1.2' }, timeout: 12000 },
-      (res) => {
-        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          res.resume();
-          if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
-          return resolve(httpsGetBuffer(new URL(res.headers.location, urlStr).toString(), redirectsLeft - 1));
-        }
-        if (res.statusCode !== 200) {
-          res.resume();
-          return reject(new Error(`HTTP ${res.statusCode}`));
-        }
-        const chunks = [];
-        let total = 0;
-        res.on('data', (c) => {
-          total += c.length;
-          if (total > 5 * 1024 * 1024) return req.destroy(new Error('Response too large'));
-          chunks.push(c);
-        });
-        res.on('end', () => resolve(Buffer.concat(chunks)));
-      }
-    );
-    req.on('error', reject);
-    req.on('timeout', () => req.destroy(new Error('Timeout')));
-  });
-}
-
-async function syncSuiteFromGithub() {
-  const manifestBuf = await httpsGetBuffer(`${RAW_SYNC_BASE}/version-manifest.json`);
-  const manifest = JSON.parse(manifestBuf.toString('utf-8'));
-  let updatedFilesCount = 0;
-  const updatedSidecarIds = [];
-
-  for (const [skillId, entry] of Object.entries(manifest.skillManifest || {})) {
-    const pName = entry.plugin;
-    if (!SAFE_ID_RE.test(pName) || !SAFE_ID_RE.test(skillId)) continue;
-    const skillDir = path.join(PLUGINS_SUITE_ROOT, pName, 'skills', skillId);
-    const isDisabled =
-      !fs.existsSync(path.join(skillDir, 'SKILL.md')) &&
-      fs.existsSync(path.join(skillDir, 'SKILL.md.disabled'));
-    for (const [relPath, expectedSha] of Object.entries(entry.files || {})) {
-      if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
-      if (!relPath.split('/').every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
-      const diskRel = relPath === 'SKILL.md' && isDisabled ? 'SKILL.md.disabled' : relPath;
-      const localPath = path.join(skillDir, diskRel);
-      let localSha = null;
-      try {
-        if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
-          localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
-        }
-      } catch {}
-      if (localSha !== expectedSha) {
-        const buf = await httpsGetBuffer(`${RAW_SYNC_BASE}/plugins/${pName}/skills/${skillId}/${relPath}`);
-        if (crypto.createHash('sha256').update(buf).digest('hex') !== expectedSha) {
-          throw new Error(`Hash mismatch on ${skillId}/${relPath}`);
-        }
-        fs.mkdirSync(path.dirname(localPath), { recursive: true });
-        const tmp = `${localPath}.tmp-${process.pid}`;
-        fs.writeFileSync(tmp, buf);
-        fs.renameSync(tmp, localPath);
-        updatedFilesCount += 1;
-      }
-    }
-  }
-
-  for (const [scKey, scEntry] of Object.entries(manifest.sidecarManifest || {})) {
-    const pName = scEntry.plugin;
-    const scId = scEntry.sidecar || scKey.split('/').pop();
-    if (pName === 'agy-twin-automations') continue;
-    if (!SAFE_ID_RE.test(pName) || !SAFE_ID_RE.test(scId)) continue;
-    const scDir = path.join(PLUGINS_SUITE_ROOT, pName, 'sidecars', scId);
-    let scChanged = false;
-    for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {
-      if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
-      if (!relPath.split('/').every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
-      const localPath = path.join(scDir, relPath);
-      let localSha = null;
-      try {
-        if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
-          localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
-        }
-      } catch {}
-      if (localSha !== expectedSha) {
-        const buf = await httpsGetBuffer(`${RAW_SYNC_BASE}/plugins/${pName}/sidecars/${scId}/${relPath}`);
-        if (crypto.createHash('sha256').update(buf).digest('hex') !== expectedSha) {
-          throw new Error(`Hash mismatch on sidecar ${scId}/${relPath}`);
-        }
-        fs.mkdirSync(path.dirname(localPath), { recursive: true });
-        const tmp = `${localPath}.tmp-${process.pid}`;
-        fs.writeFileSync(tmp, buf);
-        fs.renameSync(tmp, localPath);
-        updatedFilesCount += 1;
-        scChanged = true;
-      }
-    }
-    if (scChanged) updatedSidecarIds.push(`${pName}/${scId}`);
-  }
-
-  const selfSidecarId = `${PLUGIN_NAME}/twin-vault-ui`;
-  for (const fullScId of updatedSidecarIds) {
-    if (fullScId !== selfSidecarId) {
-      await callLanguageServerRpc('ManageSidecar', {
-        sidecarId: fullScId,
-        action: 'SIDECAR_ACTION_RESTART',
-      });
-    }
-  }
-  const reloadSelf = updatedSidecarIds.includes(selfSidecarId) || computeLocalUiSignature() !== BOOT_UI_SIGNATURE;
-  if (reloadSelf) {
-    setTimeout(() => {
-      callLanguageServerRpc('ManageSidecar', {
-        sidecarId: selfSidecarId,
-        action: 'SIDECAR_ACTION_RESTART',
-      });
-    }, 350);
-  }
-
-  return {
-    ok: true,
-    suiteVersion: manifest.suiteVersion || '1.0.0',
-    updatedFilesCount,
-    updatedSidecarIds,
-    reloadSelf,
-  };
+  return path.join(os.homedir(), '.gemini', 'config', 'skills');
 }
 
 function resolveVault() {
   const root = getVaultRoot();
   if (!fs.existsSync(path.join(root, 'profile', 'identity.md'))) {
-    initializeVault({ vaultDir: root, role: 'public-sector', seedDemo: true });
+    initializeVault({ vaultDir: root, role: DEFAULT_ROLE, seedDemo: true });
   }
   return root;
+}
+
+function getCustomSeedsPath(vaultRoot) {
+  return path.join(vaultRoot, 'profile', 'custom_seeds.json');
+}
+
+function readCustomSeeds(vaultRoot) {
+  const p = getCustomSeedsPath(vaultRoot);
+  try {
+    if (fs.existsSync(p) && fs.lstatSync(p).isFile()) {
+      const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'));
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    }
+  } catch {}
+  return {};
+}
+
+function writeCustomSeeds(vaultRoot, seedsObj) {
+  const p = getCustomSeedsPath(vaultRoot);
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  const tmp = `${p}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, JSON.stringify(seedsObj, null, 2) + '\n', 'utf-8');
+  fs.renameSync(tmp, p);
+}
+
+function loadCatalogForState(vaultRoot) {
+  const personalRoot = getPersonalSkillsRoot();
+  const customSeedsMap = readCustomSeeds(vaultRoot);
+  return buildSkillsCatalog(PLUGINS_SUITE_ROOT, {
+    personalSkillsRoot: personalRoot,
+    customSeedsMap,
+    suiteMode: SUITE_MODE,
+  });
+}
+
+function buildManagedPersonalSkillsTree(personalRoot) {
+  if (!personalRoot || !fs.existsSync(personalRoot)) return [];
+  let dirs = [];
+  try {
+    dirs = fs
+      .readdirSync(personalRoot, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.isSymbolicLink() && !d.name.startsWith('.'))
+      .map((d) => d.name)
+      .sort();
+  } catch {
+    return [];
+  }
+  const nodes = [];
+  for (const name of dirs) {
+    const sDir = path.join(personalRoot, name);
+    if (!fs.existsSync(path.join(sDir, '.twin-skill-meta.json'))) continue;
+    const children = buildDirectoryTree(sDir, personalRoot);
+    nodes.push({
+      name,
+      type: 'dir',
+      path: sDir,
+      relPath: name,
+      children,
+    });
+  }
+  return nodes;
 }
 
 function lstatOrNull(targetPath) {
@@ -252,7 +137,10 @@ function findNearestExistingAncestor(targetPath) {
 
 function hasSymlinkUnderRoot(resolvedPath, rootDir) {
   const resolvedRoot = path.resolve(rootDir);
-  const realRoot = fs.existsSync(resolvedRoot) ? fs.realpathSync(resolvedRoot) : resolvedRoot;
+  if (!fs.existsSync(resolvedRoot)) {
+    return false;
+  }
+  const realRoot = fs.realpathSync(resolvedRoot);
   const rootPrefixResolved = resolvedRoot.endsWith(path.sep) ? resolvedRoot : resolvedRoot + path.sep;
   const rootPrefixReal = realRoot.endsWith(path.sep) ? realRoot : realRoot + path.sep;
 
@@ -341,6 +229,27 @@ function classifyAllowedPath(rawPath, vaultRoot) {
     };
   }
 
+  const personalRoot = getPersonalSkillsRoot();
+  if (fs.existsSync(personalRoot)) {
+    const realPersonalRoot = fs.realpathSync(personalRoot);
+    const personalPrefix = realPersonalRoot.endsWith(path.sep) ? realPersonalRoot : realPersonalRoot + path.sep;
+    const ancestorInPersonal = realAncestor === realPersonalRoot || realAncestor.startsWith(personalPrefix);
+    if (ancestorInPersonal && realResolved.startsWith(personalPrefix)) {
+      const hasSymlink = hasSymlinkUnderRoot(resolved, personalRoot);
+      const ext = path.extname(resolved).toLowerCase();
+      const extAllowed = WRITABLE_EXTENSIONS.has(ext);
+      return {
+        allowed: !hasSymlink,
+        writable: !hasSymlink && extAllowed,
+        hasSymlink,
+        extAllowed,
+        rootId: 'my-skills',
+        resolved,
+        realResolved,
+      };
+    }
+  }
+
   if (fs.existsSync(PLUGINS_SUITE_ROOT)) {
     const realPluginsRoot = fs.realpathSync(PLUGINS_SUITE_ROOT);
     const pluginsPrefix = realPluginsRoot.endsWith(path.sep) ? realPluginsRoot : realPluginsRoot + path.sep;
@@ -360,6 +269,55 @@ function classifyAllowedPath(rawPath, vaultRoot) {
   }
 
   return { allowed: false, writable: false, hasSymlink: false, extAllowed: false, resolved };
+}
+
+function rewriteSkillFrontmatterName(markdownText, newSlug) {
+  const raw = String(markdownText || '');
+  const fmMatch = raw.match(/^(---\r?\n)([\s\S]*?)(\r?\n---\r?\n?)/);
+  if (!fmMatch) {
+    return `---\nname: ${newSlug}\ndescription: Custom personal skill (${newSlug}).\n---\n\n${raw}`;
+  }
+  const body = fmMatch[2];
+  const updatedBody = /^name\s*:/m.test(body)
+    ? body.replace(/^name\s*:.*$/m, `name: ${newSlug}`)
+    : `name: ${newSlug}\n${body}`;
+  return `${fmMatch[1]}${updatedBody}${fmMatch[3]}${raw.slice(fmMatch[0].length)}`;
+}
+
+function copySkillBundleRecursive(srcDir, destDir, newSlug) {
+  let totalBytes = 0;
+
+  function walkAndCopy(curSrc, curDest, isRoot) {
+    fs.mkdirSync(curDest, { recursive: true });
+    const entries = fs.readdirSync(curSrc, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') && entry.name !== '.gitkeep') continue;
+      if (entry.name === 'node_modules' || entry.name === '__pycache__') continue;
+      const srcPath = path.join(curSrc, entry.name);
+      const lst = lstatOrNull(srcPath);
+      if (!lst || lst.isSymbolicLink()) {
+        throw new Error('Refusing to copy symbolic link inside skill directory');
+      }
+      if (lst.isDirectory()) {
+        walkAndCopy(srcPath, path.join(curDest, entry.name), false);
+      } else if (lst.isFile()) {
+        totalBytes += lst.size;
+        if (totalBytes > MAX_FORK_BYTES) {
+          throw new Error('Skill bundle exceeds 5 MB copy limit');
+        }
+        const outName = isRoot && entry.name === 'SKILL.md.disabled' ? 'SKILL.md' : entry.name;
+        const destPath = path.join(curDest, outName);
+        if (isRoot && outName === 'SKILL.md') {
+          const rewritten = rewriteSkillFrontmatterName(fs.readFileSync(srcPath, 'utf-8'), newSlug);
+          fs.writeFileSync(destPath, rewritten, 'utf-8');
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+    }
+  }
+
+  walkAndCopy(srcDir, destDir, true);
 }
 
 const app = new SidecarApp();
@@ -389,21 +347,14 @@ app.api(
   async () => {
     const vaultRoot = resolveVault();
     const state = getVaultState(vaultRoot);
+    const personalRoot = getPersonalSkillsRoot();
+    const personalTree = buildManagedPersonalSkillsTree(personalRoot);
     const pluginsTree = buildDirectoryTree(PLUGINS_SUITE_ROOT, PLUGINS_SUITE_ROOT);
-    const skillsCatalog = buildSkillsCatalog(PLUGINS_SUITE_ROOT);
-    const uiOutdated = computeLocalUiSignature() !== BOOT_UI_SIGNATURE;
-    if (uiOutdated) {
-      setTimeout(() => {
-        callLanguageServerRpc('ManageSidecar', {
-          sidecarId: `${PLUGIN_NAME}/twin-vault-ui`,
-          action: 'SIDECAR_ACTION_RESTART',
-        });
-      }, 300);
-    }
+    const skillsCatalog = loadCatalogForState(vaultRoot);
     return {
       ok: true,
       ...state,
-      uiOutdated,
+      personalSkillsRoot: personalRoot,
       skillsCatalog,
       presets: Object.values(ROLE_PRESETS).map((p) => ({
         id: p.id,
@@ -421,9 +372,17 @@ app.api(
           tree: state.tree,
         },
         {
+          id: 'my-skills',
+          label: '★ My Custom Skills',
+          subtitle: '~/.gemini/config/skills (Editable & Update-Proof)',
+          writable: true,
+          path: personalRoot,
+          tree: personalTree,
+        },
+        {
           id: 'plugins',
           label: 'Installed Plugins',
-          subtitle: 'Skills, Rules & Automations (Read-Only View)',
+          subtitle: 'Stock Suite Skills & Rules (Read-Only)',
           writable: false,
           path: PLUGINS_SUITE_ROOT,
           tree: pluginsTree,
@@ -479,13 +438,13 @@ app.api('/api/file', async (data) => {
   const check = classifyAllowedPath(data && data.path, vaultRoot);
   if (check.hasSymlink) {
     return new Response(
-      JSON.stringify({ ok: false, error: 'Symbolic links are not permitted in the Memory Vault' }),
+      JSON.stringify({ ok: false, error: 'Symbolic links are not permitted' }),
       { contentType: 'application/json', status: 403 }
     );
   }
-  if (!check.allowed || check.rootId !== 'vault') {
+  if (!check.allowed || (check.rootId !== 'vault' && check.rootId !== 'my-skills')) {
     return new Response(
-      JSON.stringify({ ok: false, error: 'Write access is restricted to the Memory Vault directory' }),
+      JSON.stringify({ ok: false, error: 'Write access is restricted to Memory Vault and ★ My Custom Skills' }),
       { contentType: 'application/json', status: 403 }
     );
   }
@@ -516,8 +475,9 @@ app.api('/api/file', async (data) => {
     });
   }
 
+  const targetRoot = check.rootId === 'my-skills' ? getPersonalSkillsRoot() : vaultRoot;
   fs.mkdirSync(path.dirname(check.resolved), { recursive: true });
-  if (hasSymlinkUnderRoot(check.resolved, vaultRoot)) {
+  if (hasSymlinkUnderRoot(check.resolved, targetRoot)) {
     return new Response(
       JSON.stringify({ ok: false, error: 'Symbolic links are not permitted in ancestor directories' }),
       { contentType: 'application/json', status: 403 }
@@ -534,6 +494,209 @@ app.api('/api/file', async (data) => {
     size: stat.size,
     modifiedIso: stat.mtime.toISOString(),
     state: getVaultState(vaultRoot),
+    skillsCatalog: loadCatalogForState(vaultRoot),
+  };
+});
+
+app.api('/api/skills/fork', async (data) => {
+  const vaultRoot = resolveVault();
+  const personalRoot = getPersonalSkillsRoot();
+  const sourcePlugin = String((data && data.sourcePlugin) || '').trim();
+  const sourceSkillId = String((data && data.sourceSkillId) || '').trim();
+  const rawTargetSlug = String((data && data.targetSlug) || '')
+    .trim()
+    .replace(/^\/+/, '')
+    .toLowerCase();
+  const overwrite = Boolean(data && data.overwrite);
+
+  if (!SAFE_ID_RE.test(sourcePlugin) || !SAFE_SKILL_SLUG_RE.test(sourceSkillId)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid source skill identifier' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  if (!SAFE_SKILL_SLUG_RE.test(rawTargetSlug)) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: 'New skill command must be 2–63 lowercase letters, numbers, or hyphens (e.g. slides-exec)',
+      }),
+      { contentType: 'application/json', status: 400 }
+    );
+  }
+
+  const srcDir =
+    sourcePlugin === 'my-skills'
+      ? path.join(personalRoot, sourceSkillId)
+      : path.join(PLUGINS_SUITE_ROOT, sourcePlugin, 'skills', sourceSkillId);
+  const srcRoot = sourcePlugin === 'my-skills' ? personalRoot : PLUGINS_SUITE_ROOT;
+
+  if (!fs.existsSync(srcDir) || hasSymlinkUnderRoot(srcDir, srcRoot)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Source skill directory not found' }), {
+      contentType: 'application/json',
+      status: 404,
+    });
+  }
+
+  fs.mkdirSync(personalRoot, { recursive: true, mode: 0o700 });
+  const personalStat = lstatOrNull(personalRoot);
+  if (!personalStat || personalStat.isSymbolicLink()) {
+    return new Response(JSON.stringify({ ok: false, error: 'Personal skills root cannot be a symbolic link' }), {
+      contentType: 'application/json',
+      status: 403,
+    });
+  }
+
+  const destDir = path.join(personalRoot, rawTargetSlug);
+  if (fs.existsSync(destDir)) {
+    const hasManagedMarker = fs.existsSync(path.join(destDir, '.twin-skill-meta.json'));
+    if (!overwrite) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `/${rawTargetSlug} already exists in ~/.gemini/config/skills/. Pick another name or enable Replace Existing Copy.`,
+        }),
+        { contentType: 'application/json', status: 409 }
+      );
+    }
+    if (!hasManagedMarker) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `Refusing to overwrite pre-existing global skill /${rawTargetSlug} that was not created by Save My Copy.`,
+        }),
+        { contentType: 'application/json', status: 409 }
+      );
+    }
+    if (hasSymlinkUnderRoot(destDir, personalRoot)) {
+      return new Response(JSON.stringify({ ok: false, error: 'Refusing symlinked destination skill path' }), {
+        contentType: 'application/json',
+        status: 403,
+      });
+    }
+    fs.rmSync(destDir, { recursive: true, force: false });
+  }
+
+  try {
+    copySkillBundleRecursive(srcDir, destDir, rawTargetSlug);
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: err.message || 'Copy failed' }), {
+      contentType: 'application/json',
+      status: 500,
+    });
+  }
+
+  const nowIso = new Date().toISOString();
+  const mode = rawTargetSlug === sourceSkillId ? 'override' : 'copy';
+  const customTitle = String((data && data.title) || '').trim();
+  const customSubtitle = String((data && data.subtitle) || '').trim();
+  const rawSeed = String((data && data.seedPrompt) || '').trim();
+  const normalizedSeed = rawSeed
+    ? rawSeed.replace(new RegExp(`^/${sourceSkillId}\\b`), `/${rawTargetSlug}`)
+    : `/${rawTargetSlug} Run my customized workflow.`;
+
+  const metaPayload = {
+    slug: rawTargetSlug,
+    forkedFrom: sourceSkillId,
+    sourcePlugin,
+    mode,
+    title: customTitle,
+    subtitle: customSubtitle,
+    seedPrompt: normalizedSeed,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+  fs.writeFileSync(path.join(destDir, '.twin-skill-meta.json'), JSON.stringify(metaPayload, null, 2) + '\n', 'utf-8');
+
+  const seeds = readCustomSeeds(vaultRoot);
+  seeds[rawTargetSlug] = {
+    seedPrompt: normalizedSeed,
+    title: customTitle,
+    subtitle: customSubtitle,
+    isPersonalCopy: true,
+    updatedAt: nowIso,
+  };
+  writeCustomSeeds(vaultRoot, seeds);
+
+  return {
+    ok: true,
+    slug: rawTargetSlug,
+    command: `/${rawTargetSlug}`,
+    mode,
+    skillMdPath: path.join(destDir, 'SKILL.md'),
+    skillsCatalog: loadCatalogForState(vaultRoot),
+  };
+});
+
+app.api('/api/skills/save-seed', async (data) => {
+  const vaultRoot = resolveVault();
+  const skillId = String((data && data.skillId) || '').trim().replace(/^\/+/, '');
+  if (!SAFE_SKILL_SLUG_RE.test(skillId)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid skill ID' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+
+  const seeds = readCustomSeeds(vaultRoot);
+  if (data && data.reset) {
+    if (seeds[skillId] && seeds[skillId].isPersonalCopy) {
+      delete seeds[skillId].seedPrompt;
+    } else {
+      delete seeds[skillId];
+    }
+  } else {
+    const promptText = String((data && data.seedPrompt) || '').trim();
+    if (!promptText) {
+      return new Response(JSON.stringify({ ok: false, error: 'Seed prompt cannot be empty' }), {
+        contentType: 'application/json',
+        status: 400,
+      });
+    }
+    const existing = seeds[skillId] || {};
+    seeds[skillId] = {
+      ...existing,
+      seedPrompt: promptText,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  writeCustomSeeds(vaultRoot, seeds);
+  return {
+    ok: true,
+    skillId,
+    skillsCatalog: loadCatalogForState(vaultRoot),
+  };
+});
+
+app.api('/api/skills/delete-copy', async (data) => {
+  const vaultRoot = resolveVault();
+  const personalRoot = getPersonalSkillsRoot();
+  const slug = String((data && data.slug) || '').trim().replace(/^\/+/, '');
+  if (!SAFE_SKILL_SLUG_RE.test(slug)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid personal skill slug' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+
+  const targetDir = path.join(personalRoot, slug);
+  const markerPath = path.join(targetDir, '.twin-skill-meta.json');
+  if (!fs.existsSync(targetDir) || !fs.existsSync(markerPath) || hasSymlinkUnderRoot(targetDir, personalRoot)) {
+    return new Response(
+      JSON.stringify({ ok: false, error: 'Only personal copies created via Save My Copy can be removed here' }),
+      { contentType: 'application/json', status: 403 }
+    );
+  }
+
+  fs.rmSync(targetDir, { recursive: true, force: false });
+  const seeds = readCustomSeeds(vaultRoot);
+  delete seeds[slug];
+  writeCustomSeeds(vaultRoot, seeds);
+
+  return {
+    ok: true,
+    slug,
+    skillsCatalog: loadCatalogForState(vaultRoot),
   };
 });
 
@@ -584,7 +747,7 @@ app.api('/api/vault/init', async (data) => {
   const vaultRoot = getVaultRoot();
   const res = initializeVault({
     vaultDir: vaultRoot,
-    role: data && data.role ? String(data.role) : 'pm',
+    role: data && data.role ? String(data.role) : DEFAULT_ROLE,
     name: data && data.name ? String(data.name) : '',
     roleTitle: data && data.roleTitle ? String(data.roleTitle) : '',
     org: data && data.org ? String(data.org) : '',
@@ -593,10 +756,6 @@ app.api('/api/vault/init', async (data) => {
     force: true,
   });
   return res;
-});
-
-app.api('/api/sync-updates', async () => {
-  return syncSuiteFromGithub();
 });
 
 await app.run();

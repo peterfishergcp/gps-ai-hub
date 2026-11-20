@@ -4,6 +4,10 @@
   let gtdFilter = 'OPEN';
   let skillsCategory = 'all';
   let skillsSearch = '';
+  let showOtherPlugins = false;
+  let activeForkCardKey = null;
+  let activeSeedCardKey = null;
+  let confirmDeleteSlug = null;
   let selectedFile = null;
   let editorMode = 'preview';
   let showRoleDrawer = false;
@@ -224,22 +228,17 @@
 
   async function loadState() {
     appState = await apiGet('/api/state');
-    if (appState && appState.uiOutdated) {
-      showToast('Detected updated Twin Vault UI — reloading...');
-      setTimeout(() => window.location.reload(), 900);
-      return;
-    }
     const p = appState.profile || {};
     headerTitle.textContent = p.name && p.name !== 'Workspace User' ? p.name + ' - Twin Vault' : 'Twin Second Brain Vault';
     headerSub.textContent = (p.role || 'Ready') + ' | ' + (appState.vaultRoot || '~/antigravity-twin/memory');
     render();
   }
 
-  async function openFileInExplorer(filePath) {
+  async function openFileInExplorer(filePath, startInEditMode) {
     try {
       const data = await apiGet('/api/file?path=' + encodeURIComponent(filePath));
       selectedFile = data;
-      editorMode = 'preview';
+      editorMode = startInEditMode && data.writable ? 'edit' : 'preview';
       activeTab = 'explorer';
       syncTabButtons();
       render();
@@ -876,7 +875,11 @@
             ' ',
             el('span', {
               className: 'badge badge-neutral',
-              text: selectedFile.writable ? 'Editable Vault File' : 'Read-Only Plugin File',
+              text: selectedFile.writable
+                ? selectedFile.rootId === 'my-skills'
+                  ? 'Editable Personal Skill (Update-Proof)'
+                  : 'Editable Vault File'
+                : 'Read-Only Stock Plugin File',
             }),
           ]),
           el('div', { className: 'topbar-actions' }, actionButtons),
@@ -902,28 +905,46 @@
   }
 
   function buildSkillsNodes() {
-    const categories = (appState && appState.skillsCatalog) || [];
-    let totalSkills = 0;
-    categories.forEach((cat) => {
-      totalSkills += (cat.skills || []).length;
+    const allCategories = (appState && appState.skillsCatalog) || [];
+    const primaryCategories = allCategories.filter((c) => c.scope !== 'other');
+    const otherCategories = allCategories.filter((c) => c.scope === 'other');
+
+    let otherSkillCount = 0;
+    otherCategories.forEach((c) => {
+      otherSkillCount += (c.skills || []).length;
     });
 
-    const chipRow = el('div', { className: 'skills-chip-row' }, [
+    const visibleCategories = showOtherPlugins ? allCategories : primaryCategories;
+    const visibleKeySet = new Set(visibleCategories.map((c) => c.categoryId || c.plugin));
+    if (skillsCategory !== 'all' && !visibleKeySet.has(skillsCategory)) {
+      skillsCategory = 'all';
+    }
+
+    let totalVisibleSkills = 0;
+    visibleCategories.forEach((cat) => {
+      totalVisibleSkills += (cat.skills || []).length;
+    });
+
+    const myCat = allCategories.find((c) => c.categoryId === 'my-skills');
+    const mySkillsCount = myCat && myCat.skills ? myCat.skills.length : 0;
+
+    const chipButtons = [
       el('button', {
         type: 'button',
         className: 'skill-chip' + (skillsCategory === 'all' ? ' active' : ''),
-        text: 'All (' + totalSkills + ')',
+        text: 'All (' + totalVisibleSkills + ')',
         onClick: () => {
           skillsCategory = 'all';
           render();
         },
       }),
-      ...categories.map((cat) => {
+      ...visibleCategories.map((cat) => {
         const key = cat.categoryId || cat.plugin;
         const label = (cat.chipLabel || cat.categoryLabel) + ' (' + (cat.skills || []).length + ')';
+        const extraCls = cat.scope === 'my' ? ' my-skills-chip' : '';
         return el('button', {
           type: 'button',
-          className: 'skill-chip' + (skillsCategory === key ? ' active' : ''),
+          className: 'skill-chip' + extraCls + (skillsCategory === key ? ' active' : ''),
           text: label,
           onClick: () => {
             skillsCategory = key;
@@ -931,7 +952,24 @@
           },
         });
       }),
-    ]);
+    ];
+
+    if (otherSkillCount > 0) {
+      chipButtons.push(
+        el('button', {
+          type: 'button',
+          className: 'skill-chip other-toggle-chip' + (showOtherPlugins ? ' active' : ''),
+          title: 'Show or hide skills from other plugins installed on this machine',
+          text: (showOtherPlugins ? 'Hide Other Plugins (' : '+ Other Installed (') + otherSkillCount + ')',
+          onClick: () => {
+            showOtherPlugins = !showOtherPlugins;
+            render();
+          },
+        })
+      );
+    }
+
+    const chipRow = el('div', { className: 'skills-chip-row' }, chipButtons);
 
     const searchInput = el('input', {
       type: 'search',
@@ -944,28 +982,272 @@
       renderFilteredSkillCards();
     });
 
+    const headerBadges = [
+      el('span', { className: 'badge badge-green', text: totalVisibleSkills + ' Suite Skills' }),
+    ];
+    if (mySkillsCount > 0) {
+      headerBadges.unshift(
+        el('span', { className: 'badge badge-blue', text: '\u2605 ' + mySkillsCount + ' My Copy' })
+      );
+    }
+
     const headerCard = el('div', { className: 'card' }, [
       el('div', { className: 'card-header' }, [
         el('div', {}, [
-          el('h3', { className: 'card-title', text: '1-Click Skill Seed Prompts' }),
+          el('h3', { className: 'card-title', text: '1-Click Skill Seed Prompts & Personal Copies' }),
           el('div', {
             className: 'muted',
-            text: 'Click any seed prompt or "Run" to execute directly in Antigravity chat.',
+            text: 'Click any seed prompt to run in chat, or click "Save My Copy" to create an update-proof personal version in ~/.gemini/config/skills/.',
           }),
         ]),
-        el('span', { className: 'badge badge-green', text: totalSkills + ' Skills Installed' }),
+        el('div', { className: 'topbar-actions' }, headerBadges),
       ]),
       el('div', { className: 'skills-toolbar' }, [searchInput, chipRow]),
     ]);
 
     const resultsContainer = el('div', {});
 
+    function buildForkDrawer(skill, cardKey) {
+      let currentMode = 'copy';
+      const defaultCopySlug = skill.id.endsWith('-my') ? skill.id + '-2' : skill.id + '-my';
+
+      const slugInput = el('input', {
+        type: 'text',
+        className: 'form-input',
+        value: defaultCopySlug,
+        placeholder: 'e.g. ' + defaultCopySlug,
+      });
+
+      const titleInput = el('input', {
+        type: 'text',
+        className: 'form-input',
+        value: skill.title.endsWith('(My Copy)') ? skill.title : skill.title + ' (My Copy)',
+      });
+
+      const seedTextarea = el('textarea', {
+        className: 'form-textarea seed-edit-textarea',
+        value: String(skill.seedPrompt || '').replace(new RegExp('^/' + skill.id + '\\b'), '/' + defaultCopySlug),
+      });
+
+      const replaceCheckbox = el('input', { type: 'checkbox' });
+
+      function syncSlugWithMode(nextMode) {
+        const prevSlug = slugInput.value.trim().replace(/^\/+/, '') || skill.id;
+        currentMode = nextMode;
+        if (nextMode === 'override') {
+          slugInput.value = skill.id;
+          slugInput.readOnly = true;
+          titleInput.value = skill.title.replace(/\s*\(My Copy\)$/, '') + ' (My Override)';
+        } else {
+          slugInput.readOnly = false;
+          slugInput.value = defaultCopySlug;
+          titleInput.value = skill.title.endsWith('(My Copy)') ? skill.title : skill.title + ' (My Copy)';
+        }
+        const targetCmd = '/' + slugInput.value.trim().replace(/^\/+/, '');
+        seedTextarea.value = seedTextarea.value.replace(new RegExp('^/' + prevSlug + '\\b'), targetCmd);
+      }
+
+      slugInput.addEventListener('input', () => {
+        const clean = slugInput.value.trim().replace(/^\/+/, '').toLowerCase();
+        if (clean) {
+          seedTextarea.value = seedTextarea.value.replace(/^\/[a-z0-9_-]+/, '/' + clean);
+        }
+      });
+
+      const copyRadio = el('input', {
+        type: 'radio',
+        checked: true,
+        onChange: () => {
+          if (copyRadio.checked) {
+            overrideRadio.checked = false;
+            syncSlugWithMode('copy');
+          }
+        },
+      });
+      copyRadio.name = 'fork-mode-' + cardKey;
+
+      const overrideRadio = el('input', {
+        type: 'radio',
+        checked: false,
+        onChange: () => {
+          if (overrideRadio.checked) {
+            copyRadio.checked = false;
+            syncSlugWithMode('override');
+          }
+        },
+      });
+      overrideRadio.name = 'fork-mode-' + cardKey;
+
+      async function submitFork(openEditorAfter) {
+        const cleanSlug = slugInput.value.trim().replace(/^\/+/, '').toLowerCase();
+        try {
+          const res = await apiPost('/api/skills/fork', {
+            sourcePlugin: skill.plugin,
+            sourceSkillId: skill.id,
+            targetSlug: cleanSlug,
+            mode: currentMode,
+            title: titleInput.value.trim(),
+            subtitle: skill.subtitle,
+            seedPrompt: seedTextarea.value.trim(),
+            overwrite: replaceCheckbox.checked,
+          });
+          activeForkCardKey = null;
+          if (res.skillsCatalog && appState) {
+            appState.skillsCatalog = res.skillsCatalog;
+          }
+          await loadState();
+          showToast('Saved protected personal skill /' + cleanSlug + ' in ~/.gemini/config/skills/');
+          if (openEditorAfter && res.skillMdPath) {
+            await openFileInExplorer(res.skillMdPath, true);
+          } else {
+            skillsCategory = 'my-skills';
+            render();
+          }
+        } catch (err) {
+          let msg = err.message || 'Could not copy skill';
+          try {
+            const parsed = JSON.parse(msg);
+            if (parsed && parsed.error) msg = parsed.error;
+          } catch {}
+          showToast(msg);
+        }
+      }
+
+      return el('div', { className: 'fork-drawer' }, [
+        el('div', { className: 'fork-drawer-title', text: 'Save My Protected Copy (~/.gemini/config/skills/)' }),
+        el('div', {
+          className: 'muted',
+          style: { fontSize: '11px', marginBottom: '6px' },
+          text: 'Copies SKILL.md and any helper scripts/templates outside the plugin directory so future updates never overwrite your changes.',
+        }),
+        el('div', { className: 'fork-radio-group' }, [
+          el('label', { className: 'fork-radio-label' }, [
+            copyRadio,
+            el('span', { text: 'New personal /command (keeps stock ' + skill.command + ' intact)' }),
+          ]),
+          el('label', { className: 'fork-radio-label' }, [
+            overrideRadio,
+            el('span', { text: 'Override ' + skill.command + ' (my copy wins priority over stock)' }),
+          ]),
+        ]),
+        el('div', { className: 'fork-grid-2' }, [
+          el('div', {}, [
+            el('label', { className: 'fork-field-label', text: 'Slash Command Slug' }),
+            slugInput,
+          ]),
+          el('div', {}, [
+            el('label', { className: 'fork-field-label', text: 'Display Title' }),
+            titleInput,
+          ]),
+        ]),
+        el('div', { style: { marginTop: '6px' } }, [
+          el('label', { className: 'fork-field-label', text: 'My 1-Click Seed Prompt' }),
+          seedTextarea,
+        ]),
+        el('label', { className: 'fork-radio-label', style: { marginTop: '4px' } }, [
+          replaceCheckbox,
+          el('span', { text: 'Replace existing personal copy if /command already exists' }),
+        ]),
+        el('div', { className: 'topbar-actions', style: { marginTop: '8px', flexWrap: 'wrap' } }, [
+          el('button', {
+            type: 'button',
+            className: 'btn btn-sm',
+            text: 'Save My Copy',
+            onClick: () => submitFork(false),
+          }),
+          el('button', {
+            type: 'button',
+            className: 'btn btn-secondary btn-sm',
+            text: 'Save & Edit SKILL.md',
+            onClick: () => submitFork(true),
+          }),
+          el('button', {
+            type: 'button',
+            className: 'btn btn-secondary btn-sm',
+            text: 'Cancel',
+            onClick: () => {
+              activeForkCardKey = null;
+              renderFilteredSkillCards();
+            },
+          }),
+        ]),
+      ]);
+    }
+
+    function buildSeedEditDrawer(skill) {
+      const promptArea = el('textarea', {
+        className: 'form-textarea seed-edit-textarea',
+        value: skill.seedPrompt || '',
+      });
+
+      return el('div', { className: 'fork-drawer' }, [
+        el('div', { className: 'fork-drawer-title', text: 'Customize 1-Click Seed Prompt for ' + skill.command }),
+        el('div', {
+          className: 'muted',
+          style: { fontSize: '11px', marginBottom: '6px' },
+          text: 'Stored in ~/antigravity-twin/memory/profile/custom_seeds.json — never overwritten by plugin updates.',
+        }),
+        promptArea,
+        el('div', { className: 'topbar-actions', style: { marginTop: '8px', flexWrap: 'wrap' } }, [
+          el('button', {
+            type: 'button',
+            className: 'btn btn-sm',
+            text: 'Save Seed Prompt',
+            onClick: async () => {
+              try {
+                const res = await apiPost('/api/skills/save-seed', {
+                  skillId: skill.id,
+                  seedPrompt: promptArea.value.trim(),
+                });
+                activeSeedCardKey = null;
+                if (res.skillsCatalog && appState) appState.skillsCatalog = res.skillsCatalog;
+                renderFilteredSkillCards();
+                showToast('Saved custom seed prompt for ' + skill.command);
+              } catch (err) {
+                showToast('Could not save seed prompt: ' + err.message);
+              }
+            },
+          }),
+          skill.hasCustomSeed
+            ? el('button', {
+                type: 'button',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Reset Default Seed',
+                onClick: async () => {
+                  try {
+                    const res = await apiPost('/api/skills/save-seed', {
+                      skillId: skill.id,
+                      reset: true,
+                    });
+                    activeSeedCardKey = null;
+                    if (res.skillsCatalog && appState) appState.skillsCatalog = res.skillsCatalog;
+                    renderFilteredSkillCards();
+                    showToast('Reset ' + skill.command + ' to default seed prompt');
+                  } catch (err) {
+                    showToast('Reset failed: ' + err.message);
+                  }
+                },
+              })
+            : null,
+          el('button', {
+            type: 'button',
+            className: 'btn btn-secondary btn-sm',
+            text: 'Cancel',
+            onClick: () => {
+              activeSeedCardKey = null;
+              renderFilteredSkillCards();
+            },
+          }),
+        ]),
+      ]);
+    }
+
     function renderFilteredSkillCards() {
       resultsContainer.replaceChildren();
       const q = (skillsSearch || '').trim().toLowerCase();
       let shownCount = 0;
 
-      categories.forEach((cat) => {
+      visibleCategories.forEach((cat) => {
         const key = cat.categoryId || cat.plugin;
         if (skillsCategory !== 'all' && skillsCategory !== key) return;
 
@@ -986,12 +1268,26 @@
           'div',
           { className: 'skills-seed-grid' },
           matching.map((skill) => {
-            const topRow = el('div', { className: 'seed-card-top' }, [
-              el('span', { className: 'prompt-cmd', text: skill.command }),
+            const cardKey = (skill.plugin || key) + ':' + skill.id;
+            const badgeClass = skill.isPersonalCopy
+              ? 'badge-blue'
+              : skill.overriddenByPersonal || skill.enabled === false
+                ? 'badge-amber'
+                : 'badge-neutral';
+
+            const topBadges = [
               el('span', {
-                className: 'badge ' + (skill.enabled === false ? 'badge-amber' : 'badge-neutral'),
+                className: 'badge ' + badgeClass,
                 text: skill.enabled === false ? 'Opt-In / Paused' : skill.badge || 'Skill',
               }),
+            ];
+            if (skill.hasCustomSeed) {
+              topBadges.push(el('span', { className: 'badge badge-green', text: 'Custom Seed' }));
+            }
+
+            const topRow = el('div', { className: 'seed-card-top' }, [
+              el('span', { className: 'prompt-cmd', text: skill.command }),
+              el('div', { className: 'topbar-actions' }, topBadges),
             ]);
 
             const bodyBlock = el('div', {}, [
@@ -1008,7 +1304,7 @@
               onClick: () => dispatchPrompt(skill.seedPrompt, skill.command),
             });
 
-            const leftBtns = el('div', { className: 'topbar-actions' }, [
+            const leftBtns = el('div', { className: 'topbar-actions', style: { flexWrap: 'wrap' } }, [
               el('button', {
                 type: 'button',
                 className: 'btn btn-sm',
@@ -1032,24 +1328,119 @@
                   }
                 },
               }),
+              el('button', {
+                type: 'button',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Edit Seed',
+                title: 'Customize the 1-click starter prompt for ' + skill.command,
+                onClick: () => {
+                  activeForkCardKey = null;
+                  activeSeedCardKey = activeSeedCardKey === cardKey ? null : cardKey;
+                  renderFilteredSkillCards();
+                },
+              }),
+              !skill.isPersonalCopy
+                ? el('button', {
+                    type: 'button',
+                    className: 'btn btn-secondary btn-sm',
+                    text: 'Save My Copy',
+                    title: 'Create your own editable, update-proof copy in ~/.gemini/config/skills/',
+                    onClick: () => {
+                      activeSeedCardKey = null;
+                      activeForkCardKey = activeForkCardKey === cardKey ? null : cardKey;
+                      renderFilteredSkillCards();
+                    },
+                  })
+                : null,
             ]);
 
-            const inspectBtn = skill.skillMdPath
-              ? el('button', {
+            const rightBtns = [];
+            if (skill.skillMdPath) {
+              rightBtns.push(
+                el('button', {
                   type: 'button',
                   className: 'btn btn-secondary btn-sm',
-                  text: 'SKILL.md',
-                  title: 'Inspect ' + skill.command + ' SKILL.md in Markdown Files',
-                  onClick: () => openFileInExplorer(skill.skillMdPath),
+                  text: skill.isPersonalCopy ? 'Edit SKILL.md' : 'SKILL.md',
+                  title: skill.isPersonalCopy
+                    ? 'Edit your personal SKILL.md in Markdown Files'
+                    : 'Inspect stock SKILL.md (read-only)',
+                  onClick: () => openFileInExplorer(skill.skillMdPath, Boolean(skill.isPersonalCopy)),
                 })
-              : null;
+              );
+            }
+            if (skill.isPersonalCopy) {
+              if (confirmDeleteSlug === skill.id) {
+                rightBtns.push(
+                  el('button', {
+                    type: 'button',
+                    className: 'btn btn-sm',
+                    text: skill.forkMode === 'override' ? 'Confirm Revert' : 'Confirm Delete',
+                    onClick: async () => {
+                      try {
+                        const res = await apiPost('/api/skills/delete-copy', { slug: skill.id });
+                        confirmDeleteSlug = null;
+                        if (res.skillsCatalog && appState) appState.skillsCatalog = res.skillsCatalog;
+                        await loadState();
+                        showToast(
+                          skill.forkMode === 'override'
+                            ? 'Reverted ' + skill.command + ' back to stock plugin skill'
+                            : 'Removed personal skill ' + skill.command
+                        );
+                      } catch (err) {
+                        showToast('Delete failed: ' + err.message);
+                      }
+                    },
+                  }),
+                  el('button', {
+                    type: 'button',
+                    className: 'btn btn-secondary btn-sm',
+                    text: 'Keep',
+                    onClick: () => {
+                      confirmDeleteSlug = null;
+                      renderFilteredSkillCards();
+                    },
+                  })
+                );
+              } else {
+                rightBtns.push(
+                  el('button', {
+                    type: 'button',
+                    className: 'btn btn-secondary btn-sm',
+                    text: skill.forkMode === 'override' ? 'Revert to Stock' : 'Remove',
+                    title:
+                      skill.forkMode === 'override'
+                        ? 'Remove personal override and restore stock ' + skill.command
+                        : 'Delete personal copy from ~/.gemini/config/skills/',
+                    onClick: () => {
+                      confirmDeleteSlug = skill.id;
+                      renderFilteredSkillCards();
+                    },
+                  })
+                );
+              }
+            }
 
-            const actionRow = el('div', { className: 'seed-card-actions' }, [leftBtns, inspectBtn]);
+            const actionRow = el('div', { className: 'seed-card-actions' }, [
+              leftBtns,
+              el('div', { className: 'topbar-actions' }, rightBtns),
+            ]);
+
+            const drawerNode =
+              activeForkCardKey === cardKey
+                ? buildForkDrawer(skill, cardKey)
+                : activeSeedCardKey === cardKey
+                  ? buildSeedEditDrawer(skill)
+                  : null;
 
             return el(
               'div',
-              { className: 'seed-skill-card' + (skill.enabled === false ? ' is-paused' : '') },
-              [bodyBlock, seedBoxBtn, actionRow]
+              {
+                className:
+                  'seed-skill-card' +
+                  (skill.enabled === false ? ' is-paused' : '') +
+                  (skill.isPersonalCopy ? ' is-personal-copy' : ''),
+              },
+              [bodyBlock, seedBoxBtn, actionRow, drawerNode]
             );
           })
         );
@@ -1106,34 +1497,9 @@
 
   document.getElementById('btn-refresh').addEventListener('click', () => {
     loadState()
-      .then(() => showToast('Refreshed vault'))
+      .then(() => showToast('Refreshed vault & skills from local disk'))
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
-
-  const syncBtn = document.getElementById('btn-sync-updates');
-  if (syncBtn) {
-    syncBtn.addEventListener('click', async () => {
-      syncBtn.disabled = true;
-      const orig = syncBtn.textContent;
-      syncBtn.textContent = 'Syncing...';
-      showToast('Checking GitHub for Twin & Skill updates...');
-      try {
-        const res = await apiPost('/api/sync-updates', {});
-        if (res.updatedFilesCount > 0) {
-          showToast('Updated ' + res.updatedFilesCount + ' file(s) to v' + res.suiteVersion + ' — reloading...');
-          setTimeout(() => window.location.reload(), 950);
-        } else {
-          await loadState();
-          showToast('Up to date (v' + res.suiteVersion + ')');
-        }
-      } catch (err) {
-        showToast('Sync failed: ' + err.message);
-      } finally {
-        syncBtn.disabled = false;
-        syncBtn.textContent = orig;
-      }
-    });
-  }
 
   document.getElementById('btn-configure-role').addEventListener('click', () => {
     activeTab = 'overview';

@@ -208,26 +208,53 @@
 
         var controls = el('div', 'row-controls');
 
-        var syncOneBtn = el('button', 'icon-btn', '↻');
-        syncOneBtn.type = 'button';
-        syncOneBtn.title = 'Incrementally check & update only ' + s.command + ' from GitHub';
-        syncOneBtn.addEventListener('click', async function () {
-          syncOneBtn.disabled = true;
-          showToast('Checking ' + s.command + ' for updates...');
-          try {
-            var res = await apiPost('/api/incremental-sync', { skill: s.id });
-            if (res.updatedFilesCount > 0) {
-              showToast('Updated ' + s.command + ' (' + res.updatedFilesCount + ' file(s) synced)');
-            } else {
-              showToast(s.command + ' is already up to date');
+        if (!s.isPersonalCopy) {
+          var forkBtn = el('button', 'icon-btn', '⧉');
+          forkBtn.type = 'button';
+          forkBtn.title = 'Save My Copy of ' + s.command + ' in ~/.gemini/config/skills/ (protected from updates)';
+          forkBtn.addEventListener('click', async function () {
+            forkBtn.disabled = true;
+            try {
+              var out = await apiPost('/api/fork-skill', {
+                plugin: s.plugin || cat.plugin,
+                skill: s.id,
+                title: s.title,
+                subtitle: s.subtitle,
+                starterPrompt: s.starterPrompt
+              });
+              await reloadStateFromDisk();
+              showToast('Saved protected personal copy ' + out.command + ' in ★ My Skills');
+            } catch {
+              showToast('Could not save personal copy of ' + s.command);
+            } finally {
+              forkBtn.disabled = false;
             }
-          } catch {
-            showToast('Incremental sync failed for ' + s.command);
-          } finally {
-            syncOneBtn.disabled = false;
-          }
-        });
-        controls.appendChild(syncOneBtn);
+          });
+          controls.appendChild(forkBtn);
+
+          var syncOneBtn = el('button', 'icon-btn', '↻');
+          syncOneBtn.type = 'button';
+          syncOneBtn.title = 'Check ' + s.command + ' for stock updates (skips if locally customized)';
+          syncOneBtn.addEventListener('click', async function () {
+            syncOneBtn.disabled = true;
+            showToast('Checking ' + s.command + ' for updates...');
+            try {
+              var res = await apiPost('/api/incremental-sync', { skill: s.id });
+              if (res.protectedSkillIds && res.protectedSkillIds.length > 0) {
+                showToast('Protected locally customized ' + s.command + ' — skipped overwrite');
+              } else if (res.updatedFilesCount > 0) {
+                showToast('Updated ' + s.command + ' (' + res.updatedFilesCount + ' file(s) synced)');
+              } else {
+                showToast(s.command + ' is already up to date');
+              }
+            } catch {
+              showToast('Incremental sync failed for ' + s.command);
+            } finally {
+              syncOneBtn.disabled = false;
+            }
+          });
+          controls.appendChild(syncOneBtn);
+        }
 
         var runBtn = el('button', 'icon-btn');
         runBtn.type = 'button';
@@ -268,6 +295,20 @@
     renderList();
   }
 
+  async function reloadStateFromDisk() {
+    var geInput = document.getElementById('geInput');
+    var res = await fetch('/api/state');
+    if (res.ok) {
+      var payload = await res.json();
+      state.categories = payload.categories || [];
+      state.geConfig = payload.geConfig || { rawInput: '' };
+      if (geInput && state.geConfig.rawInput) {
+        geInput.value = state.geConfig.rawInput;
+      }
+      renderAll();
+    }
+  }
+
   async function init() {
     var searchInput = document.getElementById('searchInput');
     if (searchInput) {
@@ -300,22 +341,35 @@
       });
     }
 
+    var refreshBtn = document.getElementById('refreshSkillsBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async function () {
+        try {
+          await reloadStateFromDisk();
+          showToast('Refreshed skills from local disk');
+        } catch {
+          showToast('Failed to refresh skills');
+        }
+      });
+    }
+
     var updateBtn = document.getElementById('updateSuiteBtn');
     if (updateBtn) {
       updateBtn.addEventListener('click', async function () {
         updateBtn.disabled = true;
         var origText = updateBtn.textContent;
         updateBtn.textContent = 'Syncing...';
-        showToast('Checking SHA-256 skill hashes against GitHub...');
+        showToast('Checking SHA-256 skill hashes (skipping customized skills)...');
         try {
           var res = await apiPost('/api/incremental-sync', {});
+          var protectedNote =
+            res.protectedSkillIds && res.protectedSkillIds.length > 0
+              ? ' · Protected ' + res.protectedSkillIds.length + ' customized skill(s)'
+              : '';
           if (res.updatedFilesCount > 0) {
-            showToast('Updated ' + res.updatedFilesCount + ' file(s) to v' + res.suiteVersion + (res.updatedSidecarIds && res.updatedSidecarIds.length ? ' — restarting updated panels...' : ''));
-            if (res.reloadSelf) {
-              setTimeout(function () { window.location.reload(); }, 900);
-            }
+            showToast('Downloaded ' + res.updatedFilesCount + ' updated file(s) (v' + res.suiteVersion + ')' + protectedNote + ' — click Refresh when ready');
           } else {
-            showToast('All ' + res.checkedSkillsCount + ' skills & UI panels are up to date (v' + res.suiteVersion + ')');
+            showToast('All ' + res.checkedSkillsCount + ' stock skills up to date (v' + res.suiteVersion + ')' + protectedNote);
           }
         } catch {
           runPromptInChat('/agy-update Incrementally check and sync any updated Public Sector skills.', '/agy-update');
@@ -327,16 +381,7 @@
     }
 
     try {
-      var res = await fetch('/api/state');
-      if (res.ok) {
-        var payload = await res.json();
-        state.categories = payload.categories || [];
-        state.geConfig = payload.geConfig || { rawInput: '' };
-        if (geInput && state.geConfig.rawInput) {
-          geInput.value = state.geConfig.rawInput;
-        }
-        renderAll();
-      }
+      await reloadStateFromDisk();
     } catch {
       showToast('Unable to load skill catalog');
     }

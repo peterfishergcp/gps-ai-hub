@@ -58,16 +58,58 @@ function httpsGetBuffer(urlStr, redirectsLeft = 4) {
   });
 }
 
+function getBaselineHashesPath() {
+  return path.join(getSidecarStateDir(), 'baseline-hashes.json');
+}
+
+function readBaselineHashes(pluginsRoot) {
+  const p = getBaselineHashesPath();
+  if (fs.existsSync(p)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'));
+      if (parsed && typeof parsed === 'object') {
+        return { skills: parsed.skills || {}, sidecars: parsed.sidecars || {} };
+      }
+    } catch {}
+  }
+  // Seed from local version-manifest.json if available alongside plugins/
+  const seeded = { skills: {}, sidecars: {} };
+  const localManifestPath = path.resolve(pluginsRoot, '..', 'version-manifest.json');
+  if (fs.existsSync(localManifestPath)) {
+    try {
+      const lm = JSON.parse(fs.readFileSync(localManifestPath, 'utf-8'));
+      for (const [sid, entry] of Object.entries(lm.skillManifest || {})) {
+        seeded.skills[sid] = { ...(entry.files || {}) };
+      }
+    } catch {}
+  }
+  return seeded;
+}
+
+function writeBaselineHashes(baseline) {
+  const p = getBaselineHashesPath();
+  const tmp = `${p}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, JSON.stringify(baseline, null, 2) + '\n', { mode: 0o600 });
+  fs.renameSync(tmp, p);
+}
+
+function getPersonalSkillsRoot() {
+  const custom = process.env.ANTIGRAVITY_PERSONAL_SKILLS_DIR;
+  return custom && custom.trim() ? path.resolve(custom.trim()) : path.join(os.homedir(), '.gemini', 'config', 'skills');
+}
+
 async function syncSkillsIncrementally(skillFilter = '') {
   const manifestBuf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/version-manifest.json`);
   const manifest = JSON.parse(manifestBuf.toString('utf-8'));
   const skillManifest = manifest.skillManifest || {};
   const pluginsRoot = getPluginsRoot();
+  const baseline = readBaselineHashes(pluginsRoot);
   const targetSkills = Object.keys(skillManifest).filter((id) => !skillFilter || id === skillFilter);
 
   let updatedSkillsCount = 0;
   let updatedFilesCount = 0;
   const updatedSkillIds = [];
+  const protectedSkillIds = [];
 
   for (const skillId of targetSkills) {
     const entry = skillManifest[skillId];
@@ -79,7 +121,10 @@ async function syncSkillsIncrementally(skillFilter = '') {
       !fs.existsSync(path.join(skillDir, 'SKILL.md')) &&
       fs.existsSync(path.join(skillDir, 'SKILL.md.disabled'));
 
+    if (!baseline.skills[skillId]) baseline.skills[skillId] = {};
+
     let skillChanged = false;
+    let skillProtected = false;
     for (const [relPath, expectedSha] of Object.entries(entry.files || {})) {
       if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
       const parts = relPath.split('/');
@@ -94,19 +139,33 @@ async function syncSkillsIncrementally(skillFilter = '') {
         }
       } catch {}
 
-      if (localSha !== expectedSha) {
-        const buf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/plugins/${pluginName}/skills/${skillId}/${relPath}`);
-        const actualSha = crypto.createHash('sha256').update(buf).digest('hex');
-        if (actualSha !== expectedSha) {
-          throw new Error(`Hash mismatch on ${skillId}/${relPath}`);
-        }
-        fs.mkdirSync(path.dirname(localPath), { recursive: true });
-        const tmp = `${localPath}.tmp-${process.pid}`;
-        fs.writeFileSync(tmp, buf);
-        fs.renameSync(tmp, localPath);
-        updatedFilesCount += 1;
-        skillChanged = true;
+      if (localSha === expectedSha) {
+        baseline.skills[skillId][relPath] = expectedSha;
+        continue;
       }
+
+      const prevBaselineSha = baseline.skills[skillId][relPath] || null;
+      if (localSha && prevBaselineSha && localSha !== prevBaselineSha) {
+        // User edited this stock file directly on disk — NEVER overwrite it!
+        skillProtected = true;
+        continue;
+      }
+
+      const buf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/plugins/${pluginName}/skills/${skillId}/${relPath}`);
+      const actualSha = crypto.createHash('sha256').update(buf).digest('hex');
+      if (actualSha !== expectedSha) {
+        throw new Error(`Hash mismatch on ${skillId}/${relPath}`);
+      }
+      fs.mkdirSync(path.dirname(localPath), { recursive: true });
+      const tmp = `${localPath}.tmp-${process.pid}`;
+      fs.writeFileSync(tmp, buf);
+      fs.renameSync(tmp, localPath);
+      baseline.skills[skillId][relPath] = expectedSha;
+      updatedFilesCount += 1;
+      skillChanged = true;
+    }
+    if (skillProtected) {
+      protectedSkillIds.push(skillId);
     }
     if (skillChanged) {
       updatedSkillsCount += 1;
@@ -114,7 +173,7 @@ async function syncSkillsIncrementally(skillFilter = '') {
     }
   }
 
-  // Also sync sidecar UI files (agy-skill-manager, agy-design-preview, twin-vault-ui) when no single skill filter is passed
+  // Sync UI sidecar files on disk ONLY (zero automatic ManageSidecar restarts — 100% user-driven Refresh)
   const updatedSidecarIds = [];
   if (!skillFilter && manifest.sidecarManifest) {
     for (const [scKey, scEntry] of Object.entries(manifest.sidecarManifest)) {
@@ -154,25 +213,7 @@ async function syncSkillsIncrementally(skillFilter = '') {
     }
   }
 
-  // Hot-restart updated sibling sidecars immediately so their Node ESM process reloads new files
-  const selfSidecarId = 'agy-onboarding/agy-skill-manager';
-  for (const fullScId of updatedSidecarIds) {
-    if (fullScId !== selfSidecarId) {
-      await callLanguageServerRpc('ManageSidecar', {
-        sidecarId: fullScId,
-        action: 'SIDECAR_ACTION_RESTART',
-      });
-    }
-  }
-  const selfUpdated = updatedSidecarIds.includes(selfSidecarId);
-  if (selfUpdated) {
-    setTimeout(() => {
-      callLanguageServerRpc('ManageSidecar', {
-        sidecarId: selfSidecarId,
-        action: 'SIDECAR_ACTION_RESTART',
-      });
-    }, 350);
-  }
+  writeBaselineHashes(baseline);
 
   return {
     ok: true,
@@ -181,8 +222,8 @@ async function syncSkillsIncrementally(skillFilter = '') {
     updatedSkillsCount,
     updatedFilesCount,
     updatedSkillIds,
+    protectedSkillIds,
     updatedSidecarIds,
-    reloadSelf: selfUpdated,
   };
 }
 
@@ -663,9 +704,11 @@ function toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled) {
   }
   writeToggleLedger(ledger);
 
-  const skillDir = path.join(pluginsRoot, pluginName, 'skills', skillId);
+  const personalRoot = getPersonalSkillsRoot();
+  const baseRoot = pluginName === 'my-skills' ? personalRoot : pluginsRoot;
+  const skillDir = pluginName === 'my-skills' ? path.join(personalRoot, skillId) : path.join(pluginsRoot, pluginName, 'skills', skillId);
   let diskSynced = false;
-  if (skillDir.startsWith(pluginsRoot + path.sep)) {
+  if (skillDir.startsWith(baseRoot + path.sep)) {
     const activeMd = path.join(skillDir, 'SKILL.md');
     const disabledMd = path.join(skillDir, 'SKILL.md.disabled');
     try {
@@ -796,6 +839,74 @@ app.api('/api/state', async () => {
     };
   });
 
+  // Prepend ★ My Custom Skills from ~/.gemini/config/skills/ if present
+  const personalRoot = getPersonalSkillsRoot();
+  if (fs.existsSync(personalRoot)) {
+    try {
+      const personalSkills = [];
+      const pDirs = fs
+        .readdirSync(personalRoot, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && !d.isSymbolicLink() && !d.name.startsWith('.'))
+        .map((d) => d.name)
+        .sort();
+      for (const sid of pDirs) {
+        const sDir = path.join(personalRoot, sid);
+        const metaPath = path.join(sDir, '.twin-skill-meta.json');
+        const activeMd = path.join(sDir, 'SKILL.md');
+        const disabledMd = path.join(sDir, 'SKILL.md.disabled');
+        if (!fs.existsSync(metaPath) || (!fs.existsSync(activeMd) && !fs.existsSync(disabledMd))) continue;
+        let meta = {};
+        try {
+          meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+        } catch {}
+        personalSkills.push({
+          id: sid,
+          plugin: 'my-skills',
+          isPersonalCopy: true,
+          title: meta.title || `${sid} (My Copy)`,
+          subtitle: meta.subtitle || 'Saved in ~/.gemini/config/skills/ — protected from plugin updates',
+          command: `/${sid}`,
+          badge: meta.mode === 'override' ? 'My Override · Protected' : 'My Copy · Protected',
+          starterPrompt: meta.seedPrompt || `/${sid} Run my customized workflow.`,
+          enabled: fs.existsSync(activeMd),
+        });
+      }
+      if (personalSkills.length > 0) {
+        categories.unshift({
+          categoryId: 'my-skills',
+          plugin: 'my-skills',
+          categoryLabel: '★ My Custom Skills (Protected in ~/.gemini/config/skills/)',
+          chipLabel: '★ My Skills',
+          pluginEnabled: personalSkills.some((s) => s.enabled),
+          skills: personalSkills,
+        });
+      }
+    } catch {}
+  }
+
+  // Record initial stock hashes on first state read if baseline-hashes.json does not exist yet
+  if (!fs.existsSync(getBaselineHashesPath())) {
+    try {
+      const baseline = readBaselineHashes(pluginsRoot);
+      for (const cat of SKILL_CATALOG) {
+        for (const s of cat.skills) {
+          const pName = s.plugin || cat.plugin;
+          const sDir = path.join(pluginsRoot, pName, 'skills', s.id);
+          const md = fs.existsSync(path.join(sDir, 'SKILL.md'))
+            ? path.join(sDir, 'SKILL.md')
+            : path.join(sDir, 'SKILL.md.disabled');
+          if (fs.existsSync(md) && fs.lstatSync(md).isFile()) {
+            if (!baseline.skills[s.id]) baseline.skills[s.id] = {};
+            if (!baseline.skills[s.id]['SKILL.md']) {
+              baseline.skills[s.id]['SKILL.md'] = crypto.createHash('sha256').update(fs.readFileSync(md)).digest('hex');
+            }
+          }
+        }
+      }
+      writeBaselineHashes(baseline);
+    } catch {}
+  }
+
   return {
     categories,
     geConfig: readGeInstanceConfig(),
@@ -873,6 +984,84 @@ app.api('/api/save-ge', async (data) => {
 app.api('/api/incremental-sync', async (data) => {
   const skillFilter = data && typeof data.skill === 'string' ? data.skill.trim() : '';
   return await syncSkillsIncrementally(skillFilter);
+}, 'POST');
+
+app.api('/api/fork-skill', async (data) => {
+  const pluginsRoot = getPluginsRoot();
+  const personalRoot = getPersonalSkillsRoot();
+  const pluginName = String((data && data.plugin) || '').trim();
+  const skillId = String((data && data.skill) || '').trim();
+  if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(skillId)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid skill identifier' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  const srcDir = path.join(pluginsRoot, pluginName, 'skills', skillId);
+  if (!fs.existsSync(srcDir)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Source skill not found' }), {
+      contentType: 'application/json',
+      status: 404,
+    });
+  }
+  fs.mkdirSync(personalRoot, { recursive: true, mode: 0o700 });
+  let targetSlug = `${skillId}-my`;
+  let suffix = 2;
+  while (fs.existsSync(path.join(personalRoot, targetSlug))) {
+    targetSlug = `${skillId}-my-${suffix}`;
+    suffix += 1;
+  }
+  const destDir = path.join(personalRoot, targetSlug);
+
+  function copyRecursive(curSrc, curDest, isRoot) {
+    fs.mkdirSync(curDest, { recursive: true });
+    for (const entry of fs.readdirSync(curSrc, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === '__pycache__') continue;
+      const sp = path.join(curSrc, entry.name);
+      const st = fs.lstatSync(sp);
+      if (st.isSymbolicLink()) continue;
+      if (st.isDirectory()) {
+        copyRecursive(sp, path.join(curDest, entry.name), false);
+      } else if (st.isFile()) {
+        const outName = isRoot && entry.name === 'SKILL.md.disabled' ? 'SKILL.md' : entry.name;
+        const dp = path.join(curDest, outName);
+        if (isRoot && outName === 'SKILL.md') {
+          const raw = fs.readFileSync(sp, 'utf-8');
+          const rewritten = raw.replace(/^(---\r?\n[\s\S]*?^name\s*:).*$/m, `$1 ${targetSlug}`);
+          fs.writeFileSync(dp, rewritten, 'utf-8');
+        } else {
+          fs.copyFileSync(sp, dp);
+        }
+      }
+    }
+  }
+
+  copyRecursive(srcDir, destDir, true);
+  const nowIso = new Date().toISOString();
+  const baseTitle = String((data && data.title) || skillId).trim();
+  const starter = String((data && data.starterPrompt) || `/${targetSlug} Run my customized workflow.`)
+    .trim()
+    .replace(new RegExp(`^/${skillId}\\b`), `/${targetSlug}`);
+  fs.writeFileSync(
+    path.join(destDir, '.twin-skill-meta.json'),
+    JSON.stringify(
+      {
+        slug: targetSlug,
+        forkedFrom: skillId,
+        sourcePlugin: pluginName,
+        mode: 'copy',
+        title: `${baseTitle} (My Copy)`,
+        subtitle: String((data && data.subtitle) || '').trim(),
+        seedPrompt: starter,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      },
+      null,
+      2
+    ) + '\n',
+    'utf-8'
+  );
+  return { ok: true, slug: targetSlug, command: `/${targetSlug}` };
 }, 'POST');
 
 app.run();

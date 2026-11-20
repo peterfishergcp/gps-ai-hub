@@ -132,6 +132,59 @@ if [[ -z "${SOURCE_SUITE_DIR}" || ! -d "${SOURCE_SUITE_DIR}/plugins" ]]; then
   exit 1
 fi
 
+# Protect any stock SKILL.md that the user customized locally before upgrading plugin folders
+PERSONAL_SKILLS_DIR="${TARGET_CONFIG_DIR}/skills"
+BASELINE_JSON="${TARGET_CONFIG_DIR}/plugin_data/agy-onboarding/baseline-hashes.json"
+sha256_of() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  fi
+}
+
+if [[ -f "${BASELINE_JSON}" && -d "${PLUGINS_DEST}" ]]; then
+  for new_pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
+    [[ -d "${new_pdir}/skills" ]] || continue
+    pname="$(basename "${new_pdir}")"
+    for new_sdir in "${new_pdir}/skills"/*; do
+      [[ -d "${new_sdir}" ]] || continue
+      sid="$(basename "${new_sdir}")"
+      old_sdir="${PLUGINS_DEST}/${pname}/skills/${sid}"
+      old_md="${old_sdir}/SKILL.md"
+      [[ -f "${old_md}" && ! -L "${old_md}" ]] || continue
+      new_md="${new_sdir}/SKILL.md"
+      [[ -f "${new_md}" ]] || continue
+      old_sha="$(sha256_of "${old_md}")"
+      new_sha="$(sha256_of "${new_md}")"
+      if [[ -n "${old_sha}" && "${old_sha}" != "${new_sha}" ]] && ! grep -q "${old_sha}" "${BASELINE_JSON}" 2>/dev/null; then
+        mkdir -p "${PERSONAL_SKILLS_DIR}"
+        chmod 700 "${PERSONAL_SKILLS_DIR}" 2>/dev/null || true
+        backup_slug="${sid}-saved"
+        if [[ -d "${PERSONAL_SKILLS_DIR}/${backup_slug}" ]]; then
+          backup_slug="${sid}-saved-$(date -u +%Y%m%d%H%M%S)"
+        fi
+        cp -R "${old_sdir}" "${PERSONAL_SKILLS_DIR}/${backup_slug}"
+        ts_now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        cat > "${PERSONAL_SKILLS_DIR}/${backup_slug}/.twin-skill-meta.json" <<METAEOF
+{
+  "slug": "${backup_slug}",
+  "forkedFrom": "${sid}",
+  "sourcePlugin": "${pname}",
+  "mode": "copy",
+  "title": "${sid} (Saved Local Edits)",
+  "subtitle": "Auto-preserved local edits before plugin upgrade",
+  "seedPrompt": "/${backup_slug} Run my customized workflow.",
+  "createdAt": "${ts_now}",
+  "updatedAt": "${ts_now}"
+}
+METAEOF
+        echo "Protected your local edits to /${sid} -> ${PERSONAL_SKILLS_DIR}/${backup_slug}/"
+      fi
+    done
+  done
+fi
+
 if command -v agy >/dev/null 2>&1 && [[ "${TARGET_CONFIG_DIR}" == "${HOME}/.gemini/config" ]]; then
   echo "Installing Generic AGY Plugin via native 'agy plugin install'..."
   agy plugin install "${SOURCE_SUITE_DIR}"
