@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AGY Design Studio — Serverless Visual Preview</title>
+  <title>Preview — Antigravity</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/preload.js"></script>
 </head>
@@ -11,26 +11,51 @@
   <header class="preview-header">
     <div class="header-top">
       <div class="brand-row">
-        <span class="agy-badge">AGY</span>
+        <svg class="brand-logo" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <defs>
+            <radialGradient id="pvTopRed" cx="62%" cy="22%" r="48%">
+              <stop offset="0%" stop-color="#FF4B3A"/>
+              <stop offset="48%" stop-color="#FF9F1C"/>
+              <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="pvLeftGreen" cx="34%" cy="32%" r="46%">
+              <stop offset="0%" stop-color="#34C759"/>
+              <stop offset="52%" stop-color="#A3E635" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="pvBaseBlue" x1="50" y1="12" x2="50" y2="88" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#60A5FA"/>
+              <stop offset="55%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#3B82F6"/>
+            </linearGradient>
+          </defs>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#pvBaseBlue)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#pvLeftGreen)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#pvTopRed)"/>
+        </svg>
         <div>
-          <h1>AGY Design Studio Preview</h1>
-          <p class="subtitle">Serverless visual preview of Dashboards, 16:9 Slides &amp; Flyers (Zero local ports needed)</p>
+          <h1>Preview</h1>
+          <p class="subtitle" id="previewSubtitle">Dashboards, 16:9 Slides &amp; Branded Docs</p>
         </div>
       </div>
       <div class="header-actions">
-        <button type="button" class="btn-secondary" id="refreshListBtn" title="Refresh generated deliverables">↻ Refresh</button>
-        <button type="button" class="btn-primary" id="downloadStandaloneBtn" disabled>Download HTML (Chrome/Edge) ↗</button>
+        <button type="button" class="btn-secondary" id="openConvBtn" hidden title="Jump to the conversation that created this deliverable">Open Chat</button>
+        <button type="button" class="btn-secondary" id="refreshListBtn" title="Scan conversations &amp; reload visual deliverables">Refresh</button>
+        <button type="button" class="btn-secondary" id="printPdfBtn" disabled title="Print or Save as PDF">Print / PDF</button>
+        <button type="button" class="btn-primary" id="downloadStandaloneBtn" disabled>Download HTML ↗</button>
       </div>
     </div>
+    <div class="filter-bar" id="kindFilterBar" hidden></div>
     <div class="tabs-bar" id="deliverableTabs" role="tablist" aria-label="Generated design deliverables"></div>
   </header>
 
   <main class="preview-stage" id="previewStage">
     <div class="empty-state" id="emptyState">
-      <h2>No Design Deliverables Yet</h2>
-      <p>Run <code>/agy-dashboard</code>, <code>/slides</code>, or <code>/doc-design</code> in chat. Your rendered dashboard, presentation deck, or stakeholder flyer will appear here automatically—and in the Conversation Artifacts list—with zero Python or web servers needed.</p>
+      <h2>No Visual Deliverables Yet</h2>
+      <p>Generate an interactive dashboard, 16:9 slide deck, or print-ready flyer in chat and click <strong>Refresh</strong>—or launch one in 1 click below:</p>
+      <div class="starter-grid" id="starterGrid"></div>
     </div>
-    <iframe id="previewFrame" class="preview-frame" title="Rendered Design Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals" hidden></iframe>
+    <iframe id="previewFrame" class="preview-frame" title="Rendered Visual Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals" hidden></iframe>
   </main>
 
   <div class="toast" id="statusToast" hidden></div>
