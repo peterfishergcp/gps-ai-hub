@@ -24,6 +24,7 @@ import {
   touchContact,
 } from '../../scripts/vault_core.mjs';
 import { buildSkillsCatalog } from './seed_prompts_catalog.mjs';
+import { getTokenMeterSummary } from './token_meter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
@@ -395,6 +396,21 @@ app.api(
     new Response(fs.readFileSync(path.join(__dirname, 'app.js'), 'utf-8'), {
       contentType: 'application/javascript; charset=utf-8',
     }),
+  'GET'
+);
+
+app.api(
+  '/token_pill_ui.js',
+  () =>
+    new Response(fs.readFileSync(path.join(__dirname, 'token_pill_ui.js'), 'utf-8'), {
+      contentType: 'application/javascript; charset=utf-8',
+    }),
+  'GET'
+);
+
+app.api(
+  '/api/token-summary',
+  async (data) => getTokenMeterSummary((data && data.convId) || ''),
   'GET'
 );
 

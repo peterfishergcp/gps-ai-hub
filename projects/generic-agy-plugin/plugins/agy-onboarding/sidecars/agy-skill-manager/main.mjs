@@ -17,6 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
+import { getTokenMeterSummary } from './token_meter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
@@ -243,10 +244,26 @@ const SKILL_CATALOG = [
       {
         id: 'model-guide',
         title: 'Model Selection & Using Claude in AGY',
-        subtitle: 'Switch between Gemini & Anthropic Claude, tune effort & Dual-Model reviews',
+        subtitle: 'Switch between Gemini 4, Orchestrator & Anthropic Claude 5.5 + Dual-Model reviews',
         command: '/model-guide',
-        badge: 'Claude + Gemini',
-        starterPrompt: '/model-guide Show me how to use Anthropic Claude alongside Google Gemini in Antigravity, when to pick each model, and our Public Sector quota & compliance guardrails.'
+        badge: 'Gemini 4 + Claude',
+        starterPrompt: '/model-guide Show me how to use Google Gemini 4, Orchestrator, and Anthropic Claude 5.5 in Antigravity, when to pick each model, and our Public Sector quota & compliance guardrails.'
+      },
+      {
+        id: 'orchestrator-guide',
+        title: 'Mastering Orchestrator (Planner + Hydrogen)',
+        subtitle: 'Pair Gemini 4 Neon/Argon/Carbon planning with fast Hydrogen execution & auto-recovery',
+        command: '/orchestrator-guide',
+        badge: 'Orchestrator',
+        starterPrompt: '/orchestrator-guide Show me how to select and prompt Orchestrator (Neon, Argon, Carbon) in Antigravity App and CLI for faster execution and lower quota burn.'
+      },
+      {
+        id: 'token-usage',
+        title: 'Token & Quota Consumption Analyzer',
+        subtitle: 'Retrieve exact 5h, 24h & 7d local token telemetry, cache hit % & rendered HTML report',
+        command: '/token-usage',
+        badge: 'Token Telemetry',
+        starterPrompt: '/token-usage Retrieve my exact Antigravity token consumption across 5-hour, 24-hour, and 7-day windows and render the interactive Token Consumption report.'
       },
       {
         id: 'daily-brief',
@@ -775,6 +792,16 @@ app.api('/app.js', () => {
   return new Response(fs.readFileSync(path.join(__dirname, 'app.js'), 'utf-8'), {
     contentType: 'application/javascript; charset=utf-8',
   });
+}, 'GET');
+
+app.api('/token_pill_ui.js', () => {
+  return new Response(fs.readFileSync(path.join(__dirname, 'token_pill_ui.js'), 'utf-8'), {
+    contentType: 'application/javascript; charset=utf-8',
+  });
+}, 'GET');
+
+app.api('/api/token-summary', async (data) => {
+  return getTokenMeterSummary((data && data.convId) || '');
 }, 'GET');
 
 function readPluginDefaultDisabled(pluginsRoot, pluginName) {

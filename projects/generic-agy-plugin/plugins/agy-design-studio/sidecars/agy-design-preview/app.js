@@ -280,10 +280,12 @@
 
   function init() {
     renderStarterCards();
+    var tokenMeter = window.AGYTokenPill ? window.AGYTokenPill.mount(document.querySelector('.header-actions')) : null;
 
     var refreshBtn = document.getElementById('refreshListBtn');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', function () {
+        if (tokenMeter) tokenMeter.refresh();
         fetchDeliverables(true);
       });
     }

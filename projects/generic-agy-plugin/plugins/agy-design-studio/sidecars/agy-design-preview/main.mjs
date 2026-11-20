@@ -21,6 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
+import { getTokenMeterSummary } from './token_meter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
@@ -446,6 +447,16 @@ app.api('/app.js', () => {
   return new Response(fs.readFileSync(path.join(__dirname, 'app.js'), 'utf-8'), {
     contentType: 'application/javascript; charset=utf-8',
   });
+}, 'GET');
+
+app.api('/token_pill_ui.js', () => {
+  return new Response(fs.readFileSync(path.join(__dirname, 'token_pill_ui.js'), 'utf-8'), {
+    contentType: 'application/javascript; charset=utf-8',
+  });
+}, 'GET');
+
+app.api('/api/token-summary', async (data) => {
+  return getTokenMeterSummary((data && data.convId) || '');
 }, 'GET');
 
 app.api('/api/deliverables', async () => {

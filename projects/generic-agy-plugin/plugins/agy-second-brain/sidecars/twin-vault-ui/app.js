@@ -49,6 +49,16 @@
       desc: 'Friday 3-Altitude executive, peer & sprint readout',
       prompt: '/twin-weekly-impact Generate my Friday 3-Altitude weekly impact summary from my vault.',
     },
+    {
+      cmd: '/orchestrator-guide',
+      desc: 'Master Orchestrator (Gemini 4 Planner + Hydrogen Executor)',
+      prompt: '/orchestrator-guide Show me how to select and prompt Orchestrator (Neon, Argon, Carbon) for maximum speed and lower quota burn.',
+    },
+    {
+      cmd: '/token-usage',
+      desc: 'Retrieve my 5h, 24h & 7d token consumption + quota dashboard',
+      prompt: '/token-usage Retrieve my exact Antigravity token consumption across 5-hour, 24-hour, and 7-day windows and render the interactive Token Consumption report.',
+    },
   ];
 
   function el(tag, opts, children) {
@@ -1766,9 +1776,15 @@
     });
   });
 
+  let tokenMeter = null;
+  if (window.AGYTokenPill) {
+    tokenMeter = window.AGYTokenPill.mount(document.querySelector('.topbar-actions'));
+  }
+
   document.getElementById('btn-refresh').addEventListener('click', () => {
+    if (tokenMeter) tokenMeter.refresh();
     loadState()
-      .then(() => showToast('Refreshed vault & skills from local disk'))
+      .then(() => showToast('Refreshed vault, skills & token meter from local disk'))
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
 

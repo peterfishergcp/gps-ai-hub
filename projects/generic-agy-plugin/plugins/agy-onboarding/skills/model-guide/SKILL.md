@@ -20,12 +20,12 @@ Help Public Sector staff, engineers, and agency IT administrators get the best r
 1. Look at the **bottom toolbar of the conversation prompt box** (just below where you type your message).
 2. Click the **Model Selector dropdown** (shows your active model, such as *Gemini 3.8 Flash* or *Claude Sonnet*).
 3. Select your target model family:
-   - **Anthropic Claude Sonnet** (`claude-sonnet-5-5` / latest Sonnet in picker) — Fast, surgical coding, refactoring, and nuanced prose/contract redlining.
-   - **Anthropic Claude Opus** (`claude-opus-5-5` / latest Opus in picker) — Deepest multi-step debugging, architecture review, and second-opinion legal/security audits.
-   - **Google Gemini 3.8 Flash** (`gemini-3.8-flash`) — Fast daily driver for briefings, federated SharePoint/Outlook synthesis, multimodal screenshots/PDFs, and 1M-token context.
+   - **Orchestrator (`Orchestrator (Neon)`, `Orchestrator (Argon)`, `Orchestrator (Carbon)`)** — Pairs a frontier **Gemini 4** planner with fast **Gemini 4 Hydrogen** implementation inside one conversation for lower quota burn and faster turnaround *(run **`/orchestrator-guide`** for full prompting & rollout patterns)*.
+   - **Google Gemini 4 (`Neon`, `Carbon`, `Argon`, `Hydrogen`)** — Frontier Google DeepMind reasoning (`Neon`, `Carbon`, `Argon`) and fast code execution (`Hydrogen`), supporting `Low`, `Medium`, `High`, and `Extra` (`xhigh` in CLI) on `Neon` and `Hydrogen`.
+   - **Anthropic Claude Sonnet 5.5 & Opus 5.5 (`Low`, `Medium`, `High`, `Max`)** — Surgical multi-file refactoring, nuance-heavy contract redlining, and deepest adversarial code/security audits *(note: legacy Claude 4.6 entries retire Nov 30, 2026)*.
+   - **Google Gemini 3.8 Flash** (`gemini-3.8-flash`) — Fast 1M-context daily driver for briefings, federated SharePoint/Outlook synthesis, and multimodal screenshots/PDFs.
    - **Google Gemini 3.5 Flash-Lite** (`gemini-3.5-flash-lite`) — Ultra-fast, lowest-cost high-volume classification and formatting.
-   - **Orchestrator Mode** *(when shown in picker)* — Automatically plans complex tasks with a frontier reasoning model and delegates sub-steps to fast execution models.
-4. **Adjust Thinking / Reasoning Effort:** For models with reasoning controls, choose **`Low`** (quick edits/chat), **`Medium`** (standard engineering/analysis), or **`High`** (hard root-cause debugging, statutory analysis, or Stage 1 refactoring blueprints).
+4. **Adjust Thinking / Reasoning Effort:** Choose **`Low`**, **`Medium`**, **`High`**, **`Extra`** (`xhigh` on Gemini 4 Neon/Hydrogen), or **`Max`** (on Claude 5.5). *(Note: Orchestrator uses a fixed reasoning configuration, so `/effort` does not apply while Orchestrator is selected.)*
 5. **Switch Mid-Conversation Anytime:** You can switch from Gemini to Claude (or Claude to Gemini) right in the middle of an existing thread—Antigravity preserves your workspace context and artifacts across turns.
 
 ### B. Antigravity CLI (`agy` in Terminal / PowerShell)
@@ -38,7 +38,7 @@ Help Public Sector staff, engineers, and agency IT administrators get the best r
   ```bash
   agy --model claude-sonnet-5-5 --effort high
   ```
-- **Check Quota & Credit Usage:** Type **`/usage`** in the CLI (or check **Settings -> Usage** in Desktop) at any time to view remaining subscription quota or model credit burn.
+- **Check Quota, Token Telemetry & Credit Usage:** Run **`/token-usage`** in chat to scan your exact local 5h/24h/7d token consumption (or hover over the live **`in | out | thinking`** pill in **`My Antigravity`**, **`Skills`**, or **`Preview`**), click **Model Selector -> `View Usage`** in Desktop, or run **`/usage`** and **`/credits`** in `agy` CLI.
 
 ---
 
