@@ -124,6 +124,32 @@
     return res.json();
   }
 
+  async function copyTextSafe(text) {
+    const str = String(text || '');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(str);
+        return true;
+      }
+    } catch {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = str;
+      ta.setAttribute('readonly', 'readonly');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.pointerEvents = 'none';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Boolean(ok);
+    } catch {
+      return false;
+    }
+  }
+
   async function dispatchPrompt(promptText, title) {
     try {
       if (window.sidecar && window.sidecar.agent) {
@@ -139,8 +165,7 @@
         }
         return;
       }
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(promptText);
+      if (await copyTextSafe(promptText)) {
         showToast('Copied prompt to clipboard');
       }
     } catch (err) {
@@ -150,7 +175,7 @@
 
   function appendInlineMarkdown(parent, rawText) {
     const str = String(rawText || '');
-    const tokenRe = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+    const tokenRe = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
     let lastIndex = 0;
     let match;
     while ((match = tokenRe.exec(str)) !== null) {
@@ -162,6 +187,13 @@
         parent.appendChild(el('strong', { text: token.slice(2, -2) }));
       } else if (token.startsWith('`') && token.endsWith('`')) {
         parent.appendChild(el('code', { text: token.slice(1, -1) }));
+      } else if (token.startsWith('[')) {
+        const m = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (m) {
+          parent.appendChild(el('code', { text: m[1] + ' (' + m[2] + ')' }));
+        } else {
+          parent.appendChild(document.createTextNode(token));
+        }
       } else {
         parent.appendChild(document.createTextNode(token));
       }
@@ -172,11 +204,64 @@
     }
   }
 
-  function buildSimpleMarkdownPreview(md) {
+  function parseTableCells(line) {
+    return line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((c) => c.trim());
+  }
+
+  function buildSimpleMarkdownPreview(md, fileName) {
     const container = el('div', { className: 'md-preview' });
-    const lines = String(md || '').split(/\r?\n/);
+    const rawStr = String(md || '');
+
+    // Pretty-print JSON files (e.g. ledger.json, plugin.json, custom_seeds.json)
+    if (fileName && String(fileName).toLowerCase().endsWith('.json')) {
+      let pretty = rawStr;
+      try {
+        pretty = JSON.stringify(JSON.parse(rawStr), null, 2);
+      } catch {}
+      container.appendChild(el('pre', null, [el('code', { text: pretty })]));
+      return container;
+    }
+
+    let bodyStr = rawStr;
+    // Render YAML frontmatter (--- ... ---) cleanly at top of SKILL.md / rule files
+    const fmMatch = rawStr.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+    if (fmMatch) {
+      bodyStr = rawStr.slice(fmMatch[0].length);
+      const fmLines = fmMatch[1].split(/\r?\n/).filter((l) => l.trim() !== '');
+      const fmRows = [];
+      fmLines.forEach((l) => {
+        const idx = l.indexOf(':');
+        if (idx > 0 && !/^\s/.test(l)) {
+          fmRows.push({ k: l.slice(0, idx).trim(), v: l.slice(idx + 1).trim() });
+        } else if (fmRows.length > 0) {
+          fmRows[fmRows.length - 1].v = (fmRows[fmRows.length - 1].v + ' ' + l.trim()).trim();
+        }
+      });
+      if (fmRows.length > 0) {
+        container.appendChild(
+          el(
+            'div',
+            { className: 'md-frontmatter' },
+            fmRows.map((r) =>
+              el('div', { className: 'md-fm-row' }, [
+                el('span', { className: 'md-fm-key', text: r.k }),
+                el('span', { className: 'md-fm-val', text: r.v.replace(/^>-\s*/, '') }),
+              ])
+            )
+          )
+        );
+      }
+    }
+
+    const lines = bodyStr.split(/\r?\n/);
     let inCode = false;
     let codeBuffer = [];
+    let tableBuffer = [];
 
     const flushCodeBlock = () => {
       const codeNode = el('code', { text: codeBuffer.join('\n') });
@@ -184,8 +269,51 @@
       codeBuffer = [];
     };
 
+    const flushTable = () => {
+      if (tableBuffer.length === 0) return;
+      if (tableBuffer.length >= 2 && /^\|?[\s:-]+\|/.test(tableBuffer[1])) {
+        const headers = parseTableCells(tableBuffer[0]);
+        const bodyLines = tableBuffer.slice(2);
+        const thead = el('thead', null, [
+          el(
+            'tr',
+            null,
+            headers.map((h) => {
+              const th = el('th');
+              appendInlineMarkdown(th, h);
+              return th;
+            })
+          ),
+        ]);
+        const tbody = el(
+          'tbody',
+          null,
+          bodyLines.map((bl) =>
+            el(
+              'tr',
+              null,
+              parseTableCells(bl).map((cell) => {
+                const td = el('td');
+                appendInlineMarkdown(td, cell);
+                return td;
+              })
+            )
+          )
+        );
+        container.appendChild(el('div', { className: 'table-wrap', style: { margin: '8px 0' } }, [el('table', null, [thead, tbody])]));
+      } else {
+        tableBuffer.forEach((tl) => {
+          const lineDiv = el('div');
+          appendInlineMarkdown(lineDiv, tl);
+          container.appendChild(lineDiv);
+        });
+      }
+      tableBuffer = [];
+    };
+
     for (const raw of lines) {
       if (raw.trim().startsWith('```')) {
+        flushTable();
         if (!inCode) {
           inCode = true;
           codeBuffer = [];
@@ -199,30 +327,58 @@
         codeBuffer.push(raw);
         continue;
       }
-      if (raw.startsWith('# ')) {
-        const h1 = el('h1');
-        appendInlineMarkdown(h1, raw.slice(2));
-        container.appendChild(h1);
-      } else if (raw.startsWith('## ')) {
-        const h2 = el('h2');
-        appendInlineMarkdown(h2, raw.slice(3));
-        container.appendChild(h2);
+      if (raw.trim().startsWith('|') && raw.trim().endsWith('|')) {
+        tableBuffer.push(raw);
+        continue;
+      }
+      flushTable();
+
+      if (/^---+$/.test(raw.trim())) {
+        container.appendChild(el('hr', { className: 'md-hr' }));
+      } else if (raw.startsWith('#### ')) {
+        const h4 = el('h4');
+        appendInlineMarkdown(h4, raw.slice(5));
+        container.appendChild(h4);
       } else if (raw.startsWith('### ')) {
         const h3 = el('h3');
         appendInlineMarkdown(h3, raw.slice(4));
         container.appendChild(h3);
+      } else if (raw.startsWith('## ')) {
+        const h2 = el('h2');
+        appendInlineMarkdown(h2, raw.slice(3));
+        container.appendChild(h2);
+      } else if (raw.startsWith('# ')) {
+        const h1 = el('h1');
+        appendInlineMarkdown(h1, raw.slice(2));
+        container.appendChild(h1);
+      } else if (raw.startsWith('> ')) {
+        const bq = el('blockquote', { className: 'md-quote' });
+        appendInlineMarkdown(bq, raw.slice(2));
+        container.appendChild(bq);
+      } else if (/^\s*-\s+\[([ xX-])\]\s+/.test(raw)) {
+        const m = raw.match(/^\s*-\s+\[([ xX-])\]\s+(.*)$/);
+        const checked = m[1].toLowerCase() === 'x';
+        const row = el('div', { className: 'md-list-row' }, [checked ? '\u2611 ' : '\u2610 ']);
+        appendInlineMarkdown(row, m[2]);
+        container.appendChild(row);
       } else if (/^\s*-\s+/.test(raw)) {
-        const row = el('div', null, ['\u2022 ']);
+        const row = el('div', { className: 'md-list-row' }, ['\u2022 ']);
         appendInlineMarkdown(row, raw.replace(/^\s*-\s+/, ''));
+        container.appendChild(row);
+      } else if (/^\s*\d+\.\s+/.test(raw)) {
+        const m = raw.match(/^(\s*\d+\.)\s+(.*)$/);
+        const row = el('div', { className: 'md-list-row' }, [el('strong', { text: m[1].trim() + ' ' })]);
+        appendInlineMarkdown(row, m[2]);
         container.appendChild(row);
       } else if (raw.trim() === '') {
         container.appendChild(el('div', { style: { height: '6px' } }));
       } else {
-        const lineDiv = el('div');
+        const lineDiv = el('div', { className: 'md-para' });
         appendInlineMarkdown(lineDiv, raw);
         container.appendChild(lineDiv);
       }
     }
+    flushTable();
     if (inCode) {
       flushCodeBlock();
     }
@@ -240,6 +396,7 @@
   async function openFileInExplorer(filePath, startInEditMode) {
     try {
       const data = await apiGet('/api/file?path=' + encodeURIComponent(filePath));
+      data.savedContent = data.content || '';
       selectedFile = data;
       editorMode = startInEditMode && data.writable ? 'edit' : 'preview';
       activeTab = 'explorer';
@@ -250,10 +407,10 @@
     }
   }
 
-  function openRelativeVaultFile(relPath) {
+  function openRelativeVaultFile(relPath, startInEditMode) {
     if (!appState || !appState.vaultRoot) return;
     const full = appState.vaultRoot.replace(/[\\/]+$/, '') + '/' + relPath;
-    openFileInExplorer(full);
+    openFileInExplorer(full, startInEditMode);
   }
 
   function syncTabButtons() {
@@ -588,7 +745,7 @@
             className: 'btn btn-secondary btn-sm',
             dataset: { openRel: 'gtd_board.md' },
             text: 'Edit Raw Markdown',
-            onClick: () => openRelativeVaultFile('gtd_board.md'),
+            onClick: () => openRelativeVaultFile('gtd_board.md', true),
           }),
         ]),
         el('div', { className: 'form-row' }, [prioSelect, initInput, taskInput, addBtn]),
@@ -775,7 +932,7 @@
             className: 'btn btn-secondary btn-sm',
             dataset: { openRel: 'contacts.md' },
             text: 'Edit contacts.md',
-            onClick: () => openRelativeVaultFile('contacts.md'),
+            onClick: () => openRelativeVaultFile('contacts.md', true),
           }),
         ]),
         el('div', { className: 'table-wrap' }, [el('table', null, [thead, tbody])]),
@@ -816,7 +973,18 @@
     const treePane = el('div', { className: 'tree-pane' });
     roots.forEach((r) => {
       treePane.appendChild(el('div', { className: 'tree-root-label', text: r.label }));
-      appendTreeNodes(treePane, r.tree, 0);
+      const hasChildren = r.tree && Array.isArray(r.tree.children) && r.tree.children.length > 0;
+      if (!hasChildren && r.id === 'my-skills') {
+        treePane.appendChild(
+          el('div', {
+            className: 'muted',
+            style: { fontSize: '11px', padding: '4px 6px 8px 6px' },
+            text: 'No personal copies yet — click "Save My Copy" on any skill in the Skills tab.',
+          })
+        );
+      } else {
+        appendTreeNodes(treePane, r.tree, 0);
+      }
     });
 
     const editorPane = el('div', { className: 'editor-pane' });
@@ -836,15 +1004,34 @@
           value: selectedFile.content || '',
           readOnly: !selectedFile.writable,
         });
+        textareaRef.addEventListener('input', () => {
+          selectedFile.content = textareaRef.value;
+          if (saveBtnRef) {
+            const dirty = selectedFile.writable && selectedFile.content !== selectedFile.savedContent;
+            saveBtnRef.textContent = dirty ? 'Save Changes *' : 'Save';
+          }
+        });
       }
 
+      const isDirty = Boolean(
+        selectedFile.writable &&
+          selectedFile.savedContent !== undefined &&
+          selectedFile.content !== selectedFile.savedContent
+      );
+
+      let saveBtnRef = null;
       const actionButtons = [
         el('button', {
           className: 'btn ' + (editorMode === 'preview' ? '' : 'btn-secondary ') + 'btn-sm',
           id: 'btn-mode-preview',
-          text: 'Preview',
+          title: 'View formatted Markdown preview',
+          text: 'Rendered Preview',
           onClick: () => {
             if (textareaRef && selectedFile) selectedFile.content = textareaRef.value;
+            if (editorMode === 'preview') {
+              showToast('Already viewing Rendered Preview — click "' + (selectedFile.writable ? 'Edit Markdown' : 'Raw Source') + '" to switch');
+              return;
+            }
             editorMode = 'preview';
             render();
           },
@@ -852,33 +1039,35 @@
         el('button', {
           className: 'btn ' + (editorMode === 'edit' ? '' : 'btn-secondary ') + 'btn-sm',
           id: 'btn-mode-edit',
-          text: 'Raw Markdown',
+          title: selectedFile.writable ? 'Edit raw Markdown text' : 'View raw Markdown source (read-only)',
+          text: selectedFile.writable ? 'Edit Markdown' : 'Raw Source',
           onClick: () => {
+            if (editorMode === 'edit') return;
             editorMode = 'edit';
             render();
           },
         }),
       ];
 
-      if (selectedFile.writable && editorMode === 'edit') {
-        actionButtons.push(
-          el('button', {
-            className: 'btn btn-sm',
-            id: 'btn-save-file',
-            text: 'Save',
-            onClick: async () => {
-              if (!textareaRef || !selectedFile) return;
-              try {
-                selectedFile.content = textareaRef.value;
-                await apiPost('/api/file', { path: selectedFile.path, content: selectedFile.content });
-                await loadState();
-                showToast('Saved ' + selectedFile.name);
-              } catch (err) {
-                showToast('Error saving file: ' + err.message);
-              }
-            },
-          })
-        );
+      if (selectedFile.writable && (editorMode === 'edit' || isDirty)) {
+        saveBtnRef = el('button', {
+          className: 'btn btn-sm',
+          id: 'btn-save-file',
+          text: isDirty ? 'Save Changes *' : 'Save',
+          onClick: async () => {
+            if (!selectedFile) return;
+            try {
+              if (textareaRef) selectedFile.content = textareaRef.value;
+              await apiPost('/api/file', { path: selectedFile.path, content: selectedFile.content });
+              selectedFile.savedContent = selectedFile.content;
+              await loadState();
+              showToast('Saved ' + selectedFile.name);
+            } catch (err) {
+              showToast('Error saving file: ' + err.message);
+            }
+          },
+        });
+        actionButtons.push(saveBtnRef);
       }
 
       if (selectedFile.name === 'voice.md') {
@@ -955,7 +1144,7 @@
       if (editorMode === 'edit' && textareaRef) {
         editorPane.appendChild(textareaRef);
       } else {
-        editorPane.appendChild(buildSimpleMarkdownPreview(selectedFile.content));
+        editorPane.appendChild(buildSimpleMarkdownPreview(selectedFile.content, selectedFile.name));
       }
     }
 
@@ -1159,6 +1348,7 @@
             await openFileInExplorer(res.skillMdPath, true);
           } else {
             skillsCategory = 'my-skills';
+            skillsSearch = '';
             render();
           }
         } catch (err) {
@@ -1233,18 +1423,36 @@
     }
 
     function buildSeedEditDrawer(skill) {
+      const titleInput = skill.isPersonalCopy
+        ? el('input', {
+            type: 'text',
+            className: 'form-input',
+            value: skill.title || '',
+            placeholder: 'Card Title',
+          })
+        : null;
       const promptArea = el('textarea', {
         className: 'form-textarea seed-edit-textarea',
         value: skill.seedPrompt || '',
       });
 
       return el('div', { className: 'fork-drawer' }, [
-        el('div', { className: 'fork-drawer-title', text: 'Customize 1-Click Seed Prompt for ' + skill.command }),
+        el('div', {
+          className: 'fork-drawer-title',
+          text: (skill.isPersonalCopy ? 'Edit Title & Seed Prompt for ' : 'Customize 1-Click Seed Prompt for ') + skill.command,
+        }),
         el('div', {
           className: 'muted',
           style: { fontSize: '11px', marginBottom: '6px' },
           text: 'Stored in ~/antigravity-twin/memory/profile/custom_seeds.json — never overwritten by plugin updates.',
         }),
+        titleInput
+          ? el('div', { style: { marginBottom: '6px' } }, [
+              el('label', { className: 'fork-field-label', text: 'Display Title' }),
+              titleInput,
+            ])
+          : null,
+        el('label', { className: 'fork-field-label', text: '1-Click Seed Prompt' }),
         promptArea,
         el('div', { className: 'topbar-actions', style: { marginTop: '8px', flexWrap: 'wrap' } }, [
           el('button', {
@@ -1255,11 +1463,12 @@
               try {
                 const res = await apiPost('/api/skills/save-seed', {
                   skillId: skill.id,
+                  title: titleInput ? titleInput.value.trim() : undefined,
                   seedPrompt: promptArea.value.trim(),
                 });
                 activeSeedCardKey = null;
                 if (res.skillsCatalog && appState) appState.skillsCatalog = res.skillsCatalog;
-                renderFilteredSkillCards();
+                render();
                 showToast('Saved custom seed prompt for ' + skill.command);
               } catch (err) {
                 showToast('Could not save seed prompt: ' + err.message);
@@ -1279,7 +1488,7 @@
                     });
                     activeSeedCardKey = null;
                     if (res.skillsCatalog && appState) appState.skillsCatalog = res.skillsCatalog;
-                    renderFilteredSkillCards();
+                    render();
                     showToast('Reset ' + skill.command + ' to default seed prompt');
                   } catch (err) {
                     showToast('Reset failed: ' + err.message);
@@ -1376,13 +1585,10 @@
                 text: 'Copy',
                 title: 'Copy seed prompt to clipboard',
                 onClick: async () => {
-                  try {
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                      await navigator.clipboard.writeText(skill.seedPrompt);
-                      showToast('Copied ' + skill.command + ' seed prompt');
-                    }
-                  } catch (err) {
-                    showToast('Copy failed: ' + err.message);
+                  if (await copyTextSafe(skill.seedPrompt)) {
+                    showToast('Copied ' + skill.command + ' seed prompt');
+                  } else {
+                    showToast('Clipboard copy unavailable in this view');
                   }
                 },
               }),
