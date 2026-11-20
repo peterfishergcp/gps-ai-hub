@@ -4,24 +4,24 @@
     "main.mjs"
   ],
   "restart_policy": "always",
-  "display_name": "Twin Second Brain & Markdown Vault",
-  "description": "Interactive Second Brain explorer for Google Antigravity: inspect and edit Markdown memory files under the hood, check off Zero-Decay GTD tasks, track 4-file initiatives, and spot stale (>21d) stakeholders.",
+  "display_name": "My Antigravity",
+  "description": "Clean personal Antigravity workspace: ask anything, launch 1-click workflows and skills, save personal skill copies, track GTD tasks and initiatives, and edit Markdown memory files.",
   "has_web_ui": true,
   "agent_permissions": {
     "allows_user_interactions": true
   },
   "ui_config": {
-    "display_name": "Twin Vault",
+    "display_name": "My Antigravity",
     "views": [
       {
         "path": "/?entrypoint=sidebar",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
-        "title": "Twin Vault"
+        "title": "My Antigravity"
       },
       {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
-        "title": "Twin Vault"
+        "title": "My Antigravity"
       }
     ]
   }

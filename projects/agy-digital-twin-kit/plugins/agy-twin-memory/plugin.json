@@ -1,7 +1,7 @@
 {
   "name": "agy-twin-memory",
-  "displayName": "AGY Twin Memory & Vault UI",
-  "version": "1.0.1",
+  "displayName": "My Antigravity \u2014 Second Brain, Workflows & Skills",
+  "version": "1.2.0",
   "description": "Persistent 2-Tier Second Brain Memory Vault for Google Antigravity: role-adaptive profile onboarding, Zero-Task-Decay GTD board, 21-day stakeholder relationship tracker, 4-file initiative isolation with 4-tier recency compaction, and an interactive Markdown & GTD Explorer UI panel.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

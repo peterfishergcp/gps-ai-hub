@@ -1,8 +1,8 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.2.2",
-  "releasedAt": "2026-11-20T21:20:00Z",
+  "suiteVersion": "1.3.0",
+  "releasedAt": "2026-11-20T21:50:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
@@ -508,13 +508,13 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "0e65f19253dfa1a5ff8ee67cf3aa961409c65a459ce5d0284d1536d66686cae8",
-        "index.html": "923188558b4a1e088f7f01a9daaa93f2f1bcec357240eb56ec1ccff406586661",
+        "app.js": "2791651f06d956fcc8837772164e085ba4cd43e7704c288a0a60dc06bcde995c",
+        "index.html": "593d64a0bba7c28b6d234d3d6201b96a5909dd17675b05ab78ad413c4ae52f88",
         "main.mjs": "26c106fb08b200e1ebb1e681a1f88ca19eee5034af35b0e2763f9914bf1abb98",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "78bee24ecebbbe85ecbf3f59d196b6515643925e0534d87abebe13291a08fb04",
-        "sidecar.json": "3f667999af2f77eed8491f144a96a062265398d1e49e13515e900716bab443d7",
-        "styles.css": "d0a0ea20b65911ea83ff025b8172987d4e8287362adbc212464295dbf50441ee"
+        "sidecar.json": "73457b66c79a7306eaa47beb7cad2e28c1b3fbc4695d48083c27f0d14d6c3e8b",
+        "styles.css": "91785211feda6c6dbf2b8f7f0f7192533558ee63286db03a4514a2831d20db44"
       }
     }
   }
