@@ -10,7 +10,9 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Azure / Entra ID -> Google Cloud Identity Sync:** Works seamlessly with synced Google Cloud Identity accounts and replicated Entra security groups.
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
-  - Ships as a `< 200 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 6 plugins and 28 skills in seconds—with or without `git` installed.
+  - Ships as a `< 250 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 37 skills in seconds—with or without `git` installed.
+- **Persistent 2-Tier Second Brain Vault, 4-Agent Swarm & Anti-Slop (`v1.1.0`):**
+  - Adds a local Markdown **Second Brain Memory Vault** (`~/antigravity-twin/memory/`) with an interactive **`Twin Vault`** side-pane UI (`Extensions -> Twin Vault`), Zero-Task-Decay GTD tracking, `>21d` stakeholder staleness alerts, Adversarial Minto SCQA pre-meeting coaching (`/twin-jit-prep`), 4-agent parallel swarm orchestration (`/twin-swarm-prep`), hardlined anti-slop editing (`/no-ai-slop`), deterministic outbound scrubbing (`/outbound-scrub`), and opt-in scheduled automations (`agy-twin-automations`).
 
 ---
 
@@ -47,19 +49,21 @@ bash projects/generic-agy-plugin/scripts/install-agy-suite.sh
 
 ---
 
-## What Gets Installed (6 Modular Plugins · 28 Slash Skills Across 7 `AGY Skills` Categories)
+## What Gets Installed (8 Modular Plugins · 37 Slash Skills Across 9 `AGY Skills` Categories)
 
-All 6 plugins are **enabled immediately upon installation**, and non-technical staff can optionally toggle off individual skills or entire categories (including the **`Government Services (public_sector) Skills`** category) anytime inside **`Extensions -> AGY Skills`**:
+7 core plugins are **enabled immediately upon installation** (while **`agy-twin-automations`** ships **opt-in / disabled by default** so background schedules only run when explicitly toggled on), and staff can toggle individual skills or entire categories anytime inside **`Extensions -> AGY Skills`**:
 
 | Plugin (`AGY Skills` Category) | Included `/skills` & Capabilities | Target Personas |
 | :--- | :--- | :--- |
-| **`agy-onboarding`** | `/agy-onboard` · **`/model-guide` *(Using Claude & Gemini in AGY)*** · `/daily-brief` · `/digital-twin` · `/inbox-triage` · `/agy-update` *(+ In-App `AGY Skills` Toggle Panel)* | All Public Sector Staff, Admins & Leadership |
+| **`agy-onboarding`** | `/agy-onboard` *(+ 1-step Second Brain Vault setup)* · **`/model-guide` *(Using Claude & Gemini in AGY)*** · `/daily-brief` *(GE + Second Brain GTD/milestones)* · `/digital-twin` *(calibrated to `voice.md`)* · `/inbox-triage` · `/agy-update` *(+ In-App `AGY Skills` Toggle Panel)* | All Public Sector Staff, Admins & Leadership |
 | **`agy-connectors`** | `/connect-ge` *(Default)* · `/connect-m365-workspace` · `/connect-github-bigquery` + **`agy-ge-bridge` MCP** *(Federated Outlook, SharePoint, OneDrive, Teams, Gmail, Drive & GitHub via GE)* | All Staff + IT Onboarding |
 | **`agy-design-studio`** | `/agy-dashboard` *(Civic Command Center UI, 100% serverless Side-Pane preview + 1-click HTML download)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos)* + `agy-design-architect` agent + `AGY Preview` sidecar | Analysts, Comms & Program Leads |
 | **`agy-public-workflows` *(Public Workflows Category)*** | `/foia-expert` *(`5 U.S.C. § 552` + State Open Records + Vault/Purview/GE discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` | FOIA Officers, Legal, Procurement & Policy |
 | **`agy-public-workflows` *(Government Services `public_sector` Category)*** | `/document-intake-cleanup-and-validation` · `/expense-auditor` *(2 CFR Part 200)* · `/foia-request-processing` · `/plain-language-notice-generator` · `/policy-and-statute-assistant` · `/public-records-redaction` · `/rfp-vendor-evaluation` | Caseworkers, Grant Auditors, FOIA, Comms & Procurement |
 | **`agy-engineering-cloud`** | `/modernize-refactor` *(Stage 0/1/2 Crucible adapted from [migrate-to-rust](https://github.com/google/skills/tree/main/skills/developers/migrate-to-rust))* · `/deploy-cloudrun` *(Zero-Docker source deploy)* · `/bigquery-architect` · `/find-cloud-skill` | Application, Data & Cloud Engineers |
 | **`agy-security`** | `/security-audit` *(OWASP + Cloud WAF + Assured Workloads CJIS/HIPAA/FedRAMP)* · `/iam-secret-hygiene` + Always-on `rules/AGENTS.md` | Engineers, Security & All Builders |
+| **`agy-second-brain`** | `/twin-memory` · `/twin-meeting-notes` *(4-Tier Compaction)* · `/twin-jit-prep` *(Adversarial Minto SCQA)* · `/twin-followup-plan` · `/twin-swarm-prep` *(4 parallel subagents)* · `/twin-weekly-impact` *(3-Altitude ledger)* · `/no-ai-slop` · `/outbound-scrub` + **`Twin Vault` Sidecar UI** | Program Managers, Analysts, Comms, Engineers & Leaders |
+| **`agy-twin-automations` *(Opt-In — Disabled by Default)*** | `/twin-automations` + 4 `"builtin": "schedule"` cron sidecars (*Morning Kickoff Brief*, *Twice-Daily Follow-Up Plan*, *Evening Notes Compactor*, *Friday 3-Altitude Impact*) | Power Users & Team Leads |
 
 ---
 
@@ -73,9 +77,9 @@ Whenever new skills, FOIA templates, dashboard themes, or connector improvements
 
 ## Workshop Launchpad, AGY Setup Guide & Guided Test Prompts
 
-- **Workshop Launchpad & 28-Skill Registry Source:** [`workshop/`](./workshop/index.html)
+- **Workshop Launchpad & 37-Skill Registry Source:** [`workshop/`](./workshop/index.html)
 - **Generic 7-Step AGY Download & Setup Guide Source:** [`setup-guide/`](./setup-guide/index.html)
-- **Guided Test Prompts (Core 7):** [`docs/TEST_PROMPTS.md`](./docs/TEST_PROMPTS.md)
+- **Guided Test Prompts (Core 9, Including Second Brain & Swarm):** [`docs/TEST_PROMPTS.md`](./docs/TEST_PROMPTS.md)
 - **Government Services (`public_sector`) Test Prompts (7):** [`docs/PUBLIC_SECTOR_TEST_PROMPTS.md`](./docs/PUBLIC_SECTOR_TEST_PROMPTS.md)
 - **IT & Technical Appendix (Offline `.zip`, Security Policy & MCP Matrix):** [`docs/IT_AND_TECHNICAL_APPENDIX.md`](./docs/IT_AND_TECHNICAL_APPENDIX.md)
 

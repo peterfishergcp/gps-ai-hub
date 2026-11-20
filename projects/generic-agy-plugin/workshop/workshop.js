@@ -8,10 +8,10 @@
   var STEP2_INSTALL_PROMPT = 'agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin';
 
   var SKILLS = [
-    { id: '/agy-onboard', title: 'Agency Role & Digital Twin Quickstart', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: '60-second setup for agency role, Digital Twin tone, 30-60-90 plans, and SOP builders.', prompt: '/agy-onboard Help me set up my agency role, Digital Twin tone, and Gemini Enterprise connection.' },
+    { id: '/agy-onboard', title: 'Agency Role, Second Brain & GE Quickstart', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: '60-second setup for agency role, Digital Twin tone, 1-step Second Brain Vault initialization, 30-60-90 plans, and SOP builders.', prompt: '/agy-onboard Help me set up my agency role, Second Brain Memory Vault, and Gemini Enterprise connection.' },
     { id: '/model-guide', title: 'Using Claude & Gemini Models in AGY', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: 'Switch between Anthropic Claude (Sonnet/Opus) and Google Gemini in Desktop & CLI, run Dual-Model Cross-Reviews, and configure Vertex AI Model Garden.', prompt: '/model-guide Show me how to use Anthropic Claude alongside Google Gemini in Antigravity, when to pick each model, and our agency quota & compliance guardrails.' },
-    { id: '/daily-brief', title: 'Daily Executive Brief & Meeting Prep', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: 'Morning priorities, meeting prep briefs, and open action items grounded in Federated GE.', prompt: '/daily-brief Summarize my top priorities today, upcoming meetings, and open action items.' },
-    { id: '/digital-twin', title: 'Digital Twin Correspondence Drafter', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: 'Drafts voice-matched emails, official letters, and constituent replies (strictly Draft-Only).', prompt: '/digital-twin Draft a clear, concise reply in my voice to the thread below.' },
+    { id: '/daily-brief', title: 'Daily Executive & Second Brain Kickoff Brief', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: 'Unified morning priorities, calendar prep, P0/P1 Second Brain GTD tasks, and >21d stale stakeholder check-ins grounded in Federated GE.', prompt: '/daily-brief Summarize my top priorities today, upcoming meetings, open Second Brain GTD commitments, and stale stakeholder check-ins.' },
+    { id: '/digital-twin', title: 'Digital Twin Correspondence Drafter', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: 'Drafts voice-matched emails, memos, official letters, and constituent replies calibrated to voice.md (strictly Draft-Only).', prompt: '/digital-twin Draft a clear, concise reply in my voice to the thread below.' },
     { id: '/inbox-triage', title: 'Rule-Driven Inbox & Incident Triage', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: 'Separates immediate director escalations from routine items with a fail-safe hold on unreadable files.', prompt: '/inbox-triage Triage my unread emails from the last 48 hours and flag urgent leadership escalations.' },
     { id: '/agy-update', title: '1-Second Incremental Git & HTTPS Updater', category: 'Onboarding & Triage', type: 'Executable Skill', desc: 'SHA-256 incremental updater syncing changed skills over HTTPS 443 while preserving user toggles and GE settings.', prompt: '/agy-update Check if newer Generic AGY Plugin skills or templates are available.' },
 
@@ -41,7 +41,18 @@
     { id: '/find-cloud-skill', title: 'Live Google Cloud Skill Loader', category: 'Engineering & Cloud', type: 'Executable Skill', desc: 'Fetches specialized official GKE, AlloyDB, Apigee, and Vertex AI skills on demand over HTTPS 443.', prompt: '/find-cloud-skill Load the official Google Cloud skill for Assured Workloads.' },
 
     { id: '/security-audit', title: 'OWASP, Cloud WAF & Assured Workloads', category: 'Security & IAM', type: 'SOP Playbook', desc: 'Zero-install code and architecture audit aligned with OWASP Top 10, Cloud WAF, and FedRAMP/CJIS/HIPAA.', prompt: '/security-audit Run an OWASP and Google Cloud WAF security audit on this codebase.' },
-    { id: '/iam-secret-hygiene', title: 'Least-Privilege IAM & Secret Hygiene', category: 'Security & IAM', type: 'SOP Playbook', desc: 'Replaces primitive roles, default compute SAs, and env secrets with Entra-synced Google groups and Secret Manager.', prompt: '/iam-secret-hygiene Audit our IAM bindings and replace env-var secrets with Secret Manager.' }
+    { id: '/iam-secret-hygiene', title: 'Least-Privilege IAM & Secret Hygiene', category: 'Security & IAM', type: 'SOP Playbook', desc: 'Replaces primitive roles, default compute SAs, and env secrets with Entra-synced Google groups and Secret Manager.', prompt: '/iam-secret-hygiene Audit our IAM bindings and replace env-var secrets with Secret Manager.' },
+
+    { id: '/twin-memory', title: 'Second Brain Memory Vault & Initializer', category: 'Second Brain & Swarm', tags: 'second_brain vault gtd', type: 'Executable Skill', desc: 'Initializes and manages ~/antigravity-twin/memory/ (public-sector/pm/dev/leader presets, Zero-Decay GTD board, >21d contacts & Twin Vault UI).', prompt: '/twin-memory Initialize my Second Brain memory vault using the public-sector preset and summarize my active GTD tasks and initiatives.' },
+    { id: '/twin-meeting-notes', title: 'Meeting Notes Harvester & 4-Tier Compactor', category: 'Second Brain & Swarm', tags: 'second_brain notes compaction', type: 'Executable Skill', desc: 'Strips base64 bloat, applies 4-Tier Recency Compaction (0-7d to 90d+) to running_notes.md, extracts GTD tasks, and updates contacts.md.', prompt: '/twin-meeting-notes Ingest and compact these call notes into my initiative vault, extract open action items to gtd_board.md, and update contacts.md.' },
+    { id: '/twin-jit-prep', title: 'T-15m Pre-Meeting Brief & SCQA Coach', category: 'Second Brain & Swarm', tags: 'second_brain scqa prep', type: 'SOP Playbook', desc: 'Builds a 1-card pre-meeting brief plus an Adversarial Minto Pyramid (SCQA) Critic for tough stakeholder pushback.', prompt: '/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my top active initiative.' },
+    { id: '/twin-followup-plan', title: 'Follow-Up & Action Plan Sweep', category: 'Second Brain & Swarm', tags: 'second_brain followup gtd', type: 'SOP Playbook', desc: 'Audits already-sent replies first, writes followups/latest_action_plan.md, syncs gtd_board.md, and stages [Draft-Only] replies.', prompt: '/twin-followup-plan Run a follow-up sweep across my Second Brain vault and stage [Draft-Only] replies for open P0 and P1 commitments.' },
+    { id: '/twin-swarm-prep', title: '4-Agent Parallel Swarm Orchestrator', category: 'Second Brain & Swarm', tags: 'second_brain swarm subagents', type: 'Executable Skill', desc: 'Fans out 4 specialized subagents concurrently (Memory Scout, SCQA Critic, Solution Architect, Safety Auditor) for ~60s 360 prep.', prompt: '/twin-swarm-prep Run a 4-agent parallel 360 prep pack for my highest-priority initiative.' },
+    { id: '/twin-weekly-impact', title: 'Friday Closeout & 3-Altitude Impact Ledger', category: 'Second Brain & Swarm', tags: 'second_brain impact weekly', type: 'SOP Playbook', desc: 'Summarizes weekly Executive Outcomes, Cross-Team Reusable Assets, and Workstream Velocity into weekly/YYYY-WXX.md and impact/ledger.json.', prompt: '/twin-weekly-impact Generate my Friday 3-Altitude weekly impact summary from my Second Brain vault.' },
+    { id: '/no-ai-slop', title: 'Hardlined Anti-AI-Slop Editor', category: 'Second Brain & Swarm', tags: 'anti_slop voice writing', type: 'SOP Playbook', desc: 'Strips 17 common LLM filler clichés, binary-contrast gimmicks, and em-dash clusters while protecting exact figures and citations.', prompt: '/no-ai-slop Tighten the draft below and strip all AI-slop clichés while keeping concrete numbers and citations intact.' },
+    { id: '/outbound-scrub', title: 'Deterministic Outbound Safety & PII Scrubber', category: 'Second Brain & Swarm', tags: 'scrub safety secrets pii', type: 'Executable Skill', desc: 'Scans external emails, memos, and snippets for leaked keys, SSNs, unresolved [CONFIRM] markers, and slop (Node CLI + zero-Node regex fallback).', prompt: '/outbound-scrub Run a deterministic outbound safety, PII/secret, and placeholder check on the deliverable below before sharing.' },
+
+    { id: '/twin-automations', title: 'Opt-In Scheduled Briefings & Vault Compactor', category: 'Twin Automations', tags: 'schedule cron automations', type: 'Executable Skill', desc: 'Configures IANA timezone via native file edits and guides enabling the 4 opt-in weekday briefings & compactors in Automations.', prompt: '/twin-automations Set my IANA timezone across my scheduled Twin automations and show me how to enable them in the Automations dashboard.' }
   ];
 
   var CATEGORIES = [
@@ -52,7 +63,9 @@
     'Public Workflows',
     'Government Services',
     'Engineering & Cloud',
-    'Security & IAM'
+    'Security & IAM',
+    'Second Brain & Swarm',
+    'Twin Automations'
   ];
 
   var activeType = 'All';
@@ -146,7 +159,7 @@
 
     grid.replaceChildren();
     if (filtered.length === 0) {
-      grid.appendChild(el('p', 'empty-state', 'No skills match your filter. Clear the search box to see all 28 skills.'));
+      grid.appendChild(el('p', 'empty-state', 'No skills match your filter. Clear the search box to see all 37 skills.'));
       return;
     }
 

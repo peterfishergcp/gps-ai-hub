@@ -1,13 +1,13 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.0.1",
-  "releasedAt": "2026-11-19",
+  "suiteVersion": "1.1.0",
+  "releasedAt": "2026-11-20",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
-      "version": "1.0.0",
-      "category": "Onboarding, Skill Toggle UI Panel (7 Categories), Incremental Skill & Sidecar Sync, Model Guide (Claude + Gemini), Daily Brief & Triage",
+      "version": "1.1.0",
+      "category": "Onboarding, Skill Toggle UI Panel (9 Categories), Incremental Skill & Sidecar Sync, Model Guide (Claude + Gemini), Vault-Aware Daily Brief & Digital Twin",
       "skills": [
         "agy-onboard",
         "model-guide",
@@ -80,9 +80,55 @@
         "security-audit",
         "iam-secret-hygiene"
       ]
+    },
+    "agy-second-brain": {
+      "version": "1.1.0",
+      "category": "Persistent 2-Tier Second Brain Memory Vault, Twin Vault Sidecar UI, Adversarial Minto SCQA Prep, 4-Agent Parallel Swarm & Anti-Slop Outbound Scrubbing",
+      "skills": [
+        "twin-memory",
+        "twin-meeting-notes",
+        "twin-jit-prep",
+        "twin-followup-plan",
+        "twin-swarm-prep",
+        "twin-weekly-impact",
+        "no-ai-slop",
+        "outbound-scrub"
+      ],
+      "agents": [
+        "context-memory-scout",
+        "scqa-redteam-critic",
+        "domain-solution-architect",
+        "outbound-safety-auditor"
+      ],
+      "sidecars": [
+        "twin-vault-ui"
+      ]
+    },
+    "agy-twin-automations": {
+      "version": "1.1.0",
+      "disabled": true,
+      "category": "Opt-In Background Scheduled Automations (Morning Kickoff Brief, Twice-Daily Follow-Up Plan, Evening Notes Compactor & Friday 3-Altitude Impact)",
+      "skills": [
+        "twin-automations"
+      ],
+      "sidecars": [
+        "morning-twin-brief",
+        "twice-daily-followup-plan",
+        "nightly-notes-compactor",
+        "friday-weekly-impact"
+      ]
     }
   },
   "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-11-20",
+      "highlights": [
+        "Integrated the consolidated agy-second-brain plugin (8 net-new non-duplicate skills, 4 parallel subagents, and the Twin Vault side-pane UI) plus opt-in agy-twin-automations (disabled by default; 4 scheduled cron workflows), expanding the suite to 8 plugins and 37 slash-command skills across 9 AGY Skills categories.",
+        "Upgraded /agy-onboard, /daily-brief, and /digital-twin in agy-onboarding to be Second-Brain Vault-aware (~/antigravity-twin/memory/) with zero command duplication.",
+        "Added deterministic zero-Node inline regex fallback to /outbound-scrub and native edit_file timezone configuration to /twin-automations for locked-down corporate laptops."
+      ]
+    },
     {
       "version": "1.0.0",
       "date": "2026-11-19",
@@ -193,9 +239,9 @@
     "agy-onboard": {
       "plugin": "agy-onboarding",
       "skill": "agy-onboard",
-      "treeSha256": "abefe9c6f058ed52",
+      "treeSha256": "1002726275e6185e",
       "files": {
-        "SKILL.md": "02ec366a93fc76a7159d6b639ccf9c7a7bca8ac428b5fdec4540da3cda0642f8",
+        "SKILL.md": "22d3663f86ca82b6ff899fdc732351d1d5e8351601f16ea7239ef8d9c50b1412",
         "references/onboarding_sops_playbook.md": "80d0dc02bbe54da4b013534ce165801b153ade1ab343ae1d74238613f5364734"
       }
     },
@@ -213,18 +259,18 @@
     "daily-brief": {
       "plugin": "agy-onboarding",
       "skill": "daily-brief",
-      "treeSha256": "58cd1070af1de440",
+      "treeSha256": "a2263879653592f0",
       "files": {
-        "SKILL.md": "88a41df574d54c29edc0f64e858d21be5f9753c33b110d2b5a7c205beaa71a6d",
+        "SKILL.md": "6486b7fd7f871b12ecf2173ead036bcdfe45e632310d08dfb0e0f2e3c1793335",
         "references/meetings_project_playbook.md": "6d51098ad9716b726e6668304dd8f2bd2d4d71fd4514c30b14814c40ee112c94"
       }
     },
     "digital-twin": {
       "plugin": "agy-onboarding",
       "skill": "digital-twin",
-      "treeSha256": "7fd232d38af1b338",
+      "treeSha256": "c5a9502f58ee7e9e",
       "files": {
-        "SKILL.md": "af8cac32a78510d63bf008bbbd6a40c822b1c5423dd90c35f393d75c78b0ca86",
+        "SKILL.md": "ac0c1238390ce822da26261208150310865c17f93ae1dc00e8f3af9b152091c1",
         "references/correspondence_playbook.md": "7c75e4f2c09aada7d08668c9c179dcd496359dc5bc82160a3dd93c7027d85d68"
       }
     },
@@ -335,6 +381,71 @@
         "SKILL.md": "7309fee226cff3a725dee33888b21af58fa0fdda1aec5afb83b84f8bb19ba896"
       }
     },
+    "no-ai-slop": {
+      "plugin": "agy-second-brain",
+      "skill": "no-ai-slop",
+      "treeSha256": "df7dbaceb70a54b2",
+      "files": {
+        "SKILL.md": "8cbeef1a3148921caf8b3e4597c055638a424f1836afe5330effdad1274d624d"
+      }
+    },
+    "outbound-scrub": {
+      "plugin": "agy-second-brain",
+      "skill": "outbound-scrub",
+      "treeSha256": "72207370640a0bf5",
+      "files": {
+        "SKILL.md": "64245f8f9002176256c03421db4c4a5c5099455bf0b50c89da94652b8979ea38"
+      }
+    },
+    "twin-followup-plan": {
+      "plugin": "agy-second-brain",
+      "skill": "twin-followup-plan",
+      "treeSha256": "10785bf92c6fd142",
+      "files": {
+        "SKILL.md": "290e24ed8967b581a5003b1749e63746ae7c528983c1b750f6b0b0b1886933d4"
+      }
+    },
+    "twin-jit-prep": {
+      "plugin": "agy-second-brain",
+      "skill": "twin-jit-prep",
+      "treeSha256": "c4e7255295f71211",
+      "files": {
+        "SKILL.md": "68e152939f18224dbd986b5a5544452adfc1c8672b96117671ab4aa1f80e5bad"
+      }
+    },
+    "twin-meeting-notes": {
+      "plugin": "agy-second-brain",
+      "skill": "twin-meeting-notes",
+      "treeSha256": "a18468deab93943c",
+      "files": {
+        "SKILL.md": "f4ae0d02d715cc5201408c41b15f2408a0a420310c406a2178a08cc1bf9125c7",
+        "references/compaction_rubric.md": "1b1b55c88f5010a1a51be5fdb7ec37b760491c26b481c452b29f0e072b37eb50"
+      }
+    },
+    "twin-memory": {
+      "plugin": "agy-second-brain",
+      "skill": "twin-memory",
+      "treeSha256": "022790a79e5dcc91",
+      "files": {
+        "SKILL.md": "4e0e1cc9fe936c8f9f9042cbe24dcef058caedfaaba1771e956334a17c2ed915"
+      }
+    },
+    "twin-swarm-prep": {
+      "plugin": "agy-second-brain",
+      "skill": "twin-swarm-prep",
+      "treeSha256": "b31f05c9df1925c3",
+      "files": {
+        "SKILL.md": "35aad8498e79e45ec0a1c62a0cd128c8691d0f0e906c0d2bfcebc38a525a06e7"
+      }
+    },
+    "twin-weekly-impact": {
+      "plugin": "agy-second-brain",
+      "skill": "twin-weekly-impact",
+      "treeSha256": "999121ee97001d84",
+      "files": {
+        "SKILL.md": "725291e204159097530bb967553391a641820be6b51ee958a5eb71c049372e99"
+      }
+    },
     "iam-secret-hygiene": {
       "plugin": "agy-security",
       "skill": "iam-secret-hygiene",
@@ -350,6 +461,14 @@
       "files": {
         "SKILL.md": "099c67b6072423d3374a9014ca6b9cd6ef059bf78f8731803581c31745a0f05d",
         "references/owasp_and_cloud_waf_checklist.md": "4577a31badfc3fcc5264d26394bc2b98492652d202ae3776b57b7d3b4c7f40a7"
+      }
+    },
+    "twin-automations": {
+      "plugin": "agy-twin-automations",
+      "skill": "twin-automations",
+      "treeSha256": "cc5e12e788a74b12",
+      "files": {
+        "SKILL.md": "1aa676e652363797ca5c048b36f0e8ac18e8318055c014fd4ba65458727a4dc2"
       }
     }
   },
@@ -370,12 +489,52 @@
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "f2f8bc39a9fe5b510f4d08a0ea0ebe1084cc630dc69dfdadca470fc304615947",
+        "app.js": "e7e8723cc076e27bae9b1b5510afb37f14f3902fcb92a45589d025ba156fb8bf",
         "index.html": "418a35d5d93d27a5ac383896e807d550fb9b694434be046eda4abf5fea91d323",
-        "main.mjs": "4fb7451ad0e92319d60e2300137e28336ccd73d2a7bd7aa2c18fe780c33754e6",
+        "main.mjs": "26087348ec67a4550bae094563ca6a98f541a1c1872cec772da9f2bc10d1928c",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "sidecar.json": "26c46bcf76399d47e8b40aff36591c7cb4fd9227f3c6c52866d6860099196e60",
         "styles.css": "21d9a588232873801e51252df9bb189ed777712f935f91e0ffcb38b30b40c28c"
+      }
+    },
+    "twin-vault-ui": {
+      "plugin": "agy-second-brain",
+      "sidecar": "twin-vault-ui",
+      "files": {
+        "app.js": "c24cb00fbdf35a29093b9a10d05d56e1b72c9a1e8bb8aa86f18cf3ce1ab4ee1f",
+        "index.html": "f64ac262be82fcf9e094479548df619f3195b103fc46aee12394c0c8d8f916e1",
+        "main.mjs": "1734d6af4ce9920b02e89cf03ddf735fa02ea4b2546dd19001ccfe2ec975bedf",
+        "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
+        "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
+        "styles.css": "992d03f4c9ae7626b24e38f71006af06d77ead0cc8b4a40955283c28c8324ef9"
+      }
+    },
+    "friday-weekly-impact": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "friday-weekly-impact",
+      "files": {
+        "sidecar.json": "f136c5f66daa77f3fa79e924d58851e737880c8d168270be1656775b18de6b43"
+      }
+    },
+    "morning-twin-brief": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "morning-twin-brief",
+      "files": {
+        "sidecar.json": "237a4a9205b1f84c5628b1058b285cb0eb59fdc2e5d0c3b66ca8f3a1f771f5a6"
+      }
+    },
+    "nightly-notes-compactor": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "nightly-notes-compactor",
+      "files": {
+        "sidecar.json": "97f5213172d74e78d9d66a802abfb77a66aae573674ba128fc7e57286966d3de"
+      }
+    },
+    "twice-daily-followup-plan": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "twice-daily-followup-plan",
+      "files": {
+        "sidecar.json": "3da07715bf38ffb9c9da40cd23fb206156813e88cb2759b1e85ba469065a3ae5"
       }
     }
   }

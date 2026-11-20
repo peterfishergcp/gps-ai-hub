@@ -63,6 +63,14 @@ Welcome to the **Google Cloud Public Sector AI Hub** reference architecture cata
 
 ---
 
+## 🧠 Google Antigravity Digital Twin & Second Brain Kit (`./agy-digital-twin-kit`)
+
+- 🗂️ **[Standalone Second Brain Memory Vault, 4-Agent Parallel Swarm, Anti-Slop Editor & Scheduled Automations (`v1.0.1`)](./agy-digital-twin-kit)**:
+  - Modular 4-plugin **Google Antigravity** suite (`agy-twin-memory`, `agy-twin-workflows`, `agy-twin-voice`, and opt-in `agy-twin-automations`) built for Program Managers, Software/Data Engineers, Public Sector Analysts, and Team Leads with zero Python/`npm` installs required on locked-down laptops.
+  - Combines a **2-Tier Plain-Markdown Second Brain Vault** (`~/antigravity-twin/memory/`: 4-file role profile, Zero-Decay GTD board, `>21-day` stakeholder pulse, and 4-file initiatives with 4-Tier Recency Compaction) with a hardened zero-`innerHTML` **`Twin Vault` Side-Pane UI** (`sidecar_sdk`), **Adversarial Minto SCQA Critic** (`/twin-jit-prep`), **4-Subagent Parallel Prep** (`/twin-swarm-prep`), **Friday 3-Altitude Impact Rollup** (`/twin-weekly-impact`), **17-Pattern Anti-Slop Editor** (`/no-ai-slop`), and **Deterministic Outbound Scanner** (`/outbound-scrub`).
+
+---
+
 ## 📊 Gemini Enterprise Token Consumption & WIF Usage Telemetry (`./ge-token-tracking`)
 
 - 📈 **[Gemini Enterprise Token Consumption, Model Breakdown & Workforce Identity (WIF) Usage Dashboard](./ge-token-tracking)**:

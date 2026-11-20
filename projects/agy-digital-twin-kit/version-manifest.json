@@ -1,0 +1,177 @@
+{
+  "suiteName": "antigravity-digital-twin-kit",
+  "suiteVersion": "1.0.1",
+  "plugins": [
+    {
+      "name": "agy-twin-automations",
+      "version": "1.0.1",
+      "skills": [
+        "twin-automations"
+      ],
+      "sidecars": [
+        "friday-weekly-impact",
+        "morning-twin-brief",
+        "nightly-notes-compactor",
+        "twice-daily-followup-plan"
+      ]
+    },
+    {
+      "name": "agy-twin-memory",
+      "version": "1.0.1",
+      "skills": [
+        "twin-meeting-notes",
+        "twin-memory",
+        "twin-setup"
+      ],
+      "sidecars": [
+        "twin-vault-ui"
+      ]
+    },
+    {
+      "name": "agy-twin-voice",
+      "version": "1.0.1",
+      "skills": [
+        "no-ai-slop",
+        "outbound-scrub",
+        "twin-voice-draft"
+      ],
+      "sidecars": []
+    },
+    {
+      "name": "agy-twin-workflows",
+      "version": "1.0.1",
+      "skills": [
+        "twin-brief",
+        "twin-followup-plan",
+        "twin-jit-prep",
+        "twin-progress-tracker",
+        "twin-swarm-prep",
+        "twin-weekly-impact"
+      ],
+      "sidecars": []
+    }
+  ],
+  "skillManifest": {
+    "twin-automations": {
+      "plugin": "agy-twin-automations",
+      "files": {
+        "SKILL.md": "36c8902874bb64eccc8c5a1f89f47e291547ab8d4552565a642cdcb87057ce2f"
+      }
+    },
+    "twin-meeting-notes": {
+      "plugin": "agy-twin-memory",
+      "files": {
+        "SKILL.md": "a494c22faa85786f531c19a0c47c721d0569ae4f5ba3597b500a77a694ae5afd",
+        "references/compaction_rubric.md": "1b1b55c88f5010a1a51be5fdb7ec37b760491c26b481c452b29f0e072b37eb50"
+      }
+    },
+    "twin-memory": {
+      "plugin": "agy-twin-memory",
+      "files": {
+        "SKILL.md": "39b5ccd35b0638b20f776b3788b144f0ae0e5b1eeaadc4e55819c4d6be1bffca"
+      }
+    },
+    "twin-setup": {
+      "plugin": "agy-twin-memory",
+      "files": {
+        "SKILL.md": "3fb31e50b61a425ded06e2d73e57e19474b10a9347666d2bc8eab02129248e5b"
+      }
+    },
+    "no-ai-slop": {
+      "plugin": "agy-twin-voice",
+      "files": {
+        "SKILL.md": "8cbeef1a3148921caf8b3e4597c055638a424f1836afe5330effdad1274d624d"
+      }
+    },
+    "outbound-scrub": {
+      "plugin": "agy-twin-voice",
+      "files": {
+        "SKILL.md": "1a06c694fa4c5b2f43c46ce46cf7cd72b88385b91872477f8995dbd53f2857f1"
+      }
+    },
+    "twin-voice-draft": {
+      "plugin": "agy-twin-voice",
+      "files": {
+        "SKILL.md": "45a9784aa9c8d7ccf60925d8bed6d111fc87ecaf397f33a5dbeda861ba875e69"
+      }
+    },
+    "twin-brief": {
+      "plugin": "agy-twin-workflows",
+      "files": {
+        "SKILL.md": "ad8e1316ed91f75063f9ccef6469ccbd18e2defa1c741e72702c6a471eb6ab6c"
+      }
+    },
+    "twin-followup-plan": {
+      "plugin": "agy-twin-workflows",
+      "files": {
+        "SKILL.md": "638df29efe0a6213c043672b0d43c5083c22de515be7d65252f731c04ddaf9ec"
+      }
+    },
+    "twin-jit-prep": {
+      "plugin": "agy-twin-workflows",
+      "files": {
+        "SKILL.md": "b49ece445170c96d2efcf6f9b41b3010fb98eeffc6d061c796daf0c4c37ead30"
+      }
+    },
+    "twin-progress-tracker": {
+      "plugin": "agy-twin-workflows",
+      "files": {
+        "SKILL.md": "525e3560450ba9620f03dfe835e34bb5431cb57f318d5b373091c79e371e1b28"
+      }
+    },
+    "twin-swarm-prep": {
+      "plugin": "agy-twin-workflows",
+      "files": {
+        "SKILL.md": "54de2bcc858b172df918e8764ea58357da4f52f385f4410681db5f843d642786"
+      }
+    },
+    "twin-weekly-impact": {
+      "plugin": "agy-twin-workflows",
+      "files": {
+        "SKILL.md": "725291e204159097530bb967553391a641820be6b51ee958a5eb71c049372e99"
+      }
+    }
+  },
+  "sidecarManifest": {
+    "agy-twin-automations/friday-weekly-impact": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "friday-weekly-impact",
+      "files": {
+        "sidecar.json": "f136c5f66daa77f3fa79e924d58851e737880c8d168270be1656775b18de6b43"
+      }
+    },
+    "agy-twin-automations/morning-twin-brief": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "morning-twin-brief",
+      "files": {
+        "sidecar.json": "f950d771f96abab95d0bc11631643bd6ad8d237606c53fa8aaa4a5d3e86f600e"
+      }
+    },
+    "agy-twin-automations/nightly-notes-compactor": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "nightly-notes-compactor",
+      "files": {
+        "sidecar.json": "97f5213172d74e78d9d66a802abfb77a66aae573674ba128fc7e57286966d3de"
+      }
+    },
+    "agy-twin-automations/twice-daily-followup-plan": {
+      "plugin": "agy-twin-automations",
+      "sidecar": "twice-daily-followup-plan",
+      "files": {
+        "sidecar.json": "3da07715bf38ffb9c9da40cd23fb206156813e88cb2759b1e85ba469065a3ae5"
+      }
+    },
+    "agy-twin-memory/twin-vault-ui": {
+      "plugin": "agy-twin-memory",
+      "sidecar": "twin-vault-ui",
+      "files": {
+        "app.js": "30ec8fd0c4a86a53349cadfd609d02c227900234cb3ca964bd552b113117e487",
+        "index.html": "f64ac262be82fcf9e094479548df619f3195b103fc46aee12394c0c8d8f916e1",
+        "main.mjs": "dd351f80f797e87068fd4d9360d84ce5af9cd692b76a6c865ca346ec90e04861",
+        "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
+        "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
+        "styles.css": "992d03f4c9ae7626b24e38f71006af06d77ead0cc8b4a40955283c28c8324ef9"
+      }
+    }
+  }
+}

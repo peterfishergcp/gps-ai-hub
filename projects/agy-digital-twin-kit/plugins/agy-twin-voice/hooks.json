@@ -1,0 +1,17 @@
+{
+  "agy-twin-pre-tool-guardrails": {
+    "enabled": false,
+    "PreToolUse": [
+      {
+        "matcher": "run_command|write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./scripts/pre_tool_guardrails.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
