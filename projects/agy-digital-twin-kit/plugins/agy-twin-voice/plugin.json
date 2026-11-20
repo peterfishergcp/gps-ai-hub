@@ -1,0 +1,12 @@
+{
+  "name": "agy-twin-voice",
+  "displayName": "AGY Twin Voice, Anti-Slop & Outbound Guardrails",
+  "version": "1.0.1",
+  "description": "Authentic writing voice calibration, hardlined 17-pattern Anti-AI-Slop editing, Draft-Only correspondence headers, and deterministic PII/secret/placeholder outbound scrubbing for Google Antigravity.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "/twin-voice-draft Draft a clear, direct reply in my voice to the thread below",
+    "/no-ai-slop Tighten this memo and strip out every AI-sounding filler phrase",
+    "/outbound-scrub Audit this external deliverable for secrets, PII, or unresolved placeholders"
+  ]
+}

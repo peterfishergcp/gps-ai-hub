@@ -1,0 +1,12 @@
+{
+  "name": "agy-second-brain",
+  "displayName": "AGY Second Brain — Memory Vault, Swarm Prep & Anti-Slop",
+  "version": "1.1.0",
+  "description": "Persistent 2-Tier Second Brain Memory Vault (~/antigravity-twin/memory/) with interactive Twin Vault side-pane UI, Zero-Task-Decay GTD tracking, 4-file initiative isolation, Adversarial Minto SCQA pre-meeting prep, 4-agent parallel swarm orchestration, 3-Altitude weekly impact ledger, anti-AI-slop editing, and deterministic outbound scrubbing.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "/twin-memory Initialize my Second Brain memory vault using the public-sector preset and summarize my active GTD tasks and initiatives",
+    "/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my highest-priority initiative",
+    "/twin-swarm-prep Run a 4-agent parallel 360 prep pack for an upcoming milestone review"
+  ]
+}

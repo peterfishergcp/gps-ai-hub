@@ -230,8 +230,9 @@
         controls.appendChild(
           createToggleSwitch(s.enabled, 'Toggle skill ' + s.command, async function (next) {
             try {
-              await apiPost('/api/toggle-skill', { plugin: cat.plugin, skill: s.id, enabled: next });
+              await apiPost('/api/toggle-skill', { plugin: s.plugin || cat.plugin, skill: s.id, enabled: next });
               s.enabled = next;
+              if (next) cat.pluginEnabled = true;
               renderAll();
               showToast((next ? 'Enabled ' : 'Paused ') + s.command);
             } catch {

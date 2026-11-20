@@ -1,0 +1,13 @@
+{
+  "builtin": "schedule",
+  "args": [
+    "CRON_TZ=America/New_York 0 16 * * 5",
+    "agentapi",
+    "new-conversation",
+    "--",
+    "Run /twin-weekly-impact on ~/antigravity-twin/memory/: summarize this week's completed [x] tasks and initiative progress across Altitude 1 (Executive Outcomes), Altitude 2 (Reusable Assets), and Altitude 3 (Workstream Velocity), save weekly/YYYY-WXX.md, and append to impact/ledger.json."
+  ],
+  "restart_policy": "always",
+  "display_name": "Friday 3-Altitude Weekly Impact",
+  "description": "Every Friday at 4:00 PM, compiles your 3-Altitude weekly accomplishment summary into weekly/YYYY-WXX.md and impact/ledger.json."
+}

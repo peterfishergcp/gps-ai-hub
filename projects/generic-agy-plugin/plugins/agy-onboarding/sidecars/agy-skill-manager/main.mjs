@@ -162,11 +162,11 @@ const SKILL_CATALOG = [
     skills: [
       {
         id: 'agy-onboard',
-        title: 'Agency Role & Digital Twin Setup',
-        subtitle: '60-second role setup, 30-60-90 onboarding plans & SOP builders',
+        title: 'Agency Role, Second Brain & GE Quickstart',
+        subtitle: '60-second role + Second Brain vault setup, 30-60-90 plans & SOP builders',
         command: '/agy-onboard',
-        badge: 'Playbook + Setup',
-        starterPrompt: '/agy-onboard Help me set up my Public Sector agency role, Digital Twin voice, and Gemini Enterprise connection.'
+        badge: 'Playbook + Vault',
+        starterPrompt: '/agy-onboard Help me set up my Public Sector agency role, Second Brain Memory Vault, and Gemini Enterprise connection.'
       },
       {
         id: 'model-guide',
@@ -178,16 +178,16 @@ const SKILL_CATALOG = [
       },
       {
         id: 'daily-brief',
-        title: 'Daily Executive Brief & Meeting Prep',
-        subtitle: 'Morning priorities, calendar prep & action items via Federated GE',
+        title: 'Daily Executive & Second Brain Kickoff Brief',
+        subtitle: 'Unified morning priorities, GE calendar/inbox + Vault P0/P1 GTD & >21d contacts',
         command: '/daily-brief',
-        badge: 'GE Federated',
-        starterPrompt: '/daily-brief Summarize my top priorities today, upcoming meetings, and open action items.'
+        badge: 'GE + Vault',
+        starterPrompt: '/daily-brief Summarize my top priorities today, upcoming meetings, open Second Brain GTD commitments, and stale stakeholder check-ins.'
       },
       {
         id: 'digital-twin',
         title: 'Digital Twin Voice & Correspondence Drafter',
-        subtitle: 'Drafts emails, official letters & constituent replies (Draft-Only)',
+        subtitle: 'Drafts emails, memos, official letters & replies calibrated to voice.md (Draft-Only)',
         command: '/digital-twin',
         badge: 'Draft-Only',
         starterPrompt: '/digital-twin Draft a clear, concise reply in my voice to the message below.'
@@ -424,6 +424,94 @@ const SKILL_CATALOG = [
         starterPrompt: '/iam-secret-hygiene Audit our IAM bindings and replace plaintext env secrets with Secret Manager.'
       }
     ]
+  },
+  {
+    categoryId: 'second-brain',
+    plugin: 'agy-second-brain',
+    categoryLabel: 'Second Brain Vault, Swarm Prep & Anti-Slop',
+    chipLabel: 'Second Brain & Swarm',
+    skills: [
+      {
+        id: 'twin-memory',
+        title: 'Second Brain Memory Vault & Initializer',
+        subtitle: '2-Tier vault setup (public-sector/pm/dev/leader), Zero-Decay GTD & >21d contacts',
+        command: '/twin-memory',
+        badge: 'Vault + Twin UI',
+        starterPrompt: '/twin-memory Initialize my Second Brain memory vault using the public-sector preset and summarize my active GTD tasks and initiatives.'
+      },
+      {
+        id: 'twin-meeting-notes',
+        title: 'Meeting Notes Harvester & 4-Tier Compactor',
+        subtitle: 'Strips base64 bloat, applies 4-Tier compaction & extracts GTD actions',
+        command: '/twin-meeting-notes',
+        badge: '4-Tier Memory',
+        starterPrompt: '/twin-meeting-notes Ingest and compact these call notes into my initiative vault, extract open action items to gtd_board.md, and update contacts.md.'
+      },
+      {
+        id: 'twin-jit-prep',
+        title: 'T-15m Pre-Meeting Brief & SCQA Red-Team Coach',
+        subtitle: '1-card initiative brief + Adversarial Minto Pyramid (SCQA) pushback critic',
+        command: '/twin-jit-prep',
+        badge: 'SCQA Critic',
+        starterPrompt: '/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my top active initiative.'
+      },
+      {
+        id: 'twin-followup-plan',
+        title: 'Follow-Up & Action Plan Sweep',
+        subtitle: 'Audits sent replies first, syncs gtd_board.md & stages [Draft-Only] messages',
+        command: '/twin-followup-plan',
+        badge: 'Action Sweep',
+        starterPrompt: '/twin-followup-plan Run a follow-up sweep across my Second Brain vault and stage [Draft-Only] replies for open P0 and P1 commitments.'
+      },
+      {
+        id: 'twin-swarm-prep',
+        title: '4-Agent Parallel Swarm Orchestrator',
+        subtitle: 'Fans out Memory Scout, SCQA Critic, Solution Architect & Safety Auditor',
+        command: '/twin-swarm-prep',
+        badge: '4-Agent Swarm',
+        starterPrompt: '/twin-swarm-prep Run a 4-agent parallel 360 prep pack for my highest-priority initiative.'
+      },
+      {
+        id: 'twin-weekly-impact',
+        title: 'Friday Closeout & 3-Altitude Impact Ledger',
+        subtitle: 'Distills Executive Outcomes, Reusable Assets & Velocity into weekly/ & ledger.json',
+        command: '/twin-weekly-impact',
+        badge: '3-Altitude ROI',
+        starterPrompt: '/twin-weekly-impact Generate my Friday 3-Altitude weekly impact summary from my Second Brain vault.'
+      },
+      {
+        id: 'no-ai-slop',
+        title: 'Hardlined Anti-AI-Slop Editor',
+        subtitle: 'Cuts 17 LLM filler patterns, binary contrasts & em-dash clusters',
+        command: '/no-ai-slop',
+        badge: 'Voice Polish',
+        starterPrompt: '/no-ai-slop Tighten the draft below and strip all AI-slop clichés while keeping concrete numbers and citations intact.'
+      },
+      {
+        id: 'outbound-scrub',
+        title: 'Deterministic Outbound Safety & PII Scrubber',
+        subtitle: 'Scans external drafts for secrets, SSNs, [CONFIRM] tags & slop (Node + regex fallback)',
+        command: '/outbound-scrub',
+        badge: 'Safety Gate',
+        starterPrompt: '/outbound-scrub Run a deterministic outbound safety, PII/secret, and placeholder check on the deliverable below before sharing.'
+      }
+    ]
+  },
+  {
+    categoryId: 'twin-automations',
+    plugin: 'agy-twin-automations',
+    categoryLabel: 'Scheduled Twin Automations (Opt-In)',
+    chipLabel: 'Twin Automations',
+    skills: [
+      {
+        id: 'twin-automations',
+        title: 'Scheduled Briefings & Vault Compactor Setup',
+        subtitle: 'Configures IANA timezone & enables opt-in weekday briefings in Automations',
+        command: '/twin-automations',
+        badge: 'Opt-In Cron',
+        starterPrompt: '/twin-automations Set my IANA timezone across my scheduled Twin automations and show me how to enable them in the Automations dashboard.'
+      }
+    ]
   }
 ];
 
@@ -615,6 +703,26 @@ app.api('/app.js', () => {
   });
 }, 'GET');
 
+function readPluginDefaultDisabled(pluginsRoot, pluginName) {
+  if (!SAFE_ID_RE.test(pluginName)) return false;
+  const manifestPath = path.join(pluginsRoot, pluginName, 'plugin.json');
+  try {
+    if (fs.existsSync(manifestPath)) {
+      const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      return Boolean(parsed.disabled);
+    }
+  } catch {}
+  return false;
+}
+
+function isPluginCurrentlyDisabled(pluginsRoot, pluginName, lsDisabledMap, ledger) {
+  if (lsDisabledMap[pluginName] !== undefined) return Boolean(lsDisabledMap[pluginName]);
+  if (ledger.disabledPlugins && ledger.disabledPlugins[pluginName] !== undefined) {
+    return Boolean(ledger.disabledPlugins[pluginName]);
+  }
+  return readPluginDefaultDisabled(pluginsRoot, pluginName);
+}
+
 app.api('/api/state', async () => {
   const pluginsRoot = getPluginsRoot();
   const ledger = readToggleLedger();
@@ -633,15 +741,20 @@ app.api('/api/state', async () => {
   }
 
   const categories = SKILL_CATALOG.map((cat) => {
-    const pluginDisabled = lsDisabledMap[cat.plugin] ?? Boolean(ledger.disabledPlugins[cat.plugin]);
-    const mappedSkills = cat.skills.map((s) => ({
-      ...s,
-      enabled: !pluginDisabled && inspectSkillDiskState(pluginsRoot, cat.plugin, s.id, ledger),
-    }));
+    const catPluginDisabled = isPluginCurrentlyDisabled(pluginsRoot, cat.plugin, lsDisabledMap, ledger);
+    const mappedSkills = cat.skills.map((s) => {
+      const skillPlugin = s.plugin || cat.plugin;
+      const skillPluginDisabled = isPluginCurrentlyDisabled(pluginsRoot, skillPlugin, lsDisabledMap, ledger);
+      return {
+        ...s,
+        plugin: skillPlugin,
+        enabled: !skillPluginDisabled && inspectSkillDiskState(pluginsRoot, skillPlugin, s.id, ledger),
+      };
+    });
     const isSharedPlugin = (sharedPluginCounts[cat.plugin] || 0) > 1;
     const categoryEnabled = isSharedPlugin
-      ? !pluginDisabled && mappedSkills.some((s) => s.enabled)
-      : !pluginDisabled;
+      ? !catPluginDisabled && mappedSkills.some((s) => s.enabled)
+      : !catPluginDisabled;
     return {
       categoryId: cat.categoryId || cat.plugin,
       plugin: cat.plugin,
@@ -659,10 +772,21 @@ app.api('/api/state', async () => {
 }, 'GET');
 
 app.api('/api/toggle-skill', async (data) => {
+  const pluginsRoot = getPluginsRoot();
   const pluginName = String(data.plugin || '');
   const skillId = String(data.skill || '');
   const enabled = Boolean(data.enabled);
-  const res = toggleSkillOnDiskAndLedger(getPluginsRoot(), pluginName, skillId, enabled);
+  const res = toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled);
+  if (enabled) {
+    const ledger = readToggleLedger();
+    if (ledger.disabledPlugins[pluginName] === true || readPluginDefaultDisabled(pluginsRoot, pluginName)) {
+      ledger.disabledPlugins[pluginName] = false;
+      writeToggleLedger(ledger);
+      await callLanguageServerRpc('JetboxWriteState', {
+        userConfig: { plugins: { [pluginName]: { enabled: true } } },
+      });
+    }
+  }
   return { ok: true, ...res };
 }, 'POST');
 
@@ -681,11 +805,11 @@ app.api('/api/toggle-category', async (data) => {
     if (targetCat) {
       const pluginsRoot = getPluginsRoot();
       for (const s of targetCat.skills) {
-        toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, s.id, enabled);
+        toggleSkillOnDiskAndLedger(pluginsRoot, s.plugin || pluginName, s.id, enabled);
       }
       if (enabled) {
         const ledger = readToggleLedger();
-        delete ledger.disabledPlugins[pluginName];
+        ledger.disabledPlugins[pluginName] = false;
         writeToggleLedger(ledger);
         await callLanguageServerRpc('JetboxWriteState', {
           userConfig: { plugins: { [pluginName]: { enabled: true } } },
@@ -696,8 +820,7 @@ app.api('/api/toggle-category', async (data) => {
   }
 
   const ledger = readToggleLedger();
-  if (enabled) delete ledger.disabledPlugins[pluginName];
-  else ledger.disabledPlugins[pluginName] = true;
+  ledger.disabledPlugins[pluginName] = !enabled;
   writeToggleLedger(ledger);
 
   // Sync live with Antigravity Language Server config.json

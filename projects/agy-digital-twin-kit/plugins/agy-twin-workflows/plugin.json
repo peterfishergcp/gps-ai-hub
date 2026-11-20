@@ -1,0 +1,12 @@
+{
+  "name": "agy-twin-workflows",
+  "displayName": "AGY Twin Daily, SCQA & Swarm Workflows",
+  "version": "1.0.1",
+  "description": "Daily operational workflows for Google Antigravity: morning kickoff briefs, 15-minute pre-meeting SCQA red-team coaching, twice-daily follow-up action sweeps, 4-subagent parallel swarm prep, 3-altitude weekly impact narratives, and live Plan.md milestone tracking.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "/twin-brief Give me my morning kickoff brief, P0 tasks, and overdue stakeholder check-ins",
+    "/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial SCQA Critic for my next session",
+    "/twin-swarm-prep Run a 4-agent parallel prep pack for my top active initiative"
+  ]
+}

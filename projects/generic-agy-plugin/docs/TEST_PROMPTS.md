@@ -1,4 +1,4 @@
-# Google Antigravity — Public Sector Skill Suite (`v1.0.1`) Guided Test Prompts
+# Google Antigravity — Public Sector Skill Suite (`v1.1.0`) Guided Test Prompts
 
 ## Before You Begin
 
@@ -33,7 +33,7 @@ Open the [Google Antigravity Organization Setup Guide](../setup-guide/index.html
 
 Pick the tests that match your day-to-day work:
 
-- **Everyone** should try **Prompts 1–4** below (plus any matching role prompts in [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md)).
+- **Everyone** should try **Prompts 1–4** and **Prompts 8–9** below (plus any matching role prompts in [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md)).
 - **Prompts 5–7** are for **IT, developer, and security staff** and are optional.
 - Each test takes about **2–5 minutes** (including reading the output). **You do not need to finish all of them.**
 
@@ -47,7 +47,9 @@ Pick the tests that match your day-to-day work:
 4. **Prompt 4: Records Requests, Contracts, and Policy Checks** *(Legal, records, procurement, and policy staff)* — Redact a sample record, review a risky vendor contract clause, and catch conflicting numbers. *You'll see: search filters, a redacted memo with exemption reasons, contract edits, and a mismatch warning catching `$18M` vs. `$15M`.*
 5. **Prompt 5: Update Old Code, Cloud Deployment & Database Queries** *(IT / developers only, optional)* — Fix bugs in an old Python script, generate a cloud deployment command, and modernize a database query. *You'll see: 3 hidden code bugs identified and fixed with passing tests, plus ready-to-use cloud and SQL commands.*
 6. **Prompt 6: Catch 4 Common Security Mistakes** *(IT / security only, optional)* — Scan sample code and cloud commands containing 4 intentional security flaws. *You'll see: all 4 security risks explained in plain English for security leadership, followed by corrected code and commands.*
-7. **Prompt 7 (Run Last): Connect to Gemini Enterprise** *(Optional — only if IT has set this up)* — Check whether Antigravity is connected to your organization's shared search hub. *You'll see: your current connection status and a walkthrough of how single sign-on search works across email, files, and code.*
+7. **Prompt 7: Connect to Gemini Enterprise** *(Optional — only if IT has set this up)* — Check whether Antigravity is connected to your organization's shared search hub. *You'll see: your current connection status and a walkthrough of how single sign-on search works across email, files, and code.*
+8. **Prompt 8: Second Brain Memory Vault, SCQA Meeting Prep & Anti-Slop Scrubbing** *(Everyone)* — Initialize your persistent Markdown Second Brain vault (`~/antigravity-twin/memory/`), ingest call notes, build an Adversarial Minto SCQA pre-meeting brief, and scrub an external draft. *You'll see: live files inside `Extensions -> Twin Vault`, an SCQA pushback brief, and caught `[CONFIRM]` / AI-slop markers.*
+9. **Prompt 9 (Run Last): 4-Agent Parallel Swarm Prep & 3-Altitude Weekly Impact** *(Program managers, leads & analysts)* — Fan out 4 specialized subagents in parallel for a milestone review and compile your Friday 3-Altitude impact ledger. *You'll see: a cohesive 360 Prep Pack with a Mermaid diagram and a saved `weekly/YYYY-WXX.md` summary.*
 
 > [!NOTE]
 > **How to Run Any Test**
@@ -203,7 +205,7 @@ gcloud run deploy agency-grant-portal \
 
 ---
 
-## Prompt 7 (Run Last) — Federated Gemini Enterprise (GE) Connectors *(Optional — IT Setup Required)*
+## Prompt 7 — Federated Gemini Enterprise (GE) Connectors *(Optional — IT Setup Required)*
 
 - **What you'll try:** Check whether Antigravity is connected to your organization's shared Gemini Enterprise search hub and review how single sign-on search works.
 - **What success looks like:** Antigravity reports whether a Gemini Enterprise instance is configured on your computer (even if IT hasn't connected yours yet) and explains in clear steps how single sign-on connects Outlook, SharePoint, OneDrive, Teams, Google Drive, and GitHub while respecting each employee's file permissions.
@@ -215,6 +217,44 @@ gcloud run deploy agency-grant-portal \
 /connect-ge Check my current Gemini Enterprise (`agy-ge-bridge`) MCP connection status using `ge_instance_status`.
 1. Show me whether a default Gemini Enterprise (`GE`) instance is configured yet in `~/.gemini/config/plugin_data/agy-connectors/ge-instance.json`, and which authentication tier (`gcloud` ADC, Google Identity Browser PKCE OAuth, or Central Cloud Run Gateway) is active.
 2. Walk me through how our Azure/Entra-synced Google Identity connects to our federated Outlook, SharePoint, OneDrive, Microsoft Teams, Google Drive, and GitHub data stores through a single GE instance—and if my GE instance is already configured, run a quick test query via `/connect-m365-workspace`.
+```
+
+---
+
+## Prompt 8 — Second Brain Memory Vault, SCQA Meeting Prep & Outbound Scrubbing
+
+- **What you'll try:** Initialize your persistent 2-Tier Second Brain vault (`~/antigravity-twin/memory/`), ingest sample call notes with Zero-Task-Decay GTD tracking, generate a 1-card Adversarial Minto SCQA pre-meeting brief, and run anti-slop + outbound safety scrubbing on a draft email.
+- **What success looks like:** `profile/{identity,portfolio,playbooks,voice}.md`, `gtd_board.md`, `contacts.md`, and 4-file `initiatives/` folders appear inside **`Extensions -> Twin Vault`**; Robert Vance's `STALE (>21d)` status clears after ingesting the call notes; `/twin-jit-prep` builds a realistic SCQA red-team section; and `/outbound-scrub` + `/no-ai-slop` catch `[CONFIRM: ...]`, `[TODO: ...]`, and LLM filler phrases.
+- **About how long:** 2–3 minutes.
+
+### Copy & Paste Into Antigravity
+
+```text
+Test our `agy-second-brain` skills (`/twin-memory`, `/twin-meeting-notes`, `/twin-jit-prep`, `/no-ai-slop`, and `/outbound-scrub`):
+1. `/twin-memory`: Initialize my Second Brain memory vault using the `public-sector` preset for Jordan Taylor (Senior Program Analyst, State Office of Broadband & Digital Equity, timezone `America/New_York`) with demo initiatives enabled.
+2. `/twin-meeting-notes`: Ingest these call notes into `broadband-grant-round-3`, extract open `- [ ]` commitments to `gtd_board.md` without deleting existing tasks, and update `contacts.md`:
+   "Call: Round 3 County Grant Intake Review (Attendees: Carla Jennings, Robert Vance).
+   - Confirmed the $15M total award cap and Dec 31, 2026 submission deadline across all county PDFs.
+   - [ ] Draft 1-page sample match-waiver calculation worksheet for county applicants
+   - [ ] Confirm FAQ Spanish translation timeline with Communications lead"
+3. `/twin-jit-prep`: Build a 1-card pre-meeting brief and Adversarial Minto SCQA Critic ("Angle & Pushback to Watch For") for my upcoming legal review with Senior Assistant General Counsel Hannah Kim on `records-modernization-pilot`.
+4. `/outbound-scrub` + `/no-ai-slop`: Audit and rewrite this external draft so it is free of unresolved placeholders and AI-slop filler:
+   "First and foremost, in today's fast-paced and ever-evolving landscape, I wanted to delve into our paradigm-shifting grant portal rollout — it's not just an upgrade, it's a game changer! Please verify the final award ceiling [CONFIRM: $15M or $18M?] and cutoff [TODO: insert date]. At the end of the day, this ensures holistic synergy."
+```
+
+---
+
+## Prompt 9 (Run Last) — 4-Agent Parallel Swarm Prep & 3-Altitude Weekly Impact
+
+- **What you'll try:** Run 4 specialized subagents concurrently (`context-memory-scout`, `scqa-redteam-critic`, `domain-solution-architect`, `outbound-safety-auditor`) to prepare a 360-degree milestone review pack, then generate your Friday 3-Altitude accomplishment summary.
+- **What success looks like:** All 4 subagents run in parallel and synthesize one structured 360 Prep Pack (with an `L100–L300` talk track, Mermaid diagram, SCQA counter-moves, and pre-scrubbed `[Draft-Only]` recap), followed by a saved `weekly/YYYY-WXX.md` and `impact/ledger.json` entry.
+- **About how long:** 2–3 minutes.
+
+### Copy & Paste Into Antigravity
+
+```text
+1. `/twin-swarm-prep`: Run a 4-agent parallel 360 prep pack for our Thursday milestone review on `broadband-grant-round-3` (covering vault status, an L100–L300 talk track with a Mermaid workflow diagram, SCQA pushback & counter-moves, and a pre-scrubbed `[Draft-Only]` stakeholder recap).
+2. `/twin-weekly-impact`: Summarize our current vault progress across Altitude 1 (Executive Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity) into `~/antigravity-twin/memory/weekly/` and `impact/ledger.json`.
 ```
 
 ---
