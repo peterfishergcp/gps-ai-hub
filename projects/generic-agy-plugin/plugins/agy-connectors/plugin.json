@@ -1,12 +1,12 @@
 {
   "name": "agy-connectors",
-  "displayName": "AGY Gemini Enterprise Federated Connectors",
-  "version": "1.0.0",
-  "description": "Default Gemini Enterprise (GE) federated connector bridge for Public Sector cohorts using Azure/Entra-synced Google Identity\u2014unlocking Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery with zero laptop installs.",
+  "displayName": "Chatski & Gemini Enterprise Connectors",
+  "version": "1.6.0",
+  "description": "Includes the Chatski Google Chat left-sidebar panel (powered out-of-the-box by your Gemini Enterprise Google Chat / Teams Connector or optional Direct Chat REST API) plus the zero-install Gemini Enterprise (GE) federated connector bridge for Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
+    "Run /chatski to catch up on unread Google Chat spaces and direct messages via my Gemini Enterprise Chat Connector",
     "Run /connect-ge to link my Public Sector Gemini Enterprise instance and test my federated connectors",
-    "Search my federated SharePoint, OneDrive, and Outlook via Gemini Enterprise for recent grant updates",
-    "Show me how to query Teams threads, GitHub issues, or BigQuery datasets safely from Antigravity"
+    "Search my federated SharePoint, OneDrive, and Outlook via Gemini Enterprise for recent program updates"
   ]
 }

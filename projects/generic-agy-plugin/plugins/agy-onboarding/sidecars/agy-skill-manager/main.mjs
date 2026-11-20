@@ -301,8 +301,16 @@ const SKILL_CATALOG = [
   },
   {
     plugin: 'agy-connectors',
-    categoryLabel: 'Federated Gemini Enterprise Connectors',
+    categoryLabel: 'Chatski & Gemini Enterprise Connectors',
     skills: [
+      {
+        id: 'chatski',
+        title: 'Chatski — Google Chat & GE Connector Companion',
+        subtitle: 'Summarizes unread Spaces/DMs via GE Chat Connector & stages Draft-Only replies in Chatski',
+        command: '/chatski',
+        badge: 'Left Panel + GE',
+        starterPrompt: '/chatski Summarize my unread Google Chat spaces and direct messages via my Gemini Enterprise Chat Connector and stage Draft-Only replies in Chatski.'
+      },
       {
         id: 'connect-ge',
         title: 'Gemini Enterprise (GE) Instance Wizard',

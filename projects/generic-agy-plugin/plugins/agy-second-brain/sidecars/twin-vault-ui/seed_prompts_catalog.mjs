@@ -28,8 +28,8 @@ export const CATEGORY_DEFINITIONS = {
   },
   'agy-connectors': {
     order: 20,
-    categoryLabel: 'Federated Gemini Enterprise Connectors',
-    chipLabel: 'Connectors',
+    categoryLabel: 'Chatski & Gemini Enterprise Connectors',
+    chipLabel: 'Chatski & Connectors',
   },
   'agy-design-studio': {
     order: 30,
@@ -137,7 +137,14 @@ export const CURATED_SKILL_SEEDS = {
       '/agy-update Check version-manifest.json and incrementally sync any updated skills or sidecars while preserving my saved settings.',
   },
 
-  // 2. Federated Gemini Enterprise Connectors
+  // 2. Chatski & Federated Gemini Enterprise Connectors
+  'chatski': {
+    title: 'Chatski — Google Chat & GE Connector Companion',
+    subtitle: 'Summarizes unread Spaces & DMs via GE Chat Connector and stages replies into Chatski',
+    badge: 'Left Panel + GE',
+    seedPrompt:
+      '/chatski Check my recent Google Chat Spaces and Direct Messages via my Gemini Enterprise Chat Connector, summarize anything needing my attention, and stage [Draft-Only] replies into Chatski.',
+  },
   'connect-ge': {
     title: 'Gemini Enterprise (GE) Instance Wizard',
     subtitle: 'Default hub linking Entra-synced Google Identity to federated sources',
