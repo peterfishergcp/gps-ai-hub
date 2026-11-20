@@ -1,8 +1,8 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.6.0",
-  "releasedAt": "2026-11-20T23:30:00Z",
+  "suiteVersion": "1.6.1",
+  "releasedAt": "2026-11-20T23:48:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
@@ -88,7 +88,7 @@
       ]
     },
     "agy-second-brain": {
-      "version": "1.5.0",
+      "version": "1.6.1",
       "category": "My Antigravity Workspace UI, AI Inbox Action Items & Topics, Personal Memory (~/my-antigravity/memory/), Adversarial Minto SCQA Prep, 4-Agent Parallel Swarm & Anti-Slop Outbound Scrubbing",
       "skills": [
         "memory",
@@ -559,15 +559,21 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "1ad676e9ce6b5da8a8c795c5f7fcd21395ef1a4330c64741ff24fb0a225c33cc",
+        "app.js": "df16ed936cf4a09c48afcd5d3f6cc6ce72932b2421c059965efd0bb521a5e9be",
         "index.html": "be91e53409ddfd53c12844fb564d924e9004e0e232954b97f8daeccc0e7d50a2",
-        "main.mjs": "cece70d3a5c81f89e5c4e27ed7ee521a6c2d44eca451836728090243f2419001",
+        "main.mjs": "4744d877a6b226831477fa28a00bc1c690c1b5acf50a699710b3b79d26b680fa",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "25648a0b8b60f7a8230869fbea9f9b8992a9ee1740a1c781335e0f3e1cbc7e3e",
         "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
-        "styles.css": "ece974cf8fb3899e68af4c96a3c07a2aecab3713898bc5aeb6b6e166f14c377f",
+        "styles.css": "e678e2c9a1ee62e8a4d158442e14fb4378c859ed6e0b8be7487c868cc74d1320",
         "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9",
+        "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
+        "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
+        "assets/emoji/1f60e.png": "6532a77006aeea8413a52707fc3088761b2b0eae0a827a5ba7919f41171df43b",
+        "assets/emoji/1f6a6.png": "e3f5dc9f6b2fc9aa803691a7a73d7ebb5a0543bf09586fc8816fb89040aa4822",
+        "assets/emoji/2699_fe0f.png": "edaee6acd8bae516871bb6cb28f95dd362f24347477eddc5b20ed22a2b782ed5",
+        "assets/emoji/2728.png": "1ede340356e26664f17b39fc9b092b68519f6bed245ead84b6dbaf901004ad8c"
       }
     }
   }

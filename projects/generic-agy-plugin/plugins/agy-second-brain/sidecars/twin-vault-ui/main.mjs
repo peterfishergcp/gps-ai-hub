@@ -431,6 +431,26 @@ app.api(
   'GET'
 );
 
+const ALLOWED_EMOJI_CODES = new Set(['1f60e', '1f36a', '1f6a6', '1f30a', '2728', '2699_fe0f']);
+
+app.api(
+  '/api/emoji-png',
+  (data) => {
+    const code = String((data && data.code) || '').trim();
+    if (!ALLOWED_EMOJI_CODES.has(code)) {
+      return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+    }
+    const pngPath = path.join(__dirname, 'assets', 'emoji', `${code}.png`);
+    if (!fs.existsSync(pngPath)) {
+      return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+    }
+    return new Response(fs.readFileSync(pngPath), {
+      contentType: 'image/png',
+    });
+  },
+  'GET'
+);
+
 app.api(
   '/api/token-summary',
   async (data) => getTokenMeterSummary((data && data.convId) || ''),
