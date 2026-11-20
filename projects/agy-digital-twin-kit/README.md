@@ -23,7 +23,7 @@ Built for any customer persona - **Program Managers**, **Software & Data Enginee
 Open a **+ New Conversation** in Google Antigravity, paste the command below into the chat box, and press **Enter**:
 
 ```bash
-agy plugin install https://github.com/cloud-gtm/gps-ai-hub/tree/main/projects/agy-digital-twin-kit
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/agy-digital-twin-kit
 ```
 
 ### 2. Offline `.zip` or Local Checkout Install (`< 2 Seconds`, Zero `git` Required)
@@ -41,7 +41,7 @@ bash ./scripts/install-twin-kit.sh --role pm
 
 ### 3. Git Sparse-Checkout (Clones Only This Folder)
 ```bash
-git clone --depth 1 --filter=blob:none --sparse https://github.com/cloud-gtm/gps-ai-hub.git agy-twin
+git clone --depth 1 --filter=blob:none --sparse https://github.com/peterfishergcp/gps-ai-hub.git agy-twin
 cd agy-twin && git sparse-checkout set projects/agy-digital-twin-kit
 bash projects/agy-digital-twin-kit/scripts/install-twin-kit.sh
 ```
