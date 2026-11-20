@@ -114,12 +114,16 @@ async function syncSkillsIncrementally(skillFilter = '') {
     }
   }
 
-  // Also sync sidecar UI files (agy-skill-manager, agy-design-preview) when no single skill filter is passed
+  // Also sync sidecar UI files (agy-skill-manager, agy-design-preview, twin-vault-ui) when no single skill filter is passed
+  const updatedSidecarIds = [];
   if (!skillFilter && manifest.sidecarManifest) {
-    for (const [scId, scEntry] of Object.entries(manifest.sidecarManifest)) {
+    for (const [scKey, scEntry] of Object.entries(manifest.sidecarManifest)) {
       const pluginName = scEntry.plugin;
+      const scId = scEntry.sidecar || scKey.split('/').pop();
+      if (pluginName === 'agy-twin-automations') continue;
       if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(scId)) continue;
       const scDir = path.join(pluginsRoot, pluginName, 'sidecars', scId);
+      let sidecarChanged = false;
       for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {
         if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
         const parts = relPath.split('/');
@@ -141,17 +145,44 @@ async function syncSkillsIncrementally(skillFilter = '') {
           fs.writeFileSync(tmp, buf);
           fs.renameSync(tmp, localPath);
           updatedFilesCount += 1;
+          sidecarChanged = true;
         }
+      }
+      if (sidecarChanged) {
+        updatedSidecarIds.push(`${pluginName}/${scId}`);
       }
     }
   }
+
+  // Hot-restart updated sibling sidecars immediately so their Node ESM process reloads new files
+  const selfSidecarId = 'agy-onboarding/agy-skill-manager';
+  for (const fullScId of updatedSidecarIds) {
+    if (fullScId !== selfSidecarId) {
+      await callLanguageServerRpc('ManageSidecar', {
+        sidecarId: fullScId,
+        action: 'SIDECAR_ACTION_RESTART',
+      });
+    }
+  }
+  const selfUpdated = updatedSidecarIds.includes(selfSidecarId);
+  if (selfUpdated) {
+    setTimeout(() => {
+      callLanguageServerRpc('ManageSidecar', {
+        sidecarId: selfSidecarId,
+        action: 'SIDECAR_ACTION_RESTART',
+      });
+    }, 350);
+  }
+
   return {
     ok: true,
     suiteVersion: manifest.suiteVersion || '1.0.0',
     checkedSkillsCount: targetSkills.length,
     updatedSkillsCount,
     updatedFilesCount,
-    updatedSkillIds
+    updatedSkillIds,
+    updatedSidecarIds,
+    reloadSelf: selfUpdated,
   };
 }
 

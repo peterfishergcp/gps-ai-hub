@@ -13,7 +13,7 @@ PLUGINS_DIR = SUITE_ROOT / "plugins"
 DIST_DIR = SUITE_ROOT / "dist"
 MANIFEST_PATH = SUITE_ROOT / "version-manifest.json"
 ZIP_PATH = DIST_DIR / "antigravity-digital-twin-kit.zip"
-SUITE_VERSION = "1.0.1"
+SUITE_VERSION = "1.0.3"
 
 INCLUDE_ROOTS = ("plugins", "scripts", "docs", "README.md")
 SKIP_NAMES = {"__pycache__", ".DS_Store", "Thumbs.db", "node_modules"}
@@ -68,11 +68,12 @@ def build_manifest_and_zip() -> dict:
             files_map[rel] = sha256_bytes(f.read_bytes())
         if "sidecar.json" in files_map:
           sidecar_ids.append(scdir.name)
-          sidecar_manifest[f"{pname}/{scdir.name}"] = {
-              "plugin": pname,
-              "sidecar": scdir.name,
-              "files": files_map,
-          }
+          if pname != "agy-twin-automations":
+            sidecar_manifest[f"{pname}/{scdir.name}"] = {
+                "plugin": pname,
+                "sidecar": scdir.name,
+                "files": files_map,
+            }
 
     plugins_summary.append({
         "name": pname,

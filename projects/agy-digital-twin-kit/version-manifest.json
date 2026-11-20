@@ -1,6 +1,6 @@
 {
   "suiteName": "antigravity-digital-twin-kit",
-  "suiteVersion": "1.0.1",
+  "suiteVersion": "1.0.3",
   "plugins": [
     {
       "name": "agy-twin-automations",
@@ -133,41 +133,13 @@
     }
   },
   "sidecarManifest": {
-    "agy-twin-automations/friday-weekly-impact": {
-      "plugin": "agy-twin-automations",
-      "sidecar": "friday-weekly-impact",
-      "files": {
-        "sidecar.json": "f136c5f66daa77f3fa79e924d58851e737880c8d168270be1656775b18de6b43"
-      }
-    },
-    "agy-twin-automations/morning-twin-brief": {
-      "plugin": "agy-twin-automations",
-      "sidecar": "morning-twin-brief",
-      "files": {
-        "sidecar.json": "f950d771f96abab95d0bc11631643bd6ad8d237606c53fa8aaa4a5d3e86f600e"
-      }
-    },
-    "agy-twin-automations/nightly-notes-compactor": {
-      "plugin": "agy-twin-automations",
-      "sidecar": "nightly-notes-compactor",
-      "files": {
-        "sidecar.json": "97f5213172d74e78d9d66a802abfb77a66aae573674ba128fc7e57286966d3de"
-      }
-    },
-    "agy-twin-automations/twice-daily-followup-plan": {
-      "plugin": "agy-twin-automations",
-      "sidecar": "twice-daily-followup-plan",
-      "files": {
-        "sidecar.json": "3da07715bf38ffb9c9da40cd23fb206156813e88cb2759b1e85ba469065a3ae5"
-      }
-    },
     "agy-twin-memory/twin-vault-ui": {
       "plugin": "agy-twin-memory",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "c005d30de2f0ac987d1d1167d8524480ec77b22a92876ec6868555e6130b43fe",
-        "index.html": "44e18167a51c521f3166f1fc1467eaeefacf16c5b2811ecf7949692a63877f3e",
-        "main.mjs": "83268ba3fc852dc69c5c8f5cb607a2992f31029f6aa917ce8a454cf0d6c70860",
+        "app.js": "0a2c5d647169cb47cab111f7d3fa9de08553c2cd3e0e15a6b266ff7f30f3dae0",
+        "index.html": "0c82bad24eab0f6a9e6ec2fbc7e848092982c11bc072090e9dc72d8ae2dda51d",
+        "main.mjs": "db0b080956054a865cb81afdaa67b5b7037951b4c1a3bb99f2295596eb715add",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "f74f2d99f46d8dc3c58591dad4b4ba8a29c9bf272d98f650da73aa749a31924d",
         "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",

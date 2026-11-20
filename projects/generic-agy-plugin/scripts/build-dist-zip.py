@@ -59,6 +59,8 @@ def update_manifest_hashes(suite_root: Path) -> None:
     sidecar_manifest: dict[str, dict] = {}
     if plugins_dir.is_dir():
         for plugin_dir in sorted(p for p in plugins_dir.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            if plugin_dir.name == "agy-twin-automations":
+                continue
             sidecars_root = plugin_dir / "sidecars"
             if not sidecars_root.is_dir():
                 continue

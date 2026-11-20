@@ -309,10 +309,13 @@
         showToast('Checking SHA-256 skill hashes against GitHub...');
         try {
           var res = await apiPost('/api/incremental-sync', {});
-          if (res.updatedSkillsCount > 0) {
-            showToast('Incrementally updated ' + res.updatedSkillsCount + ' skill(s) (' + res.updatedFilesCount + ' file(s)) to v' + res.suiteVersion);
+          if (res.updatedFilesCount > 0) {
+            showToast('Updated ' + res.updatedFilesCount + ' file(s) to v' + res.suiteVersion + (res.updatedSidecarIds && res.updatedSidecarIds.length ? ' — restarting updated panels...' : ''));
+            if (res.reloadSelf) {
+              setTimeout(function () { window.location.reload(); }, 900);
+            }
           } else {
-            showToast('All ' + res.checkedSkillsCount + ' skills are up to date (v' + res.suiteVersion + ')');
+            showToast('All ' + res.checkedSkillsCount + ' skills & UI panels are up to date (v' + res.suiteVersion + ')');
           }
         } catch {
           runPromptInChat('/agy-update Incrementally check and sync any updated Public Sector skills.', '/agy-update');

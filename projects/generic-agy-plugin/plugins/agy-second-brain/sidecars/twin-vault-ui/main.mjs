@@ -6,7 +6,10 @@
  * (zero npm packages or external Python installs required).
  */
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
@@ -25,8 +28,197 @@ import { buildSkillsCatalog } from './seed_prompts_catalog.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
+const PLUGIN_NAME = path.basename(PLUGIN_ROOT);
 const PLUGINS_SUITE_ROOT = path.resolve(PLUGIN_ROOT, '..');
 const WRITABLE_EXTENSIONS = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
+const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
+const SAFE_SEG_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+const SUITE_REPO_PROJECT = PLUGIN_NAME === 'agy-twin-memory' ? 'agy-digital-twin-kit' : 'generic-agy-plugin';
+const RAW_SYNC_BASE = `https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/${SUITE_REPO_PROJECT}`;
+
+function computeLocalUiSignature() {
+  const h = crypto.createHash('sha256');
+  for (const fname of ['index.html', 'app.js', 'styles.css', 'main.mjs', 'seed_prompts_catalog.mjs']) {
+    const p = path.join(__dirname, fname);
+    try {
+      if (fs.existsSync(p) && fs.lstatSync(p).isFile()) {
+        h.update(fname).update(fs.readFileSync(p));
+      }
+    } catch {}
+  }
+  return h.digest('hex');
+}
+
+const BOOT_UI_SIGNATURE = computeLocalUiSignature();
+
+function callLanguageServerRpc(method, bodyObj) {
+  return new Promise((resolve) => {
+    const lsAddr = process.env.ANTIGRAVITY_LS_ADDRESS || '';
+    const csrf = process.env.ANTIGRAVITY_CSRF_TOKEN || '';
+    if (!lsAddr || !csrf || lsAddr === 'mock') {
+      resolve({ ok: false, skipped: true });
+      return;
+    }
+    const [host, portStr] = lsAddr.split(':');
+    const payload = JSON.stringify(bodyObj);
+    const req = http.request(
+      {
+        hostname: host || '127.0.0.1',
+        port: Number(portStr || 5387),
+        path: `/exa.language_server_pb.LanguageServerService/${method}`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-codeium-csrf-token': csrf,
+          'Content-Length': Buffer.byteLength(payload),
+        },
+        timeout: 4000,
+      },
+      (res) => {
+        res.resume();
+        resolve({ ok: res.statusCode === 200 });
+      }
+    );
+    req.on('error', () => resolve({ ok: false }));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ ok: false });
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
+function httpsGetBuffer(urlStr, redirectsLeft = 4) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr);
+    if (u.protocol !== 'https:') return reject(new Error('HTTPS required'));
+    const req = https.get(
+      u,
+      { headers: { 'User-Agent': 'AGY-Twin-Vault-Sidecar/1.2' }, timeout: 12000 },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
+          if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
+          return resolve(httpsGetBuffer(new URL(res.headers.location, urlStr).toString(), redirectsLeft - 1));
+        }
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+        const chunks = [];
+        let total = 0;
+        res.on('data', (c) => {
+          total += c.length;
+          if (total > 5 * 1024 * 1024) return req.destroy(new Error('Response too large'));
+          chunks.push(c);
+        });
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('Timeout')));
+  });
+}
+
+async function syncSuiteFromGithub() {
+  const manifestBuf = await httpsGetBuffer(`${RAW_SYNC_BASE}/version-manifest.json`);
+  const manifest = JSON.parse(manifestBuf.toString('utf-8'));
+  let updatedFilesCount = 0;
+  const updatedSidecarIds = [];
+
+  for (const [skillId, entry] of Object.entries(manifest.skillManifest || {})) {
+    const pName = entry.plugin;
+    if (!SAFE_ID_RE.test(pName) || !SAFE_ID_RE.test(skillId)) continue;
+    const skillDir = path.join(PLUGINS_SUITE_ROOT, pName, 'skills', skillId);
+    const isDisabled =
+      !fs.existsSync(path.join(skillDir, 'SKILL.md')) &&
+      fs.existsSync(path.join(skillDir, 'SKILL.md.disabled'));
+    for (const [relPath, expectedSha] of Object.entries(entry.files || {})) {
+      if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
+      if (!relPath.split('/').every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
+      const diskRel = relPath === 'SKILL.md' && isDisabled ? 'SKILL.md.disabled' : relPath;
+      const localPath = path.join(skillDir, diskRel);
+      let localSha = null;
+      try {
+        if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
+          localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
+        }
+      } catch {}
+      if (localSha !== expectedSha) {
+        const buf = await httpsGetBuffer(`${RAW_SYNC_BASE}/plugins/${pName}/skills/${skillId}/${relPath}`);
+        if (crypto.createHash('sha256').update(buf).digest('hex') !== expectedSha) {
+          throw new Error(`Hash mismatch on ${skillId}/${relPath}`);
+        }
+        fs.mkdirSync(path.dirname(localPath), { recursive: true });
+        const tmp = `${localPath}.tmp-${process.pid}`;
+        fs.writeFileSync(tmp, buf);
+        fs.renameSync(tmp, localPath);
+        updatedFilesCount += 1;
+      }
+    }
+  }
+
+  for (const [scKey, scEntry] of Object.entries(manifest.sidecarManifest || {})) {
+    const pName = scEntry.plugin;
+    const scId = scEntry.sidecar || scKey.split('/').pop();
+    if (pName === 'agy-twin-automations') continue;
+    if (!SAFE_ID_RE.test(pName) || !SAFE_ID_RE.test(scId)) continue;
+    const scDir = path.join(PLUGINS_SUITE_ROOT, pName, 'sidecars', scId);
+    let scChanged = false;
+    for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {
+      if (!relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
+      if (!relPath.split('/').every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
+      const localPath = path.join(scDir, relPath);
+      let localSha = null;
+      try {
+        if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
+          localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
+        }
+      } catch {}
+      if (localSha !== expectedSha) {
+        const buf = await httpsGetBuffer(`${RAW_SYNC_BASE}/plugins/${pName}/sidecars/${scId}/${relPath}`);
+        if (crypto.createHash('sha256').update(buf).digest('hex') !== expectedSha) {
+          throw new Error(`Hash mismatch on sidecar ${scId}/${relPath}`);
+        }
+        fs.mkdirSync(path.dirname(localPath), { recursive: true });
+        const tmp = `${localPath}.tmp-${process.pid}`;
+        fs.writeFileSync(tmp, buf);
+        fs.renameSync(tmp, localPath);
+        updatedFilesCount += 1;
+        scChanged = true;
+      }
+    }
+    if (scChanged) updatedSidecarIds.push(`${pName}/${scId}`);
+  }
+
+  const selfSidecarId = `${PLUGIN_NAME}/twin-vault-ui`;
+  for (const fullScId of updatedSidecarIds) {
+    if (fullScId !== selfSidecarId) {
+      await callLanguageServerRpc('ManageSidecar', {
+        sidecarId: fullScId,
+        action: 'SIDECAR_ACTION_RESTART',
+      });
+    }
+  }
+  const reloadSelf = updatedSidecarIds.includes(selfSidecarId) || computeLocalUiSignature() !== BOOT_UI_SIGNATURE;
+  if (reloadSelf) {
+    setTimeout(() => {
+      callLanguageServerRpc('ManageSidecar', {
+        sidecarId: selfSidecarId,
+        action: 'SIDECAR_ACTION_RESTART',
+      });
+    }, 350);
+  }
+
+  return {
+    ok: true,
+    suiteVersion: manifest.suiteVersion || '1.0.0',
+    updatedFilesCount,
+    updatedSidecarIds,
+    reloadSelf,
+  };
+}
 
 function resolveVault() {
   const root = getVaultRoot();
@@ -199,9 +391,19 @@ app.api(
     const state = getVaultState(vaultRoot);
     const pluginsTree = buildDirectoryTree(PLUGINS_SUITE_ROOT, PLUGINS_SUITE_ROOT);
     const skillsCatalog = buildSkillsCatalog(PLUGINS_SUITE_ROOT);
+    const uiOutdated = computeLocalUiSignature() !== BOOT_UI_SIGNATURE;
+    if (uiOutdated) {
+      setTimeout(() => {
+        callLanguageServerRpc('ManageSidecar', {
+          sidecarId: `${PLUGIN_NAME}/twin-vault-ui`,
+          action: 'SIDECAR_ACTION_RESTART',
+        });
+      }, 300);
+    }
     return {
       ok: true,
       ...state,
+      uiOutdated,
       skillsCatalog,
       presets: Object.values(ROLE_PRESETS).map((p) => ({
         id: p.id,
@@ -391,6 +593,10 @@ app.api('/api/vault/init', async (data) => {
     force: true,
   });
   return res;
+});
+
+app.api('/api/sync-updates', async () => {
+  return syncSuiteFromGithub();
 });
 
 await app.run();
