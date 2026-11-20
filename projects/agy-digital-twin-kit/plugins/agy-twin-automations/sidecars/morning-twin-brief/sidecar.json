@@ -9,5 +9,11 @@
   ],
   "restart_policy": "always",
   "display_name": "Morning Twin Kickoff Brief",
-  "description": "Every weekday at 8:30 AM, prepares your Top-3 Action Brief from your Second Brain vault and connected calendar/inbox sources."
+  "description": "Every weekday at 8:30 AM, prepares your Top-3 Action Brief from your Second Brain vault and connected calendar/inbox sources.",
+  "agent_permissions": {
+    "access_grants": [
+      "read_file(${HOME}/antigravity-twin)",
+      "write_file(${HOME}/antigravity-twin)"
+    ]
+  }
 }

@@ -9,5 +9,11 @@
   ],
   "restart_policy": "always",
   "display_name": "Twice-Daily Follow-Up Action Plan",
-  "description": "Every weekday at 9:30 AM and 2:30 PM, sweeps open commitments, updates followups/latest_action_plan.md, and stages [Draft-Only] replies."
+  "description": "Every weekday at 9:30 AM and 2:30 PM, sweeps open commitments, updates followups/latest_action_plan.md, and stages [Draft-Only] replies.",
+  "agent_permissions": {
+    "access_grants": [
+      "read_file(${HOME}/antigravity-twin)",
+      "write_file(${HOME}/antigravity-twin)"
+    ]
+  }
 }
