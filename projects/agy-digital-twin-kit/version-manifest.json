@@ -1,6 +1,6 @@
 {
   "suiteName": "antigravity-digital-twin-kit",
-  "suiteVersion": "1.0.3",
+  "suiteVersion": "1.1.0",
   "plugins": [
     {
       "name": "agy-twin-automations",
@@ -137,13 +137,13 @@
       "plugin": "agy-twin-memory",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "0a2c5d647169cb47cab111f7d3fa9de08553c2cd3e0e15a6b266ff7f30f3dae0",
-        "index.html": "0c82bad24eab0f6a9e6ec2fbc7e848092982c11bc072090e9dc72d8ae2dda51d",
-        "main.mjs": "db0b080956054a865cb81afdaa67b5b7037951b4c1a3bb99f2295596eb715add",
+        "app.js": "af02c7338b8c5cb61caa0c50bc337ee34bca7a8bfe2ca3186361005410608ea7",
+        "index.html": "923188558b4a1e088f7f01a9daaa93f2f1bcec357240eb56ec1ccff406586661",
+        "main.mjs": "b02a2033d51c7404a521be529fb51aa4050792080ffcb2f030d46514e4e4e746",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "f74f2d99f46d8dc3c58591dad4b4ba8a29c9bf272d98f650da73aa749a31924d",
+        "seed_prompts_catalog.mjs": "78bee24ecebbbe85ecbf3f59d196b6515643925e0534d87abebe13291a08fb04",
         "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
-        "styles.css": "764332b1991304e55f21b2e22341d6730dddd6e0d26648700bd2f000cfa7513a"
+        "styles.css": "9633013c71ddae8af8535b920365d72bd2a7cd7d0bde858c192099feaef8a2de"
       }
     }
   }

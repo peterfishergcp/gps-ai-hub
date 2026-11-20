@@ -457,12 +457,146 @@ function humanizeSkillId(skillId) {
     .join(' ');
 }
 
-export function buildSkillsCatalog(pluginsSuiteRoot) {
-  if (!pluginsSuiteRoot || !fs.existsSync(pluginsSuiteRoot)) {
-    return [];
-  }
+export const SUITE_PLUGIN_SETS = {
+  generic: new Set([
+    'agy-onboarding',
+    'agy-connectors',
+    'agy-design-studio',
+    'agy-public-workflows',
+    'agy-engineering-cloud',
+    'agy-security',
+    'agy-second-brain',
+    'agy-twin-automations',
+    'emergency-readiness',
+  ]),
+  'twin-kit': new Set([
+    'agy-twin-memory',
+    'agy-twin-workflows',
+    'agy-twin-voice',
+    'agy-twin-automations',
+    'emergency-readiness',
+  ]),
+};
+
+export function buildSkillsCatalog(pluginsSuiteRoot, options = {}) {
+  const personalSkillsRoot = options.personalSkillsRoot || '';
+  const customSeedsMap = options.customSeedsMap && typeof options.customSeedsMap === 'object' ? options.customSeedsMap : {};
+  const suiteMode = options.suiteMode === 'twin-kit' ? 'twin-kit' : 'generic';
+  const allowedSuitePlugins = SUITE_PLUGIN_SETS[suiteMode];
 
   const buckets = new Map();
+  const overriddenSkillIds = new Set();
+  const suiteSkillIds = new Set(Object.keys(CURATED_SKILL_SEEDS));
+
+  // 1. Scan Personal User-Owned Skills (~/.gemini/config/skills/)
+  if (personalSkillsRoot && fs.existsSync(personalSkillsRoot)) {
+    let personalDirs = [];
+    try {
+      personalDirs = fs
+        .readdirSync(personalSkillsRoot, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && !d.isSymbolicLink() && !d.name.startsWith('.'))
+        .map((d) => d.name)
+        .sort();
+    } catch {
+      personalDirs = [];
+    }
+
+    for (const skillId of personalDirs) {
+      const sDir = path.join(personalSkillsRoot, skillId);
+      const mdPath = path.join(sDir, 'SKILL.md');
+      const metaPath = path.join(sDir, '.twin-skill-meta.json');
+      let mdStat = null;
+      try {
+        mdStat = fs.lstatSync(mdPath);
+      } catch {
+        continue;
+      }
+      if (!mdStat || mdStat.isSymbolicLink() || !mdStat.isFile()) continue;
+
+      let meta = null;
+      if (fs.existsSync(metaPath)) {
+        try {
+          const mStat = fs.lstatSync(metaPath);
+          if (mStat && !mStat.isSymbolicLink() && mStat.isFile()) {
+            meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+          }
+        } catch {
+          meta = null;
+        }
+      }
+
+      const isSuiteOverride = suiteSkillIds.has(skillId);
+      const isTwinManagedCopy = Boolean(meta) || Boolean(customSeedsMap[skillId] && customSeedsMap[skillId].isPersonalCopy) || isSuiteOverride;
+      if (isSuiteOverride) {
+        overriddenSkillIds.add(skillId);
+      }
+      if (!isTwinManagedCopy) {
+        // Unrelated global skill in ~/.gemini/config/skills/ — keep out of ★ My Skills so it stays clean
+        continue;
+      }
+
+      let parsed = { name: '', description: '' };
+      try {
+        parsed = parseSkillFrontmatter(fs.readFileSync(mdPath, 'utf-8'));
+      } catch {
+        parsed = { name: '', description: '' };
+      }
+
+      const baseCurated = (meta && meta.forkedFrom && CURATED_SKILL_SEEDS[meta.forkedFrom]) || CURATED_SKILL_SEEDS[skillId] || null;
+      const seedEntry = customSeedsMap[skillId] || null;
+      const defaultSeedPrompt =
+        (meta && meta.seedPrompt) ||
+        (baseCurated ? baseCurated.seedPrompt.replace(new RegExp(`^/${meta && meta.forkedFrom ? meta.forkedFrom : skillId}\\b`), `/${skillId}`) : `/${skillId} Run my customized ${humanizeSkillId(skillId)} workflow.`);
+      const activeSeedPrompt = seedEntry && seedEntry.seedPrompt ? String(seedEntry.seedPrompt) : defaultSeedPrompt;
+
+      const title =
+        (seedEntry && seedEntry.title) ||
+        (meta && meta.title) ||
+        (parsed.name && parsed.name !== skillId ? parsed.name : '') ||
+        (baseCurated ? `${baseCurated.title} (My Copy)` : humanizeSkillId(skillId));
+      const subtitle =
+        (seedEntry && seedEntry.subtitle) ||
+        (meta && meta.subtitle) ||
+        (parsed.description ? parsed.description.slice(0, 140) + (parsed.description.length > 140 ? '...' : '') : 'Personal skill stored in ~/.gemini/config/skills/ — protected from plugin updates.');
+
+      if (!buckets.has('my-skills')) {
+        buckets.set('my-skills', {
+          categoryId: 'my-skills',
+          plugin: 'my-skills',
+          scope: 'my',
+          order: 1,
+          categoryLabel: '★ My Custom Skills (Protected in ~/.gemini/config/skills/)',
+          chipLabel: '★ My Skills',
+          skills: [],
+        });
+      }
+
+      buckets.get('my-skills').skills.push({
+        id: skillId,
+        plugin: 'my-skills',
+        scope: 'my',
+        isPersonalCopy: true,
+        writable: true,
+        forkedFrom: (meta && meta.forkedFrom) || (isSuiteOverride ? skillId : ''),
+        forkMode: isSuiteOverride ? 'override' : 'copy',
+        command: `/${skillId}`,
+        title,
+        subtitle,
+        badge: isSuiteOverride ? 'My Override · Protected' : 'My Copy · Protected',
+        enabled: true,
+        seedPrompt: activeSeedPrompt,
+        defaultSeedPrompt,
+        hasCustomSeed: Boolean(seedEntry && seedEntry.seedPrompt && seedEntry.seedPrompt !== defaultSeedPrompt),
+        skillMdPath: mdPath,
+      });
+    }
+  }
+
+  // 2. Scan Installed Plugin Skills (~/.gemini/config/plugins/)
+  if (!pluginsSuiteRoot || !fs.existsSync(pluginsSuiteRoot)) {
+    return Array.from(buckets.values());
+  }
+
   let pluginDirs = [];
   try {
     pluginDirs = fs
@@ -471,7 +605,7 @@ export function buildSkillsCatalog(pluginsSuiteRoot) {
       .map((d) => d.name)
       .sort();
   } catch {
-    return [];
+    return Array.from(buckets.values());
   }
 
   for (const pluginDirName of pluginDirs) {
@@ -490,6 +624,8 @@ export function buildSkillsCatalog(pluginsSuiteRoot) {
     }
     const pluginId = String(pluginManifest.name || pluginDirName);
     const pluginDefaultDisabled = Boolean(pluginManifest.disabled);
+    const isSuitePlugin = allowedSuitePlugins.has(pluginId) || allowedSuitePlugins.has(pluginDirName);
+    const catScope = isSuitePlugin ? 'suite' : 'other';
 
     let skillDirs = [];
     try {
@@ -529,9 +665,9 @@ export function buildSkillsCatalog(pluginsSuiteRoot) {
         }
       }
 
-      const categoryKey = PUBLIC_SECTOR_GOV_SKILLS.has(skillId) ? 'public_sector' : pluginId;
+      const categoryKey = isSuitePlugin && PUBLIC_SECTOR_GOV_SKILLS.has(skillId) ? 'public_sector' : pluginId;
       const catDef = CATEGORY_DEFINITIONS[categoryKey] || {
-        order: 90,
+        order: isSuitePlugin ? 88 : 200,
         categoryLabel: String(pluginManifest.displayName || humanizeSkillId(pluginId)),
         chipLabel: humanizeSkillId(pluginId),
       };
@@ -540,6 +676,7 @@ export function buildSkillsCatalog(pluginsSuiteRoot) {
         buckets.set(categoryKey, {
           categoryId: categoryKey,
           plugin: pluginId,
+          scope: catScope,
           order: catDef.order,
           categoryLabel: catDef.categoryLabel,
           chipLabel: catDef.chipLabel,
@@ -553,19 +690,33 @@ export function buildSkillsCatalog(pluginsSuiteRoot) {
         : parsed.description
           ? parsed.description.slice(0, 140) + (parsed.description.length > 140 ? '...' : '')
           : `Run /${skillId} workflow in Antigravity chat.`;
-      const seedPrompt = curated
+      const defaultSeedPrompt = curated
         ? curated.seedPrompt
         : `/${skillId} Walk me through the ${title} workflow and run a realistic starter example.`;
+      const seedOverride = customSeedsMap[skillId] && !overriddenSkillIds.has(skillId) ? customSeedsMap[skillId] : null;
+      const activeSeedPrompt = seedOverride && seedOverride.seedPrompt ? String(seedOverride.seedPrompt) : defaultSeedPrompt;
 
       buckets.get(categoryKey).skills.push({
         id: skillId,
         plugin: pluginId,
+        scope: catScope,
+        isPersonalCopy: false,
+        writable: false,
+        overriddenByPersonal: overriddenSkillIds.has(skillId),
         command: `/${skillId}`,
         title,
         subtitle,
-        badge: curated ? curated.badge : (pluginDefaultDisabled ? 'Opt-In' : 'Skill'),
+        badge: overriddenSkillIds.has(skillId)
+          ? 'Overridden by ★ My Skills'
+          : curated
+            ? curated.badge
+            : pluginDefaultDisabled
+              ? 'Opt-In'
+              : 'Skill',
         enabled: hasActive && !pluginDefaultDisabled,
-        seedPrompt,
+        seedPrompt: activeSeedPrompt,
+        defaultSeedPrompt,
+        hasCustomSeed: Boolean(seedOverride && seedOverride.seedPrompt && seedOverride.seedPrompt !== defaultSeedPrompt),
         skillMdPath: mdPath,
       });
     }

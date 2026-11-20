@@ -1,7 +1,7 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.1.2",
+  "suiteVersion": "1.2.0",
   "releasedAt": "2026-11-20T19:50:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
@@ -496,9 +496,9 @@
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "8d83df92ae874d74f5867187af9d726a7cf29fa2badbf713230dd89aa310855d",
-        "index.html": "418a35d5d93d27a5ac383896e807d550fb9b694434be046eda4abf5fea91d323",
-        "main.mjs": "1198811b7ff2b52d036f4a9cdcf78ef3af9d03bdfb487494c5c6a914f8dba021",
+        "app.js": "391b29abf8a5f45830f799eea7c4d944b73ae1036ce53a902b70dd23d9aa522c",
+        "index.html": "f3f6d625d1d180492d83e93cf2dc827b3861c293e84ce1a71553065371b52923",
+        "main.mjs": "52b1a7aa768528555adc915f2d5dc737870f193f9ca13a397cf8d7ea3b29c72f",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "sidecar.json": "26c46bcf76399d47e8b40aff36591c7cb4fd9227f3c6c52866d6860099196e60",
         "styles.css": "2b8f2d066cf68c1a05e26e889d8c91626c2a70f97b3db3022bf6bd74c8f837ea"
@@ -508,13 +508,13 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "ef81928ecfc0766063fa34f8039165c11be851c00f5fdbae058bc5fbb5223d9c",
-        "index.html": "0c82bad24eab0f6a9e6ec2fbc7e848092982c11bc072090e9dc72d8ae2dda51d",
-        "main.mjs": "1120619d3bd60ca75f3cedf3d956aa2c2d32092a48ae16037f2677f298609280",
+        "app.js": "43d733ff4c30894500ed9be2f6a827eec2c3a7d5c0685ea82ef0ff961cfdc229",
+        "index.html": "923188558b4a1e088f7f01a9daaa93f2f1bcec357240eb56ec1ccff406586661",
+        "main.mjs": "b02a2033d51c7404a521be529fb51aa4050792080ffcb2f030d46514e4e4e746",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "f74f2d99f46d8dc3c58591dad4b4ba8a29c9bf272d98f650da73aa749a31924d",
+        "seed_prompts_catalog.mjs": "78bee24ecebbbe85ecbf3f59d196b6515643925e0534d87abebe13291a08fb04",
         "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
-        "styles.css": "764332b1991304e55f21b2e22341d6730dddd6e0d26648700bd2f000cfa7513a"
+        "styles.css": "9633013c71ddae8af8535b920365d72bd2a7cd7d0bde858c192099feaef8a2de"
       }
     }
   }
