@@ -2,6 +2,8 @@
   let appState = null;
   let activeTab = 'overview';
   let gtdFilter = 'OPEN';
+  let skillsCategory = 'all';
+  let skillsSearch = '';
   let selectedFile = null;
   let editorMode = 'preview';
   let showRoleDrawer = false;
@@ -894,6 +896,181 @@
     return [el('div', { className: 'explorer-layout' }, [treePane, editorPane])];
   }
 
+  function buildSkillsNodes() {
+    const categories = (appState && appState.skillsCatalog) || [];
+    let totalSkills = 0;
+    categories.forEach((cat) => {
+      totalSkills += (cat.skills || []).length;
+    });
+
+    const chipRow = el('div', { className: 'skills-chip-row' }, [
+      el('button', {
+        type: 'button',
+        className: 'skill-chip' + (skillsCategory === 'all' ? ' active' : ''),
+        text: 'All (' + totalSkills + ')',
+        onClick: () => {
+          skillsCategory = 'all';
+          render();
+        },
+      }),
+      ...categories.map((cat) => {
+        const key = cat.categoryId || cat.plugin;
+        const label = (cat.chipLabel || cat.categoryLabel) + ' (' + (cat.skills || []).length + ')';
+        return el('button', {
+          type: 'button',
+          className: 'skill-chip' + (skillsCategory === key ? ' active' : ''),
+          text: label,
+          onClick: () => {
+            skillsCategory = key;
+            render();
+          },
+        });
+      }),
+    ]);
+
+    const searchInput = el('input', {
+      type: 'search',
+      className: 'skills-search',
+      placeholder: 'Filter skills by name, /command, capability, or seed prompt...',
+      value: skillsSearch,
+    });
+    searchInput.addEventListener('input', () => {
+      skillsSearch = searchInput.value;
+      renderFilteredSkillCards();
+    });
+
+    const headerCard = el('div', { className: 'card' }, [
+      el('div', { className: 'card-header' }, [
+        el('div', {}, [
+          el('h3', { className: 'card-title', text: '1-Click Skill Seed Prompts' }),
+          el('div', {
+            className: 'muted',
+            text: 'Click any seed prompt or "Run" to execute directly in Antigravity chat.',
+          }),
+        ]),
+        el('span', { className: 'badge badge-green', text: totalSkills + ' Skills Installed' }),
+      ]),
+      el('div', { className: 'skills-toolbar' }, [searchInput, chipRow]),
+    ]);
+
+    const resultsContainer = el('div', {});
+
+    function renderFilteredSkillCards() {
+      resultsContainer.replaceChildren();
+      const q = (skillsSearch || '').trim().toLowerCase();
+      let shownCount = 0;
+
+      categories.forEach((cat) => {
+        const key = cat.categoryId || cat.plugin;
+        if (skillsCategory !== 'all' && skillsCategory !== key) return;
+
+        const matching = (cat.skills || []).filter((s) => {
+          if (!q) return true;
+          return (
+            String(s.title || '').toLowerCase().includes(q) ||
+            String(s.subtitle || '').toLowerCase().includes(q) ||
+            String(s.command || '').toLowerCase().includes(q) ||
+            String(s.badge || '').toLowerCase().includes(q) ||
+            String(s.seedPrompt || '').toLowerCase().includes(q)
+          );
+        });
+        if (matching.length === 0) return;
+        shownCount += matching.length;
+
+        const grid = el(
+          'div',
+          { className: 'skills-seed-grid' },
+          matching.map((skill) => {
+            const topRow = el('div', { className: 'seed-card-top' }, [
+              el('span', { className: 'prompt-cmd', text: skill.command }),
+              el('span', {
+                className: 'badge ' + (skill.enabled === false ? 'badge-amber' : 'badge-neutral'),
+                text: skill.enabled === false ? 'Opt-In / Paused' : skill.badge || 'Skill',
+              }),
+            ]);
+
+            const bodyBlock = el('div', {}, [
+              topRow,
+              el('div', { className: 'seed-card-title', text: skill.title }),
+              el('p', { className: 'seed-card-sub', text: skill.subtitle }),
+            ]);
+
+            const seedBoxBtn = el('button', {
+              type: 'button',
+              className: 'seed-prompt-btn',
+              title: 'Click to run ' + skill.command + ' in Antigravity chat',
+              text: skill.seedPrompt,
+              onClick: () => dispatchPrompt(skill.seedPrompt, skill.command),
+            });
+
+            const leftBtns = el('div', { className: 'topbar-actions' }, [
+              el('button', {
+                type: 'button',
+                className: 'btn btn-sm',
+                text: '\u25B6 Run',
+                title: 'Send seed prompt directly to Antigravity chat',
+                onClick: () => dispatchPrompt(skill.seedPrompt, skill.command),
+              }),
+              el('button', {
+                type: 'button',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Copy',
+                title: 'Copy seed prompt to clipboard',
+                onClick: async () => {
+                  try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      await navigator.clipboard.writeText(skill.seedPrompt);
+                      showToast('Copied ' + skill.command + ' seed prompt');
+                    }
+                  } catch (err) {
+                    showToast('Copy failed: ' + err.message);
+                  }
+                },
+              }),
+            ]);
+
+            const inspectBtn = skill.skillMdPath
+              ? el('button', {
+                  type: 'button',
+                  className: 'btn btn-secondary btn-sm',
+                  text: 'SKILL.md',
+                  title: 'Inspect ' + skill.command + ' SKILL.md in Markdown Files',
+                  onClick: () => openFileInExplorer(skill.skillMdPath),
+                })
+              : null;
+
+            const actionRow = el('div', { className: 'seed-card-actions' }, [leftBtns, inspectBtn]);
+
+            return el(
+              'div',
+              { className: 'seed-skill-card' + (skill.enabled === false ? ' is-paused' : '') },
+              [bodyBlock, seedBoxBtn, actionRow]
+            );
+          })
+        );
+
+        resultsContainer.appendChild(
+          el('div', { className: 'card' }, [
+            el('div', { className: 'card-header' }, [
+              el('h3', { className: 'card-title', text: cat.categoryLabel }),
+              el('span', { className: 'badge badge-neutral', text: matching.length + ' skills' }),
+            ]),
+            grid,
+          ])
+        );
+      });
+
+      if (shownCount === 0) {
+        resultsContainer.appendChild(
+          el('div', { className: 'card muted', text: 'No skills match your current filter.' })
+        );
+      }
+    }
+
+    renderFilteredSkillCards();
+    return [headerCard, resultsContainer];
+  }
+
   function render() {
     if (!appState) {
       viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading vault state...' }));
@@ -904,6 +1081,7 @@
     else if (activeTab === 'gtd') nodes = buildGtdNodes();
     else if (activeTab === 'initiatives') nodes = buildInitiativesNodes();
     else if (activeTab === 'contacts') nodes = buildContactsNodes();
+    else if (activeTab === 'skills') nodes = buildSkillsNodes();
     else if (activeTab === 'explorer') nodes = buildExplorerNodes();
 
     viewRoot.replaceChildren(...nodes);

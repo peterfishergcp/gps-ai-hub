@@ -21,6 +21,7 @@ import {
   toggleGtdTask,
   touchContact,
 } from '../../scripts/vault_core.mjs';
+import { buildSkillsCatalog } from './seed_prompts_catalog.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
@@ -197,9 +198,11 @@ app.api(
     const vaultRoot = resolveVault();
     const state = getVaultState(vaultRoot);
     const pluginsTree = buildDirectoryTree(PLUGINS_SUITE_ROOT, PLUGINS_SUITE_ROOT);
+    const skillsCatalog = buildSkillsCatalog(PLUGINS_SUITE_ROOT);
     return {
       ok: true,
       ...state,
+      skillsCatalog,
       presets: Object.values(ROLE_PRESETS).map((p) => ({
         id: p.id,
         label: p.label,

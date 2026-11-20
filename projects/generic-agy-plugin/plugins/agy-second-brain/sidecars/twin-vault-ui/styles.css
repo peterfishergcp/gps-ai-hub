@@ -465,3 +465,122 @@ th {
 .toast.visible {
   opacity: 0.95;
 }
+
+.skills-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skills-search {
+  width: 100%;
+  background: var(--tv-bg);
+  color: var(--tv-fg);
+  border: 1px solid var(--tv-border);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+}
+
+.skills-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.skill-chip {
+  background: var(--tv-secondary);
+  color: var(--tv-muted-fg);
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.skill-chip:hover {
+  color: var(--tv-fg);
+  border-color: var(--tv-primary);
+}
+
+.skill-chip.active {
+  background: var(--tv-primary);
+  color: var(--tv-primary-fg);
+  border-color: var(--tv-primary);
+  font-weight: 600;
+}
+
+.skills-seed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.seed-skill-card {
+  background: var(--tv-bg);
+  border: 1px solid var(--tv-border);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: border-color 0.14s ease;
+}
+
+.seed-skill-card:hover {
+  border-color: var(--tv-primary);
+}
+
+.seed-skill-card.is-paused {
+  opacity: 0.68;
+}
+
+.seed-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.seed-card-title {
+  font-weight: 600;
+  font-size: 12.5px;
+  margin: 2px 0 2px;
+  color: var(--tv-fg);
+}
+
+.seed-card-sub {
+  font-size: 11.5px;
+  color: var(--tv-muted-fg);
+  margin: 0;
+}
+
+.seed-prompt-btn {
+  width: 100%;
+  text-align: left;
+  background: var(--tv-secondary);
+  color: var(--tv-fg);
+  border: 1px dashed var(--tv-border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.seed-prompt-btn:hover {
+  border-style: solid;
+  border-color: var(--tv-primary);
+}
+
+.seed-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}

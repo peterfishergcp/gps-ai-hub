@@ -191,6 +191,17 @@
         var mainCol = el('div');
         mainCol.appendChild(el('p', 'skill-title', s.title));
         mainCol.appendChild(el('p', 'skill-sub', s.subtitle));
+        if (s.starterPrompt) {
+          var seedBtn = el('button', 'seed-prompt-pill');
+          seedBtn.type = 'button';
+          seedBtn.title = '1-Click Run Seed Prompt: ' + s.starterPrompt;
+          seedBtn.appendChild(el('span', 'seed-prompt-tag', '\u25B6 Seed:'));
+          seedBtn.appendChild(el('span', 'seed-prompt-text', s.starterPrompt));
+          seedBtn.addEventListener('click', function () {
+            runPromptInChat(s.starterPrompt, s.command);
+          });
+          mainCol.appendChild(seedBtn);
+        }
 
         var cmdCol = el('div', 'cmd-col', s.command);
         var badgeCol = el('div', 'badge-col', s.badge);

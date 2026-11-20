@@ -165,12 +165,13 @@
       "plugin": "agy-twin-memory",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "30ec8fd0c4a86a53349cadfd609d02c227900234cb3ca964bd552b113117e487",
-        "index.html": "f64ac262be82fcf9e094479548df619f3195b103fc46aee12394c0c8d8f916e1",
-        "main.mjs": "dd351f80f797e87068fd4d9360d84ce5af9cd692b76a6c865ca346ec90e04861",
+        "app.js": "c005d30de2f0ac987d1d1167d8524480ec77b22a92876ec6868555e6130b43fe",
+        "index.html": "44e18167a51c521f3166f1fc1467eaeefacf16c5b2811ecf7949692a63877f3e",
+        "main.mjs": "83268ba3fc852dc69c5c8f5cb607a2992f31029f6aa917ce8a454cf0d6c70860",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
+        "seed_prompts_catalog.mjs": "f74f2d99f46d8dc3c58591dad4b4ba8a29c9bf272d98f650da73aa749a31924d",
         "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
-        "styles.css": "992d03f4c9ae7626b24e38f71006af06d77ead0cc8b4a40955283c28c8324ef9"
+        "styles.css": "764332b1991304e55f21b2e22341d6730dddd6e0d26648700bd2f000cfa7513a"
       }
     }
   }
