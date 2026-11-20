@@ -104,10 +104,24 @@ export const CURATED_SKILL_SEEDS = {
   },
   'model-guide': {
     title: 'Model Selection & Using Claude in AGY',
-    subtitle: 'Switch between Gemini & Anthropic Claude, tune effort & Dual-Model reviews',
-    badge: 'Claude + Gemini',
+    subtitle: 'Switch between Gemini 4, Orchestrator & Anthropic Claude 5.5 + Dual-Model reviews',
+    badge: 'Gemini 4 + Claude',
     seedPrompt:
-      '/model-guide Show me when to use Google Gemini vs. Anthropic Claude in Antigravity, how to run a 2-pass Dual-Model adversarial review, and our compliance guardrails.',
+      '/model-guide Show me when to use Google Gemini 4, Orchestrator, and Anthropic Claude 5.5 in Antigravity, how to run a 2-pass Dual-Model adversarial review, and our compliance guardrails.',
+  },
+  'orchestrator-guide': {
+    title: 'Mastering Orchestrator (Planner + Hydrogen)',
+    subtitle: 'Pair Gemini 4 Neon/Argon/Carbon planning with fast Hydrogen execution & auto-recovery',
+    badge: 'Orchestrator',
+    seedPrompt:
+      '/orchestrator-guide Show me how to select and prompt Orchestrator (Neon, Argon, Carbon) in Antigravity App and CLI for faster execution and lower quota burn.',
+  },
+  'token-usage': {
+    title: 'Token & Quota Consumption Analyzer',
+    subtitle: 'Retrieve exact 5h, 24h & 7d local token telemetry, cache hit % & rendered HTML report',
+    badge: 'Token Telemetry',
+    seedPrompt:
+      '/token-usage Retrieve my exact Antigravity token consumption across 5-hour, 24-hour, and 7-day windows and render the interactive Token Consumption report.',
   },
   'daily-brief': {
     title: 'Daily Executive Brief & Vault Kickoff',

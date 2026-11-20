@@ -341,12 +341,15 @@
       });
     }
 
+    var tokenMeter = window.AGYTokenPill ? window.AGYTokenPill.mount(document.querySelector('.header-actions')) : null;
+
     var refreshBtn = document.getElementById('refreshSkillsBtn');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async function () {
         try {
+          if (tokenMeter) tokenMeter.refresh();
           await reloadStateFromDisk();
-          showToast('Refreshed skills from local disk');
+          showToast('Refreshed skills & token meter from local disk');
         } catch {
           showToast('Failed to refresh skills');
         }

@@ -1,16 +1,18 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.3.1",
-  "releasedAt": "2026-11-20T22:10:00Z",
+  "suiteVersion": "1.4.0",
+  "releasedAt": "2026-11-20T22:30:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
-      "version": "1.3.1",
-      "category": "Onboarding, Skill Toggle UI Panel (9 Categories), Incremental Skill & Sidecar Sync, Model Guide (Claude + Gemini), Vault-Aware Daily Brief & Digital Twin",
+      "version": "1.4.0",
+      "category": "Onboarding, Skills Panel + Hover Token Meter, Token Usage Analyzer (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & Digital Twin",
       "skills": [
         "agy-onboard",
         "model-guide",
+        "orchestrator-guide",
+        "token-usage",
         "daily-brief",
         "digital-twin",
         "inbox-triage",
@@ -33,7 +35,7 @@
       ]
     },
     "agy-design-studio": {
-      "version": "1.3.1",
+      "version": "1.4.0",
       "category": "100% Serverless Visual Dashboards, Executive Slides, Branded Public Sector Documents & Preview Panel",
       "skills": [
         "agy-dashboard",
@@ -82,7 +84,7 @@
       ]
     },
     "agy-second-brain": {
-      "version": "1.3.1",
+      "version": "1.4.0",
       "category": "My Antigravity Workspace UI, Persistent 2-Tier Second Brain Memory Vault, Adversarial Minto SCQA Prep, 4-Agent Parallel Swarm & Anti-Slop Outbound Scrubbing",
       "skills": [
         "twin-memory",
@@ -292,10 +294,29 @@
     "model-guide": {
       "plugin": "agy-onboarding",
       "skill": "model-guide",
-      "treeSha256": "e58a08bf4918ece6",
+      "treeSha256": "4e78b22afab8ce11",
       "files": {
-        "SKILL.md": "ebd915a625e4e22b7c37d7083ab4c2649d86e4450d4abcc8b1acb6318dae8578",
+        "SKILL.md": "229e36465981855c384cca4b34499cb65cd300a19720081121ad1714801b6bd6",
         "references/claude_and_gemini_playbook.md": "7fdd1ee2c55c3e56c2689c3c03fd0aeddbc59acaf8baa03c8cc2951c359d1e1c"
+      }
+    },
+    "orchestrator-guide": {
+      "plugin": "agy-onboarding",
+      "skill": "orchestrator-guide",
+      "treeSha256": "86097a0311c1d382",
+      "files": {
+        "SKILL.md": "c27b2d9a9229d6f074d2065dc46e8d82eba0671c140d38f036968458ecba2be6",
+        "references/orchestrator_prompt_patterns.md": "7fe0934d39184b6bea218e3cc98acb9ff291aa89e569eaa81e659f176c3ae8bf"
+      }
+    },
+    "token-usage": {
+      "plugin": "agy-onboarding",
+      "skill": "token-usage",
+      "treeSha256": "cbe82d75b52fe0b2",
+      "files": {
+        "SKILL.md": "1d97ffb32dac88e040f11e0fcf1199971a0808097fc9702520bae323d84d343d",
+        "references/quota_and_cost_optimization.md": "a2f035e222aa37fc74dbaf99fd0d1cd3278ff1521a03820e0b9cc53b83082613",
+        "scripts/token_usage_report.mjs": "2a61a4d8246a2f28b7293b8094da1ab013816dc682580db9be609141ae531b91"
       }
     },
     "document-intake-cleanup-and-validation": {
@@ -484,37 +505,43 @@
       "plugin": "agy-design-studio",
       "sidecar": "agy-design-preview",
       "files": {
-        "app.js": "0d82ebeaad262b8e0f0ecac06f849344f3cf36202d19413263907b66dd89e167",
-        "index.html": "7de62f4e735225b98586fa619122412e83304417e8cb844a1aa2c58028e25984",
-        "main.mjs": "51205e0519f8be2d1919211b9bb52ce6a7d5def3759fd42896b3330bc1268dc6",
+        "app.js": "c02526af90922eb90733e2ec31b4f17fd4221cd16f60a37ea066e7d1f728c28e",
+        "index.html": "322825a40eb2b90976608d3a878e6f4a38b76e394de437c338484204870bb96f",
+        "main.mjs": "a7f98ab9a61a15f60a3e7c8965a0ba33461bf2d6ef3af9c45781ef2bd23713bf",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "d66417655d46cd5f80d0cdff0dea19b9557ceb835d966ec9b56c079d7c4f7f49",
-        "styles.css": "7a35edf81abc7368e4dd130153fa79175bdad3ca1bfaa4512528f1cbaf77e010"
+        "styles.css": "7a35edf81abc7368e4dd130153fa79175bdad3ca1bfaa4512528f1cbaf77e010",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
       }
     },
     "agy-skill-manager": {
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "391b29abf8a5f45830f799eea7c4d944b73ae1036ce53a902b70dd23d9aa522c",
-        "index.html": "997560cad0805730d6256623e2ec6448186545a03ed4471ee7e1c26b5b2c3ad0",
-        "main.mjs": "52b1a7aa768528555adc915f2d5dc737870f193f9ca13a397cf8d7ea3b29c72f",
+        "app.js": "9ac15d5eca4a8c659b89699cade280f181e9717bfe60e3679d7dac843ac3c651",
+        "index.html": "3c4ee99b5068293d79843b8d299d995860620207909a3955b238c1d1c883c299",
+        "main.mjs": "8a81fee6730355cf640a298cb0a30cddd2fb49b6ce8a8f02701041efea805dc1",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
-        "styles.css": "fb7c9efdfeb81fe53ea8ce869f582f49f59e648aebb70f3a0a428f26aca74f72"
+        "styles.css": "fb7c9efdfeb81fe53ea8ce869f582f49f59e648aebb70f3a0a428f26aca74f72",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
       }
     },
     "twin-vault-ui": {
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "2791651f06d956fcc8837772164e085ba4cd43e7704c288a0a60dc06bcde995c",
-        "index.html": "593d64a0bba7c28b6d234d3d6201b96a5909dd17675b05ab78ad413c4ae52f88",
-        "main.mjs": "26c106fb08b200e1ebb1e681a1f88ca19eee5034af35b0e2763f9914bf1abb98",
+        "app.js": "26cfa4a823c2d2f70baa710fbd29d87045e35b3cb0fd0fe1efbe342628459bbc",
+        "index.html": "bd61a69e8c4fce3849d843b35448f2bd9ca4c587011b8b6132e7cc53c696db21",
+        "main.mjs": "3bb885587373dd4c3fe9c3c0d168d0ce5fa20bd9dca6092f87be0dcd21a4f52a",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "78bee24ecebbbe85ecbf3f59d196b6515643925e0534d87abebe13291a08fb04",
+        "seed_prompts_catalog.mjs": "0ed7977043865ac64f05286a0c25b8ffe028ee6b747ca339ded099667ac9a6d8",
         "sidecar.json": "73457b66c79a7306eaa47beb7cad2e28c1b3fbc4695d48083c27f0d14d6c3e8b",
-        "styles.css": "91785211feda6c6dbf2b8f7f0f7192533558ee63286db03a4514a2831d20db44"
+        "styles.css": "91785211feda6c6dbf2b8f7f0f7192533558ee63286db03a4514a2831d20db44",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
       }
     }
   }

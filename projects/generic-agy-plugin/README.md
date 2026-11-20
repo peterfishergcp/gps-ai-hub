@@ -10,9 +10,9 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Azure / Entra ID -> Google Cloud Identity Sync:** Works seamlessly with synced Google Cloud Identity accounts and replicated Entra security groups.
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
-  - Ships as a `< 250 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 37 skills in seconds—with or without `git` installed.
-- **Persistent 2-Tier Second Brain Vault, 4-Agent Swarm & Anti-Slop (`v1.3.1`):**
-  - Adds a local Markdown **Second Brain Memory Vault** (`~/antigravity-twin/memory/`) with an interactive **`My Antigravity`** side-pane UI (`Extensions -> My Antigravity`, alongside `Extensions -> Skills` and `Extensions -> Preview`), Zero-Task-Decay GTD tracking, `>21d` stakeholder staleness alerts, Adversarial Minto SCQA pre-meeting coaching (`/twin-jit-prep`), 4-agent parallel swarm orchestration (`/twin-swarm-prep`), hardlined anti-slop editing (`/no-ai-slop`), deterministic outbound scrubbing (`/outbound-scrub`), and opt-in scheduled automations (`agy-twin-automations`).
+  - Ships as a `< 400 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 39 skills in seconds—with or without `git` installed.
+- **Live Hoverable Token Meter (`in | out | thinking`), `/token-usage`, `/orchestrator-guide` & Second Brain (`v1.4.0`):**
+  - Every UI panel (`Extensions -> My Antigravity`, `Extensions -> Skills`, and `Extensions -> Preview`) includes a live hoverable **`in | out | thinking` Token Consumption Pill** showing active thread + rolling 5h/24h/7d token usage, cache hit %, and context health—paired with `/token-usage` (interactive HTML token report) and `/orchestrator-guide` (mastering `Orchestrator (Neon / Argon / Carbon)` Planner + `Gemini 4 Hydrogen` Executor).
 
 ---
 
