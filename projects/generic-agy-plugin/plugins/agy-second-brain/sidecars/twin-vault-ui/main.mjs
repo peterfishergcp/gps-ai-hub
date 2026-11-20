@@ -141,7 +141,9 @@ function loadCatalogForState(vaultRoot) {
 }
 
 function buildManagedPersonalSkillsTree(personalRoot) {
-  if (!personalRoot || !fs.existsSync(personalRoot)) return [];
+  if (!personalRoot || !fs.existsSync(personalRoot)) {
+    return { name: 'skills', path: personalRoot || '', type: 'directory', children: [] };
+  }
   let dirs = [];
   try {
     dirs = fs
@@ -150,22 +152,21 @@ function buildManagedPersonalSkillsTree(personalRoot) {
       .map((d) => d.name)
       .sort();
   } catch {
-    return [];
+    return { name: 'skills', path: personalRoot, type: 'directory', children: [] };
   }
-  const nodes = [];
+  const children = [];
   for (const name of dirs) {
     const sDir = path.join(personalRoot, name);
     if (!fs.existsSync(path.join(sDir, '.twin-skill-meta.json'))) continue;
-    const children = buildDirectoryTree(sDir, personalRoot);
-    nodes.push({
-      name,
-      type: 'dir',
-      path: sDir,
-      relPath: name,
-      children,
-    });
+    const node = buildDirectoryTree(sDir, personalRoot, 1);
+    if (node) children.push(node);
   }
-  return nodes;
+  return {
+    name: 'skills',
+    path: personalRoot,
+    type: 'directory',
+    children,
+  };
 }
 
 function lstatOrNull(targetPath) {
@@ -712,11 +713,23 @@ app.api('/api/skills/save-seed', async (data) => {
       });
     }
     const existing = seeds[skillId] || {};
+    const nextTitle = data && typeof data.title === 'string' ? data.title.trim() : existing.title;
     seeds[skillId] = {
       ...existing,
+      ...(nextTitle ? { title: nextTitle } : {}),
       seedPrompt: promptText,
       updatedAt: new Date().toISOString(),
     };
+    const metaPath = path.join(getPersonalSkillsRoot(), skillId, '.twin-skill-meta.json');
+    if (fs.existsSync(metaPath) && !lstatOrNull(metaPath).isSymbolicLink()) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+        meta.seedPrompt = promptText;
+        if (nextTitle) meta.title = nextTitle;
+        meta.updatedAt = new Date().toISOString();
+        fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
+      } catch {}
+    }
   }
   writeCustomSeeds(vaultRoot, seeds);
   return {

@@ -13,7 +13,7 @@ PLUGINS_DIR = SUITE_ROOT / "plugins"
 DIST_DIR = SUITE_ROOT / "dist"
 MANIFEST_PATH = SUITE_ROOT / "version-manifest.json"
 ZIP_PATH = DIST_DIR / "antigravity-digital-twin-kit.zip"
-SUITE_VERSION = "1.1.1"
+SUITE_VERSION = "1.1.2"
 
 INCLUDE_ROOTS = ("plugins", "scripts", "docs", "README.md")
 SKIP_NAMES = {"__pycache__", ".DS_Store", "Thumbs.db", "node_modules"}
