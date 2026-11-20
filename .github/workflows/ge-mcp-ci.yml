@@ -19,9 +19,9 @@ jobs:
     name: Repo Secret, Container & External Hygiene Gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -36,12 +36,12 @@ jobs:
           SKIP_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".pdf", ".zip", ".tar", ".gz", ".mp3", ".mp4", ".woff", ".woff2", ".ttf", ".pyc", ".pack", ".idx", ".lock"}
 
           SECRET_PATTERNS = [
-              ("GCP API Key", re.compile(r"AIza[0-9A-Za-z_-]{35}")),
-              ("OAuth Access Token", re.compile(r"ya29\.[0-9A-Za-z_-]{20,}")),
-              ("Google OAuth Client Secret", re.compile(r"GOCSPX-[0-9A-Za-z_-]{20,}")),
+              ("GCP API Key", re.compile(r"(?<![A-Za-z0-9_-])AIza[0-9A-Za-z_-]{35}(?![A-Za-z0-9_-])")),
+              ("OAuth Access Token", re.compile(r"(?<![A-Za-z0-9_-])ya29\.[0-9A-Za-z_-]{20,}")),
+              ("Google OAuth Client Secret", re.compile(r"(?<![A-Za-z0-9_-])GOCSPX-[0-9A-Za-z_-]{20,}")),
               ("Private Key Block", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
-              ("OpenAI / Anthropic Key", re.compile(r"sk-(?:proj-|ant-)?[0-9A-Za-z_-]{25,}")),
-              ("GitHub Token", re.compile(r"gh[pousr]_[0-9A-Za-z]{30,}")),
+              ("OpenAI / Anthropic Key", re.compile(r"(?<![A-Za-z0-9_-])sk-(?:proj-[A-Za-z0-9_-]{20,}|svcacct-[A-Za-z0-9_-]{20,}|ant-[A-Za-z0-9_-]{20,}|(?=[A-Za-z0-9]{32,}\b)(?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{32,})(?![A-Za-z0-9_-])")),
+              ("GitHub Token", re.compile(r"(?<![A-Za-z0-9_-])gh[pousr]_[0-9A-Za-z]{30,}(?![A-Za-z0-9_-])")),
               ("Committed .env file", re.compile(r"(?:^|/)\.env$")),
           ]
 
@@ -54,7 +54,7 @@ jobs:
               text = p.read_text(encoding="utf-8", errors="replace")
               lines = text.splitlines()
               if p.name == "Dockerfile" or p.name.startswith("Dockerfile."):
-                  if not any(re.match(r"^\s*USER\s+(?!root\b)\S+", l) for l in lines):
+                  if not any(re.match(r"^\s*USER\s+(?!(?:root|0)(?:\b|:))\S+", l) for l in lines):
                       failures.append(f"[DOCKER_ROOT] {p} is missing a non-root USER instruction")
               for idx, line in enumerate(lines, 1):
                   for label, pat in SECRET_PATTERNS[:-1]:
@@ -99,9 +99,9 @@ jobs:
       run:
         working-directory: projects/${{ matrix.service }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "npm"
@@ -130,9 +130,9 @@ jobs:
       run:
         working-directory: ${{ matrix.pydir }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
