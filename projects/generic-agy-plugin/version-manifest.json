@@ -1,12 +1,12 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.5.0",
-  "releasedAt": "2026-11-20T23:00:00Z",
+  "suiteVersion": "1.6.0",
+  "releasedAt": "2026-11-20T23:30:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
-      "version": "1.5.0",
+      "version": "1.6.0",
       "category": "Onboarding, Skills Panel + Hover Token Meter, Token Usage Analyzer (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & My Voice (/my-voice)",
       "skills": [
         "agy-onboard",
@@ -23,15 +23,19 @@
       ]
     },
     "agy-connectors": {
-      "version": "1.5.0",
-      "category": "Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
+      "version": "1.6.0",
+      "category": "Chatski Left-Sidebar Google Chat Panel + Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
       "skills": [
+        "chatski",
         "connect-ge",
         "connect-m365-workspace",
         "connect-github-bigquery"
       ],
       "mcpServers": [
         "agy-ge-bridge"
+      ],
+      "sidecars": [
+        "chatski-ui"
       ]
     },
     "agy-design-studio": {
@@ -150,6 +154,14 @@
     }
   ],
   "skillManifest": {
+    "chatski": {
+      "plugin": "agy-connectors",
+      "skill": "chatski",
+      "treeSha256": "80787b9b8c00a049",
+      "files": {
+        "SKILL.md": "9ee256092483332e759f7332b23bb011b54d3131780bab5e44719e23d62d8ccb"
+      }
+    },
     "connect-ge": {
       "plugin": "agy-connectors",
       "skill": "connect-ge",
@@ -501,6 +513,20 @@
     }
   },
   "sidecarManifest": {
+    "chatski-ui": {
+      "plugin": "agy-connectors",
+      "sidecar": "chatski-ui",
+      "files": {
+        "app.js": "4f3863c1b48514ae1f136f314eeaa04b68df0314686c01ec7a4a1d8c3a179968",
+        "index.html": "d3e1c633088085637d86405c4327b551e2b7bbbbf685920eb9ae016e8492875c",
+        "main.mjs": "9d939bd28d68614faebb525655cbfa9fcf95678187e0df1053b47fd9208aa572",
+        "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
+        "sidecar.json": "3157da7a82b28cd54def6db3ad13bdb2ec28141d50fd070e1c69a0c7269bd58d",
+        "styles.css": "fe3865f99df1c6bdb096d80cba9d01cbe1a7a47367598dc27f541d8b60bcd6bb",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+      }
+    },
     "agy-design-preview": {
       "plugin": "agy-design-studio",
       "sidecar": "agy-design-preview",
@@ -521,7 +547,7 @@
       "files": {
         "app.js": "9ac15d5eca4a8c659b89699cade280f181e9717bfe60e3679d7dac843ac3c651",
         "index.html": "3c4ee99b5068293d79843b8d299d995860620207909a3955b238c1d1c883c299",
-        "main.mjs": "68804928710ee1575460409489f85cf74399e1ecffae24257260678e3e1dcb9a",
+        "main.mjs": "6f11dd180bcd6ce524ad16bf6ab6bb131a641d0cc58e29eb8374cb3a8f265d44",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
         "styles.css": "fb7c9efdfeb81fe53ea8ce869f582f49f59e648aebb70f3a0a428f26aca74f72",
@@ -537,7 +563,7 @@
         "index.html": "be91e53409ddfd53c12844fb564d924e9004e0e232954b97f8daeccc0e7d50a2",
         "main.mjs": "cece70d3a5c81f89e5c4e27ed7ee521a6c2d44eca451836728090243f2419001",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "9b28914a7fb6f73a52aa6053b94173dbe54b092e4b2bc7d627d4e59f9fc5096e",
+        "seed_prompts_catalog.mjs": "25648a0b8b60f7a8230869fbea9f9b8992a9ee1740a1c781335e0f3e1cbc7e3e",
         "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
         "styles.css": "ece974cf8fb3899e68af4c96a3c07a2aecab3713898bc5aeb6b6e166f14c377f",
         "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",

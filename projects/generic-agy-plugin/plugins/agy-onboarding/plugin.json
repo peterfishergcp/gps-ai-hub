@@ -1,7 +1,7 @@
 {
   "name": "agy-onboarding",
   "displayName": "Skills — Antigravity Skill Manager & Connectors",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Includes the clean Antigravity Skills panel with live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude 5.5 & Gemini 4 model guide (/model-guide), Personal Memory-aware onboarding (/agy-onboard), unified morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /agy-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

@@ -11,8 +11,8 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
   - Ships as a `< 400 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 39 skills in seconds—with or without `git` installed.
-- **Live Hoverable Token Meter (`in | out | thinking`), AI Inbox `Action Items`, `/token-usage`, & `/orchestrator-guide` (`v1.5.0`):**
-  - Every UI panel (`Extensions -> My Antigravity`, `Extensions -> Skills`, and `Extensions -> Preview`) shares the Antigravity rainbow **"A"** icon and includes a live hoverable **`in | out | thinking` Token Consumption Pill** showing active thread + rolling 5h/24h/7d token usage, cache hit %, and context health—paired with an **AI Inbox `Action Items`** view (`Suggested to-dos` + `Topics to catch up on`), top-right **`Customize`** slider button, `/token-usage` (interactive HTML token report), and `/orchestrator-guide` (mastering `Orchestrator (Neon / Argon / Carbon)` Planner + `Gemini 4 Hydrogen` Executor).
+- **Live Hoverable Token Meter (`in | out | thinking`), `Chatski` Left Panel, AI Inbox `Action Items`, `/token-usage`, & `/orchestrator-guide` (`v1.6.0`):**
+  - Every UI panel (`Extensions -> My Antigravity`, `Extensions -> Chatski`, `Extensions -> Skills`, and `Extensions -> Preview`) shares the Antigravity rainbow **"A"** icon and includes a live hoverable **`in | out | thinking` Token Consumption Pill**—paired with **`Chatski`** (browsing & staging replies across Google Chat Spaces & DMs right through your existing Gemini Enterprise Chat Connector with zero extra setup, plus optional Direct Chat API), an **AI Inbox `Action Items`** view (`Suggested to-dos` + `Topics to catch up on`), `/token-usage`, and `/orchestrator-guide`.
 
 ---
 
@@ -49,14 +49,14 @@ bash projects/generic-agy-plugin/scripts/install-agy-suite.sh
 
 ---
 
-## What Gets Installed (8 Modular Plugins · 39 Slash Skills Across 9 `Skills` Categories)
+## What Gets Installed (8 Modular Plugins · 40 Slash Skills Across 9 `Skills` Categories)
 
 7 core plugins are **enabled immediately upon installation** (while **`Scheduled Automations`** ships **opt-in / disabled by default** so background schedules only run when explicitly toggled on), and staff can toggle individual skills or entire categories anytime inside **`Extensions -> Skills`**:
 
 | Plugin (`Skills` Category) | Included `/skills` & Capabilities | Target Personas |
 | :--- | :--- | :--- |
 | **`agy-onboarding`** | `/agy-onboard` *(+ 1-step Personal Memory setup)* · **`/model-guide` *(Using Claude & Gemini in AGY)*** · **`/orchestrator-guide`** · **`/token-usage`** · `/daily-brief` *(GE + Action Items/milestones)* · `/my-voice` *(calibrated to `voice.md`)* · `/inbox-triage` · `/agy-update` *(+ In-App `Skills` Panel)* | All Public Sector Staff, Admins & Leadership |
-| **`agy-connectors`** | `/connect-ge` *(Default)* · `/connect-m365-workspace` · `/connect-github-bigquery` + **`agy-ge-bridge` MCP** *(Federated Outlook, SharePoint, OneDrive, Teams, Gmail, Drive & GitHub via GE)* | All Staff + IT Onboarding |
+| **`agy-connectors`** | **`/chatski` *(+ `Chatski` Left-Panel Google Chat UI via GE Chat Connector)*** · `/connect-ge` *(Default)* · `/connect-m365-workspace` · `/connect-github-bigquery` + **`agy-ge-bridge` MCP** *(Federated Google Chat, Outlook, SharePoint, OneDrive, Teams, Gmail, Drive & GitHub via GE)* | All Staff + IT Onboarding |
 | **`agy-design-studio`** | `/agy-dashboard` *(Civic Command Center UI, 100% serverless Side-Pane preview + 1-click HTML download)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos)* + `agy-design-architect` agent + `Preview` sidecar | Analysts, Comms & Program Leads |
 | **`agy-public-workflows` *(Public Workflows Category)*** | `/foia-expert` *(`5 U.S.C. § 552` + State Open Records + Vault/Purview/GE discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` | FOIA Officers, Legal, Procurement & Policy |
 | **`agy-public-workflows` *(Government Services `public_sector` Category)*** | `/document-intake-cleanup-and-validation` · `/expense-auditor` *(2 CFR Part 200)* · `/foia-request-processing` · `/plain-language-notice-generator` · `/policy-and-statute-assistant` · `/public-records-redaction` · `/rfp-vendor-evaluation` | Caseworkers, Grant Auditors, FOIA, Comms & Procurement |
