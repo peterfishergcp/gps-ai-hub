@@ -44,11 +44,66 @@ function getPersonalSkillsRoot() {
   return path.join(os.homedir(), '.gemini', 'config', 'skills');
 }
 
+function getGlobalRulesRoot() {
+  const custom = process.env.ANTIGRAVITY_GLOBAL_RULES_DIR;
+  if (custom && custom.trim()) {
+    return path.resolve(custom.trim());
+  }
+  return path.join(os.homedir(), '.gemini', 'config', 'rules');
+}
+
+function stripLeadingHeading(md) {
+  return String(md || '').replace(/^#\s+[^\r\n]+\r?\n+/, '').trim();
+}
+
+function syncGlobalVoiceProfileRule(vaultRoot) {
+  try {
+    const rulesDir = getGlobalRulesRoot();
+    fs.mkdirSync(rulesDir, { recursive: true, mode: 0o700 });
+    const dirStat = fs.lstatSync(rulesDir);
+    if (!dirStat || dirStat.isSymbolicLink()) return;
+
+    const identityPath = path.join(vaultRoot, 'profile', 'identity.md');
+    const voicePath = path.join(vaultRoot, 'profile', 'voice.md');
+    const identityRaw = fs.existsSync(identityPath) ? fs.readFileSync(identityPath, 'utf-8') : '';
+    const voiceRaw = fs.existsSync(voicePath) ? fs.readFileSync(voicePath, 'utf-8') : '';
+    if (!identityRaw && !voiceRaw) return;
+
+    const combinedBody = [
+      '# Active Twin Identity & Voice Profile (Auto-Synced from Twin Vault)',
+      '',
+      'Use the standing identity and writing-voice calibration below whenever drafting emails, memos, messages, or briefings (`/digital-twin`, `/twin-voice-draft`, `/daily-brief`, `/twin-brief`):',
+      '',
+      identityRaw ? '## Identity & Role\n' + stripLeadingHeading(identityRaw).slice(0, 3000) : '',
+      voiceRaw ? '## Writing Voice & Style (`voice.md`)\n' + stripLeadingHeading(voiceRaw).slice(0, 5000) : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    const ruleContent =
+      '---\n' +
+      'trigger: always_on\n' +
+      'description: Synced user identity and writing voice from ~/antigravity-twin/memory/profile/voice.md\n' +
+      '---\n\n' +
+      combinedBody +
+      '\n';
+
+    const targetRule = path.join(rulesDir, 'twin-voice-profile.md');
+    if (fs.existsSync(targetRule) && fs.lstatSync(targetRule).isSymbolicLink()) return;
+    if (fs.existsSync(targetRule) && fs.readFileSync(targetRule, 'utf-8') === ruleContent) return;
+
+    const tmp = `${targetRule}.tmp-${process.pid}`;
+    fs.writeFileSync(tmp, ruleContent, { mode: 0o600 });
+    fs.renameSync(tmp, targetRule);
+  } catch {}
+}
+
 function resolveVault() {
   const root = getVaultRoot();
   if (!fs.existsSync(path.join(root, 'profile', 'identity.md'))) {
     initializeVault({ vaultDir: root, role: DEFAULT_ROLE, seedDemo: true });
   }
+  syncGlobalVoiceProfileRule(root);
   return root;
 }
 
@@ -487,6 +542,9 @@ app.api('/api/file', async (data) => {
   const tmpPath = `${check.resolved}.tmp-${process.pid}`;
   fs.writeFileSync(tmpPath, content, 'utf-8');
   fs.renameSync(tmpPath, check.resolved);
+  if (check.rootId === 'vault') {
+    syncGlobalVoiceProfileRule(vaultRoot);
+  }
   const stat = fs.statSync(check.resolved);
   return {
     ok: true,
@@ -755,6 +813,7 @@ app.api('/api/vault/init', async (data) => {
     seedDemo: data && data.seedDemo !== undefined ? Boolean(data.seedDemo) : true,
     force: true,
   });
+  syncGlobalVoiceProfileRule(vaultRoot);
   return res;
 });
 

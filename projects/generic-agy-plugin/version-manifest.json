@@ -1,8 +1,8 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.2.0",
-  "releasedAt": "2026-11-20T19:50:00Z",
+  "suiteVersion": "1.2.1",
+  "releasedAt": "2026-11-20T20:44:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
@@ -488,7 +488,7 @@
         "index.html": "43b758959d58fd4e258e4d8c2c7473501205445a42d3af98ac60b1dd8a2eb00a",
         "main.mjs": "c9eef54ea198a1633e0ca90c01750d6c89af98f15a9d474fe977d7d367dedd6a",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
-        "sidecar.json": "07c18558e8a8d813f4ebd8d1e708efae72b0a804d18dd92350620a1a006b5f5f",
+        "sidecar.json": "4b69f435c8413be169a01290c477c3c6e34fc644ac7f9824e1bb71eee69e61d9",
         "styles.css": "076aeb5c26020d68530d4bf37cda8a7cb74419fc76a29a7cc700ac0e9b3e6a99"
       }
     },
@@ -500,7 +500,7 @@
         "index.html": "f3f6d625d1d180492d83e93cf2dc827b3861c293e84ce1a71553065371b52923",
         "main.mjs": "52b1a7aa768528555adc915f2d5dc737870f193f9ca13a397cf8d7ea3b29c72f",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "sidecar.json": "26c46bcf76399d47e8b40aff36591c7cb4fd9227f3c6c52866d6860099196e60",
+        "sidecar.json": "26d42c8db5f3f13e9cecaefc070932ca10ec3c89d18c8a1338f6a02e4d154e55",
         "styles.css": "2b8f2d066cf68c1a05e26e889d8c91626c2a70f97b3db3022bf6bd74c8f837ea"
       }
     },
@@ -508,12 +508,12 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "43d733ff4c30894500ed9be2f6a827eec2c3a7d5c0685ea82ef0ff961cfdc229",
+        "app.js": "e3ed9b0f2339e0da837f4a55adb3aab0fe47fb9ee099667d0f47d8c21f682838",
         "index.html": "923188558b4a1e088f7f01a9daaa93f2f1bcec357240eb56ec1ccff406586661",
-        "main.mjs": "b02a2033d51c7404a521be529fb51aa4050792080ffcb2f030d46514e4e4e746",
+        "main.mjs": "49bebd774db1c4e1e148d1ceaf148df4469157d39c5eaf20e46844e6777780ce",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "78bee24ecebbbe85ecbf3f59d196b6515643925e0534d87abebe13291a08fb04",
-        "sidecar.json": "8e41b4058e83d0e47d5e7152fa313ce821304a1d07e7c5898a305c7eedf365e0",
+        "sidecar.json": "3f667999af2f77eed8491f144a96a062265398d1e49e13515e900716bab443d7",
         "styles.css": "9633013c71ddae8af8535b920365d72bd2a7cd7d0bde858c192099feaef8a2de"
       }
     }

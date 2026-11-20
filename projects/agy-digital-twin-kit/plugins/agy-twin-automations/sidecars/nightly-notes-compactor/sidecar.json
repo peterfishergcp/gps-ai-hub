@@ -9,5 +9,11 @@
   ],
   "restart_policy": "always",
   "display_name": "Evening Notes & Vault Compactor",
-  "description": "Every weekday at 6:00 PM, compacts older running notes across initiatives and updates >21-day stakeholder staleness."
+  "description": "Every weekday at 6:00 PM, compacts older running notes across initiatives and updates >21-day stakeholder staleness.",
+  "agent_permissions": {
+    "access_grants": [
+      "read_file(${HOME}/antigravity-twin)",
+      "write_file(${HOME}/antigravity-twin)"
+    ]
+  }
 }

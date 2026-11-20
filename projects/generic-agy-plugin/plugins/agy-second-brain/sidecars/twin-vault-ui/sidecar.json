@@ -7,6 +7,9 @@
   "display_name": "Twin Second Brain & Markdown Vault",
   "description": "Interactive Second Brain explorer for Google Antigravity: inspect and edit Markdown memory files under the hood, check off Zero-Decay GTD tasks, track 4-file initiatives, and spot stale (>21d) stakeholders.",
   "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": true
+  },
   "ui_config": {
     "display_name": "Twin Vault",
     "views": [

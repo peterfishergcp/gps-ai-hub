@@ -131,7 +131,10 @@
           await window.sidecar.agent.sendMessage(promptText);
           showToast('Sent prompt to active conversation');
         } else {
-          await window.sidecar.agent.startConversation(promptText, title || 'Twin Workflow');
+          const created = await window.sidecar.agent.startConversation(promptText, title || 'Twin Workflow');
+          if (created && created.conversationId && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
+            window.sidecar.ui.toggleConversation(created.conversationId);
+          }
           showToast('Started new Twin conversation');
         }
         return;
@@ -398,12 +401,37 @@
     const profileCard = el('div', { className: 'card' }, [
       el('div', { className: 'card-header' }, [
         el('h3', { className: 'card-title', text: 'Profile & Standing Context' }),
-        el('button', {
-          className: 'btn btn-secondary btn-sm',
-          dataset: { openRel: 'profile/identity.md' },
-          text: 'Inspect identity.md',
-          onClick: () => openRelativeVaultFile('profile/identity.md'),
-        }),
+        el('div', { className: 'topbar-actions' }, [
+          el('button', {
+            className: 'btn btn-sm',
+            text: 'Draft in My Voice',
+            title: 'Start a /digital-twin draft grounded in your voice.md profile',
+            onClick: async () => {
+              let voiceInline = '';
+              try {
+                if (appState && appState.vaultRoot) {
+                  const vf = await apiGet(
+                    '/api/file?path=' + encodeURIComponent(appState.vaultRoot.replace(/[\\/]+$/, '') + '/profile/voice.md')
+                  );
+                  if (vf && vf.content) {
+                    voiceInline = '\n\n<voice_profile>\n' + String(vf.content).slice(0, 6000) + '\n</voice_profile>';
+                  }
+                }
+              } catch {}
+              dispatchPrompt(
+                '/digital-twin Use my calibrated writing voice profile below and ask what email, chat reply, or memo I want to draft (or draft a reply if I paste a message next).' +
+                  voiceInline,
+                'Draft in My Voice'
+              );
+            },
+          }),
+          el('button', {
+            className: 'btn btn-secondary btn-sm',
+            dataset: { openRel: 'profile/identity.md' },
+            text: 'Inspect identity.md',
+            onClick: () => openRelativeVaultFile('profile/identity.md'),
+          }),
+        ]),
       ]),
       el('div', { className: 'muted' }, profileSummaryChildren),
       el(
@@ -853,6 +881,24 @@
         );
       }
 
+      if (selectedFile.name === 'voice.md') {
+        actionButtons.push(
+          el('button', {
+            className: 'btn btn-sm',
+            text: 'Draft in My Voice',
+            onClick: () => {
+              const snippet = String(selectedFile.content || '').slice(0, 8000);
+              dispatchPrompt(
+                '/digital-twin Use my current voice.md calibration below to help me draft a message or memo:\n\n<voice_profile>\n' +
+                  snippet +
+                  '\n</voice_profile>',
+                'Draft in My Voice'
+              );
+            },
+          })
+        );
+      }
+
       actionButtons.push(
         el('button', {
           className: 'btn btn-secondary btn-sm',
@@ -860,9 +906,21 @@
           text: 'Ask Agent',
           onClick: () => {
             if (!selectedFile) return;
+            const currentText = textareaRef && editorMode === 'edit' ? textareaRef.value : selectedFile.content || '';
+            const inlineBlock =
+              currentText && currentText.length <= 14000
+                ? '\n\nHere is the current file content from Twin Vault (`' +
+                  selectedFile.path +
+                  '`):\n\n```markdown\n' +
+                  currentText +
+                  '\n```'
+                : '';
             dispatchPrompt(
-              'Read ' + selectedFile.path + ' and summarize key takeaways, open risks, or recommended updates.',
-              'Inspect Vault File'
+              'Review `' +
+                selectedFile.path +
+                '` and summarize key takeaways, open risks, or recommended updates.' +
+                inlineBlock,
+              'Inspect ' + selectedFile.name
             );
           },
         })
