@@ -388,8 +388,8 @@
   async function loadState() {
     appState = await apiGet('/api/state');
     const p = appState.profile || {};
-    headerTitle.textContent = p.name && p.name !== 'Workspace User' ? p.name + ' - Twin Vault' : 'Twin Second Brain Vault';
-    headerSub.textContent = (p.role || 'Ready') + ' | ' + (appState.vaultRoot || '~/antigravity-twin/memory');
+    headerTitle.textContent = 'My Antigravity';
+    headerSub.textContent = p.role && p.role !== 'Ready' ? p.role : '';
     render();
   }
 
@@ -491,39 +491,130 @@
     ]);
   }
 
-  function buildOverviewNodes() {
-    const gtd = (appState.gtd && appState.gtd.counts) || { open: 0, p0Open: 0 };
-    const inits = appState.initiatives || [];
-    const stale = (appState.contacts && appState.contacts.counts && appState.contacts.counts.stale) || 0;
-    const prof = appState.profile || {};
+  function collectTreeFiles(node, out) {
+    if (!node) return out;
+    if (node.type === 'file' && node.path) {
+      out.push({ name: node.name || node.path.split('/').pop(), path: node.path });
+    } else if (Array.isArray(node.children)) {
+      node.children.forEach((c) => collectTreeFiles(c, out));
+    }
+    return out;
+  }
 
-    const kpiGrid = el('div', { className: 'kpi-grid' }, [
-      el('div', { className: 'kpi' }, [
-        el('div', { className: 'kpi-val', text: gtd.open }),
-        el('div', { className: 'kpi-label', text: 'Open GTD Tasks (' + gtd.p0Open + ' P0)' }),
-      ]),
-      el('div', { className: 'kpi' }, [
-        el('div', { className: 'kpi-val', text: inits.length }),
-        el('div', { className: 'kpi-label', text: '4-File Initiatives' }),
-      ]),
-      el('div', { className: 'kpi' }, [
-        el('div', {
-          className: 'kpi-val',
-          style: stale > 0 ? { color: 'var(--tv-amber-fg)' } : null,
-          text: stale,
+  function buildOverviewNodes() {
+    const askInput = el('input', {
+      type: 'search',
+      className: 'hero-ask-input',
+      id: 'hero-ask-input',
+      placeholder: 'Ask anything, run a /command, or search workflows, skills & notes...',
+    });
+
+    const resultsBox = el('div', { className: 'hero-results', id: 'hero-results' });
+
+    function submitHeroPrompt() {
+      const q = (askInput.value || '').trim();
+      if (!q) {
+        askInput.focus();
+        return;
+      }
+      dispatchPrompt(q, 'My Antigravity');
+    }
+
+    function updateHeroSearch() {
+      resultsBox.replaceChildren();
+      const q = (askInput.value || '').trim().toLowerCase();
+      if (!q) return;
+
+      const matches = [];
+
+      // 1. Match installed suite & personal skills
+      ((appState && appState.skillsCatalog) || []).forEach((cat) => {
+        if (cat.scope === 'other') return;
+        (cat.skills || []).forEach((s) => {
+          if (
+            String(s.command || '').toLowerCase().includes(q) ||
+            String(s.title || '').toLowerCase().includes(q) ||
+            String(s.subtitle || '').toLowerCase().includes(q)
+          ) {
+            matches.push({
+              kind: 'Skill',
+              title: s.title,
+              sub: s.command,
+              actionLabel: 'Run \u2192',
+              onSelect: () => dispatchPrompt(s.seedPrompt, s.command),
+            });
+          }
+        });
+      });
+
+      // 2. Match vault & personal Markdown files
+      const files = [];
+      ((appState && appState.roots) || []).forEach((r) => {
+        if (r.id === 'vault' || r.id === 'my-skills') {
+          collectTreeFiles(r.tree, files);
+        }
+      });
+      files.forEach((f) => {
+        if (f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q)) {
+          matches.push({
+            kind: 'File',
+            title: f.name,
+            sub: f.path.split('/').slice(-2).join('/'),
+            actionLabel: 'Open',
+            onSelect: () => openFileInExplorer(f.path),
+          });
+        }
+      });
+
+      matches.slice(0, 6).forEach((m) => {
+        resultsBox.appendChild(
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'hero-result-item',
+              onClick: m.onSelect,
+            },
+            [
+              el('div', {}, [
+                el('strong', { text: m.title }),
+                ' ',
+                el('span', { className: 'muted', text: '\u00B7 ' + m.sub }),
+              ]),
+              el('span', { className: 'badge badge-neutral', text: m.actionLabel }),
+            ]
+          )
+        );
+      });
+    }
+
+    askInput.addEventListener('input', updateHeroSearch);
+    askInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        submitHeroPrompt();
+      }
+    });
+
+    const heroSection = el('div', { className: 'hero-section' }, [
+      el('h2', { className: 'hero-greeting', text: 'How can I help?' }),
+      el('div', { className: 'hero-ask-bar' }, [
+        askInput,
+        el('button', {
+          type: 'button',
+          className: 'btn btn-sm',
+          id: 'btn-hero-ask',
+          text: 'Ask \u2192',
+          onClick: submitHeroPrompt,
         }),
-        el('div', { className: 'kpi-label', text: 'Stale Contacts (>21d)' }),
       ]),
-      el('div', { className: 'kpi' }, [
-        el('div', { className: 'kpi-val', text: appState.vaultFileCount || 0 }),
-        el('div', { className: 'kpi-label', text: 'Markdown Files' }),
-      ]),
+      resultsBox,
     ]);
 
     const workflowsCard = el('div', { className: 'card' }, [
       el('div', { className: 'card-header' }, [
-        el('h3', { className: 'card-title', text: '1-Click Twin Workflows' }),
-        el('span', { className: 'muted', text: 'Sends directly to Antigravity chat' }),
+        el('h3', { className: 'card-title', text: '1-Click Workflows' }),
+        el('span', { className: 'muted', text: 'Click any card to run in chat' }),
       ]),
       el(
         'div',
@@ -532,11 +623,13 @@
           el(
             'button',
             {
+              type: 'button',
               className: 'prompt-card',
               dataset: { quickIdx: idx },
-              onClick: () => dispatchPrompt(q.prompt, 'Twin Workflow'),
+              onClick: () => dispatchPrompt(q.prompt, q.cmd),
             },
             [
+              el('span', { className: 'prompt-step-num', text: '0' + (idx + 1) }),
               el('span', { className: 'prompt-cmd', text: q.cmd }),
               el('span', { className: 'prompt-desc', text: q.desc }),
             ]
@@ -545,72 +638,7 @@
       ),
     ]);
 
-    const profileSummaryChildren = [
-      el('strong', { text: prof.name || 'Workspace User' }),
-      ' \u2022 ' + (prof.role || ''),
-    ];
-    if (prof.organization) {
-      profileSummaryChildren.push(' \u2022 ' + prof.organization);
-    }
-    profileSummaryChildren.push(' \u2022 TZ: ');
-    profileSummaryChildren.push(el('code', { text: prof.timezone || '' }));
-
-    const profileCard = el('div', { className: 'card' }, [
-      el('div', { className: 'card-header' }, [
-        el('h3', { className: 'card-title', text: 'Profile & Standing Context' }),
-        el('div', { className: 'topbar-actions' }, [
-          el('button', {
-            className: 'btn btn-sm',
-            text: 'Draft in My Voice',
-            title: 'Start a /twin-voice-draft draft grounded in your voice.md profile',
-            onClick: async () => {
-              let voiceInline = '';
-              try {
-                if (appState && appState.vaultRoot) {
-                  const vf = await apiGet(
-                    '/api/file?path=' + encodeURIComponent(appState.vaultRoot.replace(/[\\/]+$/, '') + '/profile/voice.md')
-                  );
-                  if (vf && vf.content) {
-                    voiceInline = '\n\n<voice_profile>\n' + String(vf.content).slice(0, 6000) + '\n</voice_profile>';
-                  }
-                }
-              } catch {}
-              dispatchPrompt(
-                '/twin-voice-draft Use my calibrated writing voice profile below and ask what email, chat reply, or memo I want to draft (or draft a reply if I paste a message next).' +
-                  voiceInline,
-                'Draft in My Voice'
-              );
-            },
-          }),
-          el('button', {
-            className: 'btn btn-secondary btn-sm',
-            dataset: { openRel: 'profile/identity.md' },
-            text: 'Inspect identity.md',
-            onClick: () => openRelativeVaultFile('profile/identity.md'),
-          }),
-        ]),
-      ]),
-      el('div', { className: 'muted' }, profileSummaryChildren),
-      el(
-        'div',
-        { className: 'pill-row' },
-        [
-          { label: 'voice.md', rel: 'profile/voice.md' },
-          { label: 'playbooks.md', rel: 'profile/playbooks.md' },
-          { label: 'gtd_board.md', rel: 'gtd_board.md' },
-          { label: 'contacts.md', rel: 'contacts.md' },
-        ].map((item) =>
-          el('button', {
-            className: 'btn btn-secondary btn-sm',
-            dataset: { openRel: item.rel },
-            text: item.label,
-            onClick: () => openRelativeVaultFile(item.rel),
-          })
-        )
-      ),
-    ]);
-
-    return [buildRoleSetupCard(), kpiGrid, workflowsCard, profileCard].filter(Boolean);
+    return [buildRoleSetupCard(), heroSection, workflowsCard].filter(Boolean);
   }
 
   function buildGtdNodes() {
@@ -1221,7 +1249,7 @@
     const searchInput = el('input', {
       type: 'search',
       className: 'skills-search',
-      placeholder: 'Filter skills by name, /command, capability, or seed prompt...',
+      placeholder: 'Search skills by name, /command, or prompt...',
       value: skillsSearch,
     });
     searchInput.addEventListener('input', () => {
@@ -1229,28 +1257,7 @@
       renderFilteredSkillCards();
     });
 
-    const headerBadges = [
-      el('span', { className: 'badge badge-green', text: totalVisibleSkills + ' Suite Skills' }),
-    ];
-    if (mySkillsCount > 0) {
-      headerBadges.unshift(
-        el('span', { className: 'badge badge-blue', text: '\u2605 ' + mySkillsCount + ' My Copy' })
-      );
-    }
-
-    const headerCard = el('div', { className: 'card' }, [
-      el('div', { className: 'card-header' }, [
-        el('div', {}, [
-          el('h3', { className: 'card-title', text: '1-Click Skill Seed Prompts & Personal Copies' }),
-          el('div', {
-            className: 'muted',
-            text: 'Click any seed prompt to run in chat, or click "Save My Copy" to create an update-proof personal version in ~/.gemini/config/skills/.',
-          }),
-        ]),
-        el('div', { className: 'topbar-actions' }, headerBadges),
-      ]),
-      el('div', { className: 'skills-toolbar' }, [searchInput, chipRow]),
-    ]);
+    const toolbarWrap = el('div', { className: 'skills-toolbar' }, [searchInput, chipRow]);
 
     const resultsContainer = el('div', {});
 
@@ -1536,79 +1543,75 @@
           { className: 'skills-seed-grid' },
           matching.map((skill) => {
             const cardKey = (skill.plugin || key) + ':' + skill.id;
-            const badgeClass = skill.isPersonalCopy
-              ? 'badge-blue'
-              : skill.overriddenByPersonal || skill.enabled === false
-                ? 'badge-amber'
-                : 'badge-neutral';
-
-            const topBadges = [
-              el('span', {
-                className: 'badge ' + badgeClass,
-                text: skill.enabled === false ? 'Opt-In / Paused' : skill.badge || 'Skill',
-              }),
-            ];
-            if (skill.hasCustomSeed) {
-              topBadges.push(el('span', { className: 'badge badge-green', text: 'Custom Seed' }));
+            const statusBadges = [];
+            if (skill.isPersonalCopy) {
+              statusBadges.push(
+                el('span', {
+                  className: 'badge badge-blue',
+                  text: skill.forkMode === 'override' ? '\u2605 My Override' : '\u2605 My Copy',
+                })
+              );
+            } else if (skill.overriddenByPersonal) {
+              statusBadges.push(el('span', { className: 'badge badge-amber', text: 'Overridden' }));
+            } else if (skill.hasCustomSeed) {
+              statusBadges.push(el('span', { className: 'badge badge-neutral', text: 'Custom Prompt' }));
             }
 
             const topRow = el('div', { className: 'seed-card-top' }, [
-              el('span', { className: 'prompt-cmd', text: skill.command }),
-              el('div', { className: 'topbar-actions' }, topBadges),
+              el('div', { className: 'seed-card-title', text: skill.title }),
+              el('div', { className: 'topbar-actions' }, [
+                ...statusBadges,
+                el('span', { className: 'prompt-cmd', text: skill.command }),
+              ]),
             ]);
 
             const bodyBlock = el('div', {}, [
               topRow,
-              el('div', { className: 'seed-card-title', text: skill.title }),
               el('p', { className: 'seed-card-sub', text: skill.subtitle }),
             ]);
 
-            const seedBoxBtn = el('button', {
-              type: 'button',
-              className: 'seed-prompt-btn',
-              title: 'Click to run ' + skill.command + ' in Antigravity chat',
-              text: skill.seedPrompt,
-              onClick: () => dispatchPrompt(skill.seedPrompt, skill.command),
-            });
-
-            const leftBtns = el('div', { className: 'topbar-actions', style: { flexWrap: 'wrap' } }, [
+            const promptBox = el('div', { className: 'prompt-box' }, [
+              el('div', { className: 'prompt-box-head' }, [
+                el('span', { className: 'prompt-box-label', text: 'Prompt' }),
+                el('div', { className: 'topbar-actions' }, [
+                  el('button', {
+                    type: 'button',
+                    className: 'btn btn-secondary btn-sm',
+                    text: 'Copy',
+                    title: 'Copy prompt to clipboard',
+                    onClick: async () => {
+                      if (await copyTextSafe(skill.seedPrompt)) {
+                        showToast('Copied ' + skill.command + ' prompt');
+                      } else {
+                        showToast('Clipboard copy unavailable');
+                      }
+                    },
+                  }),
+                  el('button', {
+                    type: 'button',
+                    className: 'btn btn-sm',
+                    text: 'Run \u2192',
+                    title: 'Run in Antigravity chat',
+                    onClick: () => dispatchPrompt(skill.seedPrompt, skill.command),
+                  }),
+                ]),
+              ]),
               el('button', {
                 type: 'button',
-                className: 'btn btn-sm',
-                text: '\u25B6 Run',
-                title: 'Send seed prompt directly to Antigravity chat',
+                className: 'seed-prompt-btn',
+                title: 'Click to run ' + skill.command + ' in Antigravity chat',
+                text: skill.seedPrompt,
                 onClick: () => dispatchPrompt(skill.seedPrompt, skill.command),
               }),
-              el('button', {
-                type: 'button',
-                className: 'btn btn-secondary btn-sm',
-                text: 'Copy',
-                title: 'Copy seed prompt to clipboard',
-                onClick: async () => {
-                  if (await copyTextSafe(skill.seedPrompt)) {
-                    showToast('Copied ' + skill.command + ' seed prompt');
-                  } else {
-                    showToast('Clipboard copy unavailable in this view');
-                  }
-                },
-              }),
-              el('button', {
-                type: 'button',
-                className: 'btn btn-secondary btn-sm',
-                text: 'Edit Seed',
-                title: 'Customize the 1-click starter prompt for ' + skill.command,
-                onClick: () => {
-                  activeForkCardKey = null;
-                  activeSeedCardKey = activeSeedCardKey === cardKey ? null : cardKey;
-                  renderFilteredSkillCards();
-                },
-              }),
+            ]);
+
+            const leftFooterBtns = [
               !skill.isPersonalCopy
                 ? el('button', {
                     type: 'button',
-                    className: 'btn btn-secondary btn-sm',
+                    className: 'btn btn-ghost btn-sm',
                     text: 'Save My Copy',
-                    title: 'Create your own editable, update-proof copy in ~/.gemini/config/skills/',
+                    title: 'Save your own editable copy in ~/.gemini/config/skills/',
                     onClick: () => {
                       activeSeedCardKey = null;
                       activeForkCardKey = activeForkCardKey === cardKey ? null : cardKey;
@@ -1616,25 +1619,33 @@
                     },
                   })
                 : null,
-            ]);
+              el('button', {
+                type: 'button',
+                className: 'btn btn-ghost btn-sm',
+                text: 'Edit Prompt',
+                title: 'Customize the 1-click starter prompt for ' + skill.command,
+                onClick: () => {
+                  activeForkCardKey = null;
+                  activeSeedCardKey = activeSeedCardKey === cardKey ? null : cardKey;
+                  renderFilteredSkillCards();
+                },
+              }),
+            ];
 
-            const rightBtns = [];
+            const rightFooterBtns = [];
             if (skill.skillMdPath) {
-              rightBtns.push(
+              rightFooterBtns.push(
                 el('button', {
                   type: 'button',
-                  className: 'btn btn-secondary btn-sm',
+                  className: 'btn btn-ghost btn-sm',
                   text: skill.isPersonalCopy ? 'Edit SKILL.md' : 'SKILL.md',
-                  title: skill.isPersonalCopy
-                    ? 'Edit your personal SKILL.md in Markdown Files'
-                    : 'Inspect stock SKILL.md (read-only)',
                   onClick: () => openFileInExplorer(skill.skillMdPath, Boolean(skill.isPersonalCopy)),
                 })
               );
             }
             if (skill.isPersonalCopy) {
               if (confirmDeleteSlug === skill.id) {
-                rightBtns.push(
+                rightFooterBtns.push(
                   el('button', {
                     type: 'button',
                     className: 'btn btn-sm',
@@ -1647,7 +1658,7 @@
                         await loadState();
                         showToast(
                           skill.forkMode === 'override'
-                            ? 'Reverted ' + skill.command + ' back to stock plugin skill'
+                            ? 'Reverted ' + skill.command + ' back to stock skill'
                             : 'Removed personal skill ' + skill.command
                         );
                       } catch (err) {
@@ -1666,15 +1677,11 @@
                   })
                 );
               } else {
-                rightBtns.push(
+                rightFooterBtns.push(
                   el('button', {
                     type: 'button',
-                    className: 'btn btn-secondary btn-sm',
+                    className: 'btn btn-ghost btn-sm',
                     text: skill.forkMode === 'override' ? 'Revert to Stock' : 'Remove',
-                    title:
-                      skill.forkMode === 'override'
-                        ? 'Remove personal override and restore stock ' + skill.command
-                        : 'Delete personal copy from ~/.gemini/config/skills/',
                     onClick: () => {
                       confirmDeleteSlug = skill.id;
                       renderFilteredSkillCards();
@@ -1685,8 +1692,8 @@
             }
 
             const actionRow = el('div', { className: 'seed-card-actions' }, [
-              leftBtns,
-              el('div', { className: 'topbar-actions' }, rightBtns),
+              el('div', { className: 'topbar-actions' }, leftFooterBtns),
+              el('div', { className: 'topbar-actions' }, rightFooterBtns),
             ]);
 
             const drawerNode =
@@ -1704,7 +1711,7 @@
                   (skill.enabled === false ? ' is-paused' : '') +
                   (skill.isPersonalCopy ? ' is-personal-copy' : ''),
               },
-              [bodyBlock, seedBoxBtn, actionRow, drawerNode]
+              [bodyBlock, promptBox, actionRow, drawerNode]
             );
           })
         );
@@ -1713,7 +1720,7 @@
           el('div', { className: 'card' }, [
             el('div', { className: 'card-header' }, [
               el('h3', { className: 'card-title', text: cat.categoryLabel }),
-              el('span', { className: 'badge badge-neutral', text: matching.length + ' skills' }),
+              el('span', { className: 'muted', text: matching.length + ' skills' }),
             ]),
             grid,
           ])
@@ -1728,7 +1735,7 @@
     }
 
     renderFilteredSkillCards();
-    return [headerCard, resultsContainer];
+    return [toolbarWrap, resultsContainer];
   }
 
   function render() {
