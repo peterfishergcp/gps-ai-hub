@@ -39,18 +39,29 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="btn btn-secondary btn-sm" id="btn-configure-role" title="Switch or customize role preset">Role Setup</button>
-        <button class="btn btn-secondary btn-sm" id="btn-refresh" title="Reload vault &amp; skills from local disk">Refresh</button>
+        <button class="btn btn-secondary btn-sm" id="btn-refresh" title="Reload action items, topics &amp; skills from local disk">Refresh</button>
+        <button class="btn-icon" id="btn-customize" type="button" title="Customize Role, Voice &amp; Memory Files" aria-label="Customize Role, Voice and Memory Files">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="2" y1="14" x2="6" y2="14"></line>
+            <line x1="10" y1="8" x2="14" y2="8"></line>
+            <line x1="18" y1="16" x2="22" y2="16"></line>
+          </svg>
+        </button>
       </div>
     </header>
 
     <nav class="tabs" role="tablist">
       <button class="tab-btn active" data-tab="overview">Overview</button>
-      <button class="tab-btn" data-tab="gtd">GTD Board</button>
+      <button class="tab-btn" data-tab="actions">Action Items</button>
       <button class="tab-btn" data-tab="initiatives">Initiatives</button>
       <button class="tab-btn" data-tab="contacts">Stakeholders</button>
       <button class="tab-btn" data-tab="skills">Skills</button>
-      <button class="tab-btn" data-tab="explorer">Markdown Files</button>
     </nav>
 
     <main class="content" id="view-root"></main>

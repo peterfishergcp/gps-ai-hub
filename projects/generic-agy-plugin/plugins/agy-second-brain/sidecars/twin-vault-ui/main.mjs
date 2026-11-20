@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Twin Second Brain & Markdown Vault Sidecar Backend (`main.mjs`)
+ * My Antigravity — Action Items, Personal Memory & Skills Sidecar Backend (`main.mjs`)
  *
  * Runs natively on Antigravity Desktop's built-in Node runtime via `sidecar_sdk`
  * (zero npm packages or external Python installs required).
@@ -57,12 +57,35 @@ function stripLeadingHeading(md) {
   return String(md || '').replace(/^#\s+[^\r\n]+\r?\n+/, '').trim();
 }
 
+function hasPersonalSkillMeta(skillDir) {
+  return (
+    fs.existsSync(path.join(skillDir, '.agy-skill-meta.json')) ||
+    fs.existsSync(path.join(skillDir, '.twin-skill-meta.json'))
+  );
+}
+
+function getPersonalSkillMetaPath(skillDir) {
+  const newPath = path.join(skillDir, '.agy-skill-meta.json');
+  const legacyPath = path.join(skillDir, '.twin-skill-meta.json');
+  if (fs.existsSync(newPath)) return newPath;
+  if (fs.existsSync(legacyPath)) return legacyPath;
+  return newPath;
+}
+
 function syncGlobalVoiceProfileRule(vaultRoot) {
   try {
     const rulesDir = getGlobalRulesRoot();
     fs.mkdirSync(rulesDir, { recursive: true, mode: 0o700 });
     const dirStat = fs.lstatSync(rulesDir);
     if (!dirStat || dirStat.isSymbolicLink()) return;
+
+    // Clean up legacy rule filename if present
+    const legacyRule = path.join(rulesDir, 'twin-voice-profile.md');
+    if (fs.existsSync(legacyRule) && !fs.lstatSync(legacyRule).isSymbolicLink()) {
+      try {
+        fs.rmSync(legacyRule, { force: true });
+      } catch {}
+    }
 
     const identityPath = path.join(vaultRoot, 'profile', 'identity.md');
     const voicePath = path.join(vaultRoot, 'profile', 'voice.md');
@@ -71,9 +94,9 @@ function syncGlobalVoiceProfileRule(vaultRoot) {
     if (!identityRaw && !voiceRaw) return;
 
     const combinedBody = [
-      '# Active Twin Identity & Voice Profile (Auto-Synced from Twin Vault)',
+      '# Active Identity & Voice Profile (Auto-Synced from My Antigravity)',
       '',
-      'Use the standing identity and writing-voice calibration below whenever drafting emails, memos, messages, or briefings (`/digital-twin`, `/twin-voice-draft`, `/daily-brief`, `/twin-brief`):',
+      'Use the standing identity and writing-voice calibration below whenever drafting emails, memos, messages, or briefings (`/my-voice`, `/daily-brief`):',
       '',
       identityRaw ? '## Identity & Role\n' + stripLeadingHeading(identityRaw).slice(0, 3000) : '',
       voiceRaw ? '## Writing Voice & Style (`voice.md`)\n' + stripLeadingHeading(voiceRaw).slice(0, 5000) : '',
@@ -84,12 +107,12 @@ function syncGlobalVoiceProfileRule(vaultRoot) {
     const ruleContent =
       '---\n' +
       'trigger: always_on\n' +
-      'description: Synced user identity and writing voice from ~/antigravity-twin/memory/profile/voice.md\n' +
+      'description: Synced user identity and writing voice from ~/my-antigravity/memory/profile/voice.md\n' +
       '---\n\n' +
       combinedBody +
       '\n';
 
-    const targetRule = path.join(rulesDir, 'twin-voice-profile.md');
+    const targetRule = path.join(rulesDir, 'my-voice-profile.md');
     if (fs.existsSync(targetRule) && fs.lstatSync(targetRule).isSymbolicLink()) return;
     if (fs.existsSync(targetRule) && fs.readFileSync(targetRule, 'utf-8') === ruleContent) return;
 
@@ -158,7 +181,7 @@ function buildManagedPersonalSkillsTree(personalRoot) {
   const children = [];
   for (const name of dirs) {
     const sDir = path.join(personalRoot, name);
-    if (!fs.existsSync(path.join(sDir, '.twin-skill-meta.json'))) continue;
+    if (!hasPersonalSkillMeta(sDir)) continue;
     const node = buildDirectoryTree(sDir, personalRoot, 1);
     if (node) children.push(node);
   }
@@ -437,8 +460,8 @@ app.api(
       roots: [
         {
           id: 'vault',
-          label: 'Memory Vault',
-          subtitle: '~/antigravity-twin/memory',
+          label: 'Personal Memory',
+          subtitle: '~/my-antigravity/memory',
           writable: true,
           path: vaultRoot,
           tree: state.tree,
@@ -516,7 +539,7 @@ app.api('/api/file', async (data) => {
   }
   if (!check.allowed || (check.rootId !== 'vault' && check.rootId !== 'my-skills')) {
     return new Response(
-      JSON.stringify({ ok: false, error: 'Write access is restricted to Memory Vault and ★ My Custom Skills' }),
+      JSON.stringify({ ok: false, error: 'Write access is restricted to Personal Memory and ★ My Custom Skills' }),
       { contentType: 'application/json', status: 403 }
     );
   }
@@ -624,7 +647,7 @@ app.api('/api/skills/fork', async (data) => {
 
   const destDir = path.join(personalRoot, rawTargetSlug);
   if (fs.existsSync(destDir)) {
-    const hasManagedMarker = fs.existsSync(path.join(destDir, '.twin-skill-meta.json'));
+    const hasManagedMarker = hasPersonalSkillMeta(destDir);
     if (!overwrite) {
       return new Response(
         JSON.stringify({
@@ -681,7 +704,7 @@ app.api('/api/skills/fork', async (data) => {
     createdAt: nowIso,
     updatedAt: nowIso,
   };
-  fs.writeFileSync(path.join(destDir, '.twin-skill-meta.json'), JSON.stringify(metaPayload, null, 2) + '\n', 'utf-8');
+  fs.writeFileSync(path.join(destDir, '.agy-skill-meta.json'), JSON.stringify(metaPayload, null, 2) + '\n', 'utf-8');
 
   const seeds = readCustomSeeds(vaultRoot);
   seeds[rawTargetSlug] = {
@@ -736,7 +759,7 @@ app.api('/api/skills/save-seed', async (data) => {
       seedPrompt: promptText,
       updatedAt: new Date().toISOString(),
     };
-    const metaPath = path.join(getPersonalSkillsRoot(), skillId, '.twin-skill-meta.json');
+    const metaPath = getPersonalSkillMetaPath(path.join(getPersonalSkillsRoot(), skillId));
     if (fs.existsSync(metaPath) && !lstatOrNull(metaPath).isSymbolicLink()) {
       try {
         const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
@@ -767,8 +790,7 @@ app.api('/api/skills/delete-copy', async (data) => {
   }
 
   const targetDir = path.join(personalRoot, slug);
-  const markerPath = path.join(targetDir, '.twin-skill-meta.json');
-  if (!fs.existsSync(targetDir) || !fs.existsSync(markerPath) || hasSymlinkUnderRoot(targetDir, personalRoot)) {
+  if (!fs.existsSync(targetDir) || !hasPersonalSkillMeta(targetDir) || hasSymlinkUnderRoot(targetDir, personalRoot)) {
     return new Response(
       JSON.stringify({ ok: false, error: 'Only personal copies created via Save My Copy can be removed here' }),
       { contentType: 'application/json', status: 403 }

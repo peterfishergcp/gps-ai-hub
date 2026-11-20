@@ -1,10 +1,10 @@
 /**
  * Curated 1-Click Seed Prompts & Category Metadata for Installed Antigravity Skills.
  *
- * Used by the Twin Vault Sidecar (`GET /api/state` -> `skillsCatalog`) so every
- * installed skill across `generic-agy-plugin`, `agy-digital-twin-kit`, and
- * companion plugins (`emergency-readiness`, `dashboard-studio`, etc.) renders
- * a concrete, ready-to-run 1-click seed prompt inside the `Skills` tab.
+ * Used by the My Antigravity Sidecar (`GET /api/state` -> `skillsCatalog`) so every
+ * installed skill across `generic-agy-plugin` and companion plugins
+ * (`emergency-readiness`, `dashboard-studio`, etc.) renders a concrete,
+ * ready-to-run 1-click seed prompt inside the `Skills` tab.
  */
 
 import fs from 'node:fs';
@@ -58,28 +58,13 @@ export const CATEGORY_DEFINITIONS = {
   },
   'agy-second-brain': {
     order: 70,
-    categoryLabel: 'Second Brain Vault, Swarm Prep & Anti-Slop',
-    chipLabel: 'Second Brain & Swarm',
-  },
-  'agy-twin-memory': {
-    order: 71,
-    categoryLabel: 'Second Brain Memory Vault & Compaction',
-    chipLabel: 'Memory Vault',
-  },
-  'agy-twin-workflows': {
-    order: 72,
-    categoryLabel: 'Daily Briefs, SCQA Critic & 4-Agent Swarm',
-    chipLabel: 'Twin Workflows',
-  },
-  'agy-twin-voice': {
-    order: 73,
-    categoryLabel: 'Authentic Voice, Anti-Slop & Outbound Scrub',
-    chipLabel: 'Voice & Anti-Slop',
+    categoryLabel: 'Memory, Action Items, Prep & Anti-Slop',
+    chipLabel: 'Memory & Prep',
   },
   'agy-twin-automations': {
     order: 80,
-    categoryLabel: 'Twin Scheduled Automations (Opt-In Cron)',
-    chipLabel: 'Twin Automations',
+    categoryLabel: 'Scheduled Automations (Opt-In Cron)',
+    chipLabel: 'Automations',
   },
   'emergency-readiness': {
     order: 85,
@@ -96,11 +81,11 @@ export const CATEGORY_DEFINITIONS = {
 export const CURATED_SKILL_SEEDS = {
   // 1. Onboarding, Daily Brief & Triage
   'agy-onboard': {
-    title: 'Agency Role & Digital Twin Setup',
-    subtitle: '60-second role setup, Second Brain vault seeding & 30-60-90 SOP builders',
+    title: 'Agency Role & Workspace Setup',
+    subtitle: '60-second role setup, workspace memory seeding & 30-60-90 SOP builders',
     badge: 'Playbook + Setup',
     seedPrompt:
-      '/agy-onboard Help me set up my Public Sector role profile, initialize my 2-Tier Second Brain vault in ~/antigravity-twin/memory/, and check my Gemini Enterprise connection.',
+      '/agy-onboard Help me set up my Public Sector role profile, initialize my personal workspace memory in ~/my-antigravity/memory/, and check my Gemini Enterprise connection.',
   },
   'model-guide': {
     title: 'Model Selection & Using Claude in AGY',
@@ -124,18 +109,18 @@ export const CURATED_SKILL_SEEDS = {
       '/token-usage Retrieve my exact Antigravity token consumption across 5-hour, 24-hour, and 7-day windows and render the interactive Token Consumption report.',
   },
   'daily-brief': {
-    title: 'Daily Executive Brief & Vault Kickoff',
-    subtitle: 'Combines Federated GE calendar/inbox with Second Brain P0 tasks & >21d contacts',
-    badge: 'GE + Vault',
+    title: 'Daily Executive Brief & Kickoff',
+    subtitle: 'Combines Federated GE calendar/inbox with open Action Items & >21d contacts',
+    badge: 'GE + Memory',
     seedPrompt:
-      '/daily-brief Run my morning kickoff brief combining any connected Gemini Enterprise updates with my Second Brain P0/P1 GTD tasks, active milestones, and >21d stale contacts.',
+      '/daily-brief Run my morning kickoff brief combining any connected Gemini Enterprise updates with my open P0/P1 Action Items, active milestones, and >21d stale contacts.',
   },
-  'digital-twin': {
-    title: 'Digital Twin Voice & Correspondence Drafter',
+  'my-voice': {
+    title: 'My Voice & Correspondence Drafter',
     subtitle: 'Drafts emails, official letters & constituent replies in your voice (Draft-Only)',
     badge: 'Draft-Only',
     seedPrompt:
-      '/digital-twin Draft a concise, BLUF [Draft-Only] email reply in my voice confirming next week\'s milestone review, listing 2 decisions needed, and flagging any unverified dates with [CONFIRM].',
+      '/my-voice Draft a concise, BLUF [Draft-Only] email reply in my voice confirming next week\'s milestone review, listing 2 decisions needed, and flagging any unverified dates with [CONFIRM].',
   },
   'inbox-triage': {
     title: 'Rule-Driven Inbox & Incident Triage',
@@ -318,76 +303,48 @@ export const CURATED_SKILL_SEEDS = {
       '/iam-secret-hygiene Audit our deployment configs for Default Compute Service Account usage, primitive Editor/Owner bindings, or inline API keys, and output least-privilege gcloud replacements.',
   },
 
-  // 8. Second Brain, Swarm & Anti-Slop (Generic + Standalone Digital Twin Kit)
-  'twin-setup': {
-    title: 'Role-Adaptive Second Brain Vault Setup',
-    subtitle: 'Initializes 4-file persona profile, Zero-Decay GTD board & demo initiatives',
-    badge: 'Vault Setup',
+  // 8. Memory, Action Items, Swarm Prep & Anti-Slop
+  'memory': {
+    title: 'Personal Memory & Action Items Manager',
+    subtitle: 'Queries & updates action_items.md, contacts.md (>21d), initiatives/ & topics/',
+    badge: 'Memory + Actions',
     seedPrompt:
-      '/twin-setup Initialize my Second Brain memory vault using the "public-sector" preset with sample 4-file initiatives enabled, then summarize what was created in ~/antigravity-twin/memory/.',
+      '/memory Summarize my current workspace memory in ~/my-antigravity/memory/—including open P0/P1 Action Items, active initiatives, and any >21d stale contacts.',
   },
-  'twin-memory': {
-    title: 'Second Brain Vault Reader, Search & Init',
-    subtitle: 'Queries & updates gtd_board.md, contacts.md (>21d), initiatives/ & topics/',
-    badge: 'Second Brain',
-    seedPrompt:
-      '/twin-memory Summarize the current state of my Second Brain vault in ~/antigravity-twin/memory/—including open P0/P1 GTD commitments, active 4-file initiatives, and any >21d stale contacts.',
-  },
-  'twin-meeting-notes': {
-    title: '4-Tier Meeting Notes Compactor & GTD Extractor',
+  'meeting-notes': {
+    title: '4-Tier Meeting Notes Compactor & Action Extractor',
     subtitle: 'Compacts call notes (0-7d / 8-30d / 31-90d / 90d+) & updates Last_Touch_Date',
     badge: '4-Tier Memory',
     seedPrompt:
-      '/twin-meeting-notes Compact my latest meeting notes into my top active initiative\'s running_notes.md, extract any new action items into gtd_board.md without overwriting open tasks, and update contacts.md.',
+      '/meeting-notes Compact my latest meeting notes into my top active initiative\'s running_notes.md, extract any new to-dos into action_items.md, and update contacts.md.',
   },
-  'twin-brief': {
-    title: 'Morning Workday Kickoff Brief',
-    subtitle: 'Top-3 action plan from P0/P1 GTD tasks, milestones & >21d stale contacts',
-    badge: 'Morning Brief',
-    seedPrompt:
-      '/twin-brief Run my morning kickoff brief from ~/antigravity-twin/memory/—highlighting my Top 3 actions for today, open P0/P1 commitments, and any stakeholders over 21 days since last touch.',
-  },
-  'twin-jit-prep': {
+  'meeting-prep': {
     title: '15-Minute Call Prep & Adversarial Minto SCQA Critic',
     subtitle: '1-card brief + Situation -> Complication -> Hard Question -> Counter-Move',
     badge: 'SCQA Red-Team',
     seedPrompt:
-      '/twin-jit-prep Build a 1-page pre-meeting brief and an Adversarial Minto SCQA Critic ("Angle & Pushback to Watch For" + evidence-backed counter-moves) for my highest-priority active initiative.',
+      '/meeting-prep Build a 1-page pre-meeting brief and an Adversarial Minto SCQA Critic ("Angle & Pushback to Watch For" + evidence-backed counter-moves) for my highest-priority active initiative.',
   },
-  'twin-followup-plan': {
+  'followup-plan': {
     title: 'Sent-First Follow-Up Sweep & Draft Stager',
-    subtitle: 'Verifies completed items first, updates GTD & stages [Draft-Only] replies',
+    subtitle: 'Verifies completed items first, updates Action Items & stages [Draft-Only] replies',
     badge: 'Follow-Up Sweep',
     seedPrompt:
-      '/twin-followup-plan Run a follow-up delta sweep across ~/antigravity-twin/memory/gtd_board.md and contacts.md, save followups/latest_action_plan.md, and stage [Draft-Only] check-ins for my top 2 open P0 items.',
+      '/followup-plan Run a follow-up delta sweep across ~/my-antigravity/memory/action_items.md and contacts.md, save followups/latest_action_plan.md, and stage [Draft-Only] check-ins for my top 2 open P0 items.',
   },
-  'twin-swarm-prep': {
+  'swarm-prep': {
     title: '4-Subagent Parallel 360 Prep Swarm',
     subtitle: 'Fans out Memory Scout, SCQA Critic, Solution Architect & Outbound Auditor',
     badge: '4-Agent Swarm',
     seedPrompt:
-      '/twin-swarm-prep Run a 4-agent parallel 360 prep pack for my top active initiative—combining vault status, an L100-L300 talk track with a Mermaid diagram, SCQA pushback, and a pre-scrubbed [Draft-Only] recap.',
+      '/swarm-prep Run a 4-agent parallel 360 prep pack for my top active initiative—combining initiative status, an L100-L300 talk track with a Mermaid diagram, SCQA pushback, and a pre-scrubbed [Draft-Only] recap.',
   },
-  'twin-weekly-impact': {
+  'weekly-impact': {
     title: 'Friday 3-Altitude Weekly Impact Rollup',
     subtitle: 'Generates Executive Outcomes, Reusable Assets & Velocity + impact/ledger.json',
     badge: '3-Altitude ROI',
     seedPrompt:
-      '/twin-weekly-impact Generate this week\'s 3-Altitude accomplishment summary (Executive Outcomes, Cross-Team Reusable Assets, Workstream Velocity) into weekly/ and update impact/ledger.json.',
-  },
-  'twin-progress-tracker': {
-    title: 'Initiative Milestone & RAG Status Updater',
-    subtitle: 'Updates 4-file initiative status.md, decisions & RAID blockers cleanly',
-    badge: 'RAG Tracker',
-    seedPrompt:
-      '/twin-progress-tracker Audit all 4-file initiatives in ~/antigravity-twin/memory/initiatives/, highlight AMBER/RED blockers and upcoming milestones, and propose clean status.md updates.',
-  },
-  'twin-voice-draft': {
-    title: 'Persona-Grounded Authentic Voice Drafter',
-    subtitle: 'Drafts emails, chats & memos grounded on profile/voice.md (Draft-Only)',
-    badge: 'Voice + BLUF',
-    seedPrompt:
-      '/twin-voice-draft Using ~/antigravity-twin/memory/profile/voice.md, draft a crisp, human-sounding [Draft-Only] stakeholder update on our top P0 commitment with clear next steps.',
+      '/weekly-impact Generate this week\'s 3-Altitude accomplishment summary (Executive Outcomes, Cross-Team Reusable Assets, Workstream Velocity) into weekly/ and update impact/ledger.json.',
   },
   'no-ai-slop': {
     title: '17-Pattern Anti-AI-Slop Editor',
@@ -404,13 +361,13 @@ export const CURATED_SKILL_SEEDS = {
       '/outbound-scrub Scan my latest draft (or followups/latest_action_plan.md) for leaked API keys, SSNs, unresolved [CONFIRM: ...] / [TODO] placeholders, and AI-slop filler before I send anything externally.',
   },
 
-  // 9. Twin Scheduled Automations
-  'twin-automations': {
-    title: 'Scheduled Cron Automations & Timezone Manager',
+  // 9. Scheduled Automations
+  'automations': {
+    title: 'Scheduled Automations & Timezone Manager',
     subtitle: 'Configures IANA timezone for Morning Brief, Follow-Up, Compactor & Friday Impact',
     badge: 'Opt-In Cron',
     seedPrompt:
-      '/twin-automations Configure my scheduled Digital Twin automations to my local IANA timezone, run a quick readiness check, and give me the link to enable them in the Automations dashboard.',
+      '/automations Configure my scheduled automations to my local IANA timezone, run a quick readiness check, and give me the link to enable them in the Automations dashboard.',
   },
 
   // 10. Companion Plugins (Emergency Readiness & Dashboard Studio)
@@ -518,7 +475,9 @@ export function buildSkillsCatalog(pluginsSuiteRoot, options = {}) {
     for (const skillId of personalDirs) {
       const sDir = path.join(personalSkillsRoot, skillId);
       const mdPath = path.join(sDir, 'SKILL.md');
-      const metaPath = path.join(sDir, '.twin-skill-meta.json');
+      const newMetaPath = path.join(sDir, '.agy-skill-meta.json');
+      const legacyMetaPath = path.join(sDir, '.twin-skill-meta.json');
+      const metaPath = fs.existsSync(newMetaPath) ? newMetaPath : legacyMetaPath;
       let mdStat = null;
       try {
         mdStat = fs.lstatSync(mdPath);
@@ -540,11 +499,11 @@ export function buildSkillsCatalog(pluginsSuiteRoot, options = {}) {
       }
 
       const isSuiteOverride = suiteSkillIds.has(skillId);
-      const isTwinManagedCopy = Boolean(meta) || Boolean(customSeedsMap[skillId] && customSeedsMap[skillId].isPersonalCopy) || isSuiteOverride;
+      const isManagedPersonalCopy = Boolean(meta) || Boolean(customSeedsMap[skillId] && customSeedsMap[skillId].isPersonalCopy) || isSuiteOverride;
       if (isSuiteOverride) {
         overriddenSkillIds.add(skillId);
       }
-      if (!isTwinManagedCopy) {
+      if (!isManagedPersonalCopy) {
         // Unrelated global skill in ~/.gemini/config/skills/ — keep out of ★ My Skills so it stays clean
         continue;
       }

@@ -1,4 +1,4 @@
-# Google Antigravity — Public Sector Skill Suite (`v1.1.0`) Guided Test Prompts
+# Google Antigravity — Public Sector Skill Suite (`v1.5.0`) Guided Test Prompts
 
 ## Before You Begin
 
@@ -27,7 +27,7 @@ Open the [Google Antigravity Organization Setup Guide](../setup-guide/index.html
    ```
 4. Click inside the **chat box at the bottom of the Antigravity window**, paste (`Ctrl+V` on Windows or `⌘+V` on Mac), and press **Enter**.
 5. Leave the default permission setting on: **you may be asked to click Accept a few times during install—that's normal.** *(If your IT team specifically instructed you to switch **Request Review** at the bottom-right of the chat box to **Turbo** for setup, click **Turbo ▾** afterward and switch it back to **Default** once installation finishes.)*
-6. **You'll know it worked when** you see a chat message confirming installation is complete (or **AGY Skills** appears under **Extensions** on the left sidebar). This takes about **1–2 minutes**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
+6. **You'll know it worked when** you see a chat message confirming installation is complete (or **My Antigravity**, **Skills**, and **Preview** appear under **Extensions** on the left sidebar). This takes about **1–2 minutes**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
 
 ### Step 3 — Pick the Tests That Match Your Job
 
@@ -48,7 +48,7 @@ Pick the tests that match your day-to-day work:
 5. **Prompt 5: Update Old Code, Cloud Deployment & Database Queries** *(IT / developers only, optional)* — Fix bugs in an old Python script, generate a cloud deployment command, and modernize a database query. *You'll see: 3 hidden code bugs identified and fixed with passing tests, plus ready-to-use cloud and SQL commands.*
 6. **Prompt 6: Catch 4 Common Security Mistakes** *(IT / security only, optional)* — Scan sample code and cloud commands containing 4 intentional security flaws. *You'll see: all 4 security risks explained in plain English for security leadership, followed by corrected code and commands.*
 7. **Prompt 7: Connect to Gemini Enterprise** *(Optional — only if IT has set this up)* — Check whether Antigravity is connected to your organization's shared search hub. *You'll see: your current connection status and a walkthrough of how single sign-on search works across email, files, and code.*
-8. **Prompt 8: Second Brain Memory Vault, SCQA Meeting Prep & Anti-Slop Scrubbing** *(Everyone)* — Initialize your persistent Markdown Second Brain vault (`~/antigravity-twin/memory/`), ingest call notes, build an Adversarial Minto SCQA pre-meeting brief, and scrub an external draft. *You'll see: live files inside `Extensions -> Twin Vault`, an SCQA pushback brief, and caught `[CONFIRM]` / AI-slop markers.*
+8. **Prompt 8: Personal Memory, Action Items, SCQA Meeting Prep & Anti-Slop Scrubbing** *(Everyone)* — Initialize your persistent Personal Memory (`~/my-antigravity/memory/`), ingest call notes into Action Items, build an Adversarial Minto SCQA pre-meeting brief, and scrub an external draft. *You'll see: live AI Inbox Action Items & Topics inside `Extensions -> My Antigravity`, an SCQA pushback brief, and caught `[CONFIRM]` / AI-slop markers.*
 9. **Prompt 9 (Run Last): 4-Agent Parallel Swarm Prep & 3-Altitude Weekly Impact** *(Program managers, leads & analysts)* — Fan out 4 specialized subagents in parallel for a milestone review and compile your Friday 3-Altitude impact ledger. *You'll see: a cohesive 360 Prep Pack with a Mermaid diagram and a saved `weekly/YYYY-WXX.md` summary.*
 
 > [!NOTE]
@@ -109,15 +109,15 @@ Please give me:
 ### Copy & Paste Into Antigravity
 
 ```text
-Run a combined test of our `agy-onboarding` skills (`/agy-onboard`, `/daily-brief`, `/inbox-triage`, and `/digital-twin`) for my role as Deputy Director of Operations at the Department of Economic Development:
-1. `/agy-onboard`: Create `./agy-twin-profile.md` tuned to a concise, executive BLUF (Bottom-Line-Up-Front) voice for agency leadership and county commissioners.
+Run a combined test of our `agy-onboarding` skills (`/agy-onboard`, `/daily-brief`, `/inbox-triage`, and `/my-voice`) for my role as Deputy Director of Operations at the Department of Economic Development:
+1. `/agy-onboard`: Create `./agy-profile.md` tuned to a concise, executive BLUF (Bottom-Line-Up-Front) voice for agency leadership and county commissioners.
 2. `/inbox-triage`: Triage these 3 incoming emails against our escalation rules (Escalate immediately if: budget impact > $250K, statutory/FOIA deadline <= 5 business days, or County Commission / Legislative inquiry):
    - Email A (From: Riverbend County Commission): "Urgent: $1.4M water main match modification needed before Friday's ISRG board vote."
    - Email B (From: Vendor Portal Notification): "Monthly newsletter: Q4 training webinar schedule."
    - Email C (From: Regional Grant Contractor): "Updated Drawdown Request #14 attached — [ERROR: Attachment 'Drawdown_14_Signed.pdf' is corrupted/unreadable, 0 bytes extracted]."
    Verify that Email C triggers the Unreadable-Attachment Fail-Safe Hold!
 3. `/daily-brief`: Turn the triaged items plus a 2:00 PM ET Infrastructure Board Prep call into a 1-page Morning Executive Brief.
-4. `/digital-twin`: Draft a concise reply to the Riverbend County Commission (`Email A`) in my BLUF voice (strictly Draft-Only).
+4. `/my-voice`: Draft a concise reply to the Riverbend County Commission (`Email A`) in my BLUF voice (strictly Draft-Only).
 ```
 
 ---
@@ -221,23 +221,23 @@ gcloud run deploy agency-grant-portal \
 
 ---
 
-## Prompt 8 — Second Brain Memory Vault, SCQA Meeting Prep & Outbound Scrubbing
+## Prompt 8 — Personal Memory, Action Items, SCQA Meeting Prep & Outbound Scrubbing
 
-- **What you'll try:** Initialize your persistent 2-Tier Second Brain vault (`~/antigravity-twin/memory/`), ingest sample call notes with Zero-Task-Decay GTD tracking, generate a 1-card Adversarial Minto SCQA pre-meeting brief, and run anti-slop + outbound safety scrubbing on a draft email.
-- **What success looks like:** `profile/{identity,portfolio,playbooks,voice}.md`, `gtd_board.md`, `contacts.md`, and 4-file `initiatives/` folders appear inside **`Extensions -> Twin Vault`**; Robert Vance's `STALE (>21d)` status clears after ingesting the call notes; `/twin-jit-prep` builds a realistic SCQA red-team section; and `/outbound-scrub` + `/no-ai-slop` catch `[CONFIRM: ...]`, `[TODO: ...]`, and LLM filler phrases.
+- **What you'll try:** Initialize your persistent Personal Memory (`~/my-antigravity/memory/`), ingest sample call notes into `action_items.md`, generate a 1-card Adversarial Minto SCQA pre-meeting brief, and run anti-slop + outbound safety scrubbing on a draft email.
+- **What success looks like:** `profile/{identity,portfolio,playbooks,voice}.md`, `action_items.md`, `contacts.md`, and 4-file `initiatives/` folders power the AI Inbox **`Action Items`** (`Suggested to-dos` + `Topics to catch up on`) inside **`Extensions -> My Antigravity`**; Robert Vance's `STALE (>21d)` status clears after ingesting the call notes; `/meeting-prep` builds a realistic SCQA red-team section; and `/outbound-scrub` + `/no-ai-slop` catch `[CONFIRM: ...]`, `[TODO: ...]`, and LLM filler phrases.
 - **About how long:** 2–3 minutes.
 
 ### Copy & Paste Into Antigravity
 
 ```text
-Test our `agy-second-brain` skills (`/twin-memory`, `/twin-meeting-notes`, `/twin-jit-prep`, `/no-ai-slop`, and `/outbound-scrub`):
-1. `/twin-memory`: Initialize my Second Brain memory vault using the `public-sector` preset for Jordan Taylor (Senior Program Analyst, State Office of Broadband & Digital Equity, timezone `America/New_York`) with demo initiatives enabled.
-2. `/twin-meeting-notes`: Ingest these call notes into `broadband-grant-round-3`, extract open `- [ ]` commitments to `gtd_board.md` without deleting existing tasks, and update `contacts.md`:
+Test our `agy-second-brain` skills (`/memory`, `/meeting-notes`, `/meeting-prep`, `/no-ai-slop`, and `/outbound-scrub`):
+1. `/memory`: Initialize my Personal Memory using the `public-sector` preset for Jordan Taylor (Senior Program Analyst, State Office of Broadband & Digital Equity, timezone `America/New_York`) with demo initiatives enabled.
+2. `/meeting-notes`: Ingest these call notes into `broadband-grant-round-3`, extract open `- [ ]` commitments to `action_items.md` without deleting existing tasks, and update `contacts.md`:
    "Call: Round 3 County Grant Intake Review (Attendees: Carla Jennings, Robert Vance).
    - Confirmed the $15M total award cap and Dec 31, 2026 submission deadline across all county PDFs.
    - [ ] Draft 1-page sample match-waiver calculation worksheet for county applicants
    - [ ] Confirm FAQ Spanish translation timeline with Communications lead"
-3. `/twin-jit-prep`: Build a 1-card pre-meeting brief and Adversarial Minto SCQA Critic ("Angle & Pushback to Watch For") for my upcoming legal review with Senior Assistant General Counsel Hannah Kim on `records-modernization-pilot`.
+3. `/meeting-prep`: Build a 1-card pre-meeting brief and Adversarial Minto SCQA Critic ("Angle & Pushback to Watch For") for my upcoming legal review with Senior Assistant General Counsel Hannah Kim on `records-modernization-pilot`.
 4. `/outbound-scrub` + `/no-ai-slop`: Audit and rewrite this external draft so it is free of unresolved placeholders and AI-slop filler:
    "First and foremost, in today's fast-paced and ever-evolving landscape, I wanted to delve into our paradigm-shifting grant portal rollout — it's not just an upgrade, it's a game changer! Please verify the final award ceiling [CONFIRM: $15M or $18M?] and cutoff [TODO: insert date]. At the end of the day, this ensures holistic synergy."
 ```
@@ -253,8 +253,8 @@ Test our `agy-second-brain` skills (`/twin-memory`, `/twin-meeting-notes`, `/twi
 ### Copy & Paste Into Antigravity
 
 ```text
-1. `/twin-swarm-prep`: Run a 4-agent parallel 360 prep pack for our Thursday milestone review on `broadband-grant-round-3` (covering vault status, an L100–L300 talk track with a Mermaid workflow diagram, SCQA pushback & counter-moves, and a pre-scrubbed `[Draft-Only]` stakeholder recap).
-2. `/twin-weekly-impact`: Summarize our current vault progress across Altitude 1 (Executive Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity) into `~/antigravity-twin/memory/weekly/` and `impact/ledger.json`.
+1. `/swarm-prep`: Run a 4-agent parallel 360 prep pack for our Thursday milestone review on `broadband-grant-round-3` (covering memory status, an L100–L300 talk track with a Mermaid workflow diagram, SCQA pushback & counter-moves, and a pre-scrubbed `[Draft-Only]` stakeholder recap).
+2. `/weekly-impact`: Summarize our current progress across Altitude 1 (Executive Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity) into `~/my-antigravity/memory/weekly/` and `impact/ledger.json`.
 ```
 
 ---

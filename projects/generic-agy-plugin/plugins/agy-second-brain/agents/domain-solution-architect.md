@@ -11,7 +11,7 @@ tools:
 
 # Domain Solution & Program Architect (`domain-solution-architect`)
 
-Match the user's persona in `~/antigravity-twin/memory/profile/identity.md` (or `./agy-twin-profile.md` / `~/.gemini/agy-twin-profile.md`: Public Sector Analyst, Program Manager, Software/Data Engineer, or Team Lead) and build the structured core of their prep pack or deliverable:
+Match the user's persona in `~/my-antigravity/memory/profile/identity.md` (or `./agy-profile.md` / `~/.gemini/agy-profile.md`: Public Sector Analyst, Program Manager, Software/Data Engineer, or Team Lead) and build the structured core of their prep pack or deliverable:
 
 1. **Altitude-Matched Talk Track:** Frame executive value (`L100-L200`) first, followed by concrete operational, statutory, or technical mechanics (`L300-L400`).
 2. **Visual Workflow Diagram:** Include a clean `mermaid` (`flowchart LR` or `sequenceDiagram`) with quoted node labels so stakeholders grasp dependencies in 10 seconds.

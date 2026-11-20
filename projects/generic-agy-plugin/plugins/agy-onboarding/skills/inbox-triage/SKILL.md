@@ -23,5 +23,5 @@ Sort high-volume email queues or operational field reports deterministically usi
 
 ## Step 2: Output Format
 1. **Executive Triage Table:** `Priority Bucket | Sender & Subject | Date/Time | Triggered Rule / Reason | Recommended Action`
-2. **Pre-Drafted Replies for Top Bucket 1 & 2 Items:** Offer concise `[Draft Only]` responses (or invoke `/digital-twin` for full voice-matched replies).
+2. **Pre-Drafted Replies for Top Bucket 1 & 2 Items:** Offer concise `[Draft Only]` responses (or invoke `/my-voice` for full voice-matched replies).
 3. **Follow-Up Radar:** Call out any outbound request the user sent earlier in the thread that still lacks a reply.

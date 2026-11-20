@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Command-line interface for the Antigravity Second Brain Memory Vault (`vault_cli.mjs`).
+ * Command-line interface for Antigravity Personal Memory & Action Items (`vault_cli.mjs`).
  *
  * Usage examples:
  *   node vault_cli.mjs init --role pm --name "Alex Rivera" --org "State Digital Service" --seed-demo
@@ -58,13 +58,13 @@ function main() {
   if (cmd === 'help' || flags.help) {
     console.log(
       [
-        'Antigravity Second Brain Vault CLI',
+        'Antigravity Personal Memory & Action Items CLI',
         '',
         'Commands:',
         '  init [--role pm|developer|public-sector|leader] [--name "..."] [--role-title "..."] [--org "..."] [--timezone "..."] [--seed-demo|--no-demo] [--force]',
         '  status [--json]',
-        '  gtd-add --task "..." [--initiative "..."] [--priority P0|P1|P2|P3] [--owner "..."]',
-        '  gtd-toggle [--line <N> | --match "..."]',
+        '  action-add --task "..." [--initiative "..."] [--priority P0|P1|P2|P3] [--owner "..."]',
+        '  action-toggle [--line <N> | --match "..."]',
         '  touch-contact --name "..." [--date YYYY-MM-DD]',
         '  init-initiative --title "..." [--slug "..."] [--rag GREEN|AMBER|RED] [--milestone "..."] [--summary "..."]',
         '  ingest-notes --slug "..." [--title "..."] [--file <path>]',
@@ -90,9 +90,9 @@ function main() {
     if (flags.json) {
       console.log(JSON.stringify(res, null, 2));
     } else {
-      console.log(`Initialized Second Brain Vault at ${res.vaultRoot} (${res.roleLabel})`);
+      console.log(`Initialized Personal Memory at ${res.vaultRoot} (${res.roleLabel})`);
       console.log(
-        `Open GTD tasks: ${res.summary.gtd.counts.open} | Initiatives: ${res.summary.initiatives.length} | Stale contacts (>21d): ${res.summary.contacts.counts.stale}`
+        `Open Action Items: ${res.summary.gtd.counts.open} | Initiatives: ${res.summary.initiatives.length} | Stale contacts (>21d): ${res.summary.contacts.counts.stale}`
       );
     }
     return;
@@ -103,10 +103,10 @@ function main() {
     if (flags.json) {
       console.log(JSON.stringify(state, null, 2));
     } else {
-      console.log(`Vault Root: ${state.vaultRoot} (${state.initialized ? 'Initialized' : 'Uninitialized'})`);
+      console.log(`Memory Root: ${state.vaultRoot} (${state.initialized ? 'Initialized' : 'Uninitialized'})`);
       console.log(`Profile: ${state.profile.name} - ${state.profile.role} (${state.profile.timezone})`);
       console.log(
-        `GTD Tasks: ${state.gtd.counts.open} open (P0: ${state.gtd.counts.p0Open}, P1: ${state.gtd.counts.p1Open}, P2: ${state.gtd.counts.p2Open}) | ${state.gtd.counts.completed} completed`
+        `Action Items: ${state.gtd.counts.open} open (P0: ${state.gtd.counts.p0Open}, P1: ${state.gtd.counts.p1Open}, P2: ${state.gtd.counts.p2Open}) | ${state.gtd.counts.completed} completed`
       );
       console.log(`Initiatives (${state.initiatives.length}):`);
       for (const init of state.initiatives) {
@@ -121,7 +121,7 @@ function main() {
     return;
   }
 
-  if (cmd === 'gtd-add') {
+  if (cmd === 'action-add' || cmd === 'gtd-add') {
     const out = addGtdTask(vaultRoot, {
       initiative: typeof flags.initiative === 'string' ? flags.initiative : 'General',
       task: typeof flags.task === 'string' ? flags.task : '',
@@ -132,7 +132,7 @@ function main() {
     return;
   }
 
-  if (cmd === 'gtd-toggle') {
+  if (cmd === 'action-toggle' || cmd === 'gtd-toggle') {
     const out = toggleGtdTask(vaultRoot, {
       lineNumber: flags.line ? Number(flags.line) : undefined,
       rawMatch: typeof flags.match === 'string' ? flags.match : undefined,
@@ -180,7 +180,7 @@ function main() {
     console.log(
       flags.json
         ? JSON.stringify(out, null, 2)
-        : `Ingested notes into ${out.notesPath} (extracted ${out.extractedTasksCount} action items to gtd_board.md)`
+        : `Ingested notes into ${out.notesPath} (extracted ${out.extractedTasksCount} action items to action_items.md)`
     );
     return;
   }

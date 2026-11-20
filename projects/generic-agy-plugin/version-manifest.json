@@ -1,20 +1,20 @@
 {
   "suiteName": "generic-agy-plugin",
   "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.4.0",
-  "releasedAt": "2026-11-20T22:30:00Z",
+  "suiteVersion": "1.5.0",
+  "releasedAt": "2026-11-20T23:00:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "agy-onboarding": {
-      "version": "1.4.0",
-      "category": "Onboarding, Skills Panel + Hover Token Meter, Token Usage Analyzer (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & Digital Twin",
+      "version": "1.5.0",
+      "category": "Onboarding, Skills Panel + Hover Token Meter, Token Usage Analyzer (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & My Voice (/my-voice)",
       "skills": [
         "agy-onboard",
         "model-guide",
         "orchestrator-guide",
         "token-usage",
         "daily-brief",
-        "digital-twin",
+        "my-voice",
         "inbox-triage",
         "agy-update"
       ],
@@ -23,7 +23,7 @@
       ]
     },
     "agy-connectors": {
-      "version": "1.0.0",
+      "version": "1.5.0",
       "category": "Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
       "skills": [
         "connect-ge",
@@ -35,7 +35,7 @@
       ]
     },
     "agy-design-studio": {
-      "version": "1.4.0",
+      "version": "1.5.0",
       "category": "100% Serverless Visual Dashboards, Executive Slides, Branded Public Sector Documents & Preview Panel",
       "skills": [
         "agy-dashboard",
@@ -84,15 +84,15 @@
       ]
     },
     "agy-second-brain": {
-      "version": "1.4.0",
-      "category": "My Antigravity Workspace UI, Persistent 2-Tier Second Brain Memory Vault, Adversarial Minto SCQA Prep, 4-Agent Parallel Swarm & Anti-Slop Outbound Scrubbing",
+      "version": "1.5.0",
+      "category": "My Antigravity Workspace UI, AI Inbox Action Items & Topics, Personal Memory (~/my-antigravity/memory/), Adversarial Minto SCQA Prep, 4-Agent Parallel Swarm & Anti-Slop Outbound Scrubbing",
       "skills": [
-        "twin-memory",
-        "twin-meeting-notes",
-        "twin-jit-prep",
-        "twin-followup-plan",
-        "twin-swarm-prep",
-        "twin-weekly-impact",
+        "memory",
+        "meeting-notes",
+        "meeting-prep",
+        "followup-plan",
+        "swarm-prep",
+        "weekly-impact",
         "no-ai-slop",
         "outbound-scrub"
       ],
@@ -107,11 +107,11 @@
       ]
     },
     "agy-twin-automations": {
-      "version": "1.1.0",
+      "version": "1.5.0",
       "disabled": true,
       "category": "Opt-In Background Scheduled Automations (Morning Kickoff Brief, Twice-Daily Follow-Up Plan, Evening Notes Compactor & Friday 3-Altitude Impact)",
       "skills": [
-        "twin-automations"
+        "automations"
       ],
       "sidecars": [
         "morning-twin-brief",
@@ -123,28 +123,28 @@
   },
   "changelog": [
     {
-      "version": "1.1.1",
+      "version": "1.5.0",
       "date": "2026-11-20",
       "highlights": [
-        "Added 1-Click 'Skills' Seed Prompt tab inside Twin Vault (right in front of Markdown Files) covering all 37 installed skills across 9 categories, plus clickable 1-click seed prompt pills in AGY Skills."
+        "Removed all 'Twin' and 'GTD' jargon across UI, slash commands (/my-voice, /memory, /meeting-notes, /meeting-prep, /followup-plan, /swarm-prep, /weekly-impact, /automations), manifests, and docs, with seamless migration from ~/antigravity-twin/memory/gtd_board.md to ~/my-antigravity/memory/action_items.md.",
+        "Redesigned 'Action Items' (replacing GTD Board) with the Gmail AI Inbox look & feel: 'Suggested to-dos' with sky-blue Reply / Open pills + scallop wave divider + 3-column 'Topics to catch up on' cards.",
+        "Removed the 'Markdown Files' tab and added a clean top-right 'Customize' sliders icon button combining Role/Profile setup with Voice & Memory file customization."
       ]
     },
     {
-      "version": "1.1.0",
+      "version": "1.4.0",
       "date": "2026-11-20",
       "highlights": [
-        "Integrated the consolidated agy-second-brain plugin (8 net-new non-duplicate skills, 4 parallel subagents, and the Twin Vault side-pane UI) plus opt-in agy-twin-automations (disabled by default; 4 scheduled cron workflows), expanding the suite to 8 plugins and 37 slash-command skills across 9 AGY Skills categories.",
-        "Upgraded /agy-onboard, /daily-brief, and /digital-twin in agy-onboarding to be Second-Brain Vault-aware (~/antigravity-twin/memory/) with zero command duplication.",
-        "Added deterministic zero-Node inline regex fallback to /outbound-scrub and native edit_file timezone configuration to /twin-automations for locked-down corporate laptops."
+        "Added live hoverable token usage meter (in | out | thinking) across My Antigravity, Skills, and Preview panels, plus /token-usage and /orchestrator-guide (expanding the suite to 39 slash-command skills)."
       ]
     },
     {
       "version": "1.0.0",
       "date": "2026-11-19",
       "highlights": [
-        "Initial generic Public Sector release across all 6 modular plugins, 28 slash-command skills across 7 categories (including the 7 Government Services public_sector skills), and 2 serverless UI sidecars (AGY Skills & AGY Preview).",
+        "Initial generic Public Sector release across modular plugins, slash-command skills (including the 7 Government Services public_sector skills), and serverless UI sidecars (Skills & Preview).",
         "Zero-install Gemini Enterprise (GE) Federated Connector Bridge (agy-ge-bridge) running on Antigravity's built-in agy-node runtime for Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub.",
-        "SHA-256 per-skill incremental updater (incremental-sync.mjs + 1-click 'Sync Git Updates' & per-skill refresh buttons inside AGY Skills) so cohorts update changed files in <1s without full re-installs.",
+        "SHA-256 per-skill incremental updater (incremental-sync.mjs + 1-click 'Sync Git Updates' & per-skill refresh buttons inside Skills) so cohorts update changed files in <1s without full re-installs.",
         "100% serverless Side-Pane visual previews for /agy-dashboard, /slides, and /doc-design with 1-click standalone HTML download and zero local TCP port listeners."
       ]
     }
@@ -179,10 +179,10 @@
     "agy-dashboard": {
       "plugin": "agy-design-studio",
       "skill": "agy-dashboard",
-      "treeSha256": "5f8037a84930838b",
+      "treeSha256": "8810bdc293a3ce24",
       "files": {
         "SKILL.md": "7b0269d20813b6f8310ab7c07ae88148f5fcfb495522c0ed711eb5ff68ba4f49",
-        "assets/runtime/app.js": "2ccac517fb47f8e38250106c943b4e2c4a257cf444aac81a91495f8af062520e",
+        "assets/runtime/app.js": "2a269ce48e5437d3d8bf01c60fb5a78a9bc8ecec8059e7172fe8e0ed161d821b",
         "assets/runtime/index.html": "b6e947c8e4e774bc1bc27353e4f2ceb9013487bc06a7951b05d7b4eff2f69d15",
         "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
         "assets/runtime/styles.css": "8e222c8af794c3aff874ad7fed9320d02861a98faac0554d520e4a47ea41fcf2",
@@ -248,18 +248,18 @@
     "agy-onboard": {
       "plugin": "agy-onboarding",
       "skill": "agy-onboard",
-      "treeSha256": "1002726275e6185e",
+      "treeSha256": "6860ec5323da6695",
       "files": {
-        "SKILL.md": "22d3663f86ca82b6ff899fdc732351d1d5e8351601f16ea7239ef8d9c50b1412",
+        "SKILL.md": "4057e10c6c43a8bda0f3d5dc1fc7b0230c92f025a3834a3889f94ec735ae3e6a",
         "references/onboarding_sops_playbook.md": "80d0dc02bbe54da4b013534ce165801b153ade1ab343ae1d74238613f5364734"
       }
     },
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "571f0bf2398c7c22",
+      "treeSha256": "4a7b258e84b97bf1",
       "files": {
-        "SKILL.md": "4d9eb35fc665ea7446260cd3e8e0ee78f8016ddb45ff4fc87155d3beb161367b",
+        "SKILL.md": "f1a0bd4e6f70c4202531040667c0ec39d5ad0660eca31b0ec52485e2ac0afda9",
         "scripts/incremental-sync.mjs": "92945d2fa1dd96de91c151693b15fa8f9b413d485d8d3daf7bf9bdc75cf3e9a9",
         "scripts/install-agy-suite.ps1": "78c0f2370bec5639a66a5329b22f7aba5c9c345a3626634732ef1f4baeacbd01",
         "scripts/install-agy-suite.sh": "03a24d22bd579d7f028e5a91e5846503ff0a269d5d317952024e834654138d4a"
@@ -268,27 +268,18 @@
     "daily-brief": {
       "plugin": "agy-onboarding",
       "skill": "daily-brief",
-      "treeSha256": "a2263879653592f0",
+      "treeSha256": "e802d80e43410720",
       "files": {
-        "SKILL.md": "6486b7fd7f871b12ecf2173ead036bcdfe45e632310d08dfb0e0f2e3c1793335",
+        "SKILL.md": "5c222ddb32683ba7a225fb042b45b9fa473f0abc540668fecd938b839927f41b",
         "references/meetings_project_playbook.md": "6d51098ad9716b726e6668304dd8f2bd2d4d71fd4514c30b14814c40ee112c94"
-      }
-    },
-    "digital-twin": {
-      "plugin": "agy-onboarding",
-      "skill": "digital-twin",
-      "treeSha256": "c5a9502f58ee7e9e",
-      "files": {
-        "SKILL.md": "ac0c1238390ce822da26261208150310865c17f93ae1dc00e8f3af9b152091c1",
-        "references/correspondence_playbook.md": "7c75e4f2c09aada7d08668c9c179dcd496359dc5bc82160a3dd93c7027d85d68"
       }
     },
     "inbox-triage": {
       "plugin": "agy-onboarding",
       "skill": "inbox-triage",
-      "treeSha256": "66c0d54191bce98f",
+      "treeSha256": "c5c87bf5e09c07c7",
       "files": {
-        "SKILL.md": "e86a117c289ff1700257d89ed8e5bbd9973d1f0318fe1c38820bde5c89f9522f"
+        "SKILL.md": "52e5b89ba43e5fe287ebfd136d0f94e53c179cdd6b6db6c3323b94bd50e9b07a"
       }
     },
     "model-guide": {
@@ -300,21 +291,30 @@
         "references/claude_and_gemini_playbook.md": "7fdd1ee2c55c3e56c2689c3c03fd0aeddbc59acaf8baa03c8cc2951c359d1e1c"
       }
     },
+    "my-voice": {
+      "plugin": "agy-onboarding",
+      "skill": "my-voice",
+      "treeSha256": "20b6385dd7a2a3ed",
+      "files": {
+        "SKILL.md": "7d7e1aa0f5f50611a0e20f047baecd60fd1f27798cb9658a30ca19a48f1086da",
+        "references/correspondence_playbook.md": "9efdea925ee1a93d3274903d72b2d041832f75a0f20e1529e830604af88b38d1"
+      }
+    },
     "orchestrator-guide": {
       "plugin": "agy-onboarding",
       "skill": "orchestrator-guide",
-      "treeSha256": "86097a0311c1d382",
+      "treeSha256": "e69bc05640cafe82",
       "files": {
-        "SKILL.md": "c27b2d9a9229d6f074d2065dc46e8d82eba0671c140d38f036968458ecba2be6",
+        "SKILL.md": "9d01bfeef6869fe72b8a594bf399fd392ed9543923b0cb28fee2029e8b72b9ac",
         "references/orchestrator_prompt_patterns.md": "7fe0934d39184b6bea218e3cc98acb9ff291aa89e569eaa81e659f176c3ae8bf"
       }
     },
     "token-usage": {
       "plugin": "agy-onboarding",
       "skill": "token-usage",
-      "treeSha256": "cbe82d75b52fe0b2",
+      "treeSha256": "de3ec4c5c94fe179",
       "files": {
-        "SKILL.md": "1d97ffb32dac88e040f11e0fcf1199971a0808097fc9702520bae323d84d343d",
+        "SKILL.md": "b0af3d4f06516a3d5c21d53f12094204f576fb9fbdd9508e4db4f18bbdcf0ec7",
         "references/quota_and_cost_optimization.md": "a2f035e222aa37fc74dbaf99fd0d1cd3278ff1521a03820e0b9cc53b83082613",
         "scripts/token_usage_report.mjs": "2a61a4d8246a2f28b7293b8094da1ab013816dc682580db9be609141ae531b91"
       }
@@ -409,6 +409,39 @@
         "SKILL.md": "7309fee226cff3a725dee33888b21af58fa0fdda1aec5afb83b84f8bb19ba896"
       }
     },
+    "followup-plan": {
+      "plugin": "agy-second-brain",
+      "skill": "followup-plan",
+      "treeSha256": "22b4d6c7a3204fec",
+      "files": {
+        "SKILL.md": "4379776a47d9fd6259678b49b9b77a96da58bc9c7922a0114627d181c18a7b93"
+      }
+    },
+    "meeting-notes": {
+      "plugin": "agy-second-brain",
+      "skill": "meeting-notes",
+      "treeSha256": "b49df1fb7a9af793",
+      "files": {
+        "SKILL.md": "532e649e956b523df680c1e313a1f4f630869e59c36165b09f183bf70e60e85c",
+        "references/compaction_rubric.md": "36225910450e56d01fc78990a9c8c0c60a3f1010e51fa88973145b0cba5bf6ca"
+      }
+    },
+    "meeting-prep": {
+      "plugin": "agy-second-brain",
+      "skill": "meeting-prep",
+      "treeSha256": "9d098435f45d9520",
+      "files": {
+        "SKILL.md": "567e7abce620985b53fd0296178a6525154042b72d1d49ea767d019ff00053ab"
+      }
+    },
+    "memory": {
+      "plugin": "agy-second-brain",
+      "skill": "memory",
+      "treeSha256": "5e419fcb5b604bdd",
+      "files": {
+        "SKILL.md": "a89475b5a5fca2c6934eefc77956f3aaf069539d42311c5add4a0b641c26bb94"
+      }
+    },
     "no-ai-slop": {
       "plugin": "agy-second-brain",
       "skill": "no-ai-slop",
@@ -425,53 +458,20 @@
         "SKILL.md": "64245f8f9002176256c03421db4c4a5c5099455bf0b50c89da94652b8979ea38"
       }
     },
-    "twin-followup-plan": {
+    "swarm-prep": {
       "plugin": "agy-second-brain",
-      "skill": "twin-followup-plan",
-      "treeSha256": "10785bf92c6fd142",
+      "skill": "swarm-prep",
+      "treeSha256": "18d5a12377059b26",
       "files": {
-        "SKILL.md": "290e24ed8967b581a5003b1749e63746ae7c528983c1b750f6b0b0b1886933d4"
+        "SKILL.md": "150b2601db386479ad0b8b8d811c86fb78aa303d9d25918a18ee8b525fa752c4"
       }
     },
-    "twin-jit-prep": {
+    "weekly-impact": {
       "plugin": "agy-second-brain",
-      "skill": "twin-jit-prep",
-      "treeSha256": "c4e7255295f71211",
+      "skill": "weekly-impact",
+      "treeSha256": "7cb2df5875dad18a",
       "files": {
-        "SKILL.md": "68e152939f18224dbd986b5a5544452adfc1c8672b96117671ab4aa1f80e5bad"
-      }
-    },
-    "twin-meeting-notes": {
-      "plugin": "agy-second-brain",
-      "skill": "twin-meeting-notes",
-      "treeSha256": "a18468deab93943c",
-      "files": {
-        "SKILL.md": "f4ae0d02d715cc5201408c41b15f2408a0a420310c406a2178a08cc1bf9125c7",
-        "references/compaction_rubric.md": "1b1b55c88f5010a1a51be5fdb7ec37b760491c26b481c452b29f0e072b37eb50"
-      }
-    },
-    "twin-memory": {
-      "plugin": "agy-second-brain",
-      "skill": "twin-memory",
-      "treeSha256": "022790a79e5dcc91",
-      "files": {
-        "SKILL.md": "4e0e1cc9fe936c8f9f9042cbe24dcef058caedfaaba1771e956334a17c2ed915"
-      }
-    },
-    "twin-swarm-prep": {
-      "plugin": "agy-second-brain",
-      "skill": "twin-swarm-prep",
-      "treeSha256": "b31f05c9df1925c3",
-      "files": {
-        "SKILL.md": "35aad8498e79e45ec0a1c62a0cd128c8691d0f0e906c0d2bfcebc38a525a06e7"
-      }
-    },
-    "twin-weekly-impact": {
-      "plugin": "agy-second-brain",
-      "skill": "twin-weekly-impact",
-      "treeSha256": "999121ee97001d84",
-      "files": {
-        "SKILL.md": "725291e204159097530bb967553391a641820be6b51ee958a5eb71c049372e99"
+        "SKILL.md": "9c3ef6057c16cc5d551f037a88ca26a5cef9f9710a6a262468e56daa766e5ff8"
       }
     },
     "iam-secret-hygiene": {
@@ -491,12 +491,12 @@
         "references/owasp_and_cloud_waf_checklist.md": "4577a31badfc3fcc5264d26394bc2b98492652d202ae3776b57b7d3b4c7f40a7"
       }
     },
-    "twin-automations": {
+    "automations": {
       "plugin": "agy-twin-automations",
-      "skill": "twin-automations",
-      "treeSha256": "cc5e12e788a74b12",
+      "skill": "automations",
+      "treeSha256": "62f907acc3d40ae4",
       "files": {
-        "SKILL.md": "1aa676e652363797ca5c048b36f0e8ac18e8318055c014fd4ba65458727a4dc2"
+        "SKILL.md": "c2256a09beee790fe3520c86ed4dedf118c0656cfeda8c185f3b4ca13b79c81c"
       }
     }
   },
@@ -521,7 +521,7 @@
       "files": {
         "app.js": "9ac15d5eca4a8c659b89699cade280f181e9717bfe60e3679d7dac843ac3c651",
         "index.html": "3c4ee99b5068293d79843b8d299d995860620207909a3955b238c1d1c883c299",
-        "main.mjs": "8a81fee6730355cf640a298cb0a30cddd2fb49b6ce8a8f02701041efea805dc1",
+        "main.mjs": "68804928710ee1575460409489f85cf74399e1ecffae24257260678e3e1dcb9a",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
         "styles.css": "fb7c9efdfeb81fe53ea8ce869f582f49f59e648aebb70f3a0a428f26aca74f72",
@@ -533,13 +533,13 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "26cfa4a823c2d2f70baa710fbd29d87045e35b3cb0fd0fe1efbe342628459bbc",
-        "index.html": "bd61a69e8c4fce3849d843b35448f2bd9ca4c587011b8b6132e7cc53c696db21",
-        "main.mjs": "3bb885587373dd4c3fe9c3c0d168d0ce5fa20bd9dca6092f87be0dcd21a4f52a",
+        "app.js": "1ad676e9ce6b5da8a8c795c5f7fcd21395ef1a4330c64741ff24fb0a225c33cc",
+        "index.html": "be91e53409ddfd53c12844fb564d924e9004e0e232954b97f8daeccc0e7d50a2",
+        "main.mjs": "cece70d3a5c81f89e5c4e27ed7ee521a6c2d44eca451836728090243f2419001",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "0ed7977043865ac64f05286a0c25b8ffe028ee6b747ca339ded099667ac9a6d8",
-        "sidecar.json": "73457b66c79a7306eaa47beb7cad2e28c1b3fbc4695d48083c27f0d14d6c3e8b",
-        "styles.css": "91785211feda6c6dbf2b8f7f0f7192533558ee63286db03a4514a2831d20db44",
+        "seed_prompts_catalog.mjs": "9b28914a7fb6f73a52aa6053b94173dbe54b092e4b2bc7d627d4e59f9fc5096e",
+        "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
+        "styles.css": "ece974cf8fb3899e68af4c96a3c07a2aecab3713898bc5aeb6b6e166f14c377f",
         "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
         "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
       }

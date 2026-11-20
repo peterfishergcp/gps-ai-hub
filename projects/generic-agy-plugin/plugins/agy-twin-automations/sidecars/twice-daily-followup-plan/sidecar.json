@@ -5,15 +5,15 @@
     "agentapi",
     "new-conversation",
     "--",
-    "Run /twin-followup-plan on ~/antigravity-twin/memory/. Check any recently completed items first, update ~/antigravity-twin/memory/followups/latest_action_plan.md and gtd_board.md with Zero Task Decay, and prepare concise [Draft-Only] follow-up messages for open P0 and P1 commitments without sending anything externally."
+    "Run /followup-plan on ~/my-antigravity/memory/. Check any recently completed items first, update ~/my-antigravity/memory/followups/latest_action_plan.md and action_items.md, and prepare concise [Draft-Only] follow-up messages for open P0 and P1 action items without sending anything externally."
   ],
   "restart_policy": "always",
   "display_name": "Twice-Daily Follow-Up Action Plan",
-  "description": "Every weekday at 9:30 AM and 2:30 PM, sweeps open commitments, updates followups/latest_action_plan.md, and stages [Draft-Only] replies.",
+  "description": "Every weekday at 9:30 AM and 2:30 PM, sweeps open action items, updates followups/latest_action_plan.md, and stages [Draft-Only] replies.",
   "agent_permissions": {
     "access_grants": [
-      "read_file(${HOME}/antigravity-twin)",
-      "write_file(${HOME}/antigravity-twin)"
+      "read_file(${HOME}/my-antigravity)",
+      "write_file(${HOME}/my-antigravity)"
     ]
   }
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Shared Zero-Dependency Second Brain Memory Vault Engine for Google Antigravity.
+ * Shared Zero-Dependency Personal Workspace Memory Engine for Google Antigravity.
  *
- * Powers both `vault_cli.mjs` and the `Twin Vault` Sidecar UI (`sidecars/twin-vault-ui/main.mjs`).
+ * Powers both `vault_cli.mjs` and the `My Antigravity` Sidecar UI (`sidecars/twin-vault-ui/main.mjs`).
  * Uses only built-in Node.js standard library modules so it runs out of the box on Windows,
  * macOS, and Linux inside Antigravity Desktop with zero npm or Python dependencies.
  */
@@ -15,12 +15,50 @@ export const SAFE_SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const SKIP_DIRS = new Set(['.git', 'node_modules', '__pycache__', '.venv', 'dist']);
 const SKIP_EXTS = new Set(['.pyc', '.pyo', '.exe', '.dll', '.so', '.dylib', '.zip']);
 
+function copyDirSafeOnce(srcDir, dstDir) {
+  fs.mkdirSync(dstDir, { recursive: true });
+  for (const ent of fs.readdirSync(srcDir, { withFileTypes: true })) {
+    if (ent.isSymbolicLink()) continue;
+    const sp = path.join(srcDir, ent.name);
+    const dp = path.join(dstDir, ent.name === 'gtd_board.md' ? 'action_items.md' : ent.name);
+    const st = fs.lstatSync(sp);
+    if (st.isSymbolicLink()) continue;
+    if (st.isDirectory()) {
+      copyDirSafeOnce(sp, dp);
+    } else if (st.isFile() && !fs.existsSync(dp)) {
+      fs.copyFileSync(sp, dp);
+    }
+  }
+}
+
 export function getVaultRoot(overrideDir = '') {
-  const raw =
-    overrideDir ||
-    process.env.AGY_TWIN_VAULT_DIR ||
-    path.join(os.homedir(), 'antigravity-twin', 'memory');
-  return path.resolve(raw);
+  const explicit = overrideDir || process.env.AGY_MEMORY_DIR || process.env.AGY_TWIN_VAULT_DIR || '';
+  if (explicit) {
+    return path.resolve(explicit);
+  }
+  const preferred = path.join(os.homedir(), 'my-antigravity', 'memory');
+  const legacy = path.join(os.homedir(), 'antigravity-twin', 'memory');
+  if (!fs.existsSync(preferred) && fs.existsSync(legacy)) {
+    try {
+      copyDirSafeOnce(legacy, preferred);
+    } catch {
+      return path.resolve(legacy);
+    }
+  }
+  return path.resolve(preferred);
+}
+
+export function resolveActionItemsPath(vaultRoot) {
+  const preferred = path.join(vaultRoot, 'action_items.md');
+  const legacy = path.join(vaultRoot, 'gtd_board.md');
+  if (!fs.existsSync(preferred) && fs.existsSync(legacy)) {
+    try {
+      fs.renameSync(legacy, preferred);
+    } catch {
+      return legacy;
+    }
+  }
+  return preferred;
 }
 
 export function isoToday() {
@@ -264,7 +302,7 @@ export function buildProfileFiles({ name, roleTitle, org, timezone, preset }) {
 - **Organization / Team:** ${safeOrg}
 - **Primary Time Zone:** \`${safeTz}\` (always anchor daily briefs, calendars, and deadlines in \`${safeTz}\` first)
 - **Persona Track:** ${preset.label} (\`${preset.id}\`)
-- **Vault Path:** \`~/antigravity-twin/memory/\`
+- **Memory Path:** \`~/my-antigravity/memory/\`
 - **Last Updated:** \`${today}\`
 
 ## Core Operational Lanes
@@ -275,7 +313,7 @@ ${preset.lanes.map((lane, i) => `${i + 1}. ${lane}`).join('\n')}
 
 Track primary programs, technical systems, or operational workstreams here. Detailed per-initiative context lives under \`initiatives/<slug>/\`.
 
-| Initiative Slug | Title | Target Milestone | Vault Path |
+| Initiative Slug | Title | Target Milestone | Memory Path |
 | :--- | :--- | :--- | :--- |
 ${preset.initiatives
   .map(
@@ -287,11 +325,11 @@ ${preset.initiatives
 
   const playbooksMd = `# Standing Operational Playbooks
 
-1. **Morning Kickoff (\`/daily-brief\`):** Check \`gtd_board.md\` (\`P0\` and \`P1\`), \`contacts.md\` (\`>21d\` stale stakeholders), and \`initiatives/*/status.md\` first. Combine with connected calendar/inbox MCP context when available, and return the Top 3 concrete actions for today.
-2. **Post-Meeting Compaction (\`/twin-meeting-notes\`):** Strip base64/HTML noise, log fresh decisions in \`initiatives/<slug>/running_notes.md\` (4-Tier Recency Compaction), extract every commitment into \`gtd_board.md\` with Zero Task Decay, and update \`Last_Touch_Date\` in \`contacts.md\`.
-3. **Pre-Meeting SCQA Prep (\`/twin-jit-prep\`):** Produce a 1-page brief with Where We Left Off, open commitments, and an Adversarial Minto Pyramid (SCQA) Critic (*Situation -> Complication -> Hard Question -> Counter-Move*).
-4. **Twice-Daily Follow-Up Sweep (\`/twin-followup-plan\`):** Verify already-sent replies first to avoid duplicate nudges, group open items into \`P0\` / \`P1\` / \`P2\`, and stage \`[Draft-Only]\` messages without auto-sending.
-5. **Friday 3-Altitude Closeout (\`/twin-weekly-impact\`):** Summarize weekly outcomes across Altitude 1 (Executive / Leadership Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity).
+1. **Morning Kickoff (\`/daily-brief\`):** Check \`action_items.md\` (\`P0\` and \`P1\`), \`contacts.md\` (\`>21d\` stale stakeholders), and \`initiatives/*/status.md\` first. Combine with connected calendar/inbox MCP context when available, and return the Top 3 concrete actions for today.
+2. **Post-Meeting Compaction (\`/meeting-notes\`):** Strip base64/HTML noise, log fresh decisions in \`initiatives/<slug>/running_notes.md\` (4-Tier Recency Compaction), extract every action item into \`action_items.md\` with Zero Decay, and update \`Last_Touch_Date\` in \`contacts.md\`.
+3. **Pre-Meeting SCQA Prep (\`/meeting-prep\`):** Produce a 1-page brief with Where We Left Off, open commitments, and an Adversarial Minto Pyramid (SCQA) Critic (*Situation -> Complication -> Hard Question -> Counter-Move*).
+4. **Twice-Daily Follow-Up Sweep (\`/followup-plan\`):** Verify already-sent replies first to avoid duplicate nudges, group open items into \`P0\` / \`P1\` / \`P2\`, and stage \`[Draft-Only]\` messages without auto-sending.
+5. **Friday 3-Altitude Closeout (\`/weekly-impact\`):** Summarize weekly outcomes across Altitude 1 (Executive / Leadership Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity).
 `;
 
   const voiceMd = `# Authentic Communication Voice & Anti-Slop Rules
@@ -307,13 +345,13 @@ Write like a clear, direct, experienced ${safeRole} talking to a respected colle
 - **Strict Draft-Only Label:** Prefix every outbound draft with \`[Draft: Email -> Recipient | Subject: ...]\` or \`[Draft: Chat/Teams -> Recipient]\` and wait for explicit approval before sending.
 `;
 
-  const sharedAgyProfileMd = `# Antigravity Digital Twin Profile
+  const sharedAgyProfileMd = `# My Antigravity Personal Profile
 
 - **Name:** ${safeName}
 - **Role:** ${safeRole}
 - **Organization:** ${safeOrg}
 - **Time Zone:** ${safeTz}
-- **Memory Vault:** ~/antigravity-twin/memory/
+- **Memory Directory:** ~/my-antigravity/memory/
 - **Style:** Direct, BLUF-first, concrete facts over buzzwords, spaced hyphens (\` - \`), strict \`[Draft-Only]\` outbound safety.
 `;
 
@@ -375,7 +413,7 @@ export function initializeVault({
     try {
       const geminiDir = path.join(os.homedir(), '.gemini');
       fs.mkdirSync(geminiDir, { recursive: true });
-      const profileTarget = path.join(geminiDir, 'agy-twin-profile.md');
+      const profileTarget = path.join(geminiDir, 'agy-profile.md');
       if (force || !fs.existsSync(profileTarget)) {
         fs.writeFileSync(profileTarget, sharedAgyProfileMd, 'utf-8');
       }
@@ -384,7 +422,7 @@ export function initializeVault({
     }
   }
 
-  // Build GTD Board
+  // Build Action Items Board
   const p0Lines = [];
   const p1Lines = [];
   const p2Lines = [];
@@ -397,9 +435,9 @@ export function initializeVault({
     }
   }
 
-  const gtdMd = `# Zero-Task-Decay GTD Action Board
+  const gtdMd = `# Action Items & Suggested To-Dos
 
-Tasks on this board never auto-expire. Only mark an item \`[x]\` when confirmed completed or \`[-]\` when explicitly dropped.
+Items on this list never auto-expire. Only mark an item \`[x]\` when confirmed completed or \`[-]\` when explicitly dropped.
 
 ## P0 - Immediate / Today
 ${p0Lines.length ? p0Lines.join('\n') : ''}
@@ -413,9 +451,9 @@ ${p2Lines.length ? p2Lines.join('\n') : ''}
 ## P3 - Someday / Watchlist
 
 ## Completed Archive
-- [x] [Onboarding] Initialize Antigravity Second Brain Memory Vault [Owner: ${safeOwner}] (Added: ${today})
+- [x] [Onboarding] Initialize My Antigravity Personal Memory [Owner: ${safeOwner}] (Added: ${today})
 `;
-  writeIfAllowed(path.join(root, 'gtd_board.md'), gtdMd);
+  writeIfAllowed(resolveActionItemsPath(root), gtdMd);
 
   // Build Contacts CRM
   const contactRows = [];
@@ -433,7 +471,7 @@ ${p2Lines.length ? p2Lines.join('\n') : ''}
 
   const contactsMd = `# Stakeholder & Relationship Pulse
 
-Any key stakeholder with \`Last_Touch_Date\` older than 21 days is flagged \`STALE (>21d)\` during \`/daily-brief\` and \`/twin-jit-prep\`.
+Any key stakeholder with \`Last_Touch_Date\` older than 21 days is flagged \`STALE (>21d)\` during \`/daily-brief\` and \`/meeting-prep\`.
 
 ## Key Stakeholders & Collaborators
 
@@ -462,12 +500,12 @@ ${contactRows.join('\n')}
 
   writeIfAllowed(
     path.join(root, 'topics', 'lessons-learned.md'),
-    `# Reusable Patterns & Lessons Learned\n\n- **${today}:** Initialized 2-Tier Second Brain Memory Vault (\`${preset.label}\` preset). Store reusable checklists, query patterns, and policy notes in \`topics/\` so future sessions stay grounded.\n`
+    `# Reusable Patterns & Lessons Learned\n\n- **${today}:** Initialized My Antigravity Personal Memory (\`${preset.label}\` preset). Store reusable checklists, query patterns, and policy notes in \`topics/\` so future sessions stay grounded.\n`
   );
 
   writeIfAllowed(
     path.join(root, 'followups', 'latest_action_plan.md'),
-    `# Latest Follow-Up & Action Plan\n\n- **Last Sweep:** \`${today}\`\n- Run \`/twin-followup-plan\` anytime to audit recent threads, update \`gtd_board.md\`, and generate \`[Draft-Only]\` follow-up messages.\n`
+    `# Latest Follow-Up & Action Plan\n\n- **Last Sweep:** \`${today}\`\n- Run \`/followup-plan\` anytime to audit recent threads, update \`action_items.md\`, and generate \`[Draft-Only]\` follow-up messages.\n`
   );
 
   writeIfAllowed(
@@ -482,9 +520,9 @@ ${contactRows.join('\n')}
           {
             date: today,
             initiative: seedDemo && preset.initiatives[0] ? preset.initiatives[0].slug : 'onboarding',
-            altitude1ExecutiveOutcome: 'Configured persistent Antigravity Second Brain vault for repeatable daily execution.',
-            altitude2ReusableAsset: 'Standardized 4-file initiative memory isolation and Zero-Task-Decay GTD tracking.',
-            altitude3WorkstreamVelocity: 'Seeded baseline GTD priorities, stakeholder staleness tracking, and voice guardrails.',
+            altitude1ExecutiveOutcome: 'Configured persistent My Antigravity workspace memory for repeatable daily execution.',
+            altitude2ReusableAsset: 'Standardized 4-file initiative memory isolation and Action Items tracking.',
+            altitude3WorkstreamVelocity: 'Seeded baseline action items, stakeholder staleness tracking, and voice guardrails.',
           },
         ],
       },
@@ -579,7 +617,7 @@ ${
 ${notes.length ? notes.join('\n') : '- Initialized 4-file initiative workspace.'}
 
 ## Tier 2 (8-30 Days - Tactical 3-5 Bullet Summaries)
-- *(Older Tier 1 notes compact here automatically during \`/twin-meeting-notes\`.)*
+- *(Older Tier 1 notes compact here automatically during \`/meeting-notes\`.)*
 
 ## Tier 3 (31-90 Days - Dated Milestone Rollup)
 - *(31-90 day tactical summaries roll into dated milestones here.)*
@@ -593,7 +631,7 @@ ${notes.length ? notes.join('\n') : '- Initialized 4-file initiative workspace.'
 }
 
 export function parseGtdBoard(vaultRoot) {
-  const gtdPath = path.join(vaultRoot, 'gtd_board.md');
+  const gtdPath = resolveActionItemsPath(vaultRoot);
   if (!fs.existsSync(gtdPath)) {
     return {
       path: gtdPath,
@@ -677,9 +715,9 @@ export function parseGtdBoard(vaultRoot) {
 }
 
 export function toggleGtdTask(vaultRoot, { lineNumber, rawMatch } = {}) {
-  const gtdPath = path.join(vaultRoot, 'gtd_board.md');
+  const gtdPath = resolveActionItemsPath(vaultRoot);
   if (!fs.existsSync(gtdPath)) {
-    throw new Error(`gtd_board.md not found at ${gtdPath}`);
+    throw new Error(`action_items.md not found at ${gtdPath}`);
   }
   const lines = fs.readFileSync(gtdPath, 'utf-8').split(/\r?\n/);
   let targetIdx = -1;
@@ -696,7 +734,7 @@ export function toggleGtdTask(vaultRoot, { lineNumber, rawMatch } = {}) {
     );
   }
   if (targetIdx === -1) {
-    throw new Error('Matching GTD task line not found');
+    throw new Error('Matching action item line not found');
   }
 
   const orig = lines[targetIdx];
@@ -728,7 +766,7 @@ export function addGtdTask(
   if (!cleanTask) {
     throw new Error('Task text is required');
   }
-  const gtdPath = path.join(vaultRoot, 'gtd_board.md');
+  const gtdPath = resolveActionItemsPath(vaultRoot);
   if (!fs.existsSync(gtdPath)) {
     initializeVault({ vaultDir: vaultRoot, seedDemo: false });
   }
