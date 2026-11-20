@@ -224,6 +224,11 @@
 
   async function loadState() {
     appState = await apiGet('/api/state');
+    if (appState && appState.uiOutdated) {
+      showToast('Detected updated Twin Vault UI — reloading...');
+      setTimeout(() => window.location.reload(), 900);
+      return;
+    }
     const p = appState.profile || {};
     headerTitle.textContent = p.name && p.name !== 'Workspace User' ? p.name + ' - Twin Vault' : 'Twin Second Brain Vault';
     headerSub.textContent = (p.role || 'Ready') + ' | ' + (appState.vaultRoot || '~/antigravity-twin/memory');
@@ -1104,6 +1109,31 @@
       .then(() => showToast('Refreshed vault'))
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
+
+  const syncBtn = document.getElementById('btn-sync-updates');
+  if (syncBtn) {
+    syncBtn.addEventListener('click', async () => {
+      syncBtn.disabled = true;
+      const orig = syncBtn.textContent;
+      syncBtn.textContent = 'Syncing...';
+      showToast('Checking GitHub for Twin & Skill updates...');
+      try {
+        const res = await apiPost('/api/sync-updates', {});
+        if (res.updatedFilesCount > 0) {
+          showToast('Updated ' + res.updatedFilesCount + ' file(s) to v' + res.suiteVersion + ' — reloading...');
+          setTimeout(() => window.location.reload(), 950);
+        } else {
+          await loadState();
+          showToast('Up to date (v' + res.suiteVersion + ')');
+        }
+      } catch (err) {
+        showToast('Sync failed: ' + err.message);
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = orig;
+      }
+    });
+  }
 
   document.getElementById('btn-configure-role').addEventListener('click', () => {
     activeTab = 'overview';
