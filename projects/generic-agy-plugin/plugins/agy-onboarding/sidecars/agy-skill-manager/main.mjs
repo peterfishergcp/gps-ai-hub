@@ -235,11 +235,11 @@ const SKILL_CATALOG = [
     skills: [
       {
         id: 'agy-onboard',
-        title: 'Agency Role, Second Brain & GE Quickstart',
-        subtitle: '60-second role + Second Brain vault setup, 30-60-90 plans & SOP builders',
+        title: 'Agency Role, Workspace Memory & GE Quickstart',
+        subtitle: '60-second role + workspace memory setup, 30-60-90 plans & SOP builders',
         command: '/agy-onboard',
-        badge: 'Playbook + Vault',
-        starterPrompt: '/agy-onboard Help me set up my Public Sector agency role, Second Brain Memory Vault, and Gemini Enterprise connection.'
+        badge: 'Playbook + Setup',
+        starterPrompt: '/agy-onboard Help me set up my Public Sector agency role, Personal Workspace Memory, and Gemini Enterprise connection.'
       },
       {
         id: 'model-guide',
@@ -267,19 +267,19 @@ const SKILL_CATALOG = [
       },
       {
         id: 'daily-brief',
-        title: 'Daily Executive & Second Brain Kickoff Brief',
-        subtitle: 'Unified morning priorities, GE calendar/inbox + Vault P0/P1 GTD & >21d contacts',
+        title: 'Daily Executive Kickoff Brief',
+        subtitle: 'Unified morning priorities, GE calendar/inbox + open Action Items & >21d contacts',
         command: '/daily-brief',
-        badge: 'GE + Vault',
-        starterPrompt: '/daily-brief Summarize my top priorities today, upcoming meetings, open Second Brain GTD commitments, and stale stakeholder check-ins.'
+        badge: 'GE + Memory',
+        starterPrompt: '/daily-brief Summarize my top priorities today, upcoming meetings, open Action Items, and stale stakeholder check-ins.'
       },
       {
-        id: 'digital-twin',
-        title: 'Digital Twin Voice & Correspondence Drafter',
+        id: 'my-voice',
+        title: 'My Voice & Correspondence Drafter',
         subtitle: 'Drafts emails, memos, official letters & replies calibrated to voice.md (Draft-Only)',
-        command: '/digital-twin',
+        command: '/my-voice',
         badge: 'Draft-Only',
-        starterPrompt: '/digital-twin Draft a clear, concise reply in my voice to the message below.'
+        starterPrompt: '/my-voice Draft a clear, concise reply in my voice to the message below.'
       },
       {
         id: 'inbox-triage',
@@ -517,56 +517,56 @@ const SKILL_CATALOG = [
   {
     categoryId: 'second-brain',
     plugin: 'agy-second-brain',
-    categoryLabel: 'Second Brain Vault, Swarm Prep & Anti-Slop',
-    chipLabel: 'Second Brain & Swarm',
+    categoryLabel: 'Memory, Action Items, Prep & Anti-Slop',
+    chipLabel: 'Memory & Prep',
     skills: [
       {
-        id: 'twin-memory',
-        title: 'Second Brain Memory Vault & Initializer',
-        subtitle: '2-Tier vault setup (public-sector/pm/dev/leader), Zero-Decay GTD & >21d contacts',
-        command: '/twin-memory',
-        badge: 'Vault + Twin UI',
-        starterPrompt: '/twin-memory Initialize my Second Brain memory vault using the public-sector preset and summarize my active GTD tasks and initiatives.'
+        id: 'memory',
+        title: 'Personal Workspace Memory & Action Items',
+        subtitle: 'Role-adaptive setup, Action Items (action_items.md) & >21d stakeholder pulse',
+        command: '/memory',
+        badge: 'Memory + Actions',
+        starterPrompt: '/memory Initialize my personal workspace memory using the public-sector preset and summarize my active Action Items and initiatives.'
       },
       {
-        id: 'twin-meeting-notes',
-        title: 'Meeting Notes Harvester & 4-Tier Compactor',
-        subtitle: 'Strips base64 bloat, applies 4-Tier compaction & extracts GTD actions',
-        command: '/twin-meeting-notes',
+        id: 'meeting-notes',
+        title: 'Meeting Notes Harvester & Action Extractor',
+        subtitle: 'Strips base64 bloat, applies 4-Tier compaction & extracts Action Items',
+        command: '/meeting-notes',
         badge: '4-Tier Memory',
-        starterPrompt: '/twin-meeting-notes Ingest and compact these call notes into my initiative vault, extract open action items to gtd_board.md, and update contacts.md.'
+        starterPrompt: '/meeting-notes Ingest and compact these call notes into my initiative folder, extract open to-dos to action_items.md, and update contacts.md.'
       },
       {
-        id: 'twin-jit-prep',
+        id: 'meeting-prep',
         title: 'T-15m Pre-Meeting Brief & SCQA Red-Team Coach',
         subtitle: '1-card initiative brief + Adversarial Minto Pyramid (SCQA) pushback critic',
-        command: '/twin-jit-prep',
+        command: '/meeting-prep',
         badge: 'SCQA Critic',
-        starterPrompt: '/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my top active initiative.'
+        starterPrompt: '/meeting-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my top active initiative.'
       },
       {
-        id: 'twin-followup-plan',
-        title: 'Follow-Up & Action Plan Sweep',
-        subtitle: 'Audits sent replies first, syncs gtd_board.md & stages [Draft-Only] messages',
-        command: '/twin-followup-plan',
+        id: 'followup-plan',
+        title: 'Follow-Up & Action Item Sweep',
+        subtitle: 'Audits sent replies first, syncs action_items.md & stages [Draft-Only] messages',
+        command: '/followup-plan',
         badge: 'Action Sweep',
-        starterPrompt: '/twin-followup-plan Run a follow-up sweep across my Second Brain vault and stage [Draft-Only] replies for open P0 and P1 commitments.'
+        starterPrompt: '/followup-plan Run a follow-up sweep across my workspace memory and stage [Draft-Only] replies for open P0 and P1 action items.'
       },
       {
-        id: 'twin-swarm-prep',
+        id: 'swarm-prep',
         title: '4-Agent Parallel Swarm Orchestrator',
         subtitle: 'Fans out Memory Scout, SCQA Critic, Solution Architect & Safety Auditor',
-        command: '/twin-swarm-prep',
+        command: '/swarm-prep',
         badge: '4-Agent Swarm',
-        starterPrompt: '/twin-swarm-prep Run a 4-agent parallel 360 prep pack for my highest-priority initiative.'
+        starterPrompt: '/swarm-prep Run a 4-agent parallel 360 prep pack for my highest-priority initiative.'
       },
       {
-        id: 'twin-weekly-impact',
+        id: 'weekly-impact',
         title: 'Friday Closeout & 3-Altitude Impact Ledger',
         subtitle: 'Distills Executive Outcomes, Reusable Assets & Velocity into weekly/ & ledger.json',
-        command: '/twin-weekly-impact',
+        command: '/weekly-impact',
         badge: '3-Altitude ROI',
-        starterPrompt: '/twin-weekly-impact Generate my Friday 3-Altitude weekly impact summary from my Second Brain vault.'
+        starterPrompt: '/weekly-impact Generate my Friday 3-Altitude weekly impact summary from my workspace memory.'
       },
       {
         id: 'no-ai-slop',
@@ -587,18 +587,18 @@ const SKILL_CATALOG = [
     ]
   },
   {
-    categoryId: 'twin-automations',
+    categoryId: 'automations',
     plugin: 'agy-twin-automations',
-    categoryLabel: 'Scheduled Twin Automations (Opt-In)',
-    chipLabel: 'Twin Automations',
+    categoryLabel: 'Scheduled Automations (Opt-In)',
+    chipLabel: 'Automations',
     skills: [
       {
-        id: 'twin-automations',
-        title: 'Scheduled Briefings & Vault Compactor Setup',
+        id: 'automations',
+        title: 'Scheduled Briefings & Memory Compactor Setup',
         subtitle: 'Configures IANA timezone & enables opt-in weekday briefings in Automations',
-        command: '/twin-automations',
+        command: '/automations',
         badge: 'Opt-In Cron',
-        starterPrompt: '/twin-automations Set my IANA timezone across my scheduled Twin automations and show me how to enable them in the Automations dashboard.'
+        starterPrompt: '/automations Set my IANA timezone across my scheduled automations and show me how to enable them in the Automations dashboard.'
       }
     ]
   }
@@ -878,7 +878,9 @@ app.api('/api/state', async () => {
         .sort();
       for (const sid of pDirs) {
         const sDir = path.join(personalRoot, sid);
-        const metaPath = path.join(sDir, '.twin-skill-meta.json');
+        const newMeta = path.join(sDir, '.agy-skill-meta.json');
+        const legacyMeta = path.join(sDir, '.twin-skill-meta.json');
+        const metaPath = fs.existsSync(newMeta) ? newMeta : legacyMeta;
         const activeMd = path.join(sDir, 'SKILL.md');
         const disabledMd = path.join(sDir, 'SKILL.md.disabled');
         if (!fs.existsSync(metaPath) || (!fs.existsSync(activeMd) && !fs.existsSync(disabledMd))) continue;
@@ -1070,7 +1072,7 @@ app.api('/api/fork-skill', async (data) => {
     .trim()
     .replace(new RegExp(`^/${skillId}\\b`), `/${targetSlug}`);
   fs.writeFileSync(
-    path.join(destDir, '.twin-skill-meta.json'),
+    path.join(destDir, '.agy-skill-meta.json'),
     JSON.stringify(
       {
         slug: targetSlug,

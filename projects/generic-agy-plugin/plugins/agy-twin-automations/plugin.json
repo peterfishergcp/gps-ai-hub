@@ -1,13 +1,13 @@
 {
   "name": "agy-twin-automations",
-  "displayName": "AGY Twin Scheduled Automations (Opt-In)",
-  "version": "1.1.0",
+  "displayName": "Automations — Scheduled Routines (Opt-In)",
+  "version": "1.5.0",
   "disabled": true,
-  "description": "Opt-in background scheduled automations for Google Antigravity (ships disabled by default): Weekday Morning Kickoff Brief (/daily-brief), Twice-Daily Follow-Up Action Plan Sweep, Evening Meeting Notes Compactor, and Friday 3-Altitude Weekly Impact Closeout.",
+  "description": "Opt-in background scheduled automations for Google Antigravity: Morning Kickoff Brief (/daily-brief), Twice-Daily Follow-Up Sweep (/followup-plan), Evening Notes Compactor (/meeting-notes), and Friday Weekly Impact (/weekly-impact). Ships disabled by default so background schedules only run when explicitly enabled.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "/twin-automations Set my timezone for my scheduled Digital Twin automations and show me how to enable them",
-    "/twin-automations Run a test pass of my Morning Twin Kickoff Brief (/daily-brief) automation",
-    "/twin-automations Customize my Twice-Daily Follow-Up Action Plan schedule"
+    "Run /automations to configure my time zone and review the 4 opt-in scheduled routines",
+    "Run /daily-brief to test my morning kickoff brief before enabling scheduled runs",
+    "Run /followup-plan to preview my twice-daily follow-up action item sweep"
   ]
 }

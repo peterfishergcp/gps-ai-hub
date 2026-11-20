@@ -1,7 +1,9 @@
 (function () {
   let appState = null;
   let activeTab = 'overview';
-  let gtdFilter = 'OPEN';
+  let showAllTodos = false;
+  let showCompletedTodos = false;
+  let showAddTodoBar = false;
   let skillsCategory = 'all';
   let skillsSearch = '';
   let showOtherPlugins = false;
@@ -21,33 +23,33 @@
   const QUICK_WORKFLOWS = [
     {
       cmd: '/daily-brief',
-      desc: 'Morning kickoff: P0 tasks, calendar & >21d stale contacts',
+      desc: 'Morning kickoff: top action items, calendar & >21d check-ins',
       prompt: '/daily-brief Give me my workday kickoff brief, top 3 actions, and any stale stakeholder check-ins.',
     },
     {
-      cmd: '/twin-followup-plan',
+      cmd: '/followup-plan',
       desc: 'Sweep open action items and stage [Draft-Only] replies',
-      prompt: '/twin-followup-plan Run a follow-up sweep across my vault and stage [Draft-Only] replies for P0 and P1 tasks.',
+      prompt: '/followup-plan Run a follow-up sweep across my workspace memory and stage [Draft-Only] replies for P0 and P1 items.',
     },
     {
-      cmd: '/twin-jit-prep',
+      cmd: '/meeting-prep',
       desc: '15-minute pre-meeting brief + Adversarial SCQA Critic',
-      prompt: '/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial SCQA Critic for my top active initiative.',
+      prompt: '/meeting-prep Build a 1-page pre-meeting brief and Adversarial SCQA Critic for my top active initiative.',
     },
     {
-      cmd: '/twin-meeting-notes',
-      desc: 'Compact call notes into 4-tier memory & extract GTD tasks',
-      prompt: '/twin-meeting-notes Help me ingest and compact meeting notes into my initiative vault and update gtd_board.md.',
+      cmd: '/meeting-notes',
+      desc: 'Compact call notes into 4-tier memory & extract to-dos',
+      prompt: '/meeting-notes Help me ingest and compact meeting notes into my initiative folder and update action_items.md.',
     },
     {
-      cmd: '/twin-swarm-prep',
+      cmd: '/swarm-prep',
       desc: 'Run 4 parallel subagents for 360-degree milestone prep',
-      prompt: '/twin-swarm-prep Run a 4-agent parallel prep pack for my highest-priority initiative.',
+      prompt: '/swarm-prep Run a 4-agent parallel prep pack for my highest-priority initiative.',
     },
     {
-      cmd: '/twin-weekly-impact',
+      cmd: '/weekly-impact',
       desc: 'Friday 3-Altitude executive, peer & sprint readout',
-      prompt: '/twin-weekly-impact Generate my Friday 3-Altitude weekly impact summary from my vault.',
+      prompt: '/weekly-impact Generate my Friday 3-Altitude weekly impact summary from my workspace memory.',
     },
     {
       cmd: '/orchestrator-guide',
@@ -167,11 +169,11 @@
           await window.sidecar.agent.sendMessage(promptText);
           showToast('Sent prompt to active conversation');
         } else {
-          const created = await window.sidecar.agent.startConversation(promptText, title || 'Twin Workflow');
+          const created = await window.sidecar.agent.startConversation(promptText, title || 'My Antigravity');
           if (created && created.conversationId && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
             window.sidecar.ui.toggleConversation(created.conversationId);
           }
-          showToast('Started new Twin conversation');
+          showToast('Started new conversation');
         }
         return;
       }
@@ -409,7 +411,7 @@
       data.savedContent = data.content || '';
       selectedFile = data;
       editorMode = startInEditMode && data.writable ? 'edit' : 'preview';
-      activeTab = 'explorer';
+      activeTab = 'customize';
       syncTabButtons();
       render();
     } catch (err) {
@@ -427,10 +429,14 @@
     document.querySelectorAll('.tab-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.tab === activeTab);
     });
+    const custBtn = document.getElementById('btn-customize');
+    if (custBtn) {
+      custBtn.classList.toggle('active', activeTab === 'customize');
+    }
   }
 
-  function buildRoleSetupCard() {
-    if (!showRoleDrawer || !appState) return null;
+  function buildRoleSetupCard(forceVisible) {
+    if ((!showRoleDrawer && !forceVisible) || !appState) return null;
     const presets = appState.presets || [];
     const cur = appState.profile || {};
 
@@ -443,13 +449,13 @@
       type: 'text',
       id: 'role-name',
       placeholder: 'Your Name',
-      value: cur.name === 'Workspace User' ? '' : cur.name || '',
+      value: cur.name === 'Workspace User' || cur.name === 'Me' ? '' : cur.name || '',
     });
     const roleTitle = el('input', {
       type: 'text',
       id: 'role-title',
       placeholder: 'Job Title (optional)',
-      value: '',
+      value: cur.role === 'Not configured yet' ? '' : cur.role || '',
     });
     const roleOrg = el('input', {
       type: 'text',
@@ -459,9 +465,9 @@
     });
 
     const applyBtn = el('button', {
-      className: 'btn',
+      className: 'btn btn-sm',
       id: 'btn-apply-role',
-      text: 'Apply Role Preset',
+      text: 'Save Role & Profile',
       onClick: async () => {
         try {
           const role = roleSelect.value;
@@ -472,7 +478,7 @@
           showRoleDrawer = false;
           selectedFile = null;
           await loadState();
-          showToast('Initialized ' + role + ' vault preset');
+          showToast('Saved ' + role + ' profile & workspace memory');
         } catch (err) {
           showToast('Error applying preset: ' + err.message);
         }
@@ -481,21 +487,18 @@
 
     return el('div', { className: 'card' }, [
       el('div', { className: 'card-header' }, [
-        el('h3', { className: 'card-title', text: 'Initialize or Switch Persona Preset' }),
-        el('button', {
-          className: 'btn btn-secondary btn-sm',
-          id: 'btn-close-role',
-          text: 'Close',
-          onClick: () => {
-            showRoleDrawer = false;
-            render();
-          },
-        }),
-      ]),
-      el('p', { className: 'muted', style: { marginTop: '0' } }, [
-        'Seeds tailored profile playbooks, sample 4-file initiatives, and GTD items in ',
-        el('code', { text: appState.vaultRoot || '' }),
-        '.',
+        el('h3', { className: 'card-title', text: 'Role, Name & Personal Profile' }),
+        !forceVisible
+          ? el('button', {
+              className: 'btn btn-secondary btn-sm',
+              id: 'btn-close-role',
+              text: 'Close',
+              onClick: () => {
+                showRoleDrawer = false;
+                render();
+              },
+            })
+          : el('span', { className: 'muted', text: cur.timezone || '' }),
       ]),
       el('div', { className: 'form-row' }, [roleSelect, roleName, roleTitle, roleOrg, applyBtn]),
     ]);
@@ -651,144 +654,406 @@
     return [buildRoleSetupCard(), heroSection, workflowsCard].filter(Boolean);
   }
 
-  function buildGtdNodes() {
+  function makeWaveSvg() {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 1200 24');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '18');
+    svg.style.display = 'block';
+    const pathEl = document.createElementNS(SVG_NS, 'path');
+    let d = 'M0,12 ';
+    for (let x = 0; x < 1200; x += 40) {
+      d += 'Q' + (x + 10) + ',2 ' + (x + 20) + ',12 T' + (x + 40) + ',12 ';
+    }
+    d += 'L1200,24 L0,24 Z';
+    pathEl.setAttribute('d', d);
+    pathEl.setAttribute('fill', 'currentColor');
+    svg.appendChild(pathEl);
+    return svg;
+  }
+
+  function isReplyStyleTask(text) {
+    return /\b(reply|follow\s*up|send|email|share|draft|check\s*in|sync\s*with|message|respond|notify)\b/i.test(
+      String(text || '')
+    );
+  }
+
+  function buildActionItemsNodes() {
     const items = (appState.gtd && appState.gtd.items) || [];
-    const filtered = items.filter((item) => {
-      if (gtdFilter === 'OPEN') return !item.checked;
-      if (gtdFilter === 'DONE') return item.checked;
-      return item.bucket === gtdFilter && !item.checked;
+    const openItems = items.filter((it) => !it.checked);
+    const doneItems = items.filter((it) => it.checked);
+    const inits = appState.initiatives || [];
+    const initBySlug = {};
+    inits.forEach((ini) => {
+      initBySlug[ini.slug] = ini;
     });
 
-    const prioSelect = el('select', { id: 'gtd-prio' }, [
-      el('option', { value: 'P0', text: 'P0 - Today' }),
-      el('option', { value: 'P1', text: 'P1 - This Week' }),
-      el('option', { value: 'P2', text: 'P2 - Backlog' }),
+    const staleContacts = ((appState.contacts && appState.contacts.contacts) || []).filter((c) => c.isStale);
+    const topics = [];
+    const topicIcons = ['\uD83D\uDE80', '\uD83D\uDD12', '\uD83D\uDCCB', '\uD83C\uDFDB\uFE0F'];
+
+    inits.forEach((ini, idx) => {
+      const openCount = openItems.filter((t) => t.initiative === ini.slug).length;
+      const fileCount = ini.files ? Object.keys(ini.files).length : 4;
+      const bodyParts = [];
+      if (ini.summary) bodyParts.push(ini.summary);
+      if (ini.nextMilestone) bodyParts.push('Next milestone: ' + ini.nextMilestone + '.');
+      if (openCount > 0) bodyParts.push(openCount + (openCount === 1 ? ' open to-do.' : ' open to-dos.'));
+      topics.push({
+        kind: 'initiative',
+        icon: topicIcons[idx % topicIcons.length],
+        title: ini.title,
+        body: bodyParts.join(' '),
+        attachCount: fileCount,
+        rag: ini.rag,
+        onAction: () =>
+          dispatchPrompt(
+            '/meeting-prep Build a 1-page catch-up brief and Adversarial Minto SCQA Critic for "' +
+              ini.title +
+              '" (initiatives/' +
+              ini.slug +
+              '/).',
+            'Catch Up: ' + ini.title
+          ),
+        onOpenFiles: () => {
+          if (ini.files && ini.files['status.md']) {
+            openFileInExplorer(ini.files['status.md'].path, false);
+          }
+        },
+        actionLabel: 'Catch up',
+      });
+    });
+
+    staleContacts.forEach((c) => {
+      topics.push({
+        kind: 'contact',
+        icon: '\uD83E\uDD1D',
+        title: 'Sync with ' + c.name + (c.role ? ' \u00B7 ' + c.role : ''),
+        body:
+          (c.daysAgo ? c.daysAgo + ' days since last check-in. ' : 'Overdue for a check-in. ') +
+          (c.priorities ? 'Focus: ' + c.priorities + '.' : ''),
+        attachCount: 1,
+        rag: 'AMBER',
+        onAction: () =>
+          dispatchPrompt(
+            '/my-voice Draft a short, warm [Draft-Only] check-in note to ' +
+              c.name +
+              ' regarding "' +
+              c.initiative +
+              '" using our latest workspace status.',
+            'Check-In: ' + c.name
+          ),
+        onOpenFiles: () => openRelativeVaultFile('contacts.md', false),
+        actionLabel: 'Reply',
+      });
+    });
+
+    const rawName = (appState.profile && appState.profile.name) || '';
+    const firstName =
+      !rawName || rawName === 'Me' || rawName === 'Workspace User' ? 'there' : rawName.trim().split(/\s+/)[0];
+
+    const greetingEl = el('h2', { className: 'ai-inbox-greeting' }, [
+      'Hi ' + firstName + ' \uD83D\uDC4B You have ',
+      el('span', {
+        className: 'ai-blue-count',
+        text: openItems.length + (openItems.length === 1 ? ' to-do' : ' to-dos'),
+      }),
+      ' and ',
+      el('span', {
+        className: 'ai-blue-count',
+        text: topics.length + (topics.length === 1 ? ' topic' : ' topics'),
+      }),
+      ' to catch up on.',
     ]);
-    const initInput = el('input', {
-      type: 'text',
-      id: 'gtd-init',
-      placeholder: 'Initiative slug',
-      style: { width: '140px' },
-    });
-    const taskInput = el('input', {
-      type: 'text',
-      id: 'gtd-task',
-      placeholder: 'Verb + concrete deliverable...',
-      style: { flex: '1', minWidth: '180px' },
-    });
-    const addBtn = el('button', {
-      className: 'btn',
-      id: 'btn-add-gtd',
-      text: 'Add Task',
-      onClick: async () => {
-        const priority = prioSelect.value;
-        const initiative = initInput.value || 'General';
-        const task = taskInput.value;
-        if (!task.trim()) return;
-        try {
-          await apiPost('/api/gtd/add', {
-            priority,
-            initiative,
-            task,
-            owner: (appState.profile && appState.profile.name) || 'Me',
-          });
-          await loadState();
-          showToast('Added commitment to gtd_board.md');
-        } catch (err) {
-          showToast('Error adding task: ' + err.message);
-        }
-      },
-    });
 
-    const filterRow = el(
-      'div',
-      { className: 'pill-row', style: { marginBottom: '8px' } },
-      ['OPEN', 'P0', 'P1', 'P2', 'DONE'].map((f) =>
+    const headRow = el('div', { className: 'ai-inbox-head' }, [
+      greetingEl,
+      el('div', { className: 'ai-inbox-meta-actions' }, [
         el('button', {
-          className: 'btn ' + (gtdFilter === f ? '' : 'btn-secondary ') + 'btn-sm',
-          dataset: { gtdFilter: f },
-          text: f,
+          type: 'button',
+          className: 'btn btn-secondary btn-sm',
+          id: 'btn-toggle-add-todo',
+          text: showAddTodoBar ? 'Close' : '+ Add to-do',
           onClick: () => {
-            gtdFilter = f;
+            showAddTodoBar = !showAddTodoBar;
             render();
           },
-        })
-      )
-    );
+        }),
+        el('button', {
+          type: 'button',
+          className: 'btn btn-secondary btn-sm',
+          title: 'Sweep connected inbox/calendar & refresh suggested to-dos',
+          text: 'Sync Inbox',
+          onClick: () =>
+            dispatchPrompt(
+              '/followup-plan Sweep my workspace memory and any connected mail/chat sources to update action_items.md and stage [Draft-Only] replies.',
+              'Sync Action Items'
+            ),
+        }),
+        el('button', {
+          type: 'button',
+          className: 'ai-updated-pill',
+          title: 'Reload action items and topics from local disk',
+          text: 'Updated just now \u21BB',
+          onClick: () =>
+            loadState().then(() => showToast('Refreshed Action Items & Topics')),
+        }),
+      ]),
+    ]);
 
-    const listContainer = el('div');
-    if (filtered.length === 0) {
-      listContainer.appendChild(
-        el('div', {
-          className: 'muted',
-          style: { padding: '10px 0' },
-          text: 'No matching tasks in this filter.',
-        })
+    let addBarNode = null;
+    if (showAddTodoBar) {
+      const prioSelect = el('select', { id: 'gtd-prio' }, [
+        el('option', { value: 'P0', text: 'P0 - Today' }),
+        el('option', { value: 'P1', text: 'P1 - This Week' }),
+        el('option', { value: 'P2', text: 'P2 - Later' }),
+      ]);
+      const initInput = el('input', {
+        type: 'text',
+        id: 'gtd-init',
+        placeholder: 'Topic / Initiative (optional)',
+        style: { width: '175px' },
+      });
+      const taskInput = el('input', {
+        type: 'text',
+        id: 'gtd-task',
+        placeholder: 'Add a concrete to-do (e.g. Send updated Round 3 rubric to Carla)...',
+        style: { flex: '1', minWidth: '210px' },
+      });
+      const saveTodoBtn = el('button', {
+        type: 'button',
+        className: 'btn btn-sm',
+        id: 'btn-add-gtd',
+        text: 'Add to-do',
+        onClick: async () => {
+          const priority = prioSelect.value;
+          const initiative = initInput.value || 'General';
+          const task = taskInput.value;
+          if (!task.trim()) return;
+          try {
+            await apiPost('/api/gtd/add', {
+              priority,
+              initiative,
+              task,
+              owner: (appState.profile && appState.profile.name) || 'Me',
+            });
+            showAddTodoBar = false;
+            await loadState();
+            showToast('Added to-do');
+          } catch (err) {
+            showToast('Error adding to-do: ' + err.message);
+          }
+        },
+      });
+      addBarNode = el('div', { className: 'card', style: { marginBottom: '14px' } }, [
+        el('div', { className: 'form-row' }, [prioSelect, initInput, taskInput, saveTodoBtn]),
+      ]);
+    }
+
+    const visibleOpen = showAllTodos ? openItems : openItems.slice(0, 3);
+    const todosStack = el('div', { className: 'ai-todos-stack' });
+
+    if (openItems.length === 0) {
+      todosStack.appendChild(
+        el('div', { className: 'ai-todo-row' }, [
+          el('div', { className: 'ai-todo-main' }, [
+            el('p', { className: 'ai-todo-title', text: 'All caught up on your to-dos!' }),
+            el('p', {
+              className: 'ai-todo-desc',
+              text: 'Click "+ Add to-do" above or "Sync Inbox" to surface new follow-ups.',
+            }),
+          ]),
+        ])
       );
     } else {
-      filtered.forEach((it) => {
-        const badgeCls =
-          it.bucket === 'P0' ? 'badge-red' : it.bucket === 'P1' ? 'badge-amber' : 'badge-neutral';
-        const draftLabel = '[' + it.initiative + '] ' + it.task;
-        const row = el('div', { className: 'task-item' }, [
-          el('div', { className: 'task-left' }, [
-            el('input', {
-              type: 'checkbox',
-              checked: Boolean(it.checked),
-              dataset: { toggleLine: it.lineNumber },
-              onChange: async () => {
-                try {
-                  await apiPost('/api/gtd/toggle', { lineNumber: Number(it.lineNumber) });
-                  await loadState();
-                  showToast('Updated gtd_board.md');
-                } catch (err) {
-                  showToast('Error toggling task: ' + err.message);
-                }
-              },
-            }),
-            el('div', null, [
-              el('div', { className: 'task-text' + (it.checked ? ' done' : '') }, [
-                el('span', { className: 'badge ' + badgeCls, text: it.bucket }),
-                ' ',
-                el('strong', { text: '[' + it.initiative + ']' }),
-                ' ' + it.task,
-              ]),
-              el('div', {
-                className: 'muted',
-                text: 'Owner: ' + it.owner + (it.dateMeta ? ' | ' + it.dateMeta : ''),
+      visibleOpen.forEach((it) => {
+        const linkedInit = initBySlug[it.initiative] || null;
+        const topicTitle = linkedInit ? linkedInit.title : it.initiative;
+        const replyMode = isReplyStyleTask(it.task);
+        const contextSentence = linkedInit
+          ? topicTitle +
+            (linkedInit.nextMilestone ? ' \u2014 Next milestone: ' + linkedInit.nextMilestone + '.' : '') +
+            (it.dateMeta ? ' (' + it.dateMeta + ')' : '')
+          : 'Topic: ' + topicTitle + (it.dateMeta ? ' \u00B7 ' + it.dateMeta : '');
+
+        const descP = el('p', { className: 'ai-todo-desc' }, [contextSentence]);
+        descP.appendChild(
+          el('button', {
+            type: 'button',
+            className: 'ai-attach-chip',
+            title: 'Inspect source notes in Customize',
+            text: '\uD83D\uDCCE 1',
+            onClick: () => {
+              if (linkedInit && linkedInit.files && linkedInit.files['status.md']) {
+                openFileInExplorer(linkedInit.files['status.md'].path, false);
+              } else {
+                openRelativeVaultFile('action_items.md', false);
+              }
+            },
+          })
+        );
+
+        const actionLabel = replyMode ? '\u270E Reply' : '\u2197 Open';
+        const promptForTodo = replyMode
+          ? '/my-voice Draft a clear, concise [Draft-Only] message in my voice to complete this action item: [' +
+            topicTitle +
+            '] ' +
+            it.task
+          : 'Help me complete this action item step-by-step using our workspace context: [' +
+            topicTitle +
+            '] ' +
+            it.task;
+
+        todosStack.appendChild(
+          el('div', { className: 'ai-todo-row' }, [
+            el('div', { className: 'ai-todo-main' }, [
+              el('p', { className: 'ai-todo-title', text: it.task }),
+              descP,
+            ]),
+            el('div', { className: 'ai-todo-actions' }, [
+              el('button', {
+                type: 'button',
+                className: 'ai-sky-pill',
+                dataset: { draftTask: it.task },
+                text: actionLabel,
+                onClick: () => dispatchPrompt(promptForTodo, replyMode ? 'Draft Reply' : 'Action Item'),
+              }),
+              el('span', {
+                className: 'ai-prio-tag' + (it.bucket === 'P0' ? ' p0' : ''),
+                title: 'Priority ' + it.bucket,
+                text: it.bucket,
+              }),
+              el('button', {
+                type: 'button',
+                className: 'ai-circle-btn',
+                title: 'Mark done',
+                dataset: { toggleLine: it.lineNumber },
+                text: '\u2713',
+                onClick: async () => {
+                  try {
+                    await apiPost('/api/gtd/toggle', { lineNumber: Number(it.lineNumber) });
+                    await loadState();
+                    showToast('Marked to-do complete');
+                  } catch (err) {
+                    showToast('Error updating item: ' + err.message);
+                  }
+                },
               }),
             ]),
-          ]),
-          el('button', {
-            className: 'btn btn-secondary btn-sm',
-            dataset: { draftTask: draftLabel },
-            text: 'Draft',
-            onClick: () =>
-              dispatchPrompt(
-                '/digital-twin Draft a clear, direct [Draft-Only] follow-up message to advance this commitment: ' +
-                  draftLabel,
-                'Draft Follow-Up'
-              ),
-          }),
-        ]);
-        listContainer.appendChild(row);
+          ])
+        );
       });
     }
 
+    const footLeft =
+      openItems.length > 3
+        ? el('button', {
+            type: 'button',
+            className: 'ai-show-more-btn',
+            id: 'btn-show-more-todos',
+            text: showAllTodos
+              ? '\u2303 Show fewer'
+              : '\u2304 Show ' + (openItems.length - 3) + ' more',
+            onClick: () => {
+              showAllTodos = !showAllTodos;
+              render();
+            },
+          })
+        : el('span');
+
+    const footRight =
+      doneItems.length > 0
+        ? el('button', {
+            type: 'button',
+            className: 'ai-show-more-btn',
+            id: 'btn-toggle-completed-todos',
+            text: (showCompletedTodos ? 'Hide completed' : 'Completed') + ' (' + doneItems.length + ')',
+            onClick: () => {
+              showCompletedTodos = !showCompletedTodos;
+              render();
+            },
+          })
+        : null;
+
+    let completedNode = null;
+    if (showCompletedTodos && doneItems.length > 0) {
+      completedNode = el(
+        'div',
+        { className: 'ai-todos-stack', style: { marginTop: '10px', opacity: '0.78' } },
+        doneItems.map((it) =>
+          el('div', { className: 'ai-todo-row' }, [
+            el('div', { className: 'ai-todo-main' }, [
+              el('p', { className: 'ai-todo-title done', text: it.task }),
+              el('p', { className: 'ai-todo-desc', text: it.initiative }),
+            ]),
+            el('button', {
+              type: 'button',
+              className: 'btn btn-secondary btn-sm',
+              dataset: { toggleLine: it.lineNumber },
+              text: 'Undo',
+              onClick: async () => {
+                await apiPost('/api/gtd/toggle', { lineNumber: Number(it.lineNumber) });
+                await loadState();
+                showToast('Reopened to-do');
+              },
+            }),
+          ])
+        )
+      );
+    }
+
+    const waveDiv = el('div', { className: 'ai-wave-sep' }, [makeWaveSvg()]);
+
+    const topicsGrid = el(
+      'div',
+      { className: 'ai-topics-grid' },
+      topics.map((tp) =>
+        el('div', { className: 'ai-topic-card' }, [
+          el('div', { className: 'ai-topic-top' }, [
+            el('span', { className: 'ai-topic-icon', text: tp.icon }),
+            el('button', {
+              type: 'button',
+              className: 'btn btn-secondary btn-sm',
+              text: tp.actionLabel,
+              onClick: tp.onAction,
+            }),
+          ]),
+          el('h4', { className: 'ai-topic-title', text: tp.title }),
+          el('p', { className: 'ai-topic-body', text: tp.body }),
+          el('div', { className: 'ai-topic-foot' }, [
+            el('button', {
+              type: 'button',
+              className: 'ai-attach-chip',
+              style: { marginLeft: '0' },
+              title: 'Inspect topic files in Customize',
+              text: '\uD83D\uDCCE ' + tp.attachCount,
+              onClick: tp.onOpenFiles,
+            }),
+            tp.rag === 'AMBER' || tp.rag === 'RED'
+              ? el('span', { className: 'badge badge-amber', text: tp.rag === 'RED' ? 'Needs attention' : 'Watch' })
+              : el('span', { className: 'muted', style: { fontSize: '11px' }, text: 'On track' }),
+          ]),
+        ])
+      )
+    );
+
+    const topicsSection = el('div', { className: 'ai-topics-section' }, [
+      el('p', { className: 'ai-section-label', text: 'Topics to catch up on' }),
+      topicsGrid,
+    ]);
+
     return [
-      el('div', { className: 'card' }, [
-        el('div', { className: 'card-header' }, [
-          el('h3', { className: 'card-title', text: 'Add Zero-Decay GTD Commitment' }),
-          el('button', {
-            className: 'btn btn-secondary btn-sm',
-            dataset: { openRel: 'gtd_board.md' },
-            text: 'Edit Raw Markdown',
-            onClick: () => openRelativeVaultFile('gtd_board.md', true),
-          }),
-        ]),
-        el('div', { className: 'form-row' }, [prioSelect, initInput, taskInput, addBtn]),
-        filterRow,
-        listContainer,
+      el('div', { className: 'ai-inbox-wrap' }, [
+        headRow,
+        addBarNode,
+        el('p', { className: 'ai-section-label', text: 'Suggested to-dos' }),
+        todosStack,
+        el('div', { className: 'ai-todos-foot' }, [footLeft, footRight]),
+        completedNode,
+        waveDiv,
+        topicsSection,
       ]),
     ];
   }
@@ -854,15 +1119,15 @@
           el('button', {
             className: 'btn btn-sm',
             dataset: { scqaSlug: init.slug, scqaTitle: init.title },
-            text: 'JIT SCQA Prep',
+            text: 'Pre-Meeting Prep',
             onClick: () =>
               dispatchPrompt(
-                '/twin-jit-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for initiative "' +
+                '/meeting-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for initiative "' +
                   init.title +
                   '" (initiatives/' +
                   init.slug +
                   '/).',
-                'JIT SCQA Prep'
+                'Pre-Meeting Prep'
               ),
           }),
         ]),
@@ -949,11 +1214,11 @@
               text: 'Draft Check-In',
               onClick: () =>
                 dispatchPrompt(
-                  '/digital-twin Draft a short, warm [Draft-Only] check-in note to ' +
+                  '/my-voice Draft a short, warm [Draft-Only] check-in note to ' +
                     c.name +
                     ' regarding initiative "' +
                     c.initiative +
-                    '" using our latest vault status.',
+                    '" using our latest workspace status.',
                   'Stakeholder Check-In'
                 ),
             }),
@@ -1006,8 +1271,38 @@
     );
   }
 
-  function buildExplorerNodes() {
-    const roots = appState.roots || [];
+  function buildCustomizeNodes() {
+    const quickBar = el('div', { className: 'customize-quick-bar' }, [
+      el('span', { className: 'muted', style: { fontWeight: '600', marginRight: '4px' }, text: 'Quick Jump:' }),
+      el('button', {
+        type: 'button',
+        className: 'btn btn-secondary btn-sm',
+        text: 'Voice & Tone (voice.md)',
+        onClick: () => openRelativeVaultFile('profile/voice.md', false),
+      }),
+      el('button', {
+        type: 'button',
+        className: 'btn btn-secondary btn-sm',
+        text: 'Identity (identity.md)',
+        onClick: () => openRelativeVaultFile('profile/identity.md', false),
+      }),
+      el('button', {
+        type: 'button',
+        className: 'btn btn-secondary btn-sm',
+        text: 'Playbooks (playbooks.md)',
+        onClick: () => openRelativeVaultFile('profile/playbooks.md', false),
+      }),
+      el('button', {
+        type: 'button',
+        className: 'btn btn-secondary btn-sm',
+        text: 'Action Items Source',
+        onClick: () => openRelativeVaultFile('action_items.md', false),
+      }),
+    ]);
+
+    const roots = (appState.roots || []).filter(
+      (r) => r.id === 'vault' || r.id === 'my-skills'
+    );
     const treePane = el('div', { className: 'tree-pane' });
     roots.forEach((r) => {
       treePane.appendChild(el('div', { className: 'tree-root-label', text: r.label }));
@@ -1116,7 +1411,7 @@
             onClick: () => {
               const snippet = String(selectedFile.content || '').slice(0, 8000);
               dispatchPrompt(
-                '/digital-twin Use my current voice.md calibration below to help me draft a message or memo:\n\n<voice_profile>\n' +
+                '/my-voice Use my current voice.md calibration below to help me draft a message or memo:\n\n<voice_profile>\n' +
                   snippet +
                   '\n</voice_profile>',
                 'Draft in My Voice'
@@ -1136,7 +1431,7 @@
             const currentText = textareaRef && editorMode === 'edit' ? textareaRef.value : selectedFile.content || '';
             const inlineBlock =
               currentText && currentText.length <= 14000
-                ? '\n\nHere is the current file content from Twin Vault (`' +
+                ? '\n\nHere is the current file content from My Antigravity (`' +
                   selectedFile.path +
                   '`):\n\n```markdown\n' +
                   currentText +
@@ -1163,7 +1458,7 @@
               text: selectedFile.writable
                 ? selectedFile.rootId === 'my-skills'
                   ? 'Editable Personal Skill (Update-Proof)'
-                  : 'Editable Vault File'
+                  : 'Editable Memory File'
                 : 'Read-Only Stock Plugin File',
             }),
           ]),
@@ -1186,7 +1481,11 @@
       }
     }
 
-    return [el('div', { className: 'explorer-layout' }, [treePane, editorPane])];
+    return [
+      buildRoleSetupCard(true),
+      quickBar,
+      el('div', { className: 'explorer-layout' }, [treePane, editorPane]),
+    ].filter(Boolean);
   }
 
   function buildSkillsNodes() {
@@ -1750,28 +2049,24 @@
 
   function render() {
     if (!appState) {
-      viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading vault state...' }));
+      viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading My Antigravity...' }));
       return;
     }
     let nodes = [];
     if (activeTab === 'overview') nodes = buildOverviewNodes();
-    else if (activeTab === 'gtd') nodes = buildGtdNodes();
+    else if (activeTab === 'actions') nodes = buildActionItemsNodes();
     else if (activeTab === 'initiatives') nodes = buildInitiativesNodes();
     else if (activeTab === 'contacts') nodes = buildContactsNodes();
     else if (activeTab === 'skills') nodes = buildSkillsNodes();
-    else if (activeTab === 'explorer') nodes = buildExplorerNodes();
+    else if (activeTab === 'customize') nodes = buildCustomizeNodes();
 
     viewRoot.replaceChildren(...nodes);
   }
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
       syncTabButtons();
-      if (activeTab === 'explorer' && !selectedFile && appState) {
-        await openFileInExplorer(appState.vaultRoot.replace(/[\\/]+$/, '') + '/gtd_board.md');
-        return;
-      }
       render();
     });
   });
@@ -1784,21 +2079,27 @@
   document.getElementById('btn-refresh').addEventListener('click', () => {
     if (tokenMeter) tokenMeter.refresh();
     loadState()
-      .then(() => showToast('Refreshed vault, skills & token meter from local disk'))
+      .then(() => showToast('Refreshed action items, skills & token meter'))
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
 
-  document.getElementById('btn-configure-role').addEventListener('click', () => {
-    activeTab = 'overview';
-    showRoleDrawer = !showRoleDrawer;
-    syncTabButtons();
-    render();
-  });
+  const customizeBtn = document.getElementById('btn-customize');
+  if (customizeBtn) {
+    customizeBtn.addEventListener('click', async () => {
+      activeTab = 'customize';
+      syncTabButtons();
+      if (!selectedFile && appState) {
+        await openRelativeVaultFile('profile/voice.md', false);
+        return;
+      }
+      render();
+    });
+  }
 
   loadState().catch((err) => {
     viewRoot.replaceChildren(
       el('div', { className: 'card' }, [
-        el('strong', { text: 'Unable to load Twin Vault: ' }),
+        el('strong', { text: 'Unable to load My Antigravity: ' }),
         err.message || 'Unknown error',
       ])
     );

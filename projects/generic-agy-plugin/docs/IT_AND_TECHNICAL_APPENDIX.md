@@ -1,4 +1,4 @@
-# IT & Technical Appendix (`v1.1.0`)
+# IT & Technical Appendix (`v1.5.0`)
 
 This appendix consolidates technical architecture, network allowlisting, offline installation options, security review settings, and skill/connector verification details for Agency IT administrators, security reviewers, and pilot facilitators.
 
@@ -22,7 +22,7 @@ For agencies whose corporate firewalls restrict `github.com` or `raw.githubuserc
     ```
 - **Option B — Agency-Hosted Internal Git Mirror:**
   Clone `projects/generic-agy-plugin` into your agency's internal GitHub Enterprise, GitLab, or Cloud Source repository and substitute that internal HTTPS URL in `agy plugin install <INTERNAL_REPO_URL>`.
-- **Zero Extra Laptop Dependencies:** All 8 plugins, 37 skills, 3 UI sidecars (`AGY Skills`, `AGY Preview`, and `Twin Vault`), 4 opt-in `"builtin": "schedule"` automations (`agy-twin-automations`), and the `agy-ge-bridge` MCP server run natively on Antigravity's built-in `agy-node` runtime—requiring zero separate `Node.js`, `Python`, `npm`, `pip`, or `Docker` installations on staff laptops.
+- **Zero Extra Laptop Dependencies:** All 8 plugins, 39 skills, 3 UI sidecars (`My Antigravity`, `Skills`, and `Preview`), 4 opt-in `"builtin": "schedule"` automations, and the `agy-ge-bridge` MCP server run natively on Antigravity's built-in `agy-node` runtime—requiring zero separate `Node.js`, `Python`, `npm`, `pip`, or `Docker` installations on staff laptops.
 
 ---
 
@@ -38,14 +38,14 @@ For agencies whose corporate firewalls restrict `github.com` or `raw.githubuserc
 | Prompt | Plugin & Slash Skills Exercised | Technical & Security Capabilities Verified |
 | :--- | :--- | :--- |
 | **Prompt 1** | `agy-design-studio` (`/agy-dashboard`, `/slides`, `/doc-design`, `agy-design-preview` sidecar) | Serverless `<agent-embed>` Side-Pane rendering (`dashboard-standalone.html`, `deck.html`, `flyer.html`) + 1-click Chrome/Edge Blob HTML export with zero `127.0.0.1` ports, zero `python3 -m http.server`, and zero raw `index.html` code views. |
-| **Prompt 2** | `agy-onboarding` (`/model-guide`) | Visual model selector + CLI (`/model`) switching, pooled subscription quota (`Gemini 3.8 Flash`) vs. PayGo `Claude Sonnet`/`Claude Opus` routing, Vertex AI Model Garden `us-east5` enablement, and 2-Pass Dual-Model review. |
-| **Prompt 3** | `agy-onboarding` (`/agy-onboard`, `/inbox-triage`, `/daily-brief`, `/digital-twin`, `/agy-update`) | Local `agy-twin-profile.md` + Second Brain Vault awareness, deterministic escalation bucketing, **Unreadable-Attachment Fail-Safe Hold** on 0-byte/corrupt attachments, and `[Draft-Only — Do Not Auto-Send]` enforcement. |
+| **Prompt 2** | `agy-onboarding` (`/model-guide`, `/orchestrator-guide`, `/token-usage`) | Visual model selector + CLI (`/model`) switching, `Orchestrator (Neon / Argon / Carbon)` + `Gemini 4 Hydrogen` execution, local token telemetry (`token_usage_report.mjs` + hoverable token meter), pooled subscription quota vs. PayGo `Claude Sonnet`/`Claude Opus` routing, and 2-Pass Dual-Model review. |
+| **Prompt 3** | `agy-onboarding` (`/agy-onboard`, `/inbox-triage`, `/daily-brief`, `/my-voice`, `/agy-update`) | Local `agy-profile.md` + Personal Memory awareness, deterministic escalation bucketing, **Unreadable-Attachment Fail-Safe Hold** on 0-byte/corrupt attachments, and `[Draft-Only — Do Not Auto-Send]` enforcement. |
 | **Prompt 4** | `agy-public-workflows` (`/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`) | Google Vault + Microsoft Purview KQL syntax, `5 U.S.C. § 552(b)(5)` & `(b)(6)` line-by-line segregability + Vaughn Index, `1:3:9` sovereign-immunity/non-appropriation/AI-training redlines, and cross-document variance detection. |
 | **Prompt 5** | `agy-engineering-cloud` (`/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/find-cloud-skill`) | Stage 1 6-Section Modernization Blueprint + Legacy Bug Audit (`flags=[]`, truthy `or`, boundary `500000`), non-root source Cloud Run deploy with dedicated SA & Secret Manager, and parameterized BigQuery Standard SQL (`1 GB` `maximumBytesBilled`). |
 | **Prompt 6** | `agy-security` (`/security-audit`, `/iam-secret-hygiene`, always-on `rules/AGENTS.md`) | Catches and remediates `CWE-79` DOM XSS (`.innerHTML` -> `.textContent`), `CWE-89` SQL injection (`@county` parameter), `CWE-798` hardcoded/plaintext env secrets (`--set-secrets`), and `CWE-250`/`CWE-284` primitive `roles/editor` + default compute SA (`--no-allow-unauthenticated` + Entra-synced Google group IAM). |
 | **Prompt 7** | `agy-connectors` (`/connect-ge`, `/connect-m365-workspace`, `/connect-github-bigquery`, `agy-ge-bridge` MCP) | Verifies `ge_instance_status` across `gcloud` ADC, Google Identity Browser PKCE OAuth, or Cloud Run Gateway tiers and federated `AssistantService.StreamAssist` / `SearchService.Search` ACL enforcement. |
-| **Prompt 8** | `agy-second-brain` (`/twin-memory`, `/twin-meeting-notes`, `/twin-jit-prep`, `/no-ai-slop`, `/outbound-scrub`, `twin-vault-ui` sidecar) | Verifies local UTF-8 Markdown vault creation (`~/antigravity-twin/memory/`), 4-Tier Recency Compaction, Zero-Task-Decay `gtd_board.md`, `>21d` contact staleness clearing, Adversarial Minto SCQA pushback coaching, and deterministic secret/placeholder/slop scrubbing (Node + zero-Node regex fallback). |
-| **Prompt 9** | `agy-second-brain` (`/twin-swarm-prep`, `/twin-weekly-impact`) & `agy-twin-automations` (`/twin-automations`) | Verifies parallel 4-subagent fan-out (`context-memory-scout`, `scqa-redteam-critic`, `domain-solution-architect`, `outbound-safety-auditor`), 3-Altitude `weekly/YYYY-WXX.md` + `impact/ledger.json` persistence, and opt-in (`disabled: true`) cron schedule configuration. |
+| **Prompt 8** | `agy-second-brain` (`/memory`, `/meeting-notes`, `/meeting-prep`, `/no-ai-slop`, `/outbound-scrub`, `My Antigravity` UI) | Verifies local UTF-8 Personal Memory creation (`~/my-antigravity/memory/`), 4-Tier Recency Compaction, AI Inbox `action_items.md` (`Suggested to-dos` + `Topics to catch up on`), `>21d` contact staleness clearing, Adversarial Minto SCQA pushback coaching, and deterministic secret/placeholder/slop scrubbing (Node + zero-Node regex fallback). |
+| **Prompt 9** | `agy-second-brain` (`/swarm-prep`, `/weekly-impact`) & Scheduled Automations (`/automations`) | Verifies parallel 4-subagent fan-out (`context-memory-scout`, `scqa-redteam-critic`, `domain-solution-architect`, `outbound-safety-auditor`), 3-Altitude `weekly/YYYY-WXX.md` + `impact/ledger.json` persistence, and opt-in (`disabled: true`) cron schedule configuration. |
 
 ---
 

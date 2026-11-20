@@ -59,7 +59,7 @@ Unlike a one-shot prompt router that picks a single model upfront, **Orchestrato
 | **Day-to-day feature work, bug fixes, `/agy-dashboard` builds, multi-file refactoring & test repair** | **`Orchestrator (Neon)`** or **`Orchestrator (Argon)`** *(Recommended Default)* | Frontier planning + review quality with Hydrogen execution speed and significantly lower quota burn (`/token-usage`). |
 | **Designing distributed systems from scratch, subtle concurrency race conditions, or statutory/security audits where every step needs frontier depth** | **Standalone `Gemini 4 Carbon / Argon / Neon`** *(with `High` or `Extra` / `xhigh` effort)* or **`Claude Opus 5.5 (High)`** | Every intermediate deduction stays on the frontier model, and you control exact thinking effort (`--effort xhigh`). |
 | **Well-defined edits needing zero planning phase** (package bumps, boilerplate, doc updates, unit tests for clean functions, `/daily-brief` summaries) | **Standalone `Gemini 4 Hydrogen`** or **`Gemini 3.8 Flash`** | Skips the read-only Planner phase completely for instant single-model execution. |
-| **Parallel multi-perspective work or cold-start adversarial verification** (`/twin-swarm-prep`, 4-angle security/code review) | **Subagents, `/swarm`, `/boost`, or `/teamwork`** | Orchestrator runs sequentially inside **one single agent**; use subagents/Swarm when multiple agents must work **in parallel** or review blind. |
+| **Parallel multi-perspective work or cold-start adversarial verification** (`/swarm-prep`, 4-angle security/code review) | **Subagents, `/swarm`, `/boost`, or `/teamwork`** | Orchestrator runs sequentially inside **one single agent**; use subagents/Swarm when multiple agents must work **in parallel** or review blind. |
 
 ---
 

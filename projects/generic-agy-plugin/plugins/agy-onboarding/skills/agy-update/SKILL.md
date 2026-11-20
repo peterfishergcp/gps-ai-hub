@@ -30,15 +30,15 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 3. Downloads **only** the specific files whose SHA-256 hash changed (or any newly added skill), writes them atomically in place, and **preserves**:
    - Your per-skill enable/disable toggles (`SKILL.md.disabled` / `skill-toggles.json`),
    - Your saved Gemini Enterprise (`GE`) instance configuration (`~/.gemini/config/plugin_data/agy-connectors/ge-instance.json`), and
-   - Your personal Digital Twin profile (`agy-twin-profile.md`).
+   - Your personal voice & memory files (`~/my-antigravity/memory/` and `agy-profile.md`).
 
-> **Tip for 1-Click UI Updates:** Users can also click **`Sync Git Updates`** (or the **`↻`** icon next to any individual skill) directly inside the **`AGY Skills`** panel in Antigravity's left sidebar (`Extensions -> AGY Skills`) to run this incremental sync without typing a command!
+> **Tip for 1-Click UI Updates:** Users can also click **`Sync Git Updates`** (or the **`↻`** icon next to any individual skill) directly inside the **`Skills`** panel in Antigravity's left sidebar (`Extensions -> Skills`) to run this incremental sync without typing a command!
 
 ---
 
 ## Step 2: Optional Full Suite Re-Install (Only When a New Sidecar or MCP Binary Is Added)
 
-If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `AGY Preview`), run the full installer:
+If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `Preview` or `My Antigravity`), run the full installer:
 ```bash
 agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
 ```

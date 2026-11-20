@@ -3,7 +3,7 @@
 Adapted from the **GPS Public Sector Skills Library** (*Playbook #1: Email & Daily Communication* and *Playbook #4: Constituent & Stakeholder Communication*).
 
 ## 1. Draft a Reply in My Voice
-- Match sentence length, greeting/sign-off style, and directness from `agy-twin-profile.md` (or 2–3 sample emails). Keep paragraphs to `<= 3` sentences. State the answer or ask in Sentence 1.
+- Match sentence length, greeting/sign-off style, and directness from `~/my-antigravity/memory/profile/voice.md` (or 2–3 sample emails). Keep paragraphs to `<= 3` sentences. State the answer or ask in Sentence 1.
 
 ## 2. Formal Letter to an Official, Board, or Interagency Partner
 - **Structure:** Official Date & Addressee Block -> Subject (`RE: ...`) -> Purpose & Statutory/Program Reference -> Clear Summary of Facts -> Specific Action/Coordination Requested & Timeline -> Point of Contact Block.
