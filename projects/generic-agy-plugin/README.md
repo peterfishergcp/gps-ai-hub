@@ -10,9 +10,34 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Azure / Entra ID -> Google Cloud Identity Sync:** Works seamlessly with synced Google Cloud Identity accounts and replicated Entra security groups.
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
-  - Ships as a `< 400 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 39 skills in seconds—with or without `git` installed.
-- **Live Hoverable Token Meter (`in | out | thinking`), `Chatski` Left Panel, AI Inbox `Action Items`, `/token-usage`, & `/orchestrator-guide` (`v1.6.0`):**
-  - Every UI panel (`Extensions -> My Antigravity`, `Extensions -> Chatski`, `Extensions -> Skills`, and `Extensions -> Preview`) shares the Antigravity rainbow **"A"** icon and includes a live hoverable **`in | out | thinking` Token Consumption Pill**—paired with **`Chatski`** (browsing & staging replies across Google Chat Spaces & DMs right through your existing Gemini Enterprise Chat Connector with zero extra setup, plus optional Direct Chat API), an **AI Inbox `Action Items`** view (`Suggested to-dos` + `Topics to catch up on`), `/token-usage`, and `/orchestrator-guide`.
+  - Ships as a `< 500 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 40 skills in seconds—with or without `git` installed.
+- **Unified AI Inbox Look & Feel, `Chatski` Left Panel, Hoverable Token Meter (`in | out | thinking`), `/token-usage`, & `/orchestrator-guide` (`v1.6.2`):**
+  - Every UI panel (`Extensions -> My Antigravity`, `Extensions -> Chatski`, `Extensions -> Skills`, and `Extensions -> Preview`) shares the Antigravity rainbow **"A"** icon and includes a live hoverable **`in | out | thinking` Token Consumption Pill**—paired with **`Chatski`** (browsing & staging replies across Google Chat Spaces & DMs right through your existing Gemini Enterprise Chat Connector with zero extra setup, plus optional Direct Chat API), a unified **AI Inbox** design across all **`My Antigravity`** tabs (`Action Items 🍪`, `Overview 😎`, `Initiatives 🚦`, `Stakeholders 🌊`, `Skills ✨`, and `Customize ⚙️`), `/token-usage`, and `/orchestrator-guide`.
+
+---
+
+## Visual Tour — `My Antigravity` (AI Inbox) & `Chatski`
+
+### 1. `Action Items` — AI Inbox Suggested To-Dos & Topics (`🍪`)
+Catch up in seconds with 1-click **`Reply`** and **`Open`** action pills, Scallop Wave visual separation, and synthesized **`Topics to catch up on`** cards—plus a live hoverable **`in | out | thinking`** token pill in the top header:
+
+![My Antigravity — AI Inbox Action Items & Topics](./docs/screenshots/my-antigravity-action-items.png)
+
+### 2. `Overview` — Instant Search Bar, Up Next & 1-Click Workflows (`😎`)
+Search across Action Items, Initiatives, Stakeholders, and all 40 skills—or press **Enter** to ask Antigravity directly in chat:
+
+![My Antigravity — Overview & Instant Search](./docs/screenshots/my-antigravity-overview.png)
+
+### 3. `Chatski` — Google Chat Left-Sidebar Panel via Gemini Enterprise (`💬`)
+Works out-of-the-box with your existing **Gemini Enterprise Google Chat Connector** (zero extra OAuth client or laptop setup)—browse Spaces & Direct Messages, hover any message for **`✨ Draft reply`**, stage voice-calibrated drafts, and send only with explicit human confirmation:
+
+![Chatski — Google Chat Left-Sidebar Panel via Gemini Enterprise](./docs/screenshots/chatski-ge-chat.png)
+
+### 4. `Initiatives`, `Stakeholders`, & `Skills` — Unified AI Inbox Tabs
+
+| `Initiatives 🚦` *(RAG Status & Milestones)* | `Stakeholders 🌊` *(>21d Check-In Radar)* | `Skills ✨` *(40 Skills + Save My Copy)* |
+| :---: | :---: | :---: |
+| ![My Antigravity — Initiatives](./docs/screenshots/my-antigravity-initiatives.png) | ![My Antigravity — Stakeholders](./docs/screenshots/my-antigravity-stakeholders.png) | ![My Antigravity — Skills](./docs/screenshots/my-antigravity-skills.png) |
 
 ---
 
@@ -77,7 +102,7 @@ Whenever new skills, FOIA templates, dashboard themes, or connector improvements
 
 ## Workshop Launchpad, AGY Setup Guide & Guided Test Prompts
 
-- **Workshop Launchpad & 39-Skill Registry Source:** [`workshop/`](./workshop/index.html)
+- **Workshop Launchpad & 40-Skill Registry Source:** [`workshop/`](./workshop/index.html)
 - **Generic 7-Step AGY Download & Setup Guide Source:** [`setup-guide/`](./setup-guide/index.html)
 - **Guided Test Prompts (Core 9, Including Action Items, Memory & Swarm):** [`docs/TEST_PROMPTS.md`](./docs/TEST_PROMPTS.md)
 - **Government Services (`public_sector`) Test Prompts (7):** [`docs/PUBLIC_SECTOR_TEST_PROMPTS.md`](./docs/PUBLIC_SECTOR_TEST_PROMPTS.md)

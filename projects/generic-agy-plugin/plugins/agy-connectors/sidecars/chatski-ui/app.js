@@ -834,7 +834,14 @@
     window.AGYTokenPill.mount(document.getElementById('token-anchor'));
   }
 
-  loadInitial().catch((err) => {
-    viewportEl.replaceChildren(el('div', { text: 'Unable to load Chatski: ' + err.message }));
-  });
+  loadInitial()
+    .then(() => {
+      if (typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).get('hover') === '1') {
+        const bars = document.querySelectorAll('.msg-hover-bar');
+        if (bars.length > 0) bars[bars.length - 1].style.display = 'inline-flex';
+      }
+    })
+    .catch((err) => {
+      viewportEl.replaceChildren(el('div', { text: 'Unable to load Chatski: ' + err.message }));
+    });
 })();

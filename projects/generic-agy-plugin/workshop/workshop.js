@@ -218,7 +218,30 @@
     var copyStep2 = document.getElementById('copyStep2PromptBtn');
     if (copyStep2) {
       copyStep2.addEventListener('click', function () {
-        copyWithFeedback(STEP2_INSTALL_PROMPT, copyStep2, 'Copy Install Prompt');
+        copyWithFeedback(STEP2_INSTALL_PROMPT, copyStep2, 'Copy Install Command');
+      });
+    }
+
+    var copyStep2Top = document.getElementById('copyStep2TopBtn');
+    if (copyStep2Top) {
+      copyStep2Top.addEventListener('click', function () {
+        copyWithFeedback(STEP2_INSTALL_PROMPT, copyStep2Top, 'Copy');
+      });
+    }
+
+    var showcaseTabs = document.querySelectorAll('.showcase-tab');
+    var showcaseImg = document.getElementById('showcaseMainImg');
+    var showcaseCap = document.getElementById('showcaseCaption');
+    if (showcaseTabs.length && showcaseImg && showcaseCap) {
+      showcaseTabs.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          showcaseTabs.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          var nextSrc = btn.getAttribute('data-shot');
+          var nextCap = btn.getAttribute('data-caption');
+          if (nextSrc) showcaseImg.src = nextSrc;
+          if (nextCap) showcaseCap.textContent = nextCap;
+        });
       });
     }
   }
