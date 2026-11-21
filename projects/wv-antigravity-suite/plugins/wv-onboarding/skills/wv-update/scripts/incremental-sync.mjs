@@ -1,6 +1,8 @@
 #!/usr/bin/env node
+
+const __parseJsonNoBom = (s) => JSON.parse(typeof s === 'string' ? s.replace(/^\uFEFF/, '') : Buffer.isBuffer(s) ? s.toString('utf-8').replace(/^\uFEFF/, '') : s);
 /**
- * State of West Virginia — Zero-Git Incremental Skill & Plugin Updater (`incremental-sync.mjs`)
+ * Public Sector — Zero-Git Incremental Skill & Plugin Updater (`incremental-sync.mjs`)
  *
  * Solves the "full re-install" problem:
  * - Runs on Antigravity's built-in Node runtime over HTTPS 443 (ZERO `git`, `python`, or `unzip` required).
@@ -24,7 +26,7 @@ function parseArgs(argv) {
   let skillFilter = '';
   let checkOnly = false;
   let jsonOutput = false;
-  let rawBase = process.env.WV_SUITE_RAW_BASE || DEFAULT_RAW_BASE;
+  let rawBase = process.env.AGY_SUITE_RAW_BASE || DEFAULT_RAW_BASE;
   let configDir = path.join(os.homedir(), '.gemini', 'config');
 
   for (let i = 2; i < argv.length; i++) {
@@ -71,7 +73,7 @@ function httpsGetBuffer(urlStr, redirectsLeft = 4) {
       u,
       {
         headers: {
-          'User-Agent': 'WV-Antigravity-Incremental-Updater/1.3',
+          'User-Agent': 'Generic-AGY-Plugin-Incremental-Updater/1.3',
           Accept: '*/*'
         },
         timeout: 12000
@@ -115,7 +117,7 @@ function httpsGetBuffer(urlStr, redirectsLeft = 4) {
 export async function runIncrementalSync({ skillFilter = '', checkOnly = false, rawBase = DEFAULT_RAW_BASE, configDir = path.join(os.homedir(), '.gemini', 'config') } = {}) {
   const manifestUrl = `${rawBase}/version-manifest.json`;
   const manifestBuf = await httpsGetBuffer(manifestUrl);
-  const manifest = JSON.parse(manifestBuf.toString('utf-8'));
+  const manifest = __parseJsonNoBom(manifestBuf.toString('utf-8'));
   const skillManifest = manifest.skillManifest || {};
   const pluginsRoot = path.join(configDir, 'plugins');
 
@@ -183,7 +185,7 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
     });
   }
 
-  // Also sync sidecars (wv-skill-manager & wv-design-preview) when running a full suite sync (!skillFilter)
+  // Also sync sidecars (agy-skill-manager & agy-design-preview) when running a full suite sync (!skillFilter)
   const sidecarManifest = manifest.sidecarManifest || {};
   if (!skillFilter) {
     for (const [scId, scEntry] of Object.entries(sidecarManifest)) {
@@ -232,7 +234,7 @@ async function cliMain() {
       return;
     }
     const modeLabel = summary.checkOnly ? 'Check Only' : 'Incremental Sync';
-    console.log(`=== WV Antigravity Suite ${modeLabel} (Remote v${summary.suiteVersion}) ===`);
+    console.log(`=== Generic AGY Plugin ${modeLabel} (Remote v${summary.suiteVersion}) ===`);
     console.log(`Skills Checked: ${summary.checkedSkillsCount} | Skills ${summary.checkOnly ? 'With Updates' : 'Updated'}: ${summary.updatedSkillsCount} | Files ${summary.checkOnly ? 'Changed' : 'Downloaded'}: ${summary.updatedFilesCount}`);
     for (const s of summary.skills) {
       if (s.changedFiles.length > 0) {

@@ -1,0 +1,7 @@
+{
+  "name": "chatski-ui",
+  "version": "1.6.0",
+  "private": true,
+  "type": "module",
+  "main": "main.mjs"
+}

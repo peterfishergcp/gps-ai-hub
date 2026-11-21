@@ -1,12 +1,12 @@
-# West Virginia IT Admin & Power-User Playbook: Anthropic Claude + Google Gemini in Antigravity
+# Public Sector IT Admin & Power-User Playbook: Anthropic Claude + Google Gemini in Antigravity
 
 Reference guide for `/model-guide` covering enterprise enablement on **Google Cloud Vertex AI**, custom endpoint routing, cost governance, and prompt patterns tailored for **Anthropic Claude** vs. **Google Gemini**.
 
 ---
 
-## 1. WV Agency IT Admin Checklist: Enabling Anthropic Claude
+## 1. Agency IT Admin Checklist: Enabling Anthropic Claude
 
-If West Virginia developers or analysts open the Antigravity model picker and do not yet see **Claude Sonnet** or **Claude Opus**, walk the Agency GCP / Enterprise Administrator through these 4 steps:
+If Public Sector developers or analysts open the Antigravity model picker and do not yet see **Claude Sonnet** or **Claude Opus**, walk the Agency GCP / Enterprise Administrator through these 4 steps:
 
 ### Step 1 — Enable Vertex AI & Anthropic in Model Garden (One-Time per Host Project)
 1. Sign in to the Google Cloud Console for the agency's designated AI host project (`YOUR_PROJECT_ID`).
@@ -19,11 +19,11 @@ If West Virginia developers or analysts open the Antigravity model picker and do
 5. Click **Enable** and complete the one-time **Anthropic Partner Model Terms** acceptance form for your organization.
 
 ### Step 2 — Allow Partner Models in Enterprise Admin Settings
-- In your enterprise Antigravity / Gemini Enterprise admin policy, verify that **Third-Party / Partner Models** are toggled **On** for the target Entra-synced Google Identity group (for example, `wv-engineering-ai@yourdomain.gov` or `wv-policy-legal@yourdomain.gov`).
+- In your enterprise Antigravity / Gemini Enterprise admin policy, verify that **Third-Party / Partner Models** are toggled **On** for the target Entra-synced Google Identity group (for example, `agency-engineering-ai@yourdomain.gov` or `agency-policy-legal@yourdomain.gov`).
 
 ### Step 3 — IAM & Regional Endpoint Governance (`us-east5`)
 - Grant your authorized Entra-synced Google Identity group **Vertex AI User** (`roles/aiplatform.user`) on `YOUR_PROJECT_ID` (never grant primitive `Owner`/`Editor` roles).
-- Prefer **US regional endpoints** (such as **`us-east5`** in Columbus, Ohio—right next door to West Virginia!) rather than non-US regions when configuring Organization Policies (`constraints/gcp.resourceLocations`).
+- Prefer **US regional endpoints** (such as **`us-east5`** in Columbus, Ohio—right next door to Public Sector!) rather than non-US regions when configuring Organization Policies (`constraints/gcp.resourceLocations`).
 - If developers route Antigravity CLI through an agency GCP project, they can set their project and US region cleanly in `~/.gemini/settings.json`:
   ```json
   {
@@ -58,6 +58,6 @@ If West Virginia developers or analysts open the Antigravity model picker and do
 
 | Symptom | Cause | Fix |
 | :--- | :--- | :--- |
-| **Claude models are greyed out or missing in the picker** | Partner models are disabled by org policy, or Anthropic terms are not yet accepted in Vertex AI Model Garden. | Have your WV GCP Admin enable Claude in **Vertex AI -> Model Garden** and enable partner models for your Entra-synced Google group. |
+| **Claude models are greyed out or missing in the picker** | Partner models are disabled by org policy, or Anthropic terms are not yet accepted in Vertex AI Model Garden. | Have your Agency GCP Admin enable Claude in **Vertex AI -> Model Garden** and enable partner models for your Entra-synced Google group. |
 | **`429 Resource Exhausted` when using Claude Opus/Sonnet** | Regional Vertex AI partner quota (QPM/TPM) in `us-east5` is at its initial default cap, or user model credits are exhausted. | Switch to **Claude Sonnet (`Medium` effort)** or **Gemini 3.8 Flash** immediately to stay unblocked, check `/usage`, and request a Vertex AI quota bump in Cloud Console if needed. |
 | **Need to review CJIS / HIPAA PHI / IRS FTI files** | Third-party partner model coverage varies by agency BAA and Assured Workloads tier. | Switch the picker to **1P Google Gemini** in an approved Assured Workloads US boundary unless your Agency CISO has explicitly cleared the specific Claude endpoint in writing. |

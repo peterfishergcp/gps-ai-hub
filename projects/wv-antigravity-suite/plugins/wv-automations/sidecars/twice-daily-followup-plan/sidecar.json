@@ -1,0 +1,19 @@
+{
+  "builtin": "schedule",
+  "args": [
+    "CRON_TZ=America/New_York 30 9,14 * * 1-5",
+    "agentapi",
+    "new-conversation",
+    "--",
+    "Run /followup-plan on ~/.gemini/config/plugin_data/wv-antigravity/memory/. Check any recently completed items first, update ~/.gemini/config/plugin_data/wv-antigravity/memory/followups/latest_action_plan.md and action_items.md, and prepare concise [Draft-Only] follow-up messages for open P0 and P1 action items without sending anything externally."
+  ],
+  "restart_policy": "always",
+  "display_name": "Twice-Daily Follow-Up Action Plan",
+  "description": "Every weekday at 9:30 AM and 2:30 PM, sweeps open action items, updates followups/latest_action_plan.md, and stages [Draft-Only] replies.",
+  "agent_permissions": {
+    "access_grants": [
+      "read_file(${HOME}/.gemini/config/plugin_data/wv-antigravity)",
+      "write_file(${HOME}/.gemini/config/plugin_data/wv-antigravity)"
+    ]
+  }
+}

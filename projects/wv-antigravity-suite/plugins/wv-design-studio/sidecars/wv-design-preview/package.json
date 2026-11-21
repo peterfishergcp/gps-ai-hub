@@ -1,6 +1,6 @@
 {
-  "name": "wv_design_preview",
+  "name": "agy_design_preview",
   "version": "1.3.0",
   "type": "module",
-  "description": "Zero-dependency Antigravity UI Sidecar for serverless visual preview of WV Dashboards, Slide Decks, and Flyers."
+  "description": "Zero-dependency Antigravity UI Sidecar for serverless visual preview of AGY Dashboards, Slide Decks, and Flyers."
 }

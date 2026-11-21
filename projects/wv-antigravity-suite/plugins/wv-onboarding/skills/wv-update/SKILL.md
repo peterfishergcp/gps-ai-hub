@@ -30,7 +30,7 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 3. Downloads **only** the specific files whose SHA-256 hash changed (or any newly added skill), writes them atomically in place, and **preserves**:
    - Your per-skill enable/disable toggles (`SKILL.md.disabled` / `skill-toggles.json`),
    - Your saved Gemini Enterprise (`GE`) instance configuration (`~/.gemini/config/plugin_data/wv-connectors/ge-instance.json`), and
-   - Your personal Digital Twin profile (`wv-twin-profile.md`).
+   - Your personal Digital Twin profile (`plugin_data/wv-antigravity/memory/`).
 
 > **Tip for 1-Click UI Updates:** Users can also click **`Sync Git Updates`** (or the **`↻`** icon next to any individual skill) directly inside the **`WV Skills`** panel in Antigravity's left sidebar (`Extensions -> WV Skills`) to run this incremental sync without typing a command!
 

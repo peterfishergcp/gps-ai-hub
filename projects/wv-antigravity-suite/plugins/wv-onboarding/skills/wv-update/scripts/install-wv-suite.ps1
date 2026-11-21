@@ -1,12 +1,11 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) zero-dependency installer & updater for the State of West Virginia Antigravity Suite.
+  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.0.0).
 .DESCRIPTION
-  Installs or updates all 6 WV Antigravity plugins into ~/.gemini/config/plugins/ from either:
-    1. A local checkout/extracted folder (./plugins or ./dist/wv-antigravity-suite.zip), OR
-    2. An HTTPS ZIP URL (-ZipUrl) with strict ZipSlip path traversal protection (no git required).
-  Optionally pre-configures the user's Gemini Enterprise (GE) instance (-GeInstance) so federated
-  connectors (Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub) work on Turn 1.
+  Adheres strictly to WV corporate laptop standards (Windows 11 / PowerShell 5.1, zero admin rights,
+  zero standalone Node/Python/Git/Docker required, zero files created outside $HOME\.gemini\config\).
+  Installs all 8 WV plugins (keeping wv-automations disabled/opt-in by default), writes BOM-free UTF-8
+  JSON configs, removes retired v1.x skill folders, and preserves user skill toggles & GE settings.
 #>
 [CmdletBinding()]
 param(
@@ -27,15 +26,20 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
-  $TargetConfigDir = Join-Path $HOME ".gemini\config"
+  $UserHome = [Environment]::GetFolderPath("UserProfile")
+  if ([string]::IsNullOrWhiteSpace($UserHome)) { $UserHome = $HOME }
+  $TargetConfigDir = Join-Path $UserHome ".gemini\config"
 }
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
 $PluginDataDir = Join-Path $TargetConfigDir "plugin_data\wv-connectors"
+$MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\wv-antigravity\memory"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
 New-Item -ItemType Directory -Force -Path $PluginDataDir | Out-Null
+New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)
@@ -70,7 +74,7 @@ try {
     $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("wv-agy-suite-" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
     $ZipFile = Join-Path $TempDir "wv-antigravity-suite.zip"
-    Write-Host "Downloading WV Antigravity Suite (~150 KB)..." -ForegroundColor Cyan
+    Write-Host "Downloading WV Antigravity Suite v2.0 (<500 KB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $TempDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
@@ -100,33 +104,25 @@ try {
     throw "Could not locate plugins/ directory to install."
   }
 
-  # Prefer native `agy plugin install` when agy CLI is on PATH so manifest tracking stays in sync
-  $AgyCmd = Get-Command "agy" -ErrorAction SilentlyContinue
-  $ParentOfPlugins = Split-Path -Parent $SourcePluginsDir
-  if ($null -ne $AgyCmd) {
-    Write-Host "Installing WV Antigravity Suite via native 'agy plugin install'..." -ForegroundColor Cyan
-    & $AgyCmd.Source plugin install $ParentOfPlugins
-  } else {
-    $InstalledNames = @()
-    foreach ($dir in (Get-ChildItem -Path $SourcePluginsDir -Directory)) {
-      if ($dir.Name.StartsWith(".")) { continue }
-      if (($dir.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-        throw "Refusing symlink/reparse point plugin directory: $($dir.Name)"
-      }
-      $reparseChild = Get-ChildItem -Path $dir.FullName -Recurse -Force | Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 } | Select-Object -First 1
-      if ($null -ne $reparseChild) {
-        throw "Refusing symlink/reparse point inside plugin $($dir.Name): $($reparseChild.FullName)"
-      }
-      if (-not (Test-Path (Join-Path $dir.FullName "plugin.json"))) { continue }
-      $dest = Join-Path $PluginsDest $dir.Name
-      if (Test-Path $dest) {
-        Remove-Item -Recurse -Force -Path $dest
-      }
-      Copy-Item -Recurse -Force -Path $dir.FullName -Destination $dest
-      $InstalledNames += $dir.Name
+  $InstalledNames = @()
+  foreach ($dir in (Get-ChildItem -Path $SourcePluginsDir -Directory)) {
+    if ($dir.Name.StartsWith(".")) { continue }
+    if (($dir.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+      throw "Refusing symlink/reparse point plugin directory: $($dir.Name)"
     }
-    Write-Host ("Installed {0} WV plugins to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
+    $reparseChild = Get-ChildItem -Path $dir.FullName -Recurse -Force | Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 } | Select-Object -First 1
+    if ($null -ne $reparseChild) {
+      throw "Refusing symlink/reparse point inside plugin $($dir.Name): $($reparseChild.FullName)"
+    }
+    if (-not (Test-Path (Join-Path $dir.FullName "plugin.json"))) { continue }
+    $dest = Join-Path $PluginsDest $dir.Name
+    if (Test-Path $dest) {
+      Remove-Item -Recurse -Force -Path $dest
+    }
+    Copy-Item -Recurse -Force -Path $dir.FullName -Destination $dest
+    $InstalledNames += $dir.Name
   }
+  Write-Host ("Installed {0} WV zero-footprint plugins to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
 
   if (-not [string]::IsNullOrWhiteSpace($GeInstance)) {
     $GeConfigPath = Join-Path $PluginDataDir "ge-instance.json"
@@ -136,15 +132,15 @@ try {
       oauthClientSecret = $OAuthClientSecret
       updatedAt         = (Get-Date).ToUniversalTime().ToString("o")
     } | ConvertTo-Json -Depth 4
-    Set-Content -Path $GeConfigPath -Value $Payload -Encoding UTF8
-    Write-Host "Saved default Gemini Enterprise instance to $GeConfigPath" -ForegroundColor Green
+    [System.IO.File]::WriteAllText($GeConfigPath, ($Payload + "`n"), $Utf8NoBom)
+    Write-Host "Saved BOM-free Gemini Enterprise instance to $GeConfigPath" -ForegroundColor Green
   }
 
-  # Re-apply any per-skill toggles saved by the user in the WV Skills UI panel
   $LedgerPath = Join-Path $TargetConfigDir "plugin_data\wv-onboarding\skill-toggles.json"
   if (Test-Path $LedgerPath) {
     try {
-      $Ledger = Get-Content -Raw -Path $LedgerPath | ConvertFrom-Json
+      $RawLedger = [System.IO.File]::ReadAllText($LedgerPath).TrimStart([char]0xFEFF)
+      $Ledger = $RawLedger | ConvertFrom-Json
       if ($null -ne $Ledger.disabledSkills) {
         foreach ($prop in $Ledger.disabledSkills.PSObject.Properties) {
           if ($prop.Value -eq $true) {
@@ -158,10 +154,10 @@ try {
           }
         }
       }
-    } catch {}
+    } catch {
+      Write-Warning "Could not re-apply saved skill toggles: $_"
+    }
   }
-
-  Write-Host "`nReady! Open Google Antigravity and type /wv-onboard or /connect-ge to begin." -ForegroundColor Green
 } finally {
   if ($null -ne $TempDir -and (Test-Path $TempDir)) {
     Remove-Item -Recurse -Force -Path $TempDir -ErrorAction SilentlyContinue

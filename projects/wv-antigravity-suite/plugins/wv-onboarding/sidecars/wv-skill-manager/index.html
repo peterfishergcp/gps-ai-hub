@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WV Skills &amp; Federated Connectors</title>
+  <title>WV Skills — West Virginia Antigravity</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/preload.js"></script>
 </head>
@@ -12,47 +12,69 @@
     <header class="top-header">
       <div class="brand-row">
         <div class="title-cluster">
-          <svg class="spark-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="wvSparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#4c8df6"/>
-                <stop offset="50%" stop-color="#8ab4f8"/>
-                <stop offset="100%" stop-color="#c58af9"/>
-              </linearGradient>
-            </defs>
-            <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#wvSparkGrad)"/>
-          </svg>
+          <svg class="brand-logo" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="wvSkillsGrad" x1="14" y1="12" x2="86" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="55%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="wvSkillsAccent" x1="60" y1="10" x2="90" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <path d="M44 12C45.6 28.4 55.6 38.4 72 40C55.6 41.6 45.6 51.6 44 68C42.4 51.6 32.4 41.6 16 40C32.4 38.4 42.4 28.4 44 12Z" fill="url(#wvSkillsGrad)"/>
+  <path d="M76 12C77 20.5 81.5 25 90 26C81.5 27 77 31.5 76 40C75 31.5 70.5 27 62 26C70.5 25 75 20.5 76 12Z" fill="url(#wvSkillsAccent)"/>
+  <path d="M70 56C71.1 65.2 76.8 70.9 86 72C76.8 73.1 71.1 78.8 70 88C68.9 78.8 63.2 73.1 54 72C63.2 70.9 68.9 65.2 70 56Z" fill="url(#wvSkillsGrad)" opacity="0.88"/>
+</svg>
           <div>
-            <h1>West Virginia Skills</h1>
-            <p class="subtitle" id="summaryCounter">28 skills across 7 categories · Toggle individual skills or categories live</p>
+            <h1>WV Skills</h1>
+            <p class="subtitle" id="summaryCounter">Loading West Virginia skills &amp; connectors...</p>
           </div>
         </div>
         <div class="header-actions">
           <button type="button" class="pill-action" id="toggleGePanelBtn">GE Connector Hub</button>
-          <button type="button" class="pill-action subtle" id="updateSuiteBtn" title="Run /wv-update in chat">Sync Git Updates</button>
+          <button type="button" class="pill-action subtle" id="refreshSkillsBtn" title="Reload skills &amp; ★ My Custom Skills from local disk">Refresh</button>
+          <button type="button" class="pill-action subtle" id="updateSuiteBtn" title="Sync stock updates over HTTPS 443 (protects locally customized &amp; personal skills)">Sync Updates</button>
         </div>
       </div>
 
       <section class="ge-drawer" id="geDrawer" hidden>
-        <label class="ge-label" for="geInput">Default Gemini Enterprise Instance (Azure/Entra-Synced Google Identity · Federated Connectors)</label>
+        <label class="ge-label" for="geInput">West Virginia Gemini Enterprise Instance (Entra-Synced Google Identity · Federated Connectors)</label>
         <div class="ge-row">
           <input type="text" id="geInput" placeholder="projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID">
           <button type="button" class="pill-action primary" id="saveGeBtn">Save GE Instance</button>
         </div>
       </section>
 
+      <div class="ai-hero-banner">
+        <h2 class="ai-inbox-greeting">
+          Manage <span class="ai-blue" id="heroEnabledCount">40 WV skills</span>
+          <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2728/512.webp" alt="✨" class="ai-noto-emoji" id="heroSparkleImg">
+          including <span class="ai-blue">WV State Skills</span>.
+        </h2>
+      </div>
+
       <div class="toolbar">
         <div class="search-wrap">
-          <input type="search" id="searchInput" placeholder="Filter skills by name, /command, or capability...">
+          <input type="search" id="searchInput" placeholder="Search 40 WV skills by name, /command, WV FOIA, Chatski, Orchestrator, Token...">
         </div>
         <div class="filter-chips" id="categoryChips"></div>
       </div>
     </header>
 
-    <main id="categoriesContainer" class="categories-list" aria-live="polite"></main>
+    <div class="ai-wave-sep" aria-hidden="true">
+      <svg viewBox="0 0 1200 24" preserveAspectRatio="none" width="100%" height="18">
+        <path d="M0,12 Q10,2 20,12 T40,12 Q50,2 60,12 T80,12 Q90,2 100,12 T120,12 Q130,2 140,12 T160,12 Q170,2 180,12 T200,12 Q210,2 220,12 T240,12 Q250,2 260,12 T280,12 Q290,2 300,12 T320,12 Q330,2 340,12 T360,12 Q370,2 380,12 T400,12 Q410,2 420,12 T440,12 Q450,2 460,12 T480,12 Q490,2 500,12 T520,12 Q530,2 540,12 T560,12 Q570,2 580,12 T600,12 Q610,2 620,12 T640,12 Q650,2 660,12 T680,12 Q690,2 700,12 T720,12 Q730,2 740,12 T760,12 Q770,2 780,12 T800,12 Q810,2 820,12 T840,12 Q850,2 860,12 T880,12 Q890,2 900,12 T920,12 Q930,2 940,12 T960,12 Q970,2 980,12 T1000,12 Q1010,2 1020,12 T1040,12 Q1050,2 1060,12 T1080,12 Q1090,2 1100,12 T1120,12 Q1130,2 1140,12 T1160,12 Q1170,2 1180,12 T1200,12 L1200,24 L0,24 Z" fill="currentColor"></path>
+      </svg>
+    </div>
+
+    <main id="categoriesContainer" class="categories-list ai-surface-band" aria-live="polite"></main>
   </div>
 
   <div class="toast" id="toast" hidden></div>
+  <script src="/token_pill_ui.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -1310,7 +1310,7 @@
         if (inlineEl && state.config && state.snapshot) {
           inlineEl.textContent = JSON.stringify({ config: state.config, snapshot: state.snapshot }).replace(/</g, '\\u003c');
         }
-        var fullHtml = '<!doctype html>\n' + document.documentElement.outerHTML;
+        var fullHtml = '<!doctype html>\n' + new XMLSerializer().serializeToString(document.documentElement);
         var blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
