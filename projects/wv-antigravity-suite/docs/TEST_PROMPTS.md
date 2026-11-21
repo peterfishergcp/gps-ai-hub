@@ -1,280 +1,311 @@
-# Google Antigravity — West Virginia Skill Suite (`v1.5.0`) Guided Test Prompts
+# State of West Virginia — Antigravity Suite (`v2.0.0`) Guided Test Prompts
+
+Welcome to **Version 2.0.0** of the **State of West Virginia Antigravity Suite** (`8` modular plugins · `40` ready-to-run skills · `4` custom-icon left-sidebar extensions · `100%` zero-footprint storage inside `~/.gemini/config/`).
+
+> [!TIP]
+> **What Changed in `v2.0.0` — Zero Copy-Paste Demo Mode:** You no longer need to copy and paste long prompt blocks to test or demo skills. Every skill now includes a **1-Click `Run →` button** inside **`Extensions → WV Antigravity → Skills`** (and **`Extensions → WV Skills`**). Every test section below includes **both** the **1-Click In-App Starter** (for fast live demos) **and** the **Full West Virginia Deep-Test Script** (when you want to stress-test multi-step county and statutory scenarios by pasting).
 
 ## Before You Begin
 
-**Antigravity** is Google's AI assistant app that you install on your computer.
-
-- **What you'll need:** A work computer with permission to install applications (check with your IT team if you're not sure), your official organization Google account, and about **30–45 minutes**.
-- **This is a test using sample data:** Everything in these prompts is made up. **Never paste real constituent, employee, or case information into Antigravity during this pilot.**
-- **There are no wrong answers:** We want to know what's clear, what's useful for your job, what's confusing, and what breaks.
+- **What you'll need:** Your state-managed laptop, your official `@wv.gov` Google Business Account, and about **15–30 minutes**.
+- **Sample data only during pilot testing:** Every scenario in this guide uses synthetic sample data. **Do not paste real constituent SSNs, live PII, or confidential case records during pilot evaluation.**
 - **Questions?** Contact your agency pilot coordinator (`[Name / Email / Chat Space]`).
 
 ---
 
-## Quick 3-Step Setup
+## Quick 3-Step Setup (Zero-Footprint State Laptop Standard)
 
-### Step 1 — Download and Install Antigravity
+1. **Step 1 — Sign In to Antigravity Desktop (`@wv.gov` Business Account):** Complete the [7-Step Antigravity Setup Guide](../setup-guide/index.html), or open the interactive [West Virginia Antigravity v2.0.0 Launchpad](../workshop/index.html) in Chrome or Edge.
+2. **Step 2 — Install the `v2.0.0` Suite (From a New Conversation in Antigravity):** Click **`+ New Conversation`**, optionally switch **`Request Review`** (bottom-right of the prompt box) to **`Turbo`** during setup so you are not prompted 8 times, paste the command below, and switch back to **`Default`** once complete:
 
-Open the [Google Antigravity Organization Setup Guide](../setup-guide/index.html) and complete the 7 visual sign-in steps *(you can also bookmark the [West Virginia Skill Launchpad](../workshop/index.html) for extra 1-click starter prompts)*.
+```bash
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
+```
 
-### Step 2 — Add the West Virginia Skills to Antigravity
+> **Locked-Down Windows Laptop Option (No `git` Required):** If `git` is blocked on your state-managed Windows laptop, open **Windows PowerShell 5.1** and run the zero-admin `.zip` installer (zero Node/npm, zero Python, and zero files created outside `$HOME\.gemini\config\`):
 
-1. Open **Antigravity** on your computer.
-2. Click **+ New Conversation** (top left).
-3. Copy the line in the code box below:
-   ```bash
-   agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
-   ```
-4. Click inside the **chat box at the bottom of the Antigravity window**, paste (`Ctrl+V` on Windows or `⌘+V` on Mac), and press **Enter**.
-5. Leave the default permission setting on: **you may be asked to click Accept a few times during install—that's normal.** *(If your IT team specifically instructed you to switch **Request Review** at the bottom-right of the chat box to **Turbo** for setup, click **Turbo ▾** afterward and switch it back to **Default** once installation finishes.)*
-6. **You'll know it worked when** you see a chat message confirming installation is complete (or **WV Antigravity**, **Skills**, and **Preview** appear under **Extensions** on the left sidebar). This takes about **1–2 minutes**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1" -OutFile "$env:TEMP\install-wv-suite.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\install-wv-suite.ps1"
+```
 
-### Step 3 — Pick the Tests That Match Your Job
+3. **Step 3 — Open the 4 West Virginia Extensions & Launch Skills in 1 Click:** Look at the **`Extensions`** rail on the left side of Antigravity. In `v2.0.0`, you will see four West Virginia panels—each with its own distinct icon and a live hoverable **`5h: in | out | thinking`** token pill in the top bar.
 
-Pick the tests that match your day-to-day work:
-
-- **Everyone** should try **Prompts 1–4** and **Prompts 8–9** below (plus any matching role prompts in [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md)).
-- **Prompts 5–7** are for **IT, developer, and security staff** and are optional.
-- Each test takes about **2–5 minutes** (including reading the output). **You do not need to finish all of them.**
+![West Virginia Antigravity v2.0.0 Launchpad](./screenshots/wv-launchpad.png)
 
 ---
 
-## Order of Tests
+## Meet the 4 West Virginia Left-Sidebar Extensions (`v2.0.0`)
 
-1. **Prompt 1 (Start Here): Build a Dashboard, Slides, and a Flyer** *(Everyone)* — Create sample visuals for a made-up public infrastructure program. *You'll see: a sample dashboard, 5-slide presentation deck, and 1-page flyer appear on the right side of the screen.*
-2. **Prompt 2: Switch Between AI Models (Claude and Gemini)** *(Everyone; IT section optional)* — Learn how to change which AI model is helping you and when to use each one. *You'll see: a plain step-by-step model switching guide, a task cheat sheet, and a follow-up review prompt you can try.*
-3. **Prompt 3: Your Morning Assistant (Inbox Triage, Daily Brief & Draft Reply)** *(Everyone)* — Sort a sample inbox, get a morning brief, and draft a reply in your voice. *You'll see: 3 sample emails sorted by urgency (safely holding a broken attachment for human review), a 1-page brief, and a Draft-Only reply.*
-4. **Prompt 4: Records Requests, Contracts, and Policy Checks** *(Legal, records, procurement, and policy staff)* — Redact a sample record, review a risky vendor contract clause, and catch conflicting numbers. *You'll see: search filters, a redacted memo with exemption reasons, contract edits, and a mismatch warning catching `$18M` vs. `$15M`.*
-5. **Prompt 5: Update Old Code, Cloud Deployment & Database Queries** *(IT / developers only, optional)* — Fix bugs in an old Python script, generate a cloud deployment command, and modernize a database query. *You'll see: 3 hidden code bugs identified and fixed with passing tests, plus ready-to-use cloud and SQL commands.*
-6. **Prompt 6: Catch 4 Common Security Mistakes** *(IT / security only, optional)* — Scan sample code and cloud commands containing 4 intentional security flaws. *You'll see: all 4 security risks explained in plain English for security leadership, followed by corrected code and commands.*
-7. **Prompt 7: Connect to Gemini Enterprise** *(Optional — only if IT has set this up)* — Check whether Antigravity is connected to your organization's shared search hub. *You'll see: your current connection status and a walkthrough of how single sign-on search works across email, files, and code.*
-8. **Prompt 8: Personal Memory, Action Items, SCQA Meeting Prep & Anti-Slop Scrubbing** *(Everyone)* — Initialize your persistent Personal Memory (`~/.gemini/config/plugin_data/wv-antigravity/memory/`), ingest call notes into Action Items, build an Adversarial Minto SCQA pre-meeting brief, and scrub an external draft. *You'll see: live AI Inbox Action Items & Topics inside `Extensions -> WV Antigravity`, an SCQA pushback brief, and caught `[CONFIRM]` / AI-slop markers.*
-9. **Prompt 9 (Run Last): 4-Agent Parallel Swarm Prep & 3-Altitude Weekly Impact** *(Program managers, leads & analysts)* — Fan out 4 specialized subagents in parallel for a milestone review and compile your Friday 3-Altitude impact ledger. *You'll see: a cohesive 360 Prep Pack with a Mermaid diagram and a saved `weekly/YYYY-WXX.md` summary.*
+![Four West Virginia Left-Sidebar Extensions](./screenshots/wv-sidebar-4-icons.png)
 
-> [!NOTE]
-> **How to Run Any Test**
-> 1. Start a **+ New Conversation** (top left of Antigravity) for each test.
-> 2. Copy **all** of the text inside the prompt code box below (if reading in Google Docs, drag your mouse across the gray box rather than pressing `Ctrl+A` / `⌘+A`, which selects the entire document).
-> 3. Click inside the **Antigravity chat box** at the bottom of the window, paste (`Ctrl+V` / `⌘+V`), and press **Enter**.
-> 4. **Wait 1–3 minutes** while Antigravity works—please don't type in the chat box while it is running.
-> 5. Review the result on screen, then share your feedback using the section at the bottom of this guide.
+| Left-Sidebar Extension | Sidebar Icon | What It Does | Fastest 1-Click Action (No Copy-Paste) |
+| :--- | :--- | :--- | :--- |
+| **`WV Antigravity`** | Antigravity Rainbow **A** | Daily command center with **Overview**, AI Inbox **Action Items**, **Initiatives**, **Stakeholders**, and **Skills** (`40` skills). | Open **`Skills`** tab (or **`Overview`**) and click **`Run →`** on any card. |
+| **`WV Skills`** | Sparkles | Toggle any of the **40 skills** on/off across **9 categories** (including **`WV State Skills`**), configure Gemini Enterprise (`GE`), or pull updates in `<1s`. | Click **`▶ Seed:`** (or **`▶`**) on any row, or click **`Sync Updates`**. |
+| **`WV Preview`** | Magnifying Glass | Serverless visual viewer for West Virginia Executive Dashboards, 16:9 Slide Decks, and Stakeholder Flyers (`0` local ports). | Click any captured deliverable pill, or click **`Download HTML`** / **`Print / PDF`**. |
+| **`WV Chatski`** | Chat Bubble | Google Chat companion powered by your agency's Gemini Enterprise Chat Connector with **`[Draft-Only]`** reply staging. | Click **`↻ Sync`**, **`✨ Summarize`**, or hover any message and click **`✨ Draft reply`**. |
+
+![WV Antigravity Skills Tab 1-Click Run Buttons](./screenshots/wv-antigravity-skills-1click.png)
+
+![WV Antigravity Overview Tab](./screenshots/wv-antigravity-overview.png)
 
 ---
 
-## Prompt 1 — Build a Dashboard, 16:9 Slides & a 1-Page Flyer
+## Recommended Order of Guided Tests (`v2.0.0`)
 
-- **What you'll try:** Ask Antigravity to create an executive dashboard, a 5-slide briefing deck, and a 1-page fact sheet for a sample `$40.0M` public infrastructure program.
-- **What success looks like:** Rendered visual previews of the dashboard, slide deck, and flyer open directly in the panel on the right side of Antigravity (not raw website code), each with a button to open or download it in Chrome or Edge.
-- **About how long:** 2–3 minutes.
+| Test # | Focus Area & Plugin | Audience | 1-Click Ready? |
+| :--- | :--- | :--- | :--- |
+| **Test 1 (Start Here)** | **WV Dashboards, 16:9 Slides, Flyers & `WV Preview`** (`wv-design-studio`) | Everyone | Yes — `Run →` on `/wv-dashboard`, `/slides`, `/doc-design` |
+| **Test 2** | **Gemini 4, Claude 5.5, Orchestrator & Live Token Meter** (`wv-onboarding`) | Everyone + IT | Yes — `Run →` on `/model-guide`, `/orchestrator-guide`, `/token-usage` |
+| **Test 3** | **Onboarding, Daily Brief, My Voice (`/my-voice`) & Inbox Triage** (`wv-onboarding`) | Everyone | Yes — `Run →` in `WV Antigravity` or `WV Skills` |
+| **Test 4** | **`WV State Skills`: WV FOIA (`§ 29B-1-4`), Legal Redlining & Policy Audit** (`wv-state-workflows`) | Legal, FOIA, Program Staff | Yes — Filter pill **`WV State Skills (3)`** → `Run →` |
+| **Test 5 (New in v2.0)** | **Zero-Footprint Memory, AI Inbox `Action Items`, SCQA Prep & Anti-Slop** (`wv-second-brain`) | Everyone | Yes — `Action Items` tab + `Memory & Prep (8)` |
+| **Test 6 (New in v2.0)** | **`WV Chatski`: Google Chat via WV Gemini Enterprise Connector** (`wv-connectors`) | Everyone | Yes — Open `WV Chatski` → `✨ Summarize` / `✨ Draft reply` |
+| **Test 7** | **Legacy App Refactoring, Cloud Run & BigQuery SQL** (`wv-engineering-cloud`) | Developers & Data Analysts | Yes — Filter pill **`WV Engineering (4)`** → `Run →` |
+| **Test 8** | **Security & Cloud Readiness ("Catch the 4 Real-World Mistakes")** (`wv-security`) | CISO, Security & Cloud IT | Yes — 1-click workspace scan or paste 4-bug snippet |
+| **Test 9** | **Federated Gemini Enterprise (`GE`) Connectors** (`wv-connectors`) | IT & Power Users | Yes — `GE Connector Hub` button or `/connect-ge` |
+| **Test 10 (Run Last)** | **4-Agent Parallel Swarm, 3-Altitude Weekly Impact & Opt-In Automations** (`wv-second-brain` + `wv-automations`) | Power Users & Leads | Yes — `Run →` on `/swarm-prep` & `/weekly-impact` |
 
-### Copy & Paste Into Antigravity
+*(For the 7 `Government Services (public_sector)` prompts `PS-1` through `PS-7`, see [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md).)*
 
-```text
-Using `/wv-dashboard`, `/slides`, and `/doc-design`, create a West Virginia "Civic Ready 2026" executive package in `./civic-readiness-demo` using these exact program figures ($40.0M total portfolio closing December 31, 2026: $25.0M EDFA Shell Building Loans + $15.0M ISRG Tier 1–3 Site Readiness Grants across Riverbend, Oakridge, Cedarbrook, Pinecrest, and Summit counties):
-1. `/wv-dashboard`: Scaffold an interactive Civic Command Center dashboard in `./civic-readiness-demo/dashboard` (`civic-readiness-command-center` template) featuring the Civic Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS` for charts, `4. COUNTY SITE REGISTER` for the register table), green-bordered System Health banner, 4 KPI cards ($40.0M Authorized Public Funding, Active Pipeline, Qualifying Acreage, Projected Jobs), and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
-2. `/slides`: Create a 5-slide 16:9 executive briefing deck (`./civic-readiness-demo/slides/deck.html`) with keyboard navigation and speaker notes (`N` key).
-3. `/doc-design`: Create a 1-page print-ready stakeholder fact sheet (`./civic-readiness-demo/flyer/flyer.html`) comparing EDFA Loan terms vs. ISRG Grant tiers.
-IMPORTANT — Follow the AGY Design Studio visual preview rules:
+---
+
+## Test 1 — WV Dashboards, 16:9 Slides, Flyers & `WV Preview` (`wv-design-studio`)
+
+- **What this tests:** `/wv-dashboard`, `/slides`, `/doc-design`, and **`Extensions → WV Preview`** (serverless visual previews in the Side Pane + `Download HTML` for Chrome/Edge with zero Python or `127.0.0.1` ports).
+
+![WV Preview Mountain State Ready Dashboard](./screenshots/wv-preview.png)
+
+### Option A — 1-Click Starter (No Copy-Paste Needed)
+
+Open **`Extensions → WV Antigravity → Skills`**, click **`WV Design Studio (3)`**, and click **`Run →`** on **`/wv-dashboard`** (or **`/slides`** / **`/doc-design`**):
+
+```markdown
+/wv-dashboard Spin up an interactive Public Sector executive KPI & grant readiness dashboard with 4 KPI cards, regional breakdowns, and live visual Customize Layout.
+```
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Using `/wv-dashboard`, `/slides`, and `/doc-design`, create a West Virginia "Mountain State Ready" executive package in `./wv-mountain-state-demo` using these exact program figures ($40.0M total portfolio closing December 31, 2026: $25.0M WVEDA Shell Building Loans + $15.0M IJDC Tier 1–3 Site Readiness Grants across Kanawha, Monongalia, Cabell, Berkeley, and Raleigh counties):
+1. `/wv-dashboard`: Scaffold an interactive West Virginia Command Center dashboard in `./wv-mountain-state-demo/dashboard` (`wv-official` theme) featuring the Capitol Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS` for charts, `4. COUNTY SITE REGISTER` for the register table), green-bordered System Health banner, 4 KPI cards ($40.0M Authorized Funding, Active Pipeline, Qualifying Acreage, Projected Jobs), and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
+2. `/slides`: Create a 5-slide 16:9 executive briefing deck (`./wv-mountain-state-demo/slides/deck.html`) with keyboard navigation and speaker notes (`N` key).
+3. `/doc-design`: Create a 1-page print-ready stakeholder fact sheet (`./wv-mountain-state-demo/flyer/flyer.html`) comparing WVEDA Loan terms vs. IJDC Grant tiers.
+IMPORTANT — Follow the v2.0.0 WV Design Studio visual preview rules:
 - Write the self-contained single-file HTML copies (`dashboard-standalone.html`, `deck.html`, `flyer.html`) to the Conversation Artifact Directory with `UserFacing: true` and embed `<agent-embed>` previews so I see rendered visuals—never link raw workspace `index.html` code files in chat.
-- Do NOT create any 127.0.0.1 or localhost .url.json artifacts, do NOT start python3 -m http.server, and do NOT link workspace index.html code files in chat (all 3 HTML artifacts render serverless in the Side Pane and include an 'Open / Download HTML' button for Chrome/Edge).
+- Do NOT create any 127.0.0.1 or localhost .url.json artifacts and do NOT start python3 -m http.server (all 3 HTML deliverables render serverless in the Side Pane and inside `Extensions -> WV Preview` with an 'Open / Download HTML' button for Chrome/Edge).
 ```
 
 ---
 
-## Prompt 2 — Switch Between AI Models (Anthropic Claude & Google Gemini)
+## Test 2 — Gemini 4, Anthropic Claude 5.5, Orchestrator & Live Token Meter (`/model-guide`, `/orchestrator-guide`, `/token-usage`)
 
-- **What you'll try:** Ask Antigravity how to switch between Google Gemini and Anthropic Claude models, and which model fits different government tasks.
-- **What success looks like:** A clear step-by-step switching guide, a plain task-to-model cheat sheet, an optional IT setup checklist, and a ready-to-paste follow-up review prompt at the end. *(Optional 10-second bonus: switch the model menu at the bottom of the Antigravity chat box to **Claude Sonnet** or **Claude Opus** and paste that follow-up prompt to watch Claude review your Prompt 1 visuals.)*
-- **About how long:** 1–2 minutes.
+- **What this tests:** `/model-guide`, `/orchestrator-guide`, `/token-usage`, plus hovering the top-right **`5h: ... in | ... out | ... thinking`** token pill inside any of the 4 WV sidebar extensions.
 
-### Copy & Paste Into Antigravity
+### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-```text
-/model-guide Our agency developers and policy analysts want to use Anthropic Claude (Claude Sonnet and Claude Opus) alongside Google Gemini inside Antigravity.
-Please give me:
-1. A step-by-step guide on how a user switches between Google Gemini and Anthropic Claude (and adjusts Thinking/Reasoning effort) in both the Antigravity Desktop prompt bar and the `agy` CLI.
-2. A West Virginia Task-to-Model Routing Cheat Sheet showing when to use 1P Gemini 3.8 Flash (included in our pooled subscription quota + 1M context + multimodal) vs. Anthropic Claude Sonnet (multi-file code refactoring & SQL) vs. Anthropic Claude Opus (deep debugging & contract/security redlines).
-3. The 4-step checklist for our Agency GCP Administrator to enable Anthropic Claude in Vertex AI Model Garden (`us-east5` region), set Pay-As-You-Go budget alerts, and enforce CJIS/HIPAA/FedRAMP data governance.
-4. A ready-to-paste "Pass-2 Claude Cross-Review" prompt I can run right now after switching my model picker to Claude Sonnet or Claude Opus to audit the dashboard and flyer we just built in Prompt 1.
+Open **`Extensions → WV Antigravity → Skills`** (`WV Onboarding (8)`) and click **`Run →`** on **`/model-guide`**, **`/orchestrator-guide`**, or **`/token-usage`**.
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Run `/model-guide` and `/orchestrator-guide` for our West Virginia agency developers and policy analysts who want to use Google Gemini 4, Orchestrator, and Anthropic Claude (Claude Sonnet 5.5 and Claude Opus 5.5) inside Antigravity:
+1. Give a step-by-step guide on how a user switches between Google Gemini, Orchestrator (`Neon`, `Argon`, `Carbon`), and Anthropic Claude in both the Antigravity Desktop model picker and the `agy` CLI.
+2. Build a West Virginia Task-to-Model Routing Cheat Sheet comparing 1P Gemini (included in our pooled subscription quota + 1M context + multimodal) vs. Orchestrator (Planner + Hydrogen execution for multi-file builds) vs. Anthropic Claude Sonnet & Opus (opt-in Pay-As-You-Go multi-file refactoring & contract/security redlines).
+3. Provide the 4-step checklist for our West Virginia GCP Administrator to enable Anthropic Claude in Vertex AI Model Garden (`us-east5`), set Pay-As-You-Go budget alerts, and enforce CJIS/HIPAA/FedRAMP data governance.
+4. Give me a ready-to-paste "Pass-2 Claude Cross-Review" prompt I can run right now after switching my model picker to Claude Sonnet or Claude Opus to audit the dashboard and flyer we built in Test 1.
 ```
 
 ---
 
-## Prompt 3 — Your Morning Assistant (Inbox Triage, Daily Brief & Draft Reply)
+## Test 3 — Onboarding, Daily Brief, My Voice (`/my-voice`) & Inbox Triage (`wv-onboarding`)
 
-- **What you'll try:** Set up a brief executive writing profile, triage 3 sample emails (including one broken PDF attachment), build a morning brief, and draft a reply.
-- **What success looks like:** Email A (`$1.4M` county request) is flagged urgent, Email B (newsletter) is set aside, Email C (corrupted 0-byte PDF) is **held for human review** instead of cleared by mistake, and the reply to Email A is clearly labeled **Draft-Only** (nothing is ever sent automatically).
-- **About how long:** 1–2 minutes.
+- **What this tests:** `/wv-onboard`, `/daily-brief`, `/my-voice` *(renamed from `/digital-twin` in `v2.0.0`)*, `/inbox-triage` (Unreadable-Attachment Fail-Safe Hold), and `/wv-update`.
 
-### Copy & Paste Into Antigravity
+![WV Skills Panel](./screenshots/wv-skills.png)
 
-```text
-Run a combined test of our `agy-onboarding` skills (`/wv-onboard`, `/daily-brief`, `/inbox-triage`, and `/my-voice`) for my role as Deputy Director of Operations at the Department of Economic Development:
-1. `/wv-onboard`: Create `./agy-profile.md` tuned to a concise, executive BLUF (Bottom-Line-Up-Front) voice for agency leadership and county commissioners.
-2. `/inbox-triage`: Triage these 3 incoming emails against our escalation rules (Escalate immediately if: budget impact > $250K, statutory/FOIA deadline <= 5 business days, or County Commission / Legislative inquiry):
-   - Email A (From: Riverbend County Commission): "Urgent: $1.4M water main match modification needed before Friday's ISRG board vote."
+### Option A — 1-Click Starter (No Copy-Paste Needed)
+
+Click **`Run →`** / **`▶ Seed:`** on **`/wv-onboard`**, **`/daily-brief`**, **`/inbox-triage`**, or **`/my-voice`** inside **`WV Antigravity`** or **`WV Skills`**.
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Run a combined test of our `wv-onboarding` v2.0.0 skills (`/wv-onboard`, `/inbox-triage`, `/daily-brief`, and `/my-voice`) for my role as Deputy Director of Operations at the West Virginia Department of Economic Development:
+1. `/wv-onboard`: Initialize my zero-footprint role and writing voice profile inside `~/.gemini/config/plugin_data/wv-antigravity/memory/profile/` (`identity.md` and `voice.md`, with zero files written outside `~/.gemini/config/`), tuned to a concise executive BLUF (Bottom-Line-Up-Front) voice for agency leadership and county commissioners.
+2. `/inbox-triage`: Triage these 3 incoming emails against our escalation rules (Escalate immediately if: budget impact > $250K, statutory/FOIA deadline <= 5 business days, or County Commissioner / Legislature inquiry):
+   - Email A (From: Kanawha County Commission): "Urgent: $1.4M water main match modification needed before Friday's IJDC board vote."
    - Email B (From: Vendor Portal Notification): "Monthly newsletter: Q4 training webinar schedule."
    - Email C (From: Regional Grant Contractor): "Updated Drawdown Request #14 attached — [ERROR: Attachment 'Drawdown_14_Signed.pdf' is corrupted/unreadable, 0 bytes extracted]."
    Verify that Email C triggers the Unreadable-Attachment Fail-Safe Hold!
-3. `/daily-brief`: Turn the triaged items plus a 2:00 PM ET Infrastructure Board Prep call into a 1-page Morning Executive Brief.
-4. `/my-voice`: Draft a concise reply to the Riverbend County Commission (`Email A`) in my BLUF voice (strictly Draft-Only).
+3. `/daily-brief`: Turn the triaged items plus a 2:00 PM ET IJDC Board Prep call into a 1-page Morning Executive Brief.
+4. `/my-voice`: Draft a concise reply to the Kanawha County Commission (`Email A`) calibrated to my `voice.md` BLUF profile (strictly `[Draft-Only]`).
 ```
 
 ---
 
-## Prompt 4 — Records Requests, Vendor Contracts & Policy Consistency Checks
+## Test 4 — `WV State Skills`: West Virginia FOIA (`§ 29B-1-4`), Legal Review & Policy Audit (`wv-state-workflows`)
 
-- **What you'll try:** Generate search filters and redactions for a sample records request, review a risky vendor contract clause, and check a draft press release for conflicting numbers.
-- **What success looks like:** Ready-to-use email/file search strings, a redacted version of Paragraph 2 hiding the `$820,000` negotiation ceiling and personal phone/SSN while keeping Paragraph 1 open, redlined contract language fixing all 4 risky vendor terms, and a clear alert catching **`$18M` vs. `$15M`** and **Jan 15, 2027 vs. Dec 31, 2026**.
-- **About how long:** 2–3 minutes.
+- **What this tests:** `/foia-expert` (**W. Va. Code § 29B-1-4** & **5 U.S.C. § 552** segregability + Vaughn Index), `/legal-procurement-review` (**W. Va. Code § 5A-3**, constitutional sovereign immunity, fiscal non-appropriation, AI training bans), and `/policy-program-audit`.
 
-### Copy & Paste Into Antigravity
+### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-```text
-Test all 3 `agy-public-workflows` core skills (`/foia-expert`, `/legal-procurement-review`, and `/policy-program-audit`) on this public-sector scenario:
-1. `/foia-expert`: We received a public records request for "all emails and SharePoint memos between Jan 1, 2026 and March 31, 2026 mentioning Project Horizon or parcel bids in Valleyview County."
+Click the **`WV State Skills (3)`** category pill in **`WV Antigravity → Skills`** (or **`WV Skills`**) and click **`Run →`** on **`/foia-expert`**, **`/legal-procurement-review`**, or **`/policy-program-audit`**.
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Test all 3 `WV State Skills` (`/foia-expert`, `/legal-procurement-review`, and `/policy-program-audit`) on this West Virginia scenario:
+1. `/foia-expert`: We received a public records request for "all emails and SharePoint memos between Jan 1, 2026 and March 31, 2026 mentioning Project Allegheny or parcel bids in Mason County."
    - Generate the exact Google Vault and Microsoft Purview KQL discovery queries.
-   - Review this responsive record excerpt for line-by-line segregability under Federal FOIA (5 U.S.C. § 552) and State Public Records privacy/deliberative exemptions and produce a Vaughn Index table:
-     "Paragraph 1: On Feb 12, 2026, Agency Engineers completed the public Phase 1 traffic count on Route 12 (14,200 vehicles/day). Paragraph 2 [DRAFT INTERNAL DELIBERATION]: Chief Counsel advises that our pre-decisional negotiation ceiling for Parcel 4B is $820,000, and applicant John Doe's home cell (555-0199) and SSN (999-00-1234) are listed on the tax worksheet."
-2. `/legal-procurement-review`: Score this vendor SaaS contract clause using 1:3:9 risk scoring and write the public-sector replacement redline:
-   "Section 14: Public Agency agrees to indemnify and hold harmless Vendor against all third-party claims, locks into a non-cancellable 5-year term regardless of legislative appropriations, submits to binding arbitration in an out-of-state forum, and grants Vendor a perpetual license to train commercial AI models on Public Agency uploads."
-3. `/policy-program-audit`: Check whether a draft press release saying "$18M in ISRG site grants closing Jan 15, 2027" conflicts with our official $15M / Dec 31, 2026 program rules.
+   - Review this responsive record excerpt for line-by-line segregability under W. Va. Code § 29B-1-4 and 5 U.S.C. § 552 and produce a Vaughn Index table:
+     "Paragraph 1: On Feb 12, 2026, Agency Engineers completed the public Phase 1 traffic count on Route 35 (14,200 vehicles/day). Paragraph 2 [DRAFT INTERNAL DELIBERATION]: Chief Counsel advises that our pre-decisional negotiation ceiling for Parcel 4B is $820,000, and applicant John Doe's home cell (304-555-0199) and SSN (999-00-1234) are listed on the tax worksheet."
+2. `/legal-procurement-review`: Score this vendor SaaS contract clause using 1:3:9 risk scoring under West Virginia law (including W. Va. Code § 5A-3 and constitutional sovereign immunity) and write the West Virginia replacement redline:
+   "Section 14: State Agency agrees to indemnify and hold harmless Vendor against all third-party claims, locks into a non-cancellable 5-year term regardless of legislative appropriations, submits to binding arbitration in Delaware, and grants Vendor a perpetual license to train commercial AI models on State Agency uploads."
+3. `/policy-program-audit`: Check whether a draft press release saying "$18M in IJDC grants closing Jan 15, 2027" conflicts with our official $15M / Dec 31, 2026 program rules.
 ```
 
 ---
 
-## Prompt 5 — Update Old Code, Cloud Run & BigQuery SQL *(IT / Developers — Optional)*
+## Test 5 (New in `v2.0.0`) — Personal Memory, AI Inbox `Action Items`, Minto SCQA Prep & Outbound Scrubbing (`WV Antigravity`)
 
-- **What you'll try:** Ask Antigravity to audit and rewrite a buggy legacy grant-calculation script, generate a secure cloud deployment command, and translate a legacy SQL Server query to BigQuery.
-- **What success looks like:** A 6-part modernization plan that catches the subtle logic bugs (including `or "Oakridge"` always evaluating true and exact `500000` crashing), clean tested Python code, a hardened Cloud Run deploy command, and a parameterized BigQuery query with a 1 GB scan cap.
-- **About how long:** 2–3 minutes.
+- **What this tests:** AI Inbox **`Action Items`** (`Suggested to-dos` + `Topics to catch up on`), `/memory`, `/meeting-notes`, `/meeting-prep`, `/followup-plan`, `/no-ai-slop`, and `/outbound-scrub`.
 
-### Copy & Paste Into Antigravity
+![WV Antigravity Action Items Tab](./screenshots/wv-antigravity-action-items.png)
 
-```text
-Test `agy-engineering-cloud` (`/modernize-refactor`, `/deploy-cloudrun`, and `/bigquery-architect`) on this legacy public-sector grant eligibility script:
-1. `/modernize-refactor`: Create a Stage 1 6-Section Modernization Blueprint (including a Legacy Bug Audit) and refactor this legacy Python 2 / procedural snippet into a clean, tested modern Python module in `./agency-grant-service`:
+### Option A — 1-Click Starter (No Copy-Paste Needed)
+
+Open **`Extensions → WV Antigravity → Action Items`** and click **`+ Add to-do`**, **`Reply`**, or **`Catch up`**—or click **`Run →`** on **`/meeting-prep`**, **`/no-ai-slop`**, or **`/outbound-scrub`** under **`Memory & Prep (8)`**.
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Run an end-to-end test of `wv-second-brain` (`/meeting-notes`, `/meeting-prep`, `/no-ai-slop`, and `/outbound-scrub`) using zero-footprint storage in `~/.gemini/config/plugin_data/wv-antigravity/memory/`:
+1. `/meeting-notes`: Compact these raw call notes into a `wv-55-county-broadband` initiative folder, extract P0/P1 to-dos into `action_items.md` (so they appear in my `WV Antigravity -> Action Items` tab), and log stakeholder `Last_Touch_Date` in `contacts.md`:
+   "Nov 20 Call w/ Sarah Jenkins (WV Broadband Council, sjenkins@wv.gov) & Comms Lead Evan Brooks: Agreed to publish the 55-county match-waiver rubric by Thursday 4 PM ET. Action for me (P0): confirm whether Raleigh and Cabell Tier-2 industrial parks qualify for the 15% distressed-county match waiver. Note: we haven't updated County Coordinator Robert Vance since Oct 15 (>21 days stale!)."
+2. `/meeting-prep`: Build a 1-page pre-meeting brief for tomorrow's Joint Legislative Oversight briefing on `wv-55-county-broadband`, including an Adversarial Minto SCQA Critic (the 3 hardest budget/timeline pushback questions legislators will ask + evidence-backed counter-moves).
+3. `/no-ai-slop` + `/outbound-scrub`: Rewrite and safety-scan this draft update so it strips AI-slop clichés AND flags the leaked test credential + unresolved placeholder before external sharing:
+   "First and foremost, in today's ever-evolving digital landscape, this paradigm-shifting broadband rollout is a total game changer! [CONFIRM: Cabell waiver %] Temp test token: sk-proj-FAKEWVTEST999888777."
+```
+
+---
+
+## Test 6 (New in `v2.0.0`) — `WV Chatski`: Google Chat via WV Gemini Enterprise Connector (`/chatski`)
+
+- **What this tests:** **`Extensions → WV Chatski`** (Chat Bubble icon) + `/chatski` (syncs Google Chat Spaces & DMs through your West Virginia Gemini Enterprise Chat Connector when enabled, or opens in Interactive Sample Mode beforehand, staging `[Draft-Only]` replies).
+
+![WV Chatski Panel](./screenshots/wv-chatski.png)
+
+### Option A — 1-Click Starter (No Copy-Paste Needed)
+
+Open **`Extensions → WV Chatski`** and click **`✨ Summarize`** or hover any message and click **`✨ Draft reply`** (or click **`Run →`** on **`/chatski`**).
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+/chatski Check my `WV Chatski` connection status (`~/.gemini/config/plugin_data/wv-connectors/ge-instance.json` and any staged state in `WV Chatski`):
+1. Summarize how `WV Chatski` connects through our agency's Gemini Enterprise Google Chat Connector (Option B federated discovery) without needing separate personal OAuth tokens on state laptops.
+2. Triage any active or sample West Virginia chat threads needing my response and stage a concise, BLUF `[Draft-Only]` reply confirming that our Mountain State Ready KPI numbers ($40.0M total: $25.0M WVEDA + $15.0M IJDC) are verified and ready for Thursday's briefing.
+```
+
+---
+
+## Test 7 — Legacy App Refactoring, Cloud Run & BigQuery SQL (`wv-engineering-cloud`)
+
+### Option A — 1-Click Starter (No Copy-Paste Needed)
+
+Click **`WV Engineering (4)`** in **`WV Antigravity → Skills`** and click **`Run →`** on **`/modernize-refactor`**, **`/deploy-cloudrun`**, or **`/bigquery-architect`**.
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Test `wv-engineering-cloud` (`/modernize-refactor`, `/deploy-cloudrun`, and `/bigquery-architect`) on this legacy West Virginia grant eligibility script:
+1. `/modernize-refactor`: Create a Stage 1 6-Section Modernization Blueprint (including a Legacy Bug Audit) and refactor this legacy Python procedural snippet into a clean, tested modern Python module in `./wv-grant-service`:
    def calc_grant(amount, county, flags=[]):
-       if county == "Riverbend" or "Oakridge":  # BUG: always truthy!
+       if county == "Kanawha" or "Monongalia":  # BUG: always truthy!
            flags.append("priority")
        if amount > 500000:
            match = amount * 0.25
        elif amount < 500000:  # BUG: exact 500000 falls through!
            match = amount * 0.50
        return {"match": match, "flags": flags}
-2. `/deploy-cloudrun`: Generate the hardened zero-Docker `gcloud run deploy` command and `.gcloudignore` for `./agency-grant-service` in `us-east4` using a dedicated service account and Secret Manager.
+2. `/deploy-cloudrun`: Generate the hardened zero-Docker `gcloud run deploy` command and `.gcloudignore` for `./wv-grant-service` in `us-east4` using a dedicated service account and Secret Manager.
 3. `/bigquery-architect`: Rewrite this legacy SQL Server query into partitioned BigQuery Standard SQL with parameterized `@county_name` and a 1 GB `maximumBytesBilled` cap:
-   SELECT TOP 50 ISNULL(applicant_name, 'Unknown'), DATEDIFF(day, submitted_dt, GETDATE()) FROM dbo.agency_grant_apps WHERE county = 'Riverbend'
+   SELECT TOP 50 ISNULL(applicant_name, 'Unknown'), DATEDIFF(day, submitted_dt, GETDATE()) FROM dbo.wv_grant_apps WHERE county = 'Kanawha'
 ```
 
 ---
 
-## Prompt 6 — Catch 4 Real-World Security Mistakes *(IT / Security — Optional)*
+## Test 8 — Security & Cloud Readiness: "Catch the 4 Real-World Mistakes" (`wv-security`)
 
-- **What you'll try:** Give Antigravity a sample web endpoint and cloud deployment script containing 4 common security mistakes (unsafe webpage text rendering, unsafe database query building, exposed passwords/keys, and overly broad cloud permissions).
-- **What success looks like:** Antigravity flags all 4 mistakes, explains each risk in plain English suitable for an agency security briefing, and provides corrected copy-paste-ready code and `gcloud` commands.
-- **About how long:** 1–2 minutes.
+### Option A — 1-Click Starter on Your Current Workspace (No Copy-Paste Needed)
 
-### Copy & Paste Into Antigravity
+Click **`WV Security (2)`** in **`WV Antigravity → Skills`** and click **`Run →`** on **`/security-audit`** or **`/iam-secret-hygiene`**.
 
-```text
-Run `/security-audit` and `/iam-secret-hygiene` on this draft citizen grant status endpoint and deployment command.
-Find all 4 security and IAM mistakes, explain each risk in plain English for our Agency CISO, and give me the corrected, copy-paste-ready code and `gcloud` commands:
-// DRAFT CODE (Contains intentional vulnerabilities to catch)
-const MASTER_API_KEY = "AIzaSyD-HARDCODED-DEMO-TEST-KEY-999";
+### Option B — Full 4-Vulnerability CISO Test Snippet (Optional Copy-Paste)
+
+```javascript
+// Run /security-audit and /iam-secret-hygiene on this draft West Virginia citizen grant status endpoint and deployment command.
+// Find all 4 security and IAM mistakes, explain each risk in plain English for our Agency CISO, and give me the corrected code and gcloud commands:
+
+const MASTER_API_KEY = "AIzaSyD-HARDCODED-WV-TEST-KEY-999";
 async function lookupApplication(req, res, bqClient, statusBannerEl) {
   const county = req.query.county;
   const note = req.query.applicantNote;
   // Mistake 1: Unsafe DOM rendering
   statusBannerEl.innerHTML = "Checking note: " + note;
   // Mistake 2: SQL string concatenation
-  const sql = `SELECT * FROM \`agency_grants.applications\` WHERE county = '${county}'`;
+  const sql = `SELECT * FROM \`wv_grants.applications\` WHERE county = '${county}'`;
   return await bqClient.query({ query: sql });
 }
-# DRAFT DEPLOYMENT & IAM COMMANDS (Contains intentional cloud security mistakes to catch)
-gcloud projects add-iam-policy-binding agency-grants-prod \
-  --member="user:contractor@gmail.com" \
-  --role="roles/editor"
-gcloud run deploy agency-grant-portal \
-  --source . \
-  --region us-east4 \
-  --allow-unauthenticated \
-  --service-account 123456789-compute@developer.gserviceaccount.com \
-  --set-env-vars "DB_PASSWORD=SuperSecretAgencyPassword123,MASTER_API_KEY=AIzaSyD-HARDCODED"
+
+// DRAFT DEPLOYMENT & IAM COMMANDS (Contains 2 intentional cloud security mistakes to catch):
+// gcloud projects add-iam-policy-binding wv-agency-prod --member="user:contractor@gmail.com" --role="roles/editor"
+// gcloud run deploy wv-grant-portal --source . --region us-east4 --allow-unauthenticated --service-account 123456789-compute@developer.gserviceaccount.com --set-env-vars "DB_PASSWORD=SuperSecretStatePassword123,MASTER_API_KEY=AIzaSyD-HARDCODED"
 ```
 
 ---
 
-## Prompt 7 — Federated Gemini Enterprise (GE) Connectors *(Optional — IT Setup Required)*
+## Test 9 — Federated Gemini Enterprise (`GE`) Connectors (`wv-connectors`)
 
-- **What you'll try:** Check whether Antigravity is connected to your organization's shared Gemini Enterprise search hub and review how single sign-on search works.
-- **What success looks like:** Antigravity reports whether a Gemini Enterprise instance is configured on your computer (even if IT hasn't connected yours yet) and explains in clear steps how single sign-on connects Outlook, SharePoint, OneDrive, Teams, Google Drive, and GitHub while respecting each employee's file permissions.
-- **About how long:** 1–2 minutes.
+### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-### Copy & Paste Into Antigravity
+Click **`GE Connector Hub`** in **`Extensions → WV Skills`** or **`Run →`** on **`/connect-ge`**.
 
-```text
-/connect-ge Check my current Gemini Enterprise (`wv-ge-bridge`) MCP connection status using `ge_instance_status`.
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+/connect-ge Check my current West Virginia Gemini Enterprise (`wv-ge-bridge`) MCP connection status using `ge_instance_status`.
 1. Show me whether a default Gemini Enterprise (`GE`) instance is configured yet in `~/.gemini/config/plugin_data/wv-connectors/ge-instance.json`, and which authentication tier (`gcloud` ADC, Google Identity Browser PKCE OAuth, or Central Cloud Run Gateway) is active.
-2. Walk me through how our Azure/Entra-synced Google Identity connects to our federated Outlook, SharePoint, OneDrive, Microsoft Teams, Google Drive, and GitHub data stores through a single GE instance—and if my GE instance is already configured, run a quick test query via `/connect-m365-workspace`.
+2. Walk me through how our Azure/Entra-synced Google Identity (`@wv.gov`) connects to our federated Outlook, SharePoint, OneDrive, Microsoft Teams, Google Chat, Google Drive, and GitHub data stores through a single GE instance—and if my GE instance is already configured, run a quick test query via `/connect-m365-workspace`.
 ```
 
 ---
 
-## Prompt 8 — Personal Memory, Action Items, SCQA Meeting Prep & Outbound Scrubbing
+## Test 10 (Run Last — New in `v2.0.0`) — 4-Agent Parallel Swarm, 3-Altitude Weekly Impact & Opt-In Automations
 
-- **What you'll try:** Initialize your persistent Personal Memory (`~/.gemini/config/plugin_data/wv-antigravity/memory/`), ingest sample call notes into `action_items.md`, generate a 1-card Adversarial Minto SCQA pre-meeting brief, and run anti-slop + outbound safety scrubbing on a draft email.
-- **What success looks like:** `profile/{identity,portfolio,playbooks,voice}.md`, `action_items.md`, `contacts.md`, and 4-file `initiatives/` folders power the AI Inbox **`Action Items`** (`Suggested to-dos` + `Topics to catch up on`) inside **`Extensions -> WV Antigravity`**; Robert Vance's `STALE (>21d)` status clears after ingesting the call notes; `/meeting-prep` builds a realistic SCQA red-team section; and `/outbound-scrub` + `/no-ai-slop` catch `[CONFIRM: ...]`, `[TODO: ...]`, and LLM filler phrases.
-- **About how long:** 2–3 minutes.
+### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-### Copy & Paste Into Antigravity
+Click **`Run →`** on **`/swarm-prep`** or **`/weekly-impact`** inside **`WV Antigravity → Overview`** (`1-Click Workflows`) or **`Skills → Memory & Prep (8)`**.
 
-```text
-Test our `wv-second-brain` skills (`/memory`, `/meeting-notes`, `/meeting-prep`, `/no-ai-slop`, and `/outbound-scrub`):
-1. `/memory`: Initialize my Personal Memory using the `public-sector` preset for Jordan Taylor (Senior Program Analyst, State Office of Broadband & Digital Equity, timezone `America/New_York`) with demo initiatives enabled.
-2. `/meeting-notes`: Ingest these call notes into `broadband-grant-round-3`, extract open `- [ ]` commitments to `action_items.md` without deleting existing tasks, and update `contacts.md`:
-   "Call: Round 3 County Grant Intake Review (Attendees: Carla Jennings, Robert Vance).
-   - Confirmed the $15M total award cap and Dec 31, 2026 submission deadline across all county PDFs.
-   - [ ] Draft 1-page sample match-waiver calculation worksheet for county applicants
-   - [ ] Confirm FAQ Spanish translation timeline with Communications lead"
-3. `/meeting-prep`: Build a 1-card pre-meeting brief and Adversarial Minto SCQA Critic ("Angle & Pushback to Watch For") for my upcoming legal review with Senior Assistant General Counsel Hannah Kim on `records-modernization-pilot`.
-4. `/outbound-scrub` + `/no-ai-slop`: Audit and rewrite this external draft so it is free of unresolved placeholders and AI-slop filler:
-   "First and foremost, in today's fast-paced and ever-evolving landscape, I wanted to delve into our paradigm-shifting grant portal rollout — it's not just an upgrade, it's a game changer! Please verify the final award ceiling [CONFIRM: $15M or $18M?] and cutoff [TODO: insert date]. At the end of the day, this ensures holistic synergy."
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+Run `/swarm-prep` and `/weekly-impact` for our West Virginia `Mountain State Ready` ($40.0M WVEDA + IJDC) and `55-County Broadband` portfolio:
+1. `/swarm-prep`: Launch your 4 parallel subagents (Memory Scout, Adversarial Minto SCQA Critic, L100–L300 Solution Architect, and Outbound Scrubbing Auditor) to prepare me for Friday's Governor's Office & IJDC Executive Readiness Review—including an architecture/governance Mermaid diagram and a scrubbed `[Draft-Only]` follow-up memo.
+2. `/weekly-impact`: Generate this week's 3-Altitude Accomplishment Summary (Altitude 1: Executive Agency Outcomes, Altitude 2: Reusable Templates & Guardrails Built, Altitude 3: Workstream Velocity) and save it inside `~/.gemini/config/plugin_data/wv-antigravity/memory/weekly/`.
 ```
 
 ---
 
-## Prompt 9 (Run Last) — 4-Agent Parallel Swarm Prep & 3-Altitude Weekly Impact
+## Send Your Feedback & Zero-Footprint Clean Uninstall
 
-- **What you'll try:** Run 4 specialized subagents concurrently (`wv-context-memory-scout`, `wv-scqa-redteam-critic`, `wv-domain-solution-architect`, `wv-outbound-safety-auditor`) to prepare a 360-degree milestone review pack, then generate your Friday 3-Altitude accomplishment summary.
-- **What success looks like:** All 4 subagents run in parallel and synthesize one structured 360 Prep Pack (with an `L100–L300` talk track, Mermaid diagram, SCQA counter-moves, and pre-scrubbed `[Draft-Only]` recap), followed by a saved `weekly/YYYY-WXX.md` and `impact/ledger.json` entry.
-- **About how long:** 2–3 minutes.
-
-### Copy & Paste Into Antigravity
-
-```text
-1. `/swarm-prep`: Run a 4-agent parallel 360 prep pack for our Thursday milestone review on `broadband-grant-round-3` (covering memory status, an L100–L300 talk track with a Mermaid workflow diagram, SCQA pushback & counter-moves, and a pre-scrubbed `[Draft-Only]` stakeholder recap).
-2. `/weekly-impact`: Summarize our current progress across Altitude 1 (Executive Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity) into `~/.gemini/config/plugin_data/wv-antigravity/memory/weekly/` and `impact/ledger.json`.
-```
-
----
-
-## Send Your Feedback
-
-After trying your chosen prompts, please take **2 minutes** to share what you saw in your agency's pilot feedback form (`[Feedback Form Link]`):
-- **Did it work as expected?**
-- **Would this be useful in your day-to-day work?**
+After trying your chosen prompts, please share quick feedback in your pilot form (`[Feedback Form Link]` by `[Testing Target Date]`):
+- **Did the 1-click extensions and skills work as expected?**
+- **Which workflows are highest value for your agency team?**
 - **What felt confusing or should be improved?**
 
-**Target completion date:** `[Testing Target Date]`
-
----
-
-## Troubleshooting & Updates
-
-- **Nothing happens after I press Enter:** Wait 2 minutes; if Antigravity is still idle, click **+ New Conversation** and paste the prompt again.
-- **Antigravity asks for permission:** Click **Accept**. Being asked to click Accept a few times is normal when Default review mode is on.
-- **I see an error message:** Take a screenshot and attach it to your feedback submission.
-- **How to get skill updates:** If your coordinator announces an update to the skills, type `/wv-update` in the Antigravity chat box and press **Enter** (updates take about 1 second—no full re-install needed).
-- **IT & Security Architecture Details:** See [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).
-- **Still stuck?** Contact `[Name / Email / Chat Space]`.
+### Clean Uninstall & Incremental Updates
+- **Fast `<1s` Updates:** Click **`Sync Updates`** in **`Extensions → WV Skills`** or type `/wv-update`.
+- **Clean Uninstall:** Run [`scripts/uninstall-wv-suite.ps1`](../scripts/uninstall-wv-suite.ps1) on Windows PowerShell 5.1 (or [`scripts/uninstall-wv-suite.sh`](../scripts/uninstall-wv-suite.sh) on macOS/Linux; pass `-PurgeData` / `--purge-data` to also delete saved memory and settings).
