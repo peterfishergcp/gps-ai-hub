@@ -1,6 +1,11 @@
 (function () {
   let appState = null;
-  let activeTab = 'overview';
+  const VALID_TABS = new Set(['overview', 'actions', 'initiatives', 'contacts', 'skills', 'customize']);
+  const initialTabParam =
+    typeof window !== 'undefined' && window.location && window.location.search
+      ? new URLSearchParams(window.location.search).get('tab')
+      : null;
+  let activeTab = initialTabParam && VALID_TABS.has(initialTabParam) ? initialTabParam : 'overview';
   let showAllTodos = false;
   let showCompletedTodos = false;
   let showAddTodoBar = false;
@@ -2472,6 +2477,7 @@
       render();
     });
   });
+  syncTabButtons();
 
   let tokenMeter = null;
   if (window.AGYTokenPill) {

@@ -3,33 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Generic AGY Plugin — Antigravity Launchpad &amp; Skill Registry</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;600&display=swap">
+  <title>Welcome to Antigravity — Public Sector Suite &amp; 40-Skill Launchpad</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <header class="top-app-bar">
     <div class="nav-inner">
       <a href="#overview" class="brand-link">
-        <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 100 100" fill="none" aria-hidden="true">
           <defs>
-            <linearGradient id="geminiStarGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#1a73e8"/>
-              <stop offset="35%" stop-color="#8ab4f8"/>
-              <stop offset="70%" stop-color="#9334e6"/>
-              <stop offset="100%" stop-color="#ea4335"/>
+            <radialGradient id="navTopRed" cx="62%" cy="22%" r="48%">
+              <stop offset="0%" stop-color="#FF4B3A"/>
+              <stop offset="48%" stop-color="#FF9F1C"/>
+              <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="navLeftGreen" cx="34%" cy="32%" r="46%">
+              <stop offset="0%" stop-color="#34C759"/>
+              <stop offset="52%" stop-color="#A3E635" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="navBaseBlue" x1="50" y1="12" x2="50" y2="88" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#60A5FA"/>
+              <stop offset="55%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#3B82F6"/>
             </linearGradient>
           </defs>
-          <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#geminiStarGradNav)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#navBaseBlue)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#navLeftGreen)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#navTopRed)"/>
         </svg>
-        <span>Public Sector · Generic AGY Plugin Hub</span>
+        <span>Antigravity · Public Sector Suite</span>
       </a>
 
       <nav class="nav-pills" aria-label="Primary sections">
-        <a href="#overview" class="nav-pill active">Launchpad</a>
-        <a href="#skills-registry" class="nav-pill">Skills Registry (39)</a>
+        <a href="#overview" class="nav-pill active">Setup</a>
+        <a href="#workspace-showcase" class="nav-pill">Workspace Tour</a>
+        <a href="#skills-registry" class="nav-pill">Skills (40)</a>
       </nav>
 
       <div class="nav-actions">
@@ -39,110 +48,155 @@
   </header>
 
   <main class="page-wrap">
-    <!-- HERO & 3-STEP ONBOARDING BOXES -->
+    <!-- CLEAN ANTIGRAVITY WELCOME HERO -->
     <section id="overview">
-      <h1 class="hero-title">Generic AGY Plugin Launchpad &amp; Skill Registry</h1>
+      <div class="agy-welcome-hero">
+        <svg width="46" height="46" viewBox="0 0 100 100" fill="none" aria-hidden="true" class="hero-agy-mark">
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#navBaseBlue)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#navLeftGreen)"/>
+          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#navTopRed)"/>
+        </svg>
+        <h1 class="hero-title">
+          Welcome to Antigravity!
+          <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f60e/512.webp" alt="😎" class="noto-inline">
+        </h1>
+        <p class="hero-sub">
+          Get <span class="ai-blue">40 Public Sector skills</span>, <span class="ai-blue">My Antigravity</span> (AI Inbox Action Items &amp; Memory), <span class="ai-blue">Chatski</span> (Google Chat via Gemini Enterprise), and <span class="ai-blue">Preview</span> in one command — zero extra laptop software required.
+        </p>
+      </div>
 
       <div class="pathway-grid">
         <!-- STEP 1 -->
         <div class="pathway-card">
           <div>
             <div class="pathway-top">
-              <span class="icon-tile blue">1</span>
-              <span class="mono-tag">Step 1 · Download &amp; Install</span>
+              <span class="step-num-pill">01</span>
+              <span class="mono-tag">Download &amp; Sign In</span>
             </div>
-            <h3>1. Complete AGY Download &amp; Install</h3>
-            <p>Follow the 7 visual steps to download and install Google Antigravity (<code>AGY</code>) and sign in with your official organizational Business Account.</p>
+            <h3>1. Sign in to Antigravity</h3>
+            <p>Download Google Antigravity Desktop and sign in with your official organizational Business Account (<code>@your-org.gov</code>).</p>
             <div class="agy-shot-card">
               <div class="agy-shot-caption">
-                <span>Set Up Google Antigravity for Your Organization (<code>@your-org.gov</code>)</span>
+                <span>7-Step Visual Organization Sign-In Guide</span>
               </div>
               <img src="./img/step1-agy-setup.jpg" alt="Set Up Google Antigravity for Your Organization guide preview" class="agy-shot-img">
             </div>
           </div>
-          <a href="../setup-guide/index.html" target="_blank" rel="noopener noreferrer" class="pathway-cta blue" id="setupGuideLink">Open AGY Download &amp; Install Guide →</a>
+          <a href="../setup-guide/index.html" target="_blank" rel="noopener noreferrer" class="sky-cta" id="setupGuideLink">Open AGY Download &amp; Install Guide →</a>
         </div>
 
         <!-- STEP 2 -->
-        <div class="pathway-card emerald-accent">
+        <div class="pathway-card">
           <div>
             <div class="pathway-top">
-              <span class="icon-tile emerald">2</span>
-              <span class="mono-tag">Step 2 · New Conversation + Turbo Mode</span>
+              <span class="step-num-pill">02</span>
+              <span class="mono-tag">1-Command Install</span>
             </div>
-            <h3>2. Install Plugin</h3>
+            <h3>2. Install the Plugin Suite</h3>
             <ol class="step2-checklist">
               <li>Click <strong>+ New Conversation</strong> in Antigravity.</li>
-              <li>Switch <strong>Request Review ▾</strong> (bottom-right of prompt box) to <span class="turbo-pill">⚡ Turbo</span> to eliminate repetitive approval prompts during install.</li>
-              <li>Paste this prompt and click Send (<code>→</code>):</li>
+              <li>Optional: switch <strong>Request Review ▾</strong> to <span class="turbo-pill">⚡ Turbo</span> during setup (then switch back to <strong>Default</strong>).</li>
+              <li>Paste into Antigravity chat or terminal:</li>
             </ol>
-            <pre class="inline-prompt-box" id="step2PromptText">agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin</pre>
+            <div class="agy-dark-cmd-box">
+              <div class="agy-dark-cmd-head">
+                <span>Paste in Antigravity or terminal</span>
+                <button type="button" class="dark-copy-btn" id="copyStep2TopBtn">Copy</button>
+              </div>
+              <pre class="inline-prompt-box" id="step2PromptText">agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin</pre>
+            </div>
 
-            <!-- Visual Screenshot Guide of AGY Prompt Box + Turbo Mode Selector -->
             <div class="agy-shot-card" aria-label="Visual guide showing Antigravity prompt box and Turbo Mode selector">
               <div class="agy-shot-caption">
-                <span>AGY Prompt Box — Paste Command &amp; Select <strong>Turbo Mode</strong></span>
+                <span>Antigravity Prompt Box — Paste Command &amp; Send</span>
               </div>
-              <svg viewBox="0 0 620 266" class="agy-shot-svg" role="img" aria-label="Antigravity prompt box showing the install command and the Request Review menu switched to Turbo mode">
-                <rect x="8" y="8" width="604" height="250" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
-                <text x="26" y="32" fill="#64748b" font-family="Fira Sans, sans-serif" font-size="12" font-weight="500">📁 ~/Documents/agency-workspace ▾   ⑂ main ▾</text>
-                <rect x="18" y="42" width="584" height="204" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
-                <rect x="28" y="52" width="564" height="32" rx="6" fill="#ecfdf5" stroke="#10b981" stroke-width="1" stroke-dasharray="3,2"/>
-                <text x="36" y="72" fill="#0f172a" font-family="Roboto Mono, monospace" font-size="11.1" font-weight="600">agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin</text>
-                <rect x="348" y="92" width="242" height="106" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
-                <text x="364" y="112" fill="#64748b" font-family="Fira Sans, sans-serif" font-size="11" font-weight="600">👁 Request Review</text>
-                <text x="380" y="124" fill="#94a3b8" font-family="Fira Sans, sans-serif" font-size="9.5">Every command requires approval.</text>
-                <text x="364" y="142" fill="#64748b" font-family="Fira Sans, sans-serif" font-size="11" font-weight="600">🔒 Default</text>
-                <text x="380" y="154" fill="#94a3b8" font-family="Fira Sans, sans-serif" font-size="9.5">Ask before sensitive operations.</text>
-                <rect x="354" y="162" width="230" height="30" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.2"/>
-                <text x="364" y="176" fill="#065f46" font-family="Fira Sans, sans-serif" font-size="11.5" font-weight="700">⚡ Turbo   ✓</text>
-                <text x="380" y="187" fill="#047857" font-family="Fira Sans, sans-serif" font-size="9.5" font-weight="600">Run all commands without restrictions.</text>
-                <text x="34" y="226" fill="#475569" font-family="Fira Sans, sans-serif" font-size="12.5" font-weight="600">+   Gemini 3.8 Flash</text>
-                <text x="155" y="226" fill="#94a3b8" font-family="Fira Sans, sans-serif" font-size="12">Medium ▾</text>
-                <rect x="444" y="208" width="106" height="26" rx="13" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
-                <text x="456" y="225" fill="#1d4ed8" font-family="Fira Sans, sans-serif" font-size="11.5" font-weight="700">⚡ Turbo Mode ▾</text>
-                <circle cx="576" cy="221" r="14" fill="#2563eb"/>
-                <text x="570" y="226" fill="#ffffff" font-family="Fira Sans, sans-serif" font-size="13" font-weight="700">→</text>
+              <svg viewBox="0 0 620 236" class="agy-shot-svg" role="img" aria-label="Antigravity prompt box showing the install command">
+                <rect x="8" y="8" width="604" height="220" rx="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+                <rect x="20" y="24" width="580" height="188" rx="14" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.2"/>
+                <rect x="30" y="36" width="560" height="34" rx="8" fill="#f0f4fa"/>
+                <text x="40" y="57" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.8" font-weight="600">agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin</text>
+                <rect x="352" y="80" width="236" height="86" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+                <text x="368" y="102" fill="#64748b" font-family="sans-serif" font-size="11" font-weight="600">🔒 Default — Ask before sensitive ops</text>
+                <rect x="360" y="114" width="220" height="42" rx="9" fill="#f0f4fa" stroke="#3b78e7" stroke-width="1.2"/>
+                <text x="372" y="132" fill="#001d35" font-family="sans-serif" font-size="11.5" font-weight="700">⚡ Turbo   ✓</text>
+                <text x="372" y="147" fill="#475569" font-family="sans-serif" font-size="9.5">Run install commands without prompts</text>
+                <text x="36" y="194" fill="#334155" font-family="sans-serif" font-size="12" font-weight="600">+   Orchestrator (Argon) ▾</text>
+                <circle cx="574" cy="190" r="14" fill="#111827"/>
+                <text x="568" y="195" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="700">→</text>
               </svg>
             </div>
           </div>
-          <button type="button" class="pathway-cta emerald" id="copyStep2PromptBtn">Copy Install Prompt</button>
+          <button type="button" class="dark-cta" id="copyStep2PromptBtn">Copy Install Command</button>
         </div>
 
         <!-- STEP 3 -->
-        <div class="pathway-card amber-accent">
+        <div class="pathway-card">
           <div>
             <div class="pathway-top">
-              <span class="icon-tile amber">3</span>
-              <span class="mono-tag">Step 3 · Verify &amp; Explore</span>
+              <span class="step-num-pill">03</span>
+              <span class="mono-tag">Explore Extensions</span>
             </div>
-            <h3>3. Test the Plugin</h3>
-            <p>Try the guided test prompts or pick any of the 39 Public Sector skills below (Dashboards, Action Items &amp; Personal Memory, Swarm Prep, Orchestrator, Token Telemetry, Claude + Gemini models, FOIA, Government Services, Triage, and Connectors).</p>
+            <h3>3. Open My Antigravity &amp; Chatski</h3>
+            <p>Open <strong>My Antigravity</strong>, <strong>Chatski</strong>, <strong>Skills</strong>, and <strong>Preview</strong> in the left sidebar — with a live hoverable token usage meter on every panel.</p>
             <div class="agy-shot-card">
               <div class="agy-shot-caption">
-                <span>Live Rendered Output — Civic Ready 2026 Portfolio Dashboard</span>
+                <span>AI Inbox Action Items &amp; Topics + Animated Noto Icons</span>
               </div>
-              <img src="./img/step3-test-dashboard.jpg" alt="Rendered Civic Ready 2026 Portfolio Dashboard preview inside Antigravity" class="agy-shot-img">
+              <img src="./img/my-antigravity-action-items.png" alt="My Antigravity Action Items AI Inbox view" class="agy-shot-img">
             </div>
           </div>
-          <a href="#skills-registry" class="pathway-cta amber">Explore All 39 Skills ↓</a>
+          <a href="#workspace-showcase" class="sky-cta">Tour All Tabs &amp; Chatski ↓</a>
         </div>
       </div>
     </section>
 
-    <!-- PUBLIC SECTOR SKILLS REGISTRY (ALL 39 SKILLS ACROSS 9 CATEGORIES) -->
-    <section id="skills-registry">
+    <!-- SCALLOP WAVE DIVIDER -->
+    <div class="ai-wave-divider" aria-hidden="true">
+      <svg viewBox="0 0 1200 24" preserveAspectRatio="none" width="100%" height="20">
+        <path d="M0,12 Q10,2 20,12 T40,12 Q50,2 60,12 T80,12 Q90,2 100,12 T120,12 Q130,2 140,12 T160,12 Q170,2 180,12 T200,12 Q210,2 220,12 T240,12 Q250,2 260,12 T280,12 Q290,2 300,12 T320,12 Q330,2 340,12 T360,12 Q370,2 380,12 T400,12 Q410,2 420,12 T440,12 Q450,2 460,12 T480,12 Q490,2 500,12 T520,12 Q530,2 540,12 T560,12 Q570,2 580,12 T600,12 Q610,2 620,12 T640,12 Q650,2 660,12 T680,12 Q690,2 700,12 T720,12 Q730,2 740,12 T760,12 Q770,2 780,12 T800,12 Q810,2 820,12 T840,12 Q850,2 860,12 T880,12 Q890,2 900,12 T920,12 Q930,2 940,12 T960,12 Q970,2 980,12 T1000,12 Q1010,2 1020,12 T1040,12 Q1050,2 1060,12 T1080,12 Q1090,2 1100,12 T1120,12 Q1130,2 1140,12 T1160,12 Q1170,2 1180,12 T1200,12 L1200,24 L0,24 Z" fill="currentColor"></path>
+      </svg>
+    </div>
+
+    <!-- INTERACTIVE WORKSPACE TOUR (ACTION ITEMS, OVERVIEW, CHATSKI, INITIATIVES, STAKEHOLDERS, SKILLS) -->
+    <section id="workspace-showcase" class="showcase-band">
+      <div class="showcase-head">
+        <div>
+          <h2 class="ai-section-heading">
+            Inside <span class="ai-blue">My Antigravity</span> &amp; <span class="ai-blue">Chatski</span>
+            <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f36a/512.webp" alt="🍪" class="noto-inline-sm">
+          </h2>
+          <p class="showcase-sub">Unified AI Inbox look &amp; feel across every tab, live hoverable <code>in | out | thinking</code> token meter, and Google Chat via Gemini Enterprise.</p>
+        </div>
+        <div class="showcase-tabs" id="showcaseTabBar" role="tablist">
+          <button type="button" class="showcase-tab active" data-shot="./img/my-antigravity-action-items.png" data-caption="Action Items — AI Inbox Suggested to-dos (Reply / Open pills) + Topics to catch up on">Action Items 🍪</button>
+          <button type="button" class="showcase-tab" data-shot="./img/my-antigravity-overview.png" data-caption="Overview — Instant Ask/Search Bar, Up Next stack &amp; 1-Click Workflows">Overview 😎</button>
+          <button type="button" class="showcase-tab" data-shot="./img/chatski-ge-chat.png" data-caption="Chatski — Left-Sidebar Google Chat workspace powered out-of-the-box by your Gemini Enterprise Chat Connector">Chatski 💬</button>
+          <button type="button" class="showcase-tab" data-shot="./img/my-antigravity-initiatives.png" data-caption="Initiatives — Traffic-light RAG status, upcoming milestones &amp; 4-file isolated project memory">Initiatives 🚦</button>
+          <button type="button" class="showcase-tab" data-shot="./img/my-antigravity-stakeholders.png" data-caption="Stakeholders — >21-day check-in radar, 1-click touch logging &amp; relationship cards">Stakeholders 🌊</button>
+          <button type="button" class="showcase-tab" data-shot="./img/my-antigravity-skills.png" data-caption="Skills — 40 ready-to-run Public Sector skills + update-proof Save My Copy">Skills ✨</button>
+        </div>
+      </div>
+
+      <div class="showcase-frame">
+        <div class="showcase-caption" id="showcaseCaption">Action Items — AI Inbox Suggested to-dos (Reply / Open pills) + Topics to catch up on</div>
+        <img src="./img/my-antigravity-action-items.png" alt="My Antigravity Workspace Screenshot" class="showcase-main-img" id="showcaseMainImg">
+      </div>
+    </section>
+
+    <!-- PUBLIC SECTOR SKILLS REGISTRY (ALL 40 SKILLS ACROSS 9 CATEGORIES) -->
+    <section id="skills-registry" class="registry-section">
       <div class="registry-hero">
-        <h2>Public Sector Skills Registry</h2>
+        <h2 class="ai-section-heading">
+          Explore <span class="ai-blue">40 ready-to-run skills</span>
+          <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2728/512.webp" alt="✨" class="noto-inline-sm">
+        </h2>
         <p>
-          Explore <strong>39 slash-command skills</strong> across 8 modular plugins &amp; 9 categories—including AI Inbox Action Items, Personal Memory &amp; 4-Agent Swarm (<code>/memory</code>, <code>/swarm-prep</code>), Orchestrator &amp; Token Telemetry (<code>/orchestrator-guide</code>, <code>/token-usage</code>), Anthropic Claude + Google Gemini model routing (<code>/model-guide</code>), FOIA &amp; procurement workflows, and 7 Government Services (<code>public_sector</code>) skills.
+          Search across 8 modular plugins &amp; 9 categories—including <strong>Chatski</strong> (<code>/chatski</code>), <strong>Orchestrator</strong> &amp; <strong>Token Telemetry</strong> (<code>/orchestrator-guide</code>, <code>/token-usage</code>), <strong>Personal Memory &amp; 4-Agent Swarm</strong> (<code>/memory</code>, <code>/swarm-prep</code>), <strong>Claude + Gemini</strong> routing (<code>/model-guide</code>), and 7 <strong>Government Services</strong> skills.
         </p>
 
-        <div class="aurora-omnibox">
-          <div class="aurora-inner">
-            <span aria-hidden="true" style="color:var(--md-sys-color-primary);font-weight:700;">⌕</span>
-            <input type="search" id="skillSearchInput" placeholder="Search skills by name, /command, Action Items, Memory, Orchestrator, Token, Claude, FOIA..." aria-label="Search Public Sector Antigravity skills">
-          </div>
+        <div class="ai-pill-search">
+          <span aria-hidden="true" class="search-glyph">⌕</span>
+          <input type="search" id="skillSearchInput" placeholder="Search 40 skills by name, /command, Chatski, Action Items, Orchestrator, Token, Claude, FOIA..." aria-label="Search Public Sector Antigravity skills">
         </div>
 
         <div class="filter-row" id="typeFilterBar" aria-label="Filter by skill type"></div>
@@ -154,7 +208,7 @@
   </main>
 
   <footer class="footer">
-    <p>Generic AGY Plugin · Public Sector Antigravity Launchpad &amp; 39-Skill Registry · Zero-Install Corporate Laptop Architecture</p>
+    <p>Google Antigravity · Public Sector Suite (`v1.6.2`) · 40 Skills · My Antigravity · Chatski · Zero-Install Corporate Laptop Architecture</p>
   </footer>
 
   <script src="./workshop.js"></script>
