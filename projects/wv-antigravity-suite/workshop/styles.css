@@ -88,6 +88,15 @@ body {
   font-weight: 700;
   font-size: 15.5px;
   letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.brand-link svg,
+.nav-agy-mark {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: block;
 }
 
 .nav-pills {
@@ -151,7 +160,10 @@ body {
 }
 
 .hero-agy-mark {
-  margin-bottom: 8px;
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  margin-bottom: 6px;
 }
 
 .hero-title {
@@ -320,11 +332,18 @@ body {
   border-bottom: 1px solid var(--agy-border);
 }
 
-.agy-shot-svg,
-.agy-shot-img {
+.agy-shot-svg {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.agy-shot-img {
+  display: block;
+  width: 100%;
+  height: 176px;
+  object-fit: cover;
+  object-position: top center;
 }
 
 .sky-cta,
@@ -421,6 +440,8 @@ body {
 }
 
 .showcase-frame {
+  max-width: 880px;
+  margin: 0 auto;
   background: var(--agy-card);
   border: 1px solid var(--agy-border);
   border-radius: 18px;
@@ -440,7 +461,9 @@ body {
 .showcase-main-img {
   display: block;
   width: 100%;
-  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  background: var(--agy-card);
 }
 
 /* Skills Registry Section */
