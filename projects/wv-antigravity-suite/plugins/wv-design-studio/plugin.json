@@ -1,8 +1,8 @@
 {
   "name": "wv-design-studio",
-  "displayName": "WV Design Studio — Dashboards, Slides & Branded Docs",
-  "version": "1.3.1",
-  "description": "100% serverless visual dashboards, 16:9 HTML/PDF slide decks, and West Virginia branded flyers/memos—with automatic Side-Pane HTML Artifact rendering, the built-in WV Preview sidebar panel, and 1-click standalone HTML download (zero Python, zero Node server, and zero firewall ports).",
+  "displayName": "WV Preview \u2014 Dashboards, Slides & Branded Docs",
+  "version": "2.0.0",
+  "description": "100% serverless visual dashboards, 16:9 HTML/PDF slide decks, and West Virginia branded flyers/memos\u2014with automatic Side-Pane HTML Artifact rendering, the built-in WV Preview sidebar panel, and 1-click standalone HTML download (zero Python, zero Node server, and zero firewall ports).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /wv-dashboard to spin up a West Virginia branded executive dashboard I can view in the Side Pane or download for Chrome/Edge",

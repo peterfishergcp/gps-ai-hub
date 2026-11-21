@@ -1,0 +1,19 @@
+{
+  "builtin": "schedule",
+  "args": [
+    "CRON_TZ=America/New_York 30 8 * * 1-5",
+    "agentapi",
+    "new-conversation",
+    "--",
+    "Run /daily-brief using ~/.gemini/config/plugin_data/wv-antigravity/memory/ and any connected read-only MCP servers (such as wv-ge-bridge for Calendar, Mail, Teams, and SharePoint). Summarize today's Top 3 actions, upcoming meetings, open P0/P1 action items, active initiative milestones, and any stakeholders in contacts.md over 21 days since last touch."
+  ],
+  "restart_policy": "always",
+  "display_name": "Morning Kickoff Brief",
+  "description": "Every weekday at 8:30 AM, runs /daily-brief across your workspace memory and connected calendar/inbox sources.",
+  "agent_permissions": {
+    "access_grants": [
+      "read_file(${HOME}/.gemini/config/plugin_data/wv-antigravity)",
+      "write_file(${HOME}/.gemini/config/plugin_data/wv-antigravity)"
+    ]
+  }
+}

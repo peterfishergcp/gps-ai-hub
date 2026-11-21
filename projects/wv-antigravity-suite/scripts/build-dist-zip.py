@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds dist/wv-antigravity-suite.zip (<200 KB) and embeds SHA-256 per-skill hashes into version-manifest.json for <1s incremental skill updates."""
+"""Builds dist/wv-antigravity-suite.zip (<200 KB), mirrors it to workshop/dist/, and embeds SHA-256 hashes into version-manifest.json."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import zipfile
 
 
@@ -58,6 +59,8 @@ def update_manifest_hashes(suite_root: Path) -> None:
     sidecar_manifest: dict[str, dict] = {}
     if plugins_dir.is_dir():
         for plugin_dir in sorted(p for p in plugins_dir.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            if plugin_dir.name == "wv-automations":
+                continue
             sidecars_root = plugin_dir / "sidecars"
             if not sidecars_root.is_dir():
                 continue
@@ -94,7 +97,9 @@ def build_zip() -> Path:
         suite_root / "version-manifest.json",
         suite_root / "README.md",
         suite_root / "scripts" / "install-wv-suite.ps1",
+        suite_root / "scripts" / "uninstall-wv-suite.ps1",
         suite_root / "scripts" / "install-wv-suite.sh",
+        suite_root / "scripts" / "uninstall-wv-suite.sh",
         suite_root / "plugins",
     ]
 
@@ -114,6 +119,11 @@ def build_zip() -> Path:
                             continue
                         rel = fpath.relative_to(suite_root).as_posix()
                         zf.write(fpath, arcname=rel)
+
+    workshop_dist = suite_root / "workshop" / "dist"
+    if workshop_dist.parent.is_dir():
+        workshop_dist.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(out_zip, workshop_dist / out_zip.name)
 
     return out_zip
 

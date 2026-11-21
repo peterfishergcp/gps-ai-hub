@@ -1,6 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#053254"/>
-  <path d="M16 44L26 20L34 34L42 22L48 44H16Z" fill="#D5A245"/>
-  <circle cx="46" cy="18" r="5" fill="#C1452C"/>
-  <rect x="16" y="47" width="32" height="4" rx="2" fill="#FFFFFF" fill-opacity="0.9"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="wvSkillsGrad" x1="14" y1="12" x2="86" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="55%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="wvSkillsAccent" x1="60" y1="10" x2="90" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <path d="M44 12C45.6 28.4 55.6 38.4 72 40C55.6 41.6 45.6 51.6 44 68C42.4 51.6 32.4 41.6 16 40C32.4 38.4 42.4 28.4 44 12Z" fill="url(#wvSkillsGrad)"/>
+  <path d="M76 12C77 20.5 81.5 25 90 26C81.5 27 77 31.5 76 40C75 31.5 70.5 27 62 26C70.5 25 75 20.5 76 12Z" fill="url(#wvSkillsAccent)"/>
+  <path d="M70 56C71.1 65.2 76.8 70.9 86 72C76.8 73.1 71.1 78.8 70 88C68.9 78.8 63.2 73.1 54 72C63.2 70.9 68.9 65.2 70 56Z" fill="url(#wvSkillsGrad)" opacity="0.88"/>
 </svg>

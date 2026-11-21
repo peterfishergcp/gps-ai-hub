@@ -1,6 +1,8 @@
 #!/usr/bin/env node
+
+const __parseJsonNoBom = (s) => JSON.parse(typeof s === 'string' ? s.replace(/^\uFEFF/, '') : Buffer.isBuffer(s) ? s.toString('utf-8').replace(/^\uFEFF/, '') : s);
 /**
- * State of West Virginia — Zero-Dependency Gemini Enterprise (GE) Federated MCP Bridge
+ * Public Sector — Zero-Dependency Gemini Enterprise (GE) Federated MCP Bridge
  *
  * Runs automatically on Google Antigravity Desktop's bundled `agy-node` runtime
  * (zero Node.js, Python, or npm installs required on corporate laptops).
@@ -57,7 +59,7 @@ function readPrivateJson(fileName) {
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(target, 'utf8'));
+    return __parseJsonNoBom(fs.readFileSync(target, 'utf8'));
   } catch {
     return null;
   }
@@ -145,7 +147,7 @@ function loadActiveGeConfig() {
 
 function discoveryEngineBaseUrl(location) {
   // Allow loopback mock server strictly for local automated self-tests
-  const testOrigin = process.env.WV_GE_TEST_ORIGIN;
+  const testOrigin = process.env.AGY_GE_TEST_ORIGIN;
   if (testOrigin && /^http:\/\/127\.0\.0\.1:\d+$/.test(testOrigin)) {
     return testOrigin;
   }
@@ -190,7 +192,7 @@ function httpsJsonRequest(urlString, { method = 'GET', headers = {}, bodyObj = n
           const text = Buffer.concat(chunks).toString('utf8');
           let json = null;
           try {
-            json = JSON.parse(text);
+            json = __parseJsonNoBom(text);
           } catch {
             // Keep raw text when upstream returns streaming chunks or plain error text
           }
@@ -231,8 +233,8 @@ async function refreshOAuthToken({ clientId, clientSecret, refreshToken }) {
 let memoryTokenCache = { accessToken: '', expiresAt: 0, quotaProjectId: '' };
 
 async function resolveUserAccessToken(cfg) {
-  if (process.env.WV_GE_TEST_BEARER && process.env.WV_GE_TEST_ORIGIN) {
-    return { accessToken: process.env.WV_GE_TEST_BEARER, source: 'test-bearer', quotaProjectId: cfg.projectId };
+  if (process.env.AGY_GE_TEST_BEARER && process.env.AGY_GE_TEST_ORIGIN) {
+    return { accessToken: process.env.AGY_GE_TEST_BEARER, source: 'test-bearer', quotaProjectId: cfg.projectId };
   }
   if (memoryTokenCache.accessToken && Date.now() < memoryTokenCache.expiresAt) {
     return { accessToken: memoryTokenCache.accessToken, source: 'cached', quotaProjectId: memoryTokenCache.quotaProjectId };
@@ -260,7 +262,7 @@ async function resolveUserAccessToken(cfg) {
   for (const adcPath of adcCandidates) {
     if (fs.existsSync(adcPath)) {
       try {
-        const adc = JSON.parse(fs.readFileSync(adcPath, 'utf8'));
+        const adc = __parseJsonNoBom(fs.readFileSync(adcPath, 'utf8'));
         if (adc.type === 'authorized_user' && adc.client_id && adc.refresh_token) {
           const refreshed = await refreshOAuthToken({
             clientId: adc.client_id,
@@ -373,7 +375,7 @@ async function runPkceLoopbackSignIn({ clientId, clientSecret = '' }) {
           'Content-Type': 'text/plain; charset=utf-8',
           'Content-Security-Policy': "default-src 'none'",
         });
-        res.end('Google Identity connected to West Virginia Gemini Enterprise Bridge. You can close this tab and return to Antigravity.');
+        res.end('Google Identity connected to Public Sector Gemini Enterprise Bridge. You can close this tab and return to Antigravity.');
         server.close();
         resolve({ signedIn: true, redirectUri });
       } catch (err) {
@@ -407,7 +409,7 @@ async function runPkceLoopbackSignIn({ clientId, clientSecret = '' }) {
         pendingBrowserAuth: true,
         authorizeUrl: authUrl.toString(),
         instructions:
-          'Open the authorizeUrl in Chrome or Edge and sign in with your West Virginia Google Identity (synced with Azure/Entra ID). Once complete, run ge_instance_status to verify.',
+          'Open the authorizeUrl in Chrome or Edge and sign in with your Public Sector Google Identity (synced with Azure/Entra ID). Once complete, run ge_instance_status to verify.',
       });
     });
   });
@@ -447,7 +449,7 @@ export function extractStreamAssistPayload(parsedJson, rawText) {
       const trimmed = line.trim();
       if (!trimmed) continue;
       try {
-        frames.push(JSON.parse(trimmed));
+        frames.push(__parseJsonNoBom(trimmed));
       } catch {
         // Ignore partial non-JSON lines
       }
@@ -551,7 +553,7 @@ const TOOLS = [
   {
     name: 'ge_sign_in',
     description:
-      'Starts a zero-gcloud 1-click Google Identity browser OAuth PKCE sign-in on 127.0.0.1 (redirecting seamlessly through West Virginia\'s Azure/Entra ID SSO) when gcloud ADC is not present on the corporate laptop.',
+      'Starts a zero-gcloud 1-click Google Identity browser OAuth PKCE sign-in on 127.0.0.1 (redirecting seamlessly through Public Sector\'s Azure/Entra ID SSO) when gcloud ADC is not present on the corporate laptop.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -575,7 +577,7 @@ const TOOLS = [
       properties: {
         query: {
           type: 'string',
-          description: 'Natural-language question or retrieval prompt (e.g., "Find unread emails and SharePoint docs from this week about Mountain State Ready grants").',
+          description: 'Natural-language question or retrieval prompt (e.g., "Find unread emails and SharePoint docs from this week about Civic Ready 2026 grants").',
         },
         session: {
           type: 'string',
@@ -920,7 +922,7 @@ function processStdioBuffer() {
       const bodyStr = inputBuffer.subarray(bodyStart, bodyStart + len).toString('utf8');
       inputBuffer = inputBuffer.subarray(bodyStart + len);
       try {
-        dispatchRpc(JSON.parse(bodyStr));
+        dispatchRpc(__parseJsonNoBom(bodyStr));
       } catch {}
     } else {
       const nlIdx = inputBuffer.indexOf('\n');
@@ -929,7 +931,7 @@ function processStdioBuffer() {
       inputBuffer = inputBuffer.subarray(nlIdx + 1);
       if (!line) continue;
       try {
-        dispatchRpc(JSON.parse(line));
+        dispatchRpc(__parseJsonNoBom(line));
       } catch {}
     }
   }

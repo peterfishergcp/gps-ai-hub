@@ -1,12 +1,12 @@
 {
   "name": "wv-onboarding",
-  "displayName": "WV Onboarding, Skill Toggle Panel & Digital Twin",
-  "version": "1.4.0",
-  "description": "Includes the interactive WV Skills Toggle Control Panel (with 1-click SHA-256 Incremental Skill Sync), Anthropic Claude & Gemini model selection guide (/model-guide), 60-second onboarding, morning briefings, Digital Twin drafting, inbox triage, and <1s incremental /wv-update.",
+  "displayName": "WV Skills \u2014 West Virginia Skill Manager & Connectors",
+  "version": "2.0.0",
+  "description": "Includes the clean WV Skills panel with AI Inbox styling & live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude 5.5 & Gemini 4 model guide (/model-guide), WV onboarding (/wv-onboard), morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /wv-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "Run /wv-onboard to set up my West Virginia agency role, Digital Twin voice, and Gemini Enterprise connection",
-    "Run /model-guide to see how to use Anthropic Claude and Google Gemini in Antigravity for West Virginia workloads",
-    "Run /daily-brief to summarize today's top priorities, meetings, and open action items"
+    "Run /token-usage to retrieve my exact 5-hour, 24-hour, and 7-day token consumption and render an interactive usage dashboard",
+    "Run /orchestrator-guide to see how best to select and prompt Orchestrator (Neon, Argon, Carbon) for fast execution and lower quota burn",
+    "Run /wv-onboard to set up my West Virginia agency role, Personal Memory, and Gemini Enterprise connection"
   ]
 }

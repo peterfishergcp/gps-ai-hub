@@ -4,9 +4,12 @@
     "main.mjs"
   ],
   "restart_policy": "always",
-  "display_name": "WV Design Studio Preview",
-  "description": "Serverless visual preview panel for West Virginia Dashboards, 16:9 Slide Decks, and Branded Flyers (renders natively via srcdoc with 1-click HTML download & PDF print—zero local TCP ports required).",
+  "display_name": "WV Preview",
+  "description": "Serverless West Virginia visual preview panel for Dashboards, 16:9 Slide Decks, Branded Docs, and Interactive HTML Artifacts\u2014with automatic artifact capture, Print-to-PDF, and 1-click HTML download (zero local TCP ports).",
   "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": true
+  },
   "ui_config": {
     "display_name": "WV Preview",
     "views": [

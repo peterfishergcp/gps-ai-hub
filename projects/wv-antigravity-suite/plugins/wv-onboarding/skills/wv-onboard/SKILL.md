@@ -25,7 +25,7 @@ Ask the user (allowing rough or 1-line answers):
 
 ## Step 2: Persist Profile & Configure GE Instance
 
-1. Save a clean, human-readable profile to `./wv-twin-profile.md` in the current workspace (or `~/.gemini/wv-twin-profile.md` if no workspace folder is open, after confirming with the user) containing:
+1. Save a clean, human-readable profile to `./plugin_data/wv-antigravity/memory/profile/voice.md` in the current workspace (or `~/.gemini/plugin_data/wv-antigravity/memory/profile/voice.md` if no workspace folder is open, after confirming with the user) containing:
    - Agency / Division & Role
    - Preferred Voice & Formatting Rules (BLUF, plain language, West Virginia brand palette `#053254` Navy / `#C1452C` Rust / `#D5A245` Gold when designing visuals)
    - Standing Guardrails: **Draft-Only (never send emails/chats automatically)**, **Zero hardcoded secrets**, and **Verify PII/statutory citations before external release**.
@@ -39,5 +39,5 @@ Ask the user (allowing rough or 1-line answers):
 Based on their role in Question 1 & 3, give them **3 tailored slash commands** they can try immediately (plus **`/model-guide`** anytime they want to switch between Google Gemini and Anthropic Claude):
 - **Executives, Chiefs of Staff & Program Managers:** `/daily-brief`, `/inbox-triage`, `/wv-dashboard`, `/model-guide`
 - **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`, `/model-guide`
-- **Communications & Operations Leads:** `/digital-twin`, `/slides`, `/doc-design`, `/model-guide`
+- **Communications & Operations Leads:** `/my-voice`, `/slides`, `/doc-design`, `/model-guide`
 - **Application, Data & Cloud Engineers:** `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`, `/model-guide`

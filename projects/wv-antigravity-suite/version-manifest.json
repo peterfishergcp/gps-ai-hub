@@ -1,18 +1,20 @@
 {
   "suiteName": "wv-antigravity-suite",
-  "displayName": "State of West Virginia Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.4.0",
-  "releasedAt": "2026-11-18",
+  "displayName": "State of West Virginia Antigravity Skill & Zero-Footprint Connector Suite",
+  "suiteVersion": "2.0.0",
+  "releasedAt": "2026-11-21T01:20:00Z",
   "minAntigravityVersion": "1.0.0",
   "plugins": {
     "wv-onboarding": {
-      "version": "1.4.0",
-      "category": "Onboarding, Skill Toggle UI Panel (7 Categories), Incremental Skill & Sidecar Sync, Model Guide (Claude + Gemini), Daily Brief & Triage",
+      "version": "2.0.0",
+      "category": "WV Skills Panel (Skills Icon + AI Inbox + Hover Token Meter), Token Usage (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & My Voice (/my-voice)",
       "skills": [
         "wv-onboard",
         "model-guide",
+        "orchestrator-guide",
+        "token-usage",
         "daily-brief",
-        "digital-twin",
+        "my-voice",
         "inbox-triage",
         "wv-update"
       ],
@@ -21,20 +23,24 @@
       ]
     },
     "wv-connectors": {
-      "version": "1.0.0",
-      "category": "Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
+      "version": "2.0.0",
+      "category": "WV Chatski Left-Sidebar Google Chat Panel (Chat Bubble Icon) + West Virginia Gemini Enterprise Federated Connectors",
       "skills": [
+        "chatski",
         "connect-ge",
         "connect-m365-workspace",
         "connect-github-bigquery"
       ],
       "mcpServers": [
         "wv-ge-bridge"
+      ],
+      "sidecars": [
+        "wv-chatski-ui"
       ]
     },
     "wv-design-studio": {
-      "version": "1.3.1",
-      "category": "100% Serverless Visual Dashboards, Executive Slides, Branded State Documents & WV Preview Panel",
+      "version": "2.0.0",
+      "category": "WV Preview Serverless Panel (Magnifying Glass Icon) + WV Official Dashboards, 16:9 Slides & Branded Docs",
       "skills": [
         "wv-dashboard",
         "slides",
@@ -48,8 +54,8 @@
       ]
     },
     "wv-state-workflows": {
-      "version": "1.4.0",
-      "category": "WV State Workflows (3) + Government Services (public_sector) Skills (7)",
+      "version": "2.0.0",
+      "category": "WV State Skills (WV FOIA \u00a7 29B-1-4, WV Sovereign Immunity & Policy) + Government Services (public_sector) Skills (7)",
       "skills": [
         "foia-expert",
         "legal-procurement-review",
@@ -64,8 +70,8 @@
       ]
     },
     "wv-engineering-cloud": {
-      "version": "1.0.0",
-      "category": "Legacy App Refactoring, Cloud Run & BigQuery Architecture",
+      "version": "2.0.0",
+      "category": "WV Engineering \u2014 Legacy App Refactoring, Cloud Run & BigQuery Architecture",
       "skills": [
         "modernize-refactor",
         "deploy-cloudrun",
@@ -74,43 +80,74 @@
       ]
     },
     "wv-security": {
-      "version": "1.0.0",
-      "category": "OWASP, Google Cloud WAF, Assured Workloads & IAM Hygiene",
+      "version": "2.0.0",
+      "category": "WV Security, OWASP, Google Cloud WAF, Assured Workloads (CJIS/HIPAA/FedRAMP) & IAM Hygiene",
       "skills": [
         "security-audit",
         "iam-secret-hygiene"
+      ]
+    },
+    "wv-second-brain": {
+      "version": "2.0.0",
+      "category": "WV Antigravity Panel (Rainbow 'A' Icon + AI Inbox Action Items & Memory) + 4-Agent Parallel Swarm",
+      "skills": [
+        "memory",
+        "meeting-notes",
+        "meeting-prep",
+        "followup-plan",
+        "swarm-prep",
+        "weekly-impact",
+        "no-ai-slop",
+        "outbound-scrub"
+      ],
+      "agents": [
+        "wv-context-memory-scout",
+        "wv-scqa-redteam-critic",
+        "wv-domain-solution-architect",
+        "wv-outbound-safety-auditor"
+      ],
+      "sidecars": [
+        "wv-antigravity-ui"
+      ]
+    },
+    "wv-automations": {
+      "version": "2.0.0",
+      "disabledByDefault": true,
+      "category": "Opt-In Scheduled Weekday Briefings & Memory Compactors (Disabled by Default \u2014 Zero Background Footprint)",
+      "skills": [
+        "automations"
       ]
     }
   },
   "changelog": [
     {
-      "version": "1.3.0",
-      "date": "2026-11-18",
+      "version": "2.0.0",
+      "date": "2026-11-21",
       "highlights": [
-        "Added SHA-256 per-skill incremental updater (incremental-sync.mjs + 1-click 'Sync Git Updates' & per-skill '\u21bb' buttons inside the WV Skills sidebar panel) so users can incrementally update a single skill or only changed files in <1s without a full plugin re-install.",
-        "Restored the WV Preview (wv-design-preview) sidebar panel using 100% serverless srcdoc rendering (with package.json module config & preload.js bridge, and zero local TCP port listeners)."
-      ]
-    },
-    {
-      "version": "1.2.0",
-      "date": "2026-11-17",
-      "highlights": [
-        "Added /model-guide skill in wv-onboarding covering Anthropic Claude (Claude Sonnet & Claude Opus) and Google Gemini model selection in Antigravity Desktop, IDE, and CLI (/model, --model, --effort, /usage).",
-        "Added automatic Side-Pane Rendered Visual Artifacts (dashboard-standalone.html, deck.html, flyer.html in the Conversation Artifact Directory) + 1-click Browser Launch URL Cards (.url.json) + built-in wv-design-preview UI Sidecar on 127.0.0.1:4175 so business users see rendered dashboards/slides/flyers instead of raw HTML source code."
-      ]
-    },
-    {
-      "version": "1.0.0",
-      "date": "2026-11-17",
-      "highlights": [
-        "Initial release across all 6 State of West Virginia onboarding categories (20 slash-command skills + 113 public-sector playbook recipes).",
-        "Zero-install Gemini Enterprise (GE) Federated Connector Bridge running on Antigravity's built-in agy-node runtime (supports Entra-synced Google Identity + Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub).",
-        "Zero-Node Browser Mode for /wv-dashboard, /slides, and /doc-design so locked-down state corporate laptops need zero extra local software.",
-        "Fast <2-second HTTPS ZIP and Git sparse-checkout installer/updater (/wv-update)."
+        "Added all 4 WV Left-Sidebar Extensions with custom vector icons: WV Antigravity (Rainbow 'A'), WV Skills (Skills Sparkle), WV Preview (Magnifying Glass), and WV Chatski (Chat Bubble).",
+        "Adopted the unified AI Inbox look & feel across WV Antigravity and WV Skills with live hoverable token consumption telemetry (in | out | thinking) on every panel.",
+        "Expanded from 28 to 40 skills while keeping the dedicated WV State Skills category (WV FOIA \u00a7 29B-1-4, WV Sovereign Immunity & Purchasing \u00a7 5A-3, Legislative Audit).",
+        "Enforced strict WVOT Zero-Footprint laptop standards: 100% self-contained storage inside ~/.gemini/config/, BOM-free PowerShell 5.1 JSON handling, offline Noto Emoji PNG fallbacks, opt-in disabled automations, and 1-command clean uninstallers."
       ]
     }
   ],
   "skillManifest": {
+    "automations": {
+      "plugin": "wv-automations",
+      "skill": "automations",
+      "treeSha256": "931bd13053265d78",
+      "files": {
+        "SKILL.md": "b04a576e2ef3dda0f7151e509b65cc25490fec96855c8a63371451c0affa97d6"
+      }
+    },
+    "chatski": {
+      "plugin": "wv-connectors",
+      "skill": "chatski",
+      "treeSha256": "fe930c7af028f9fe",
+      "files": {
+        "SKILL.md": "def5b1c004a9594c71c8e1ca178d30969570322adf0855bbb901f1c312935020"
+      }
+    },
     "connect-ge": {
       "plugin": "wv-connectors",
       "skill": "connect-ge",
@@ -157,10 +194,10 @@
     "wv-dashboard": {
       "plugin": "wv-design-studio",
       "skill": "wv-dashboard",
-      "treeSha256": "010382c8d849bdab",
+      "treeSha256": "4da4cf6a37d87582",
       "files": {
         "SKILL.md": "b6c4bb0dd488243aabd2a88994cd0ff2b8e80f2f3f4d91e11b1e639c11ca779d",
-        "assets/runtime/app.js": "b579f16737526a1cd300cde4193993f69730fc1ba74b4a6bfc0304b026456928",
+        "assets/runtime/app.js": "dd642f02477439e2a91a4e210d98474d40c796c152cb2abba0b4cc20aa634960",
         "assets/runtime/index.html": "e3c981daf7f131decb42ee40f4eefad2d808c66293749cff5ea4cb6435b5a9c2",
         "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
         "assets/runtime/styles.css": "594753a51e3a6d7b7c3d66a552aec17e8a4b2ae9943a93ce5b9c649c8afa9742",
@@ -209,19 +246,10 @@
     "daily-brief": {
       "plugin": "wv-onboarding",
       "skill": "daily-brief",
-      "treeSha256": "461cd792b6aed352",
+      "treeSha256": "5e0f89a68adb60bc",
       "files": {
-        "SKILL.md": "755f65cd184926427d7e56a631bf3ad9cacfd658a4b1d162c7666b863c59a71e",
+        "SKILL.md": "d13d9807004b338444b4ce88099e479486b0fdff843724372fb542d287e18078",
         "references/meetings_project_playbook.md": "35c2e4d31571c487babc58b8e5f7d729f6955830eb7d98c05f5c8e256d2e7457"
-      }
-    },
-    "digital-twin": {
-      "plugin": "wv-onboarding",
-      "skill": "digital-twin",
-      "treeSha256": "c6ce0d1dbda4838e",
-      "files": {
-        "SKILL.md": "cc4c4a2da14644fe76b14106a6b4201d519546ea11128435ca5578d039d4a2c9",
-        "references/correspondence_playbook.md": "acf257fe88533b4a19b74619947e99748f36a852180e67af008cf472c417e8ab"
       }
     },
     "inbox-triage": {
@@ -235,30 +263,123 @@
     "model-guide": {
       "plugin": "wv-onboarding",
       "skill": "model-guide",
-      "treeSha256": "c0232a4918a1fae8",
+      "treeSha256": "4e903e22bec60b00",
       "files": {
-        "SKILL.md": "59d568102484b9a78f89d3648f59b231f25279ce5894ee7c9f9ba8618f834c6b",
-        "references/claude_and_gemini_playbook.md": "6566e90047da49fc4db0a04cd03f832a01d13843d2eb025e65a3ff55c05b7e73"
+        "SKILL.md": "5f4c88414c2b81fa069480936e0a6399b10d21e8eef4cd66aa8c4dcc44cc15c9",
+        "references/claude_and_gemini_playbook.md": "7bc1b240f91d66959aa215d1ddafd95063d9a914907da9a04e0727a006748e77"
+      }
+    },
+    "my-voice": {
+      "plugin": "wv-onboarding",
+      "skill": "my-voice",
+      "treeSha256": "54808542ce3749c5",
+      "files": {
+        "SKILL.md": "804d3db4f4c5bff420adbab7c18f666bec93c7e0b10ca7c21835899f5b6f709d",
+        "references/correspondence_playbook.md": "8e0a58b17105cb0a04e698345e50b8ebdf383cce3dfd7b6df9466a0e427f9861"
+      }
+    },
+    "orchestrator-guide": {
+      "plugin": "wv-onboarding",
+      "skill": "orchestrator-guide",
+      "treeSha256": "6632419b8061f67a",
+      "files": {
+        "SKILL.md": "844fd8e9ee3f193aa09fc6fc62c46571171367ca8a42462b961e5986a0c96ab0",
+        "references/orchestrator_prompt_patterns.md": "daaf89b5b186c93a986448051965e38383b4feb6700461cbf54e29856c9f2596"
+      }
+    },
+    "token-usage": {
+      "plugin": "wv-onboarding",
+      "skill": "token-usage",
+      "treeSha256": "7b84cf74dad4f8d6",
+      "files": {
+        "SKILL.md": "c023215b5fe2c3f9a0a68d530e4e8a31a29b8b496f6b540855a9f9f8b2be8f43",
+        "references/quota_and_cost_optimization.md": "a2f035e222aa37fc74dbaf99fd0d1cd3278ff1521a03820e0b9cc53b83082613",
+        "scripts/token_usage_report.mjs": "031ff4e2c46f215d2a58713f77e17fad96ed28f1979774d77c5b7908d83aa8b6"
       }
     },
     "wv-onboard": {
       "plugin": "wv-onboarding",
       "skill": "wv-onboard",
-      "treeSha256": "98f9189003efa1b0",
+      "treeSha256": "5f601db2ba0092b9",
       "files": {
-        "SKILL.md": "863f45cdb7c8a05edc1778fdd9b58ac49ffd96d02d3240791e145f52e3dd179a",
+        "SKILL.md": "e1175210983a3163ad54d863e0c3e6550d914a1b219d9eba12b2d442287ed7c5",
         "references/onboarding_sops_playbook.md": "745396be1a2e7883244b3e60c7334373005e3fa2256d3b487abe36c6e1b46c40"
       }
     },
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "a821011f529e8c89",
+      "treeSha256": "29150370aa33cf85",
       "files": {
-        "SKILL.md": "63d6dd0fb1d0385187fe9633093a37e1dca3fd74adf753d26f7d79c240a97468",
-        "scripts/incremental-sync.mjs": "da4c0e2ecbb09567ef243088ad1d53e0b9c5bcb6dac31438c79cf79f52b455b0",
-        "scripts/install-wv-suite.ps1": "1f53a4ae54a7d2546e635446559d580464bfb082ad170b6a686518b3377f518a",
-        "scripts/install-wv-suite.sh": "5cf90fb2cdd2a9ac096a66d7f27d5681fb382a05ceec23c8704d933aa563db4a"
+        "SKILL.md": "5e4e2dee17eac282d482865121804e0b6a6d86b988b854d7008ec1cccaa75dfd",
+        "scripts/incremental-sync.mjs": "386848affc1d67f95d4e60eb455b70120562502aa405d2eb036bae4745069e61",
+        "scripts/install-wv-suite.ps1": "00828bd5050d917a23d1e43a1e1fa2478e0ac975e33d146645f0f8e621a77cca",
+        "scripts/install-wv-suite.sh": "c9b3cba8f420c739693c33131ebb66c469b68e1ba4ba02dc7a0f7f7ee0e24521"
+      }
+    },
+    "followup-plan": {
+      "plugin": "wv-second-brain",
+      "skill": "followup-plan",
+      "treeSha256": "79f7934cca33c0f1",
+      "files": {
+        "SKILL.md": "032ee0b95cc6345ea9721ff335b74ee59c85bb840f93737de3f948fe763968bc"
+      }
+    },
+    "meeting-notes": {
+      "plugin": "wv-second-brain",
+      "skill": "meeting-notes",
+      "treeSha256": "03d2fb0b2fe6c4f7",
+      "files": {
+        "SKILL.md": "c3233ce1269eb3a18afde5e0a10d5debe431225581490040fcf834c3bfa90d0f",
+        "references/compaction_rubric.md": "36225910450e56d01fc78990a9c8c0c60a3f1010e51fa88973145b0cba5bf6ca"
+      }
+    },
+    "meeting-prep": {
+      "plugin": "wv-second-brain",
+      "skill": "meeting-prep",
+      "treeSha256": "6f43c8463904e453",
+      "files": {
+        "SKILL.md": "80d63a9e8f7a38fc187ff06b4d9262402796f4854fdf78898b1f926158823e06"
+      }
+    },
+    "memory": {
+      "plugin": "wv-second-brain",
+      "skill": "memory",
+      "treeSha256": "af3dd704b43f26df",
+      "files": {
+        "SKILL.md": "28759e91713d0fafd88faa294f807719b6caa6c6a1de660039b9505c60403ad0"
+      }
+    },
+    "no-ai-slop": {
+      "plugin": "wv-second-brain",
+      "skill": "no-ai-slop",
+      "treeSha256": "df7dbaceb70a54b2",
+      "files": {
+        "SKILL.md": "8cbeef1a3148921caf8b3e4597c055638a424f1836afe5330effdad1274d624d"
+      }
+    },
+    "outbound-scrub": {
+      "plugin": "wv-second-brain",
+      "skill": "outbound-scrub",
+      "treeSha256": "01cb04fe7a054dc0",
+      "files": {
+        "SKILL.md": "02b4ae6c17805d4464bf242488166872ba768a5d67e7b365e873cdb53ced1d87"
+      }
+    },
+    "swarm-prep": {
+      "plugin": "wv-second-brain",
+      "skill": "swarm-prep",
+      "treeSha256": "a5a99f7169fdd5ea",
+      "files": {
+        "SKILL.md": "8305a01d0d28cb5b80696d643ba1810dc04f283f5fb509ff678f62238616e473"
+      }
+    },
+    "weekly-impact": {
+      "plugin": "wv-second-brain",
+      "skill": "weekly-impact",
+      "treeSha256": "f4fc75eb90d01830",
+      "files": {
+        "SKILL.md": "d5d7e12ba67d58195c661df66b14f14b3e866a3e8fa09f0fcf60fb6ee9dc65d8"
       }
     },
     "iam-secret-hygiene": {
@@ -370,28 +491,68 @@
     }
   },
   "sidecarManifest": {
+    "wv-chatski-ui": {
+      "plugin": "wv-connectors",
+      "sidecar": "wv-chatski-ui",
+      "files": {
+        "app.js": "e9eb4566f44af550795af29eacc11ace23c8cc335115a21d3410e323fd01fa12",
+        "index.html": "b8dc5dc7018d69c85b62a1756bb86a75033724e6ed79c1032e473649026cab0c",
+        "main.mjs": "7182c5d87b43fb4efe2fd1ad88dfc0855ef3670a24f4de008d142591216e4f6f",
+        "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
+        "sidecar.json": "cdeb6d909c66341d32b66debfad047b35184eca5183e37dfb2697c2a92275f61",
+        "styles.css": "fe3865f99df1c6bdb096d80cba9d01cbe1a7a47367598dc27f541d8b60bcd6bb",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+      }
+    },
     "wv-design-preview": {
       "plugin": "wv-design-studio",
       "sidecar": "wv-design-preview",
       "files": {
-        "app.js": "32237ab7e03e466a202e7e09c2b96089e97f1002519cd42b42c25d2fd97ccbb9",
-        "index.html": "a8478793f1fd66e712c315cf87222cff4887a8e3ada002a48438909e35cd4333",
-        "main.mjs": "1a852717d15377995cefd339049d7eebeac4aeaae2fb70388ff22c4520afda68",
-        "package.json": "284ad8d16b8a134d74aace541943386d254aed286649d35f339221d5784cc02f",
-        "sidecar.json": "35a62012f35d2388c66d0ec5357aa028b23dda1465a727559c0f536403f90be7",
-        "styles.css": "015d736137ceef29bfa3cd7875620c647f8dc4fce4c648f9fd330eb6081c4c44"
+        "app.js": "f521a9c81e0c0699f2044c81364d39e10048f82407274b59232cd29a1718d218",
+        "index.html": "008db1ff316d043c4abe1c99ff14c5275a9b4b2f260c94e8a27881d8f3d7b860",
+        "main.mjs": "16300745f2766dfc23b15fe202953ba9a393c49c17dbb35412e9aa9aab528289",
+        "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
+        "sidecar.json": "d37e183b4bc7bc9350325cc5f060ebec487c1f46b73548a9c77bb7f5bf34341b",
+        "styles.css": "7a35edf81abc7368e4dd130153fa79175bdad3ca1bfaa4512528f1cbaf77e010",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
       }
     },
     "wv-skill-manager": {
       "plugin": "wv-onboarding",
       "sidecar": "wv-skill-manager",
       "files": {
-        "app.js": "a05d51440acbf300680ad700e7626e1caba6d657d6493ff5d956d76237ae359e",
-        "index.html": "55364c42aacf8043b26a398f2bd68827a6d2adaa9273509b1a44845855eb8a63",
-        "main.mjs": "5d1d0c7fbe903699bb339bfe8613720a75cd3e39b7da683bdbc3b6f5e4a80e5e",
-        "package.json": "8c4cfe0430332455357d6248fcb84446cb7376f77d12493d0c172f95c22d2cb0",
-        "sidecar.json": "09d1eb57de2f87d501e5c9228749f7cf34de59fff2cb9214f6e145194f4ec078",
-        "styles.css": "44b25419e4ab7c0e736b13474ec4faa5370b020b01719d0a9b39f900a7020e28"
+        "app.js": "ebc462f989c41159ae412052c6fca51b6aefe5698a104e6aad816e6312d51a1e",
+        "index.html": "cfc8faa2c09385927a4e4d2e23c017610a87601c1bd805e9c6beabddde0abaee",
+        "main.mjs": "8b5d412888536054f3c9ddca64bc355edfb1667877cb4284ca64a8b87d77ad67",
+        "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
+        "sidecar.json": "9432001f8809f2c69aab65eb0e51b20e7e20952c88bb639a294a1709e53755c6",
+        "styles.css": "fb9acc81ab08bc3be136c3d88e6ed92dbcc284e36531b768d782cd293a8d8c86",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9",
+        "assets/emoji/2728.png": "1ede340356e26664f17b39fc9b092b68519f6bed245ead84b6dbaf901004ad8c"
+      }
+    },
+    "wv-antigravity-ui": {
+      "plugin": "wv-second-brain",
+      "sidecar": "wv-antigravity-ui",
+      "files": {
+        "app.js": "770d9eb19a70b760af1b8d18260ecb68a45ac9419619554d3986b759fcf586fd",
+        "index.html": "77f7b6e99e273d0628da61976ce938b9b8862d2d573713d65374ae242df4fadc",
+        "main.mjs": "5d9d769dca22fa10e3806f28b530b8bbdb09bdcc3a59e604f1994c72a09ba7ea",
+        "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
+        "seed_prompts_catalog.mjs": "38e56d2d77595ad42e622531db3ee5a632ad2694d3d9d59f4056cc3f824309cf",
+        "sidecar.json": "30a34ca3bca99f3bb82fbcd528640bb2f9eb6b178361c341d2293e1b194ab942",
+        "styles.css": "e678e2c9a1ee62e8a4d158442e14fb4378c859ed6e0b8be7487c868cc74d1320",
+        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
+        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9",
+        "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
+        "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
+        "assets/emoji/1f60e.png": "6532a77006aeea8413a52707fc3088761b2b0eae0a827a5ba7919f41171df43b",
+        "assets/emoji/1f6a6.png": "e3f5dc9f6b2fc9aa803691a7a73d7ebb5a0543bf09586fc8816fb89040aa4822",
+        "assets/emoji/2699_fe0f.png": "edaee6acd8bae516871bb6cb28f95dd362f24347477eddc5b20ed22a2b782ed5",
+        "assets/emoji/2728.png": "1ede340356e26664f17b39fc9b092b68519f6bed245ead84b6dbaf901004ad8c"
       }
     }
   }

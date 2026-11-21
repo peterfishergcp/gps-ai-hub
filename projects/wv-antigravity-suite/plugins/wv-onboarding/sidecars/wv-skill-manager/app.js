@@ -1,5 +1,5 @@
 /**
- * WV Skills & Connectors Sidecar Frontend
+ * AGY Skills & Connectors Sidecar Frontend
  * Zero innerHTML / localStorage — pure createElement + textContent + window.sidecar bridge.
  */
 (function () {
@@ -106,10 +106,14 @@
       });
     });
 
-    var counter = document.getElementById('summaryCounter');
+        var counter = document.getElementById('summaryCounter');
     if (counter) {
       var geLabel = (state.geConfig && state.geConfig.rawInput) ? 'GE Instance Configured' : 'GE Instance Not Set';
-      counter.textContent = enabledSkills + ' of ' + totalSkills + ' skills enabled · ' + geLabel;
+      counter.textContent = enabledSkills + ' of ' + totalSkills + ' WV skills enabled · ' + geLabel;
+    }
+    var heroCnt = document.getElementById('heroEnabledCount');
+    if (heroCnt) {
+      heroCnt.textContent = enabledSkills + ' WV skills';
     }
 
     var allChip = el('button', 'chip' + (state.selectedPlugin === 'all' ? ' active' : ''), 'All (' + totalSkills + ')');
@@ -191,32 +195,70 @@
         var mainCol = el('div');
         mainCol.appendChild(el('p', 'skill-title', s.title));
         mainCol.appendChild(el('p', 'skill-sub', s.subtitle));
+        if (s.starterPrompt) {
+          var seedBtn = el('button', 'seed-prompt-pill');
+          seedBtn.type = 'button';
+          seedBtn.title = '1-Click Run Seed Prompt: ' + s.starterPrompt;
+          seedBtn.appendChild(el('span', 'seed-prompt-tag', '\u25B6 Seed:'));
+          seedBtn.appendChild(el('span', 'seed-prompt-text', s.starterPrompt));
+          seedBtn.addEventListener('click', function () {
+            runPromptInChat(s.starterPrompt, s.command);
+          });
+          mainCol.appendChild(seedBtn);
+        }
 
         var cmdCol = el('div', 'cmd-col', s.command);
         var badgeCol = el('div', 'badge-col', s.badge);
 
         var controls = el('div', 'row-controls');
 
-        var syncOneBtn = el('button', 'icon-btn', '↻');
-        syncOneBtn.type = 'button';
-        syncOneBtn.title = 'Incrementally check & update only ' + s.command + ' from GitHub';
-        syncOneBtn.addEventListener('click', async function () {
-          syncOneBtn.disabled = true;
-          showToast('Checking ' + s.command + ' for updates...');
-          try {
-            var res = await apiPost('/api/incremental-sync', { skill: s.id });
-            if (res.updatedFilesCount > 0) {
-              showToast('Updated ' + s.command + ' (' + res.updatedFilesCount + ' file(s) synced)');
-            } else {
-              showToast(s.command + ' is already up to date');
+        if (!s.isPersonalCopy) {
+          var forkBtn = el('button', 'icon-btn', '⧉');
+          forkBtn.type = 'button';
+          forkBtn.title = 'Save My Copy of ' + s.command + ' in ~/.gemini/config/skills/ (protected from updates)';
+          forkBtn.addEventListener('click', async function () {
+            forkBtn.disabled = true;
+            try {
+              var out = await apiPost('/api/fork-skill', {
+                plugin: s.plugin || cat.plugin,
+                skill: s.id,
+                title: s.title,
+                subtitle: s.subtitle,
+                starterPrompt: s.starterPrompt
+              });
+              await reloadStateFromDisk();
+              showToast('Saved protected personal copy ' + out.command + ' in ★ My Skills');
+            } catch {
+              showToast('Could not save personal copy of ' + s.command);
+            } finally {
+              forkBtn.disabled = false;
             }
-          } catch {
-            showToast('Incremental sync failed for ' + s.command);
-          } finally {
-            syncOneBtn.disabled = false;
-          }
-        });
-        controls.appendChild(syncOneBtn);
+          });
+          controls.appendChild(forkBtn);
+
+          var syncOneBtn = el('button', 'icon-btn', '↻');
+          syncOneBtn.type = 'button';
+          syncOneBtn.title = 'Check ' + s.command + ' for stock updates (skips if locally customized)';
+          syncOneBtn.addEventListener('click', async function () {
+            syncOneBtn.disabled = true;
+            showToast('Checking ' + s.command + ' for updates...');
+            try {
+              var res = await apiPost('/api/incremental-sync', { skill: s.id });
+              if (res.protectedSkillIds && res.protectedSkillIds.length > 0) {
+                showToast('Protected locally customized ' + s.command + ' — skipped overwrite');
+              } else if (res.updatedFilesCount > 0) {
+                showToast('Updated ' + s.command + ' (' + res.updatedFilesCount + ' file(s) synced)');
+              } else {
+                showToast(s.command + ' is already up to date');
+              }
+            } catch {
+              showToast('Incremental sync failed for ' + s.command);
+            } finally {
+              syncOneBtn.disabled = false;
+            }
+          });
+          controls.appendChild(syncOneBtn);
+        }
 
         var runBtn = el('button', 'icon-btn');
         runBtn.type = 'button';
@@ -230,8 +272,9 @@
         controls.appendChild(
           createToggleSwitch(s.enabled, 'Toggle skill ' + s.command, async function (next) {
             try {
-              await apiPost('/api/toggle-skill', { plugin: cat.plugin, skill: s.id, enabled: next });
+              await apiPost('/api/toggle-skill', { plugin: s.plugin || cat.plugin, skill: s.id, enabled: next });
               s.enabled = next;
+              if (next) cat.pluginEnabled = true;
               renderAll();
               showToast((next ? 'Enabled ' : 'Paused ') + s.command);
             } catch {
@@ -254,6 +297,20 @@
   function renderAll() {
     renderChips();
     renderList();
+  }
+
+  async function reloadStateFromDisk() {
+    var geInput = document.getElementById('geInput');
+    var res = await fetch('/api/state');
+    if (res.ok) {
+      var payload = await res.json();
+      state.categories = payload.categories || [];
+      state.geConfig = payload.geConfig || { rawInput: '' };
+      if (geInput && state.geConfig.rawInput) {
+        geInput.value = state.geConfig.rawInput;
+      }
+      renderAll();
+    }
   }
 
   async function init() {
@@ -288,22 +345,41 @@
       });
     }
 
+    var tokenMeter = window.AGYTokenPill ? window.AGYTokenPill.mount(document.querySelector('.header-actions')) : null;
+
+    var refreshBtn = document.getElementById('refreshSkillsBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async function () {
+        try {
+          if (tokenMeter) tokenMeter.refresh();
+          await reloadStateFromDisk();
+          showToast('Refreshed skills & token meter from local disk');
+        } catch {
+          showToast('Failed to refresh skills');
+        }
+      });
+    }
+
     var updateBtn = document.getElementById('updateSuiteBtn');
     if (updateBtn) {
       updateBtn.addEventListener('click', async function () {
         updateBtn.disabled = true;
         var origText = updateBtn.textContent;
         updateBtn.textContent = 'Syncing...';
-        showToast('Checking SHA-256 skill hashes against GitHub...');
+        showToast('Checking SHA-256 skill hashes (skipping customized skills)...');
         try {
           var res = await apiPost('/api/incremental-sync', {});
-          if (res.updatedSkillsCount > 0) {
-            showToast('Incrementally updated ' + res.updatedSkillsCount + ' skill(s) (' + res.updatedFilesCount + ' file(s)) to v' + res.suiteVersion);
+          var protectedNote =
+            res.protectedSkillIds && res.protectedSkillIds.length > 0
+              ? ' · Protected ' + res.protectedSkillIds.length + ' customized skill(s)'
+              : '';
+          if (res.updatedFilesCount > 0) {
+            showToast('Downloaded ' + res.updatedFilesCount + ' updated file(s) (v' + res.suiteVersion + ')' + protectedNote + ' — click Refresh when ready');
           } else {
-            showToast('All ' + res.checkedSkillsCount + ' skills are up to date (v' + res.suiteVersion + ')');
+            showToast('All ' + res.checkedSkillsCount + ' stock skills up to date (v' + res.suiteVersion + ')' + protectedNote);
           }
         } catch {
-          runPromptInChat('/wv-update Incrementally check and sync any updated West Virginia skills.', '/wv-update');
+          runPromptInChat('/wv-update Incrementally check and sync any updated Public Sector skills.', '/wv-update');
         } finally {
           updateBtn.disabled = false;
           updateBtn.textContent = origText;
@@ -312,16 +388,7 @@
     }
 
     try {
-      var res = await fetch('/api/state');
-      if (res.ok) {
-        var payload = await res.json();
-        state.categories = payload.categories || [];
-        state.geConfig = payload.geConfig || { rawInput: '' };
-        if (geInput && state.geConfig.rawInput) {
-          geInput.value = state.geConfig.rawInput;
-        }
-        renderAll();
-      }
+      await reloadStateFromDisk();
     } catch {
       showToast('Unable to load skill catalog');
     }

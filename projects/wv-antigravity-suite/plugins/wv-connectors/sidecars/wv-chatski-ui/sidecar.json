@@ -1,0 +1,28 @@
+{
+  "command": "node",
+  "args": [
+    "main.mjs"
+  ],
+  "restart_policy": "always",
+  "display_name": "WV Chatski",
+  "description": "West Virginia Google Chat & Gemini Enterprise Chat Connector workspace: browse Direct Messages and Spaces, filter Unread/Mentions/Drafts, stage voice-calibrated replies with Antigravity, and send with explicit human confirmation.",
+  "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": true
+  },
+  "ui_config": {
+    "display_name": "WV Chatski",
+    "views": [
+      {
+        "path": "/?entrypoint=sidebar",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
+        "title": "WV Chatski"
+      },
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "WV Chatski"
+      }
+    ]
+  }
+}

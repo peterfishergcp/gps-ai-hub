@@ -1,19 +1,30 @@
 /*
- * Adaptive Antigravity Theme + Sleek Dark Toggle Row Design
- * Modeled after Antigravity's native Scheduled/Always-On toggle list & Gemini Enterprise Hub AM3 tokens.
- * Uses modern host CSS variables (--background, --card, --foreground, --muted-foreground, --border)
- * with rich dark fallbacks for standalone browser previews.
+ * Clean Antigravity Theme — Skills Control Panel
+ * Matches My Antigravity & Welcome to Antigravity: crisp #ffffff / #f7f8fa surfaces,
+ * solid #111827 monochrome active pills, and adaptive host CSS variables for dark mode.
  */
 :root {
-  --wv-bg: var(--background, #090a0c);
-  --wv-surface: var(--card, #131519);
-  --wv-row-hover: color-mix(in srgb, var(--foreground, #ffffff) 6%, var(--background, #090a0c));
-  --wv-fg: var(--foreground, #f1f3f5);
-  --wv-muted: var(--muted-foreground, #8a919e);
-  --wv-border: var(--card-border, var(--border, rgba(255, 255, 255, 0.08)));
-  --wv-toggle-on: #4c8df6;
-  --wv-toggle-off: rgba(138, 145, 158, 0.32);
-  --wv-chip-bg: color-mix(in srgb, var(--foreground, #ffffff) 7%, transparent);
+  --agy-bg: var(--background, #ffffff);
+  --agy-surface: var(--secondary, #f7f8fa);
+  --agy-card: var(--card, #ffffff);
+  --agy-row-hover: color-mix(in srgb, var(--foreground, #111827) 4%, var(--background, #ffffff));
+  --agy-fg: var(--foreground, #111827);
+  --agy-muted: var(--muted-foreground, #6b7280);
+  --agy-border: var(--border, #e5e7eb);
+  --agy-primary: #111827;
+  --agy-primary-fg: #ffffff;
+  --agy-accent: #2563eb;
+  --agy-toggle-on: #111827;
+  --agy-toggle-off: rgba(107, 114, 128, 0.28);
+  --agy-chip-bg: var(--secondary, #f3f4f6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --agy-primary: var(--foreground, #f9fafb);
+    --agy-primary-fg: var(--background, #111827);
+    --agy-toggle-on: #3b82f6;
+  }
 }
 
 * {
@@ -23,17 +34,17 @@
 body {
   margin: 0;
   padding: 0;
-  background: var(--wv-bg);
-  color: var(--wv-fg);
-  font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--agy-bg);
+  color: var(--agy-fg);
+  font-family: "Google Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
 .shell {
-  max-width: 980px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 20px 22px 48px;
+  padding: 16px 20px 48px;
 }
 
 .top-header {
@@ -52,61 +63,64 @@ body {
 .title-cluster {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
 }
 
-.spark-icon {
-  width: 24px;
-  height: 24px;
+.brand-logo {
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
 }
 
 h1 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  color: var(--agy-fg);
 }
 
 .subtitle {
-  margin: 2px 0 0;
-  font-size: 12.5px;
-  color: var(--wv-muted);
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  color: var(--agy-muted);
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .pill-action {
-  background: var(--wv-chip-bg);
-  color: var(--wv-fg);
-  border: 1px solid var(--wv-border);
+  background: var(--agy-card);
+  color: var(--agy-fg);
+  border: 1px solid var(--agy-border);
   border-radius: 999px;
-  padding: 6px 13px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.14s ease, border-color 0.14s ease;
 }
 
 .pill-action:hover {
-  border-color: rgba(76, 141, 246, 0.55);
+  background: var(--agy-surface);
+  border-color: color-mix(in srgb, var(--agy-fg) 24%, var(--agy-border));
 }
 
 .pill-action.primary {
-  background: var(--wv-toggle-on);
-  color: #ffffff;
-  border-color: transparent;
-  font-weight: 600;
+  background: var(--agy-primary);
+  color: var(--agy-primary-fg);
+  border-color: var(--agy-primary);
+  font-weight: 500;
 }
 
 .ge-drawer {
-  background: var(--wv-surface);
-  border: 1px solid var(--wv-border);
-  border-radius: 12px;
+  background: var(--agy-surface);
+  border: 1px solid var(--agy-border);
+  border-radius: 14px;
   padding: 12px 14px;
   margin-bottom: 14px;
 }
@@ -115,7 +129,7 @@ h1 {
   display: block;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--wv-muted);
+  color: var(--agy-muted);
   margin-bottom: 7px;
 }
 
@@ -127,18 +141,18 @@ h1 {
 
 .ge-row input {
   flex: 1 1 280px;
-  background: var(--wv-bg);
-  color: var(--wv-fg);
-  border: 1px solid var(--wv-border);
-  border-radius: 8px;
-  padding: 7px 10px;
+  background: var(--agy-card);
+  color: var(--agy-fg);
+  border: 1px solid var(--agy-border);
+  border-radius: 10px;
+  padding: 7px 11px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   outline: none;
 }
 
 .ge-row input:focus {
-  border-color: var(--wv-toggle-on);
+  border-color: var(--agy-fg);
 }
 
 .toolbar {
@@ -149,18 +163,19 @@ h1 {
 
 .search-wrap input {
   width: 100%;
-  background: var(--wv-surface);
-  color: var(--wv-fg);
-  border: 1px solid var(--wv-border);
-  border-radius: 10px;
-  padding: 9px 13px;
+  background: var(--agy-surface);
+  color: var(--agy-fg);
+  border: 1px solid var(--agy-border);
+  border-radius: 999px;
+  padding: 9px 15px;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .search-wrap input:focus {
-  border-color: var(--wv-toggle-on);
+  background: var(--agy-card);
+  border-color: var(--agy-fg);
 }
 
 .filter-chips {
@@ -171,25 +186,34 @@ h1 {
 
 .chip {
   background: transparent;
-  color: var(--wv-muted);
-  border: 1px solid var(--wv-border);
+  color: var(--agy-muted);
+  border: 1px solid var(--agy-border);
   border-radius: 999px;
-  padding: 4px 11px;
-  font-size: 11.5px;
+  padding: 5px 12px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.14s ease;
+}
+
+.chip:hover {
+  color: var(--agy-fg);
+  background: var(--agy-surface);
 }
 
 .chip.active {
-  background: rgba(76, 141, 246, 0.16);
-  color: #8ab4f8;
-  border-color: rgba(76, 141, 246, 0.45);
-  font-weight: 600;
+  background: var(--agy-primary);
+  color: var(--agy-primary-fg);
+  border-color: var(--agy-primary);
+  font-weight: 500;
 }
 
 .category-block {
-  margin-top: 22px;
+  margin-top: 18px;
+  background: var(--agy-surface);
+  border: 1px solid var(--agy-border);
+  border-radius: 16px;
+  padding: 12px 12px 6px;
 }
 
 .category-head {
@@ -197,20 +221,23 @@ h1 {
   grid-template-columns: minmax(200px, 2.2fr) minmax(110px, 0.9fr) minmax(110px, 0.9fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 0 12px 6px;
-  color: var(--wv-muted);
-  font-size: 12px;
-  font-weight: 500;
+  padding: 2px 10px 8px;
+  color: var(--agy-muted);
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
 .cat-title-wrap {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  color: var(--agy-fg);
+  font-size: 13px;
 }
 
 .cat-count {
-  opacity: 0.65;
+  color: var(--agy-muted);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -220,12 +247,15 @@ h1 {
   align-items: center;
   gap: 12px;
   padding: 11px 12px;
-  border-radius: 10px;
-  transition: background-color 0.14s ease, opacity 0.14s ease;
+  margin-bottom: 6px;
+  background: var(--agy-card);
+  border: 1px solid var(--agy-border);
+  border-radius: 12px;
+  transition: border-color 0.14s ease, opacity 0.14s ease;
 }
 
 .skill-row:hover {
-  background: var(--wv-row-hover);
+  border-color: color-mix(in srgb, var(--agy-fg) 22%, var(--agy-border));
 }
 
 .skill-row.is-disabled .skill-title,
@@ -235,70 +265,99 @@ h1 {
 }
 
 .skill-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--wv-fg);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--agy-fg);
   margin: 0 0 2px;
 }
 
 .skill-sub {
   margin: 0;
   font-size: 12px;
-  color: var(--wv-muted);
+  color: var(--agy-muted);
+  line-height: 1.4;
+}
+
+.seed-prompt-pill {
+  margin-top: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  text-align: left;
+  background: var(--agy-surface);
+  color: var(--agy-fg);
+  border: 1px solid var(--agy-border);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
   line-height: 1.35;
+  cursor: pointer;
+}
+
+.seed-prompt-pill:hover {
+  border-color: var(--agy-fg);
+}
+
+.seed-prompt-tag {
+  color: var(--agy-accent);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.seed-prompt-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cmd-col {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  color: var(--wv-fg);
-  opacity: 0.88;
+  font-size: 11.5px;
+  color: var(--agy-accent);
+  font-weight: 600;
 }
 
 .badge-col {
-  font-size: 12px;
-  color: var(--wv-muted);
+  font-size: 11.5px;
+  color: var(--agy-muted);
 }
 
 .row-controls {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
 .icon-btn {
   background: transparent;
-  color: var(--wv-muted);
-  border: none;
+  color: var(--agy-muted);
+  border: 1px solid transparent;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: 7px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0.72;
   padding: 0;
 }
 
-.skill-row:hover .icon-btn {
-  opacity: 1;
-}
-
 .icon-btn:hover {
-  background: var(--wv-chip-bg);
-  color: var(--wv-fg);
+  background: var(--agy-surface);
+  border-color: var(--agy-border);
+  color: var(--agy-fg);
 }
 
-/* Native Antigravity-style Pill Switch */
 .toggle-switch {
   position: relative;
   width: 36px;
   height: 20px;
   border-radius: 999px;
   border: none;
-  background: var(--wv-toggle-off);
+  background: var(--agy-toggle-off);
   cursor: pointer;
   padding: 0;
   transition: background-color 0.18s ease;
@@ -306,7 +365,7 @@ h1 {
 }
 
 .toggle-switch[aria-checked="true"] {
-  background: var(--wv-toggle-on);
+  background: var(--agy-toggle-on);
 }
 
 .toggle-thumb {
@@ -317,7 +376,7 @@ h1 {
   height: 16px;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
   transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
   pointer-events: none;
 }
@@ -326,7 +385,6 @@ h1 {
   transform: translateX(16px);
 }
 
-/* Compact layout when docked inside narrow AuxPane */
 @media (max-width: 640px) {
   .shell {
     padding: 14px 12px 36px;
@@ -350,12 +408,64 @@ h1 {
   position: fixed;
   bottom: 16px;
   right: 16px;
-  background: #1e232d;
-  color: #f1f3f5;
-  border: 1px solid rgba(76, 141, 246, 0.45);
-  border-radius: 8px;
+  background: #111827;
+  color: #ffffff;
+  border-radius: 999px;
   padding: 8px 14px;
   font-size: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   z-index: 50;
 }
+
+/* AI Inbox Cohesion for WV Skills */
+.ai-hero-banner { margin: 14px 0 12px; }
+.ai-inbox-greeting {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.28;
+  color: var(--agy-fg);
+}
+.ai-blue { color: #3b78e7; }
+@media (prefers-color-scheme: dark) { .ai-blue { color: #60a5fa; } }
+.ai-noto-emoji {
+  width: 28px;
+  height: 28px;
+  vertical-align: -5px;
+  display: inline-block;
+  margin: 0 2px;
+}
+.search-wrap input {
+  border-radius: 999px !important;
+  background: #f0f4fa !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 10px 16px !important;
+}
+@media (prefers-color-scheme: dark) {
+  .search-wrap input { background: var(--agy-surface) !important; border-color: var(--agy-border) !important; }
+}
+.ai-wave-sep {
+  color: #f6f9fd;
+  line-height: 0;
+  margin-top: 6px;
+}
+.ai-surface-band {
+  background: #f6f9fd;
+  border-radius: 0 0 20px 20px;
+  padding: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  .ai-wave-sep { color: var(--agy-surface); }
+  .ai-surface-band { background: var(--agy-surface); }
+}
+.run-btn {
+  background: #c2e7ff !important;
+  color: #001d35 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+}
+.run-btn:hover { background: #a8dcff !important; }
