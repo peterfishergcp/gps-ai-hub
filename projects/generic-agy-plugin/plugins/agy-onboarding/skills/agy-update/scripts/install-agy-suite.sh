@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.2).
+# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.3).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ (zero /tmp or /private/tmp writes,
 # zero 'agy plugin install' /tmp/lsrpc.sh prompts, and zero files outside ~/.gemini/config/).
 
@@ -118,7 +118,7 @@ if [[ -n "${ZIP_URL}" ]]; then
   ZIP_FILE="${STAGE_DIR}/generic-agy-plugin.zip"
   EXTRACT_DIR="${STAGE_DIR}/extracted"
   mkdir -p -m 700 "${EXTRACT_DIR}"
-  echo "Downloading Generic AGY Plugin Suite v1.7.2 (<500 KB)..."
+  echo "Downloading Generic AGY Plugin Suite v1.7.3 (<500 KB)..."
   curl -fsSL "${ZIP_URL}" -o "${ZIP_FILE}"
   validate_and_extract_zip "${ZIP_FILE}" "${EXTRACT_DIR}"
   if [[ -d "${EXTRACT_DIR}/plugins" ]]; then
@@ -241,6 +241,12 @@ if [[ -n "${GE_INSTANCE}" ]]; then
 }
 EOF
   chmod 600 "${GE_CFG}" 2>/dev/null || true
+  if [[ -d "${HOME}/.gemini/antigravity" ]]; then
+    AGY_DATA_DIR="${HOME}/.gemini/antigravity/plugin_data/agy-connectors"
+    mkdir -p -m 700 "${AGY_DATA_DIR}" 2>/dev/null || true
+    cp "${GE_CFG}" "${AGY_DATA_DIR}/ge-instance.json" 2>/dev/null || true
+    chmod 600 "${AGY_DATA_DIR}/ge-instance.json" 2>/dev/null || true
+  fi
   echo "Saved default Gemini Enterprise instance to ${GE_CFG}"
 fi
 

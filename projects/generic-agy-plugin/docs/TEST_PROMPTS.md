@@ -1,7 +1,7 @@
-# Google Antigravity — Public Sector Skill Suite (`v1.7.2`) Guided Test Prompts
+# Google Antigravity — Public Sector Skill Suite (`v1.7.3`) Guided Test Prompts
 
 > [!TIP]
-> **New in `v1.7.2` — 1-Click `Skills` Hub (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
+> **New in `v1.7.3` — 1-Click `Skills` Hub (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
 > - **Zero Copy-Paste Needed:** Open **`Extensions → Skills`** (Sparkles icon) in the left sidebar to browse all `40` suite skills **plus** your auto-discovered **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`) and click **`Run →`** on any card—or paste the full deep-test scripts below!
 > - **`TokenEconomics` & `/compact` Alert:** Open **`Extensions → My Antigravity → TokenEconomics`** to track your monthly pooled quota cap (`Standard $30`, `Plus $45`, `Enterprise $60`, or Custom Cap) and Orchestrator/Workflows playbooks.
 > - **Updates & Video Walkthroughs:** Open **`Extensions → My Antigravity → Overview`** to toggle **`⚡ Orchestrator`**, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates.

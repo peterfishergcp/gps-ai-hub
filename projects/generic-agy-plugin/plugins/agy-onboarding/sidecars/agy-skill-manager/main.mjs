@@ -370,6 +370,38 @@ async function syncSkillsIncrementally(skillFilter = '') {
     }
   }
 
+  const updatedScriptIds = [];
+  if (!skillFilter && manifest.scriptManifest) {
+    for (const [scrKey, scrEntry] of Object.entries(manifest.scriptManifest)) {
+      const pluginName = scrEntry.plugin;
+      const relPath = scrEntry.path;
+      if (!SAFE_ID_RE.test(pluginName) || !relPath || relPath.startsWith('/') || relPath.includes('\\')) continue;
+      const parts = relPath.split('/');
+      if (!parts.every((p) => p && p !== '.' && p !== '..' && SAFE_SEG_RE.test(p))) continue;
+      const expectedSha = scrEntry.sha256;
+      if (!expectedSha) continue;
+      const localPath = path.join(pluginsRoot, pluginName, relPath);
+      let localSha = null;
+      try {
+        if (fs.existsSync(localPath) && fs.lstatSync(localPath).isFile()) {
+          localSha = crypto.createHash('sha256').update(fs.readFileSync(localPath)).digest('hex');
+        }
+      } catch {}
+      if (localSha !== expectedSha) {
+        const buf = await httpsGetBuffer(`${DEFAULT_RAW_BASE}/plugins/${pluginName}/${relPath}`);
+        if (crypto.createHash('sha256').update(buf).digest('hex') !== expectedSha) {
+          throw new Error(`Hash mismatch on script ${pluginName}/${relPath}`);
+        }
+        fs.mkdirSync(path.dirname(localPath), { recursive: true });
+        const tmp = `${localPath}.tmp-${process.pid}`;
+        fs.writeFileSync(tmp, buf, { mode: 0o755 });
+        fs.renameSync(tmp, localPath);
+        updatedFilesCount += 1;
+        updatedScriptIds.push(scrKey);
+      }
+    }
+  }
+
   writeBaselineHashes(baseline);
   return {
     ok: true,
@@ -380,6 +412,7 @@ async function syncSkillsIncrementally(skillFilter = '') {
     updatedSkillIds,
     protectedSkillIds,
     updatedSidecarIds,
+    updatedScriptIds,
   };
 }
 
@@ -496,37 +529,119 @@ function toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled) {
   return { enabled, diskSynced };
 }
 
+function getConnectorDataCandidateDirs() {
+  const pinned = (process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR || '').trim();
+  if (pinned) return [path.resolve(pinned)];
+
+  const raw = [];
+  const pd = (process.env.PLUGIN_DATA || '').trim();
+  if (pd) {
+    const resolvedPd = path.resolve(pd);
+    if (path.basename(resolvedPd) === CONNECTORS_PLUGIN_NAME) {
+      raw.push(resolvedPd);
+    } else {
+      raw.push(path.resolve(resolvedPd, '..', CONNECTORS_PLUGIN_NAME));
+    }
+  }
+  const appData = (process.env.ANTIGRAVITY_APP_DATA_DIR || '').trim();
+  if (appData) {
+    raw.push(path.join(path.resolve(appData), 'plugin_data', CONNECTORS_PLUGIN_NAME));
+  }
+  const execData = (process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || '').trim();
+  if (execData) {
+    const resolvedExec = path.resolve(execData);
+    for (const seg of [`${path.sep}sidecar_data${path.sep}`, `${path.sep}plugin_data${path.sep}`]) {
+      const idx = resolvedExec.indexOf(seg);
+      if (idx > 0) {
+        raw.push(path.join(resolvedExec.slice(0, idx), 'plugin_data', CONNECTORS_PLUGIN_NAME));
+      }
+    }
+  }
+  const home = os.homedir();
+  raw.push(
+    path.join(home, '.gemini', 'antigravity', 'plugin_data', CONNECTORS_PLUGIN_NAME),
+    path.join(home, '.gemini', 'jetski', 'plugin_data', CONNECTORS_PLUGIN_NAME),
+    path.join(home, '.gemini', 'config', 'plugin_data', CONNECTORS_PLUGIN_NAME),
+    getSidecarStateDir()
+  );
+  const seen = new Set();
+  const out = [];
+  for (const d of raw) {
+    if (!d) continue;
+    const norm = path.resolve(d);
+    if (!seen.has(norm)) {
+      seen.add(norm);
+      out.push(norm);
+    }
+  }
+  return out;
+}
+
 function readGeInstanceConfig() {
-  const candidates = [
-    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', CONNECTORS_PLUGIN_NAME, 'ge-instance.json'),
-    path.join(getSidecarStateDir(), 'ge-instance.json'),
-  ];
-  for (const p of candidates) {
+  let best = null;
+  for (const dir of getConnectorDataCandidateDirs()) {
+    const p = path.join(dir, 'ge-instance.json');
     try {
-      if (fs.existsSync(p) && fs.lstatSync(p).isFile()) {
-        return __parseJsonNoBom(fs.readFileSync(p, 'utf-8'));
+      const st = lstatOrNull(p);
+      if (!st || st.isSymbolicLink() || !st.isFile()) continue;
+      const obj = __parseJsonNoBom(fs.readFileSync(p, 'utf-8'));
+      if (!obj || typeof obj !== 'object') continue;
+      const configured = Boolean((obj.projectId && obj.engineId) || (obj.rawInput && String(obj.rawInput).trim()));
+      const ts = Date.parse(obj.updatedAt || '') || st.mtimeMs || 0;
+      if (!best || (configured && !best.configured) || (configured === best.configured && ts > best.ts)) {
+        best = { obj, configured, ts };
       }
     } catch {}
   }
-  return { rawInput: '' };
+  if (!best) return { rawInput: '' };
+  const found = { ...best.obj };
+  if (!found.rawInput && found.projectId && found.engineId) {
+    found.rawInput = `projects/${found.projectId}/locations/${found.location || 'global'}/collections/${found.collectionId || 'default_collection'}/engines/${found.engineId}`;
+  }
+  return found;
 }
 
 function saveGeInstanceConfig(rawInput) {
   const cleaned = String(rawInput || '').trim().slice(0, 500);
+  const existing = readGeInstanceConfig() || {};
+  const resMatch = cleaned.match(
+    /projects\/([A-Za-z0-9._-]+)\/locations\/([A-Za-z0-9._-]+)(?:\/collections\/([A-Za-z0-9._-]+))?\/(?:engines|dataStores)\/([A-Za-z0-9._-]+)/
+  );
   const payload = {
+    ...existing,
     rawInput: cleaned,
+    ...(resMatch
+      ? {
+          projectId: resMatch[1],
+          location: resMatch[2],
+          collectionId: resMatch[3] || 'default_collection',
+          engineId: resMatch[4],
+        }
+      : {}),
     updatedAt: new Date().toISOString(),
   };
-  const localTarget = path.join(getSidecarStateDir(), 'ge-instance.json');
-  fs.writeFileSync(localTarget, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });
 
-  const connectorsDir = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', CONNECTORS_PLUGIN_NAME);
-  try {
-    fs.mkdirSync(connectorsDir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(path.join(connectorsDir, 'ge-instance.json'), JSON.stringify(payload, null, 2) + '\n', {
-      mode: 0o600,
-    });
-  } catch {}
+  const home = os.homedir();
+  const writeTargets = [
+    getSidecarStateDir(),
+    process.env.ANTIGRAVITY_APP_DATA_DIR
+      ? path.join(path.resolve(process.env.ANTIGRAVITY_APP_DATA_DIR), 'plugin_data', CONNECTORS_PLUGIN_NAME)
+      : '',
+    fs.existsSync(path.join(home, '.gemini', 'antigravity'))
+      ? path.join(home, '.gemini', 'antigravity', 'plugin_data', CONNECTORS_PLUGIN_NAME)
+      : '',
+    path.join(home, '.gemini', 'config', 'plugin_data', CONNECTORS_PLUGIN_NAME),
+  ].filter(Boolean);
+
+  for (const dir of writeTargets) {
+    try {
+      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+      const target = path.join(dir, 'ge-instance.json');
+      const lst = lstatOrNull(target);
+      if (lst && lst.isSymbolicLink()) continue;
+      fs.writeFileSync(target, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });
+    } catch {}
+  }
   return payload;
 }
 

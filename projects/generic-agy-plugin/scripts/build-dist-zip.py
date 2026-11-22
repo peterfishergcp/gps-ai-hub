@@ -82,6 +82,28 @@ def update_manifest_hashes(suite_root: Path) -> None:
                     "files": sc_files,
                 }
     manifest["sidecarManifest"] = sidecar_manifest
+
+    script_manifest: dict[str, dict] = {}
+    if plugins_dir.is_dir():
+        for plugin_dir in sorted(p for p in plugins_dir.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            scripts_root = plugin_dir / "scripts"
+            if not scripts_root.is_dir():
+                continue
+            for root, dirs, files in os.walk(scripts_root):
+                dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "node_modules")
+                for fname in sorted(files):
+                    if fname.startswith(".") or fname.endswith(".pyc"):
+                        continue
+                    fpath = Path(root) / fname
+                    if fpath.is_symlink():
+                        continue
+                    rel = fpath.relative_to(plugin_dir).as_posix()
+                    script_manifest[f"{plugin_dir.name}/{rel}"] = {
+                        "plugin": plugin_dir.name,
+                        "path": rel,
+                        "sha256": sha256_file(fpath),
+                    }
+    manifest["scriptManifest"] = script_manifest
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 

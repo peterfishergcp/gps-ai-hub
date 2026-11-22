@@ -72,7 +72,9 @@
   }
 
   async function sidecarFetch(url, opts) {
-    const fn = window.sidecar && window.sidecar.fetch ? window.sidecar.fetch : window.fetch.bind(window);
+    const fn =
+      window.__agyAuthedFetch ||
+      (window.sidecar && window.sidecar.fetch ? window.sidecar.fetch : window.fetch.bind(window));
     const resp = await fn(url, opts);
     const json = await resp.json();
     if (!resp.ok && json && json.error) {
@@ -600,6 +602,15 @@
     settingsCardEl.replaceChildren();
     settingsModalEl.classList.remove('hidden');
 
+    const geInput = el('input', {
+      type: 'text',
+      className: 'hdr-btn',
+      id: 'settings-ge-input',
+      style: { width: '100%' },
+      value: (state && state.geEngineResource) || '',
+      placeholder: 'projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_ENGINE_ID',
+    });
+
     const modeSelect = el('select', { className: 'hdr-btn', id: 'settings-mode-select' }, [
       el('option', { value: 'auto', text: 'Auto (Use Gemini Enterprise Chat Connector when configured)' }),
       el('option', { value: 'ge', text: 'Gemini Enterprise Chat Connector (StreamAssist)' }),
@@ -620,10 +631,14 @@
       el('div', { style: { fontSize: '12.5px', color: 'var(--fg-muted)', lineHeight: '1.5' } }, [
         state && state.geConfigured
           ? '✓ Gemini Enterprise Engine connected: ' + state.geEngineResource
-          : '• Gemini Enterprise not configured yet — run /connect-ge in Antigravity chat for zero-extra-setup Google Chat & Teams access.',
+          : '• Gemini Enterprise not configured yet — paste your GE Engine resource path below or run /connect-ge in Antigravity chat.',
       ])
     );
-    settingsCardEl.appendChild(el('label', { style: { fontSize: '12px', fontWeight: '700' }, text: 'Connection Mode' }));
+    settingsCardEl.appendChild(
+      el('label', { style: { fontSize: '12px', fontWeight: '700' }, text: 'Gemini Enterprise Engine Resource (or Console URL)' })
+    );
+    settingsCardEl.appendChild(geInput);
+    settingsCardEl.appendChild(el('label', { style: { fontSize: '12px', fontWeight: '700', marginTop: '4px' }, text: 'Connection Mode' }));
     settingsCardEl.appendChild(modeSelect);
     settingsCardEl.appendChild(
       el('label', { style: { fontSize: '12px', fontWeight: '700', marginTop: '4px' }, text: 'Optional Upgrade: Direct Google Chat API (Sub-200ms)' })
@@ -659,12 +674,23 @@
             type: 'button',
             className: 'comp-btn comp-btn-ai',
             id: 'btn-save-settings',
-            text: 'Save Mode',
+            text: 'Save Settings',
             onClick: async () => {
-              state = await apiPost('/api/mode', { mode: modeSelect.value });
-              settingsModalEl.classList.add('hidden');
-              render();
-              showToast('Updated Chatski mode');
+              try {
+                const rawGe = geInput.value.trim();
+                if (rawGe && rawGe !== ((state && state.geEngineResource) || '')) {
+                  await apiPost('/api/save-ge', { geInstance: rawGe });
+                }
+                state = await apiPost('/api/mode', { mode: modeSelect.value });
+                settingsModalEl.classList.add('hidden');
+                render();
+                showToast('Updated Chatski settings');
+                if (state.geConfigured && state.showingSamplePreview && state.activeMode === 'ge') {
+                  triggerSync();
+                }
+              } catch (err) {
+                showToast('Settings error: ' + err.message);
+              }
             },
           }),
         ]),
@@ -677,6 +703,13 @@
     try {
       const res = await apiPost('/api/sync', {});
       state = res;
+      if (
+        state.conversations &&
+        state.conversations.length > 0 &&
+        !state.conversations.some((c) => c.id === selectedConvId)
+      ) {
+        selectedConvId = state.conversations[0].id;
+      }
       render();
       showToast('Synced conversations (' + (res.syncSource || 'ready') + ')');
     } catch (err) {
@@ -699,6 +732,9 @@
       selectedConvId = state.conversations[0].id;
     }
     render();
+    if (state.geConfigured && state.showingSamplePreview && !state.lastSyncedIso && state.activeMode === 'ge') {
+      triggerSync();
+    }
   }
 
   // Wire UI controls
@@ -722,12 +758,20 @@
     }
   });
 
-  document.getElementById('btn-theme').addEventListener('click', () => {
-    const html = document.documentElement;
-    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    html.setAttribute('data-theme', next);
-    document.getElementById('btn-theme').textContent = next === 'dark' ? '☀' : '☾';
-  });
+  const themeBtn = document.getElementById('btn-theme');
+  if (themeBtn && !themeBtn.__agyBound) {
+    themeBtn.__agyBound = true;
+    themeBtn.addEventListener('click', () => {
+      if (typeof window.__toggleAgyTheme === 'function') {
+        window.__toggleAgyTheme();
+        return;
+      }
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      themeBtn.textContent = next === 'dark' ? '☀' : '☾';
+    });
+  }
 
   document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
   document.getElementById('btn-sync-ge').addEventListener('click', triggerSync);
