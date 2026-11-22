@@ -1,9 +1,12 @@
-# State of West Virginia — Antigravity Suite (`v2.0.0`) Guided Test Prompts
+# State of West Virginia — Antigravity Suite (`v2.1.0`) Guided Test Prompts
 
-Welcome to **Version 2.0.0** of the **State of West Virginia Antigravity Suite** (`8` modular plugins · `40` ready-to-run skills · `4` custom-icon left-sidebar extensions · `100%` zero-footprint storage inside `~/.gemini/config/`).
+Welcome to **Version 2.1.0** of the **State of West Virginia Antigravity Suite** (`8` modular plugins · `40` ready-to-run skills + auto-discovered **`★ My Personal Skills`** · `4` custom-icon left-sidebar extensions · **`TokenEconomics`** dashboard · **`Overview` Updates & Video Walkthroughs Hub** · `100%` zero-footprint storage inside `~/.gemini/config/`).
 
 > [!TIP]
-> **What Changed in `v2.0.0` — Zero Copy-Paste Demo Mode:** You no longer need to copy and paste long prompt blocks to test or demo skills. Every skill now includes a **1-Click `Run →` button** inside **`Extensions → WV Antigravity → Skills`** (and **`Extensions → WV Skills`**). Every test section below includes **both** the **1-Click In-App Starter** (for fast live demos) **and** the **Full West Virginia Deep-Test Script** (when you want to stress-test multi-step county and statutory scenarios by pasting).
+> **What Changed in `v2.1.0` — Dedicated `WV Skills` (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
+> - **Dedicated `WV Skills` Hub:** All `40` curated skills (including **`WV State Skills`**) **plus** your own **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`) now live inside **`Extensions → WV Skills`** (Sparkles icon) in the AI-Inbox Card Grid with 1-Click **`Run →`**, `+ New Skill`, `Save My Copy`, and Safe Export secret scanning.
+> - **`TokenEconomics` Dashboard Tab:** Open **`Extensions → WV Antigravity → TokenEconomics`** to track your monthly pooled quota cap, 14-day velocity, Orchestrator + Hydrogen + Workflows playbooks, and amber `/compact` context alerts (`>=160k` tokens).
+> - **`Overview` Updates & Video Walkthroughs:** Open **`Extensions → WV Antigravity → Overview`** to toggle **`⚡ Orchestrator`**, watch 3–4 minute two-host video tutorials, and subscribe to Google Antigravity updates. Every test section below includes **both** the **1-Click In-App Starter** and the **Full West Virginia Deep-Test Script**.
 
 ## Before You Begin
 
@@ -41,8 +44,8 @@ powershell -ExecutionPolicy Bypass -File "$env:TEMP\install-wv-suite.ps1"
 
 | Left-Sidebar Extension | Sidebar Icon | What It Does | Fastest 1-Click Action (No Copy-Paste) |
 | :--- | :--- | :--- | :--- |
-| **`WV Antigravity`** | Antigravity Rainbow **A** | Daily command center with **Overview**, AI Inbox **Action Items**, **Initiatives**, **Stakeholders**, and **Skills** (`40` skills). | Open **`Skills`** tab (or **`Overview`**) and click **`Run →`** on any card. |
-| **`WV Skills`** | Sparkles | Toggle any of the **40 skills** on/off across **9 categories** (including **`WV State Skills`**), configure Gemini Enterprise (`GE`), or pull updates in `<1s`. | Click **`▶ Seed:`** (or **`▶`**) on any row, or click **`Sync Updates`**. |
+| **`WV Antigravity`** | Antigravity Rainbow **A** | Daily command center with **Overview** (`⚡ Orchestrator` + Updates & Video Hub), AI Inbox **Action Items**, **Initiatives**, **Stakeholders**, and **TokenEconomics** (monthly cap & spend playbooks). | Toggle **`⚡ Orchestrator`** on `Overview` or check your monthly cap in **`TokenEconomics`**. |
+| **`WV Skills`** | Sparkles | Dedicated AI-Inbox Card Grid for all **40 suite skills** (including **`WV State Skills`**) **plus** auto-discovered **`★ My Personal Skills`** (`~/.gemini/config/skills/` & `.gemini/skills/`), GE Hub, Safe Export & `<1s` `Sync Updates`. | Click **`Run →`** on any skill card, **`+ New Skill`**, or **`★ My Personal Skills`**. |
 | **`WV Preview`** | Magnifying Glass | Serverless visual viewer for West Virginia Executive Dashboards, 16:9 Slide Decks, and Stakeholder Flyers (`0` local ports). | Click any captured deliverable pill, or click **`Download HTML`** / **`Print / PDF`**. |
 | **`WV Chatski`** | Chat Bubble | Google Chat companion powered by your agency's Gemini Enterprise Chat Connector with **`[Draft-Only]`** reply staging. | Click **`↻ Sync`**, **`✨ Summarize`**, or hover any message and click **`✨ Draft reply`**. |
 
@@ -79,7 +82,7 @@ powershell -ExecutionPolicy Bypass -File "$env:TEMP\install-wv-suite.ps1"
 
 ### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-Open **`Extensions → WV Antigravity → Skills`**, click **`WV Design Studio (3)`**, and click **`Run →`** on **`/wv-dashboard`** (or **`/slides`** / **`/doc-design`**):
+Open **`Extensions → WV Skills`**, click **`WV Design Studio (3)`**, and click **`Run →`** on **`/wv-dashboard`** (or **`/slides`** / **`/doc-design`**):
 
 ```markdown
 /wv-dashboard Spin up an interactive Public Sector executive KPI & grant readiness dashboard with 4 KPI cards, regional breakdowns, and live visual Customize Layout.
@@ -105,7 +108,7 @@ IMPORTANT — Follow the v2.0.0 WV Design Studio visual preview rules:
 
 ### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-Open **`Extensions → WV Antigravity → Skills`** (`WV Onboarding (8)`) and click **`Run →`** on **`/model-guide`**, **`/orchestrator-guide`**, or **`/token-usage`**.
+Open **`Extensions → WV Skills`** (`WV Onboarding (8)`) and click **`Run →`** on **`/model-guide`**, **`/orchestrator-guide`**, or **`/token-usage`**.
 
 ### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
 
