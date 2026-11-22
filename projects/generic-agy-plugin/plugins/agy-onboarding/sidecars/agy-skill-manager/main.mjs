@@ -30,6 +30,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
 import { buildSkillsCatalog, SUITE_VARIANT } from './seed_prompts_catalog.mjs';
+import { buildInlinedSidecarHtml } from './sidecar_html_inliner.mjs';
 import { getTokenMeterSummary } from './token_meter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -625,7 +626,7 @@ async function buildFullState() {
 
 const app = new SidecarApp();
 
-app.page('/', () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'));
+app.page('/', () => buildInlinedSidecarHtml(__dirname, ['token_pill_ui.js', 'app.js']));
 
 app.api('/styles.css', () =>
   new Response(fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf-8'), {

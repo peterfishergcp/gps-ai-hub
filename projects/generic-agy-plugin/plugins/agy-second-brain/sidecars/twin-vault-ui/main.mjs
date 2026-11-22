@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
+import { buildInlinedSidecarHtml } from './sidecar_html_inliner.mjs';
 import {
   ROLE_PRESETS,
   addGtdTask,
@@ -407,7 +408,7 @@ function copySkillBundleRecursive(srcDir, destDir, newSlug) {
 
 const app = new SidecarApp();
 
-app.page('/', () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'));
+app.page('/', () => buildInlinedSidecarHtml(__dirname, ['token_pill_ui.js', 'tokeneconomics_and_updates_ui.js', 'app.js']));
 
 app.api(
   '/styles.css',
