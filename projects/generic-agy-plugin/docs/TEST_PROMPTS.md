@@ -1,4 +1,10 @@
-# Google Antigravity — Public Sector Skill Suite (`v1.5.0`) Guided Test Prompts
+# Google Antigravity — Public Sector Skill Suite (`v1.7.0`) Guided Test Prompts
+
+> [!TIP]
+> **New in `v1.7.0` — 1-Click `Skills` Hub (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
+> - **Zero Copy-Paste Needed:** Open **`Extensions → Skills`** (Sparkles icon) in the left sidebar to browse all `40` suite skills **plus** your auto-discovered **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`) and click **`Run →`** on any card—or paste the full deep-test scripts below!
+> - **`TokenEconomics` & `/compact` Alert:** Open **`Extensions → My Antigravity → TokenEconomics`** to track your monthly pooled quota cap (`Standard $30`, `Plus $45`, `Enterprise $60`, or Custom Cap) and Orchestrator/Workflows playbooks.
+> - **Updates & Video Walkthroughs:** Open **`Extensions → My Antigravity → Overview`** to toggle **`⚡ Orchestrator`**, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates.
 
 ## Before You Begin
 
@@ -48,7 +54,7 @@ Pick the tests that match your day-to-day work:
 5. **Prompt 5: Update Old Code, Cloud Deployment & Database Queries** *(IT / developers only, optional)* — Fix bugs in an old Python script, generate a cloud deployment command, and modernize a database query. *You'll see: 3 hidden code bugs identified and fixed with passing tests, plus ready-to-use cloud and SQL commands.*
 6. **Prompt 6: Catch 4 Common Security Mistakes** *(IT / security only, optional)* — Scan sample code and cloud commands containing 4 intentional security flaws. *You'll see: all 4 security risks explained in plain English for security leadership, followed by corrected code and commands.*
 7. **Prompt 7: Connect to Gemini Enterprise** *(Optional — only if IT has set this up)* — Check whether Antigravity is connected to your organization's shared search hub. *You'll see: your current connection status and a walkthrough of how single sign-on search works across email, files, and code.*
-8. **Prompt 8: Personal Memory, Action Items, SCQA Meeting Prep & Anti-Slop Scrubbing** *(Everyone)* — Initialize your persistent Personal Memory (`~/my-antigravity/memory/`), ingest call notes into Action Items, build an Adversarial Minto SCQA pre-meeting brief, and scrub an external draft. *You'll see: live AI Inbox Action Items & Topics inside `Extensions -> My Antigravity`, an SCQA pushback brief, and caught `[CONFIRM]` / AI-slop markers.*
+8. **Prompt 8: Zero-Footprint Memory, Action Items, `TokenEconomics` & Anti-Slop Scrubbing** *(Everyone)* — Initialize your persistent Personal Memory (`~/.gemini/config/plugin_data/my-antigravity/memory/`), ingest call notes into Action Items, inspect your monthly cap in `TokenEconomics`, build an Adversarial Minto SCQA pre-meeting brief, and scrub an external draft. *You'll see: live AI Inbox Action Items & Topics inside `Extensions -> My Antigravity`, an SCQA pushback brief, and caught `[CONFIRM]` / AI-slop markers.*
 9. **Prompt 9 (Run Last): 4-Agent Parallel Swarm Prep & 3-Altitude Weekly Impact** *(Program managers, leads & analysts)* — Fan out 4 specialized subagents in parallel for a milestone review and compile your Friday 3-Altitude impact ledger. *You'll see: a cohesive 360 Prep Pack with a Mermaid diagram and a saved `weekly/YYYY-WXX.md` summary.*
 
 > [!NOTE]
