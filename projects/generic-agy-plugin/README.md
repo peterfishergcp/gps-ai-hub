@@ -11,33 +11,44 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
   - Ships as a `< 500 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 40 skills in seconds—with or without `git` installed.
-- **Unified AI Inbox Look & Feel, `Chatski` Left Panel, Hoverable Token Meter (`in | out | thinking`), `/token-usage`, & `/orchestrator-guide` (`v1.6.2`):**
-  - Every UI panel (`Extensions -> My Antigravity`, `Extensions -> Chatski`, `Extensions -> Skills`, and `Extensions -> Preview`) shares the Antigravity rainbow **"A"** icon and includes a live hoverable **`in | out | thinking` Token Consumption Pill**—paired with **`Chatski`** (browsing & staging replies across Google Chat Spaces & DMs right through your existing Gemini Enterprise Chat Connector with zero extra setup, plus optional Direct Chat API), a unified **AI Inbox** design across all **`My Antigravity`** tabs (`Action Items 🍪`, `Overview 😎`, `Initiatives 🚦`, `Stakeholders 🌊`, `Skills ✨`, and `Customize ⚙️`), `/token-usage`, and `/orchestrator-guide`.
+- **100% Zero-Footprint Architecture (`~/.gemini/config/` Only — `v1.7.0`):**
+  - All Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`), toggles, and sidecar state live strictly inside `~/.gemini/config/plugin_data/my-antigravity/memory/`—leaving zero extra folders in `$HOME`.
+- **4 Left-Sidebar `Extensions` with Distinct Custom Icons, Dedicated `Skills` (`★ My Personal Skills`), `TokenEconomics`, & Antigravity Updates Hub (`v1.7.0`):**
+  1. **`My Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 5-step Quick Adoption Checklist, **`Stay in sync with Google Antigravity`** blog/video updates & subscribe hub), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, `5h`/`24h`/`7d`/`30d` telemetry, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
+  2. **`Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid skill & connector hub displaying all 40 curated suite skills **plus** automatic discovery of all user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), `+ New Skill` wizard, `Save My Copy`, per-skill toggles, Safe Export secret scanner, and `<1s` `Sync Updates`.
+  3. **`Preview`** *(**Magnifying Glass** Icon)* — Serverless visual preview of Dashboards, 16:9 Slide Decks, and Branded Flyers with Print-to-PDF and 1-click HTML download.
+  4. **`Chatski`** *(**Chat Bubble** Icon)* — Browsing & staging `[Draft-Only]` replies across Google Chat Spaces & DMs right through your existing Gemini Enterprise Chat Connector with zero extra setup, plus a live hoverable **`in | out | thinking` Token Consumption Pill** (with `/compact` context-bloat alert) across all 4 panels.
 
 ---
 
-## Visual Tour — `My Antigravity` (AI Inbox) & `Chatski`
+## Visual Tour — `My Antigravity`, Dedicated `Skills`, `TokenEconomics` & `Chatski` (`v1.7.0`)
 
-### 1. `Action Items` — AI Inbox Suggested To-Dos & Topics (`🍪`)
-Catch up in seconds with 1-click **`Reply`** and **`Open`** action pills, Scallop Wave visual separation, and synthesized **`Topics to catch up on`** cards—plus a live hoverable **`in | out | thinking`** token pill in the top header:
+### 1. `Overview` — Instant Search, `⚡ Orchestrator` Optimizer & Antigravity Updates + Video Walkthroughs (`😎`)
+Search across Action Items, Initiatives, Stakeholders, and all 40 skills, toggle **`⚡ Orchestrator`** prompt optimization, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates:
+
+![My Antigravity — Overview, Orchestrator & Updates Hub](./docs/screenshots/my-antigravity-overview.png)
+
+### 2. Dedicated `Skills` Sidebar Hub — 40 Curated Skills + `★ My Personal Skills` (`✨`)
+Browse all 40 suite skills and every personal skill in `~/.gemini/config/skills/` or `.gemini/skills/`—run in 1 click, toggle skills on/off, create new skills, or run Safe Export:
+
+| `Skills ✨` *(40 Curated Suite Skills)* | `★ My Personal Skills` *(Auto-Discovered User & Workspace Skills)* |
+| :---: | :---: |
+| ![Skills Hub — All Skills](./docs/screenshots/my-antigravity-skills.png) | ![Skills Hub — Personal Skills](./docs/screenshots/my-antigravity-personal-skills.png) |
+
+### 3. `TokenEconomics` — Monthly Spending Cap Tracker & Orchestrator / Workflows Playbook (`💎`)
+See where you stand against your monthly pooled `$` quota (`Standard $30`, `Plus $45`, `Enterprise $60`, or Custom Cap), inspect 14-day token velocity, and apply personalized Orchestrator + Hydrogen + Workflows recommendations:
+
+![My Antigravity — TokenEconomics & Spend Optimization](./docs/screenshots/my-antigravity-tokeneconomics.png)
+
+### 4. `Action Items` (`🍪`), `Chatski` (`💬`), `Initiatives` (`🚦`) & `Stakeholders` (`🌊`)
 
 ![My Antigravity — AI Inbox Action Items & Topics](./docs/screenshots/my-antigravity-action-items.png)
 
-### 2. `Overview` — Instant Search Bar, Up Next & 1-Click Workflows (`😎`)
-Search across Action Items, Initiatives, Stakeholders, and all 40 skills—or press **Enter** to ask Antigravity directly in chat:
-
-![My Antigravity — Overview & Instant Search](./docs/screenshots/my-antigravity-overview.png)
-
-### 3. `Chatski` — Google Chat Left-Sidebar Panel via Gemini Enterprise (`💬`)
-Works out-of-the-box with your existing **Gemini Enterprise Google Chat Connector** (zero extra OAuth client or laptop setup)—browse Spaces & Direct Messages, hover any message for **`✨ Draft reply`**, stage voice-calibrated drafts, and send only with explicit human confirmation:
-
 ![Chatski — Google Chat Left-Sidebar Panel via Gemini Enterprise](./docs/screenshots/chatski-ge-chat.png)
 
-### 4. `Initiatives`, `Stakeholders`, & `Skills` — Unified AI Inbox Tabs
-
-| `Initiatives 🚦` *(RAG Status & Milestones)* | `Stakeholders 🌊` *(>21d Check-In Radar)* | `Skills ✨` *(40 Skills + Save My Copy)* |
-| :---: | :---: | :---: |
-| ![My Antigravity — Initiatives](./docs/screenshots/my-antigravity-initiatives.png) | ![My Antigravity — Stakeholders](./docs/screenshots/my-antigravity-stakeholders.png) | ![My Antigravity — Skills](./docs/screenshots/my-antigravity-skills.png) |
+| `Initiatives 🚦` *(RAG Status & Milestones)* | `Stakeholders 🌊` *(>21d Check-In Radar)* |
+| :---: | :---: |
+| ![My Antigravity — Initiatives](./docs/screenshots/my-antigravity-initiatives.png) | ![My Antigravity — Stakeholders](./docs/screenshots/my-antigravity-stakeholders.png) |
 
 ---
 
@@ -96,7 +107,7 @@ bash projects/generic-agy-plugin/scripts/install-agy-suite.sh
 
 Whenever new skills, FOIA templates, dashboard themes, or connector improvements are pushed to Git and `version-manifest.json` is bumped:
 1. Click **`Sync Git Updates`** (or the **`↻`** icon next to any skill) inside **`Extensions -> Skills`**, OR type **`/agy-update`** (all changed skills) / **`/agy-update agy-dashboard`** (single skill) in chat.
-2. Only changed files are downloaded via SHA-256 diffing over HTTPS 443—preserving the user's saved `ge-instance.json`, skill toggles, and `~/my-antigravity/memory/` settings.
+2. Only changed files are downloaded via SHA-256 diffing over HTTPS 443—preserving the user's saved `ge-instance.json`, skill toggles, `~/.gemini/config/skills/` personal skills, and `~/.gemini/config/plugin_data/my-antigravity/memory/` settings.
 
 ---
 

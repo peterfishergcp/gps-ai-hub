@@ -1,71 +1,37 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skills — Antigravity</title>
-  <link rel="stylesheet" href="/styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skills</title>
+  <link rel="stylesheet" href="/styles.css" />
   <script src="/preload.js"></script>
 </head>
 <body>
   <div class="shell">
-    <header class="top-header">
-      <div class="brand-row">
-        <div class="title-cluster">
-          <svg class="brand-logo" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-            <defs>
-              <radialGradient id="skTopRed" cx="62%" cy="22%" r="48%">
-                <stop offset="0%" stop-color="#FF4B3A"/>
-                <stop offset="48%" stop-color="#FF9F1C"/>
-                <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
-              </radialGradient>
-              <radialGradient id="skLeftGreen" cx="34%" cy="32%" r="46%">
-                <stop offset="0%" stop-color="#34C759"/>
-                <stop offset="52%" stop-color="#A3E635" stop-opacity="0.7"/>
-                <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="skBaseBlue" x1="50" y1="12" x2="50" y2="88" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#60A5FA"/>
-                <stop offset="55%" stop-color="#2563EB"/>
-                <stop offset="100%" stop-color="#3B82F6"/>
-              </linearGradient>
-            </defs>
-            <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#skBaseBlue)"/>
-            <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#skLeftGreen)"/>
-            <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#skTopRed)"/>
-          </svg>
-          <div>
-            <h1>Skills</h1>
-            <p class="subtitle" id="summaryCounter">Loading skills &amp; connectors...</p>
-          </div>
-        </div>
-        <div class="header-actions">
-          <button type="button" class="pill-action" id="toggleGePanelBtn">GE Connector Hub</button>
-          <button type="button" class="pill-action subtle" id="refreshSkillsBtn" title="Reload skills &amp; ★ My Custom Skills from local disk">Refresh</button>
-          <button type="button" class="pill-action subtle" id="updateSuiteBtn" title="Sync stock updates (protects locally customized &amp; personal skills)">Sync Updates</button>
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" fill="rgba(37,99,235,0.14)"/>
+          <path d="M5 3v4M3 5h4M19 17v4M17 19h4"/>
+        </svg>
+        <div>
+          <div class="brand-title" id="header-title">Skills</div>
+          <div class="brand-sub" id="header-sub">Loading suite &amp; personal skills...</div>
         </div>
       </div>
-
-      <section class="ge-drawer" id="geDrawer" hidden>
-        <label class="ge-label" for="geInput">Default Gemini Enterprise Instance (Azure/Entra-Synced Google Identity · Federated Connectors)</label>
-        <div class="ge-row">
-          <input type="text" id="geInput" placeholder="projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID">
-          <button type="button" class="pill-action primary" id="saveGeBtn">Save GE Instance</button>
-        </div>
-      </section>
-
-      <div class="toolbar">
-        <div class="search-wrap">
-          <input type="search" id="searchInput" placeholder="Filter skills by name, /command, or capability...">
-        </div>
-        <div class="filter-chips" id="categoryChips"></div>
+      <div class="topbar-actions" id="topbar-actions">
+        <button class="btn btn-sm" id="btn-new-skill" type="button">+ New Skill</button>
+        <button class="btn btn-secondary btn-sm" id="btn-ge-hub" type="button">GE Connector Hub</button>
+        <button class="btn btn-secondary btn-sm" id="btn-sync-updates" type="button" title="Incrementally sync latest suite skills via SHA-256">Sync Updates</button>
+        <button class="btn btn-secondary btn-sm" id="btn-refresh" type="button">Refresh</button>
       </div>
     </header>
 
-    <main id="categoriesContainer" class="categories-list" aria-live="polite"></main>
+    <main class="content" id="view-root"></main>
   </div>
 
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast" id="toast"></div>
   <script src="/token_pill_ui.js"></script>
   <script src="/app.js"></script>
 </body>

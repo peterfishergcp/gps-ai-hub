@@ -1,7 +1,7 @@
 {
   "name": "wv-onboarding",
   "displayName": "WV Skills \u2014 West Virginia Skill Manager & Connectors",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Includes the clean WV Skills panel with AI Inbox styling & live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude 5.5 & Gemini 4 model guide (/model-guide), WV onboarding (/wv-onboard), morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /wv-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

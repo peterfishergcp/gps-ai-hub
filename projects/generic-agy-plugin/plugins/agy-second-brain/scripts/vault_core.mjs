@@ -36,13 +36,18 @@ export function getVaultRoot(overrideDir = '') {
   if (explicit) {
     return path.resolve(explicit);
   }
-  const preferred = path.join(os.homedir(), 'my-antigravity', 'memory');
-  const legacy = path.join(os.homedir(), 'antigravity-twin', 'memory');
-  if (!fs.existsSync(preferred) && fs.existsSync(legacy)) {
-    try {
-      copyDirSafeOnce(legacy, preferred);
-    } catch {
-      return path.resolve(legacy);
+  // Zero-Footprint Standard: 100% self-contained inside ~/.gemini/config/plugin_data/my-antigravity/memory
+  const preferred = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'my-antigravity', 'memory');
+  const legacyMy = path.join(os.homedir(), 'my-antigravity', 'memory');
+  const legacyTwin = path.join(os.homedir(), 'antigravity-twin', 'memory');
+  if (!fs.existsSync(preferred)) {
+    const legacySrc = fs.existsSync(legacyMy) ? legacyMy : fs.existsSync(legacyTwin) ? legacyTwin : '';
+    if (legacySrc) {
+      try {
+        copyDirSafeOnce(legacySrc, preferred);
+      } catch {
+        return path.resolve(legacySrc);
+      }
     }
   }
   return path.resolve(preferred);

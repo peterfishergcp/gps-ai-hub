@@ -1,158 +1,7 @@
 {
-  "suiteName": "generic-agy-plugin",
-  "displayName": "Generic AGY Plugin \u2014 Public Sector Antigravity Skill & Connector Suite",
-  "suiteVersion": "1.6.2",
-  "releasedAt": "2026-11-21T00:15:00Z",
-  "minAntigravityVersion": "1.0.0",
-  "plugins": {
-    "agy-onboarding": {
-      "version": "1.6.0",
-      "category": "Onboarding, Skills Panel + Hover Token Meter, Token Usage Analyzer (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & My Voice (/my-voice)",
-      "skills": [
-        "agy-onboard",
-        "model-guide",
-        "orchestrator-guide",
-        "token-usage",
-        "daily-brief",
-        "my-voice",
-        "inbox-triage",
-        "agy-update"
-      ],
-      "sidecars": [
-        "agy-skill-manager"
-      ]
-    },
-    "agy-connectors": {
-      "version": "1.6.0",
-      "category": "Chatski Left-Sidebar Google Chat Panel + Gemini Enterprise Federated Connectors (Entra-Synced Google Identity)",
-      "skills": [
-        "chatski",
-        "connect-ge",
-        "connect-m365-workspace",
-        "connect-github-bigquery"
-      ],
-      "mcpServers": [
-        "agy-ge-bridge"
-      ],
-      "sidecars": [
-        "chatski-ui"
-      ]
-    },
-    "agy-design-studio": {
-      "version": "1.5.0",
-      "category": "100% Serverless Visual Dashboards, Executive Slides, Branded Public Sector Documents & Preview Panel",
-      "skills": [
-        "agy-dashboard",
-        "slides",
-        "doc-design"
-      ],
-      "agents": [
-        "agy-design-architect"
-      ],
-      "sidecars": [
-        "agy-design-preview"
-      ]
-    },
-    "agy-public-workflows": {
-      "version": "1.0.0",
-      "category": "Public Workflows (3) + Government Services (public_sector) Skills (7)",
-      "skills": [
-        "foia-expert",
-        "legal-procurement-review",
-        "policy-program-audit",
-        "document-intake-cleanup-and-validation",
-        "expense-auditor",
-        "foia-request-processing",
-        "plain-language-notice-generator",
-        "policy-and-statute-assistant",
-        "public-records-redaction",
-        "rfp-vendor-evaluation"
-      ]
-    },
-    "agy-engineering-cloud": {
-      "version": "1.0.0",
-      "category": "Legacy App Refactoring, Cloud Run & BigQuery Architecture",
-      "skills": [
-        "modernize-refactor",
-        "deploy-cloudrun",
-        "bigquery-architect",
-        "find-cloud-skill"
-      ]
-    },
-    "agy-security": {
-      "version": "1.0.0",
-      "category": "OWASP, Google Cloud WAF, Assured Workloads & IAM Hygiene",
-      "skills": [
-        "security-audit",
-        "iam-secret-hygiene"
-      ]
-    },
-    "agy-second-brain": {
-      "version": "1.6.1",
-      "category": "My Antigravity Workspace UI, AI Inbox Action Items & Topics, Personal Memory (~/my-antigravity/memory/), Adversarial Minto SCQA Prep, 4-Agent Parallel Swarm & Anti-Slop Outbound Scrubbing",
-      "skills": [
-        "memory",
-        "meeting-notes",
-        "meeting-prep",
-        "followup-plan",
-        "swarm-prep",
-        "weekly-impact",
-        "no-ai-slop",
-        "outbound-scrub"
-      ],
-      "agents": [
-        "context-memory-scout",
-        "scqa-redteam-critic",
-        "domain-solution-architect",
-        "outbound-safety-auditor"
-      ],
-      "sidecars": [
-        "twin-vault-ui"
-      ]
-    },
-    "agy-twin-automations": {
-      "version": "1.5.0",
-      "disabled": true,
-      "category": "Opt-In Background Scheduled Automations (Morning Kickoff Brief, Twice-Daily Follow-Up Plan, Evening Notes Compactor & Friday 3-Altitude Impact)",
-      "skills": [
-        "automations"
-      ],
-      "sidecars": [
-        "morning-twin-brief",
-        "twice-daily-followup-plan",
-        "nightly-notes-compactor",
-        "friday-weekly-impact"
-      ]
-    }
-  },
-  "changelog": [
-    {
-      "version": "1.5.0",
-      "date": "2026-11-20",
-      "highlights": [
-        "Removed all 'Twin' and 'GTD' jargon across UI, slash commands (/my-voice, /memory, /meeting-notes, /meeting-prep, /followup-plan, /swarm-prep, /weekly-impact, /automations), manifests, and docs, with seamless migration from ~/antigravity-twin/memory/gtd_board.md to ~/my-antigravity/memory/action_items.md.",
-        "Redesigned 'Action Items' (replacing GTD Board) with the Gmail AI Inbox look & feel: 'Suggested to-dos' with sky-blue Reply / Open pills + scallop wave divider + 3-column 'Topics to catch up on' cards.",
-        "Removed the 'Markdown Files' tab and added a clean top-right 'Customize' sliders icon button combining Role/Profile setup with Voice & Memory file customization."
-      ]
-    },
-    {
-      "version": "1.4.0",
-      "date": "2026-11-20",
-      "highlights": [
-        "Added live hoverable token usage meter (in | out | thinking) across My Antigravity, Skills, and Preview panels, plus /token-usage and /orchestrator-guide (expanding the suite to 39 slash-command skills)."
-      ]
-    },
-    {
-      "version": "1.0.0",
-      "date": "2026-11-19",
-      "highlights": [
-        "Initial generic Public Sector release across modular plugins, slash-command skills (including the 7 Government Services public_sector skills), and serverless UI sidecars (Skills & Preview).",
-        "Zero-install Gemini Enterprise (GE) Federated Connector Bridge (agy-ge-bridge) running on Antigravity's built-in agy-node runtime for Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub.",
-        "SHA-256 per-skill incremental updater (incremental-sync.mjs + 1-click 'Sync Git Updates' & per-skill refresh buttons inside Skills) so cohorts update changed files in <1s without full re-installs.",
-        "100% serverless Side-Pane visual previews for /agy-dashboard, /slides, and /doc-design with 1-click standalone HTML download and zero local TCP port listeners."
-      ]
-    }
-  ],
+  "suiteVersion": "1.7.0",
+  "updatedAt": "2026-11-22T20:00:00Z",
+  "skillCount": 40,
   "skillManifest": {
     "chatski": {
       "plugin": "agy-connectors",
@@ -523,8 +372,8 @@
         "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
         "sidecar.json": "3157da7a82b28cd54def6db3ad13bdb2ec28141d50fd070e1c69a0c7269bd58d",
         "styles.css": "fe3865f99df1c6bdb096d80cba9d01cbe1a7a47367598dc27f541d8b60bcd6bb",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1"
       }
     },
     "agy-design-preview": {
@@ -537,39 +386,50 @@
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "d66417655d46cd5f80d0cdff0dea19b9557ceb835d966ec9b56c079d7c4f7f49",
         "styles.css": "7a35edf81abc7368e4dd130153fa79175bdad3ca1bfaa4512528f1cbaf77e010",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1"
       }
     },
     "agy-skill-manager": {
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "9ac15d5eca4a8c659b89699cade280f181e9717bfe60e3679d7dac843ac3c651",
-        "index.html": "3c4ee99b5068293d79843b8d299d995860620207909a3955b238c1d1c883c299",
-        "main.mjs": "6f11dd180bcd6ce524ad16bf6ab6bb131a641d0cc58e29eb8374cb3a8f265d44",
+        "app.js": "253cfcdcca83beee2f204af8311b7308da8bdc9927daa121d6fa4f51920593ae",
+        "index.html": "40b7d2a09b51105625f5123b45e3028eadfad97929544f27903ac4a121f012bd",
+        "main.mjs": "625b88ce1f4a981fa431502fc7ddbf3ba26e476f046fc794effb2d608786a6f2",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
+        "seed_prompts_catalog.mjs": "63f239f382e8cb3a3f59e04b30a3ca06a478d031153b0f598319bddea1de5b39",
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
-        "styles.css": "fb7c9efdfeb81fe53ea8ce869f582f49f59e648aebb70f3a0a428f26aca74f72",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+        "styles.css": "73189df7a6f3cb9d599e59b3f404c987d5e59c5a8f59f09c4caede41d69b9f6c",
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1",
+        "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
+        "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
+        "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
+        "assets/emoji/1f60e.png": "6532a77006aeea8413a52707fc3088761b2b0eae0a827a5ba7919f41171df43b",
+        "assets/emoji/1f6a6.png": "e3f5dc9f6b2fc9aa803691a7a73d7ebb5a0543bf09586fc8816fb89040aa4822",
+        "assets/emoji/2699_fe0f.png": "edaee6acd8bae516871bb6cb28f95dd362f24347477eddc5b20ed22a2b782ed5",
+        "assets/emoji/2728.png": "1ede340356e26664f17b39fc9b092b68519f6bed245ead84b6dbaf901004ad8c"
       }
     },
     "twin-vault-ui": {
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "app.js": "ab384f37c166856f2108999285d6cb90f12c340b132a2008193df08021667bc4",
-        "index.html": "be91e53409ddfd53c12844fb564d924e9004e0e232954b97f8daeccc0e7d50a2",
-        "main.mjs": "4744d877a6b226831477fa28a00bc1c690c1b5acf50a699710b3b79d26b680fa",
+        "antigravity_updates.mjs": "0e84c64459cd34feae32ed3817a2c9a6aeb0d7423c2cd5eb8496be09ee9b6e54",
+        "app.js": "311e770a45ad8327cf99098aa4ad1fef44ceb2247add12155097f779b20eef0e",
+        "index.html": "7127c821353e495f525855e47287e54f31372c9b7a117e5f6f3f95f54e7a7bea",
+        "main.mjs": "a8692785cc3f459117d54dd5001d81b1795af8b7e18df5d31f56fa4c54a7e0d5",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "25648a0b8b60f7a8230869fbea9f9b8992a9ee1740a1c781335e0f3e1cbc7e3e",
+        "seed_prompts_catalog.mjs": "63f239f382e8cb3a3f59e04b30a3ca06a478d031153b0f598319bddea1de5b39",
         "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
-        "styles.css": "e678e2c9a1ee62e8a4d158442e14fb4378c859ed6e0b8be7487c868cc74d1320",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9",
+        "styles.css": "73189df7a6f3cb9d599e59b3f404c987d5e59c5a8f59f09c4caede41d69b9f6c",
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1",
+        "tokeneconomics_and_updates_ui.js": "80b28003b3a71255ec90f11dbd9ae6d35634b91bdfd03cd5beeb162a936f6ddc",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
+        "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
         "assets/emoji/1f60e.png": "6532a77006aeea8413a52707fc3088761b2b0eae0a827a5ba7919f41171df43b",
         "assets/emoji/1f6a6.png": "e3f5dc9f6b2fc9aa803691a7a73d7ebb5a0543bf09586fc8816fb89040aa4822",
         "assets/emoji/2699_fe0f.png": "edaee6acd8bae516871bb6cb28f95dd362f24347477eddc5b20ed22a2b782ed5",
