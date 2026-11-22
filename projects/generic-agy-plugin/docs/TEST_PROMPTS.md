@@ -27,11 +27,10 @@ Open the [Google Antigravity Organization Setup Guide](../setup-guide/index.html
 
 1. Open **Antigravity** on your computer.
 2. Click **+ New Conversation** (top left).
-3. Copy the line in the code box below:
+3. Copy the 1-line command in the code box below:
    ```text
-   Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the plugin skill and do not write to /tmp) — macOS/Linux: curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash  |  Windows PowerShell: irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex
+   agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
    ```
-   *(Or run `curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash` on macOS/Linux or `irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex` in Windows PowerShell.)*
 4. Click inside the **chat box at the bottom of the Antigravity window**, paste (`Ctrl+V` on Windows or `⌘+V` on Mac), and press **Enter**.
 5. Leave the default permission setting on: **you may be asked to click Accept a few times during install—that's normal.** *(If your IT team specifically instructed you to switch **Request Review** at the bottom-right of the chat box to **Turbo** for setup, click **Turbo ▾** afterward and switch it back to **Default** once installation finishes.)*
 6. **You'll know it worked when** you see a chat message confirming installation is complete (or **My Antigravity**, **Skills**, and **Preview** appear under **Extensions** on the left sidebar). This takes about **1–2 minutes**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*

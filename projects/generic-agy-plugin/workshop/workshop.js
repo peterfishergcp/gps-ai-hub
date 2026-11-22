@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var STEP2_INSTALL_PROMPT = 'Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the plugin skill and do not write to /tmp) — macOS/Linux: curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash  |  Windows PowerShell: irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex';
+  var STEP2_INSTALL_PROMPT = 'agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin';
 
   var SKILLS = [
     { id: '/agy-onboard', title: 'Agency Role, Personal Memory & GE Quickstart', category: 'Onboarding & Triage', type: 'SOP Playbook', desc: '60-second setup for agency role, personal voice tone, 1-step Personal Memory initialization, 30-60-90 plans, and SOP builders.', prompt: '/agy-onboard Help me set up my agency role, Personal Memory, and Gemini Enterprise connection.' },
