@@ -1,11 +1,12 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.0.0).
+  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.1.2).
 .DESCRIPTION
   Adheres strictly to WV corporate laptop standards (Windows 11 / PowerShell 5.1, zero admin rights,
-  zero standalone Node/Python/Git/Docker required, zero files created outside $HOME\.gemini\config\).
-  Installs all 8 WV plugins (keeping wv-automations disabled/opt-in by default), writes BOM-free UTF-8
-  JSON configs, removes retired v1.x skill folders, and preserves user skill toggles & GE settings.
+  zero standalone Node/Python/Git/Docker required, zero files created outside $HOME\.gemini\config\,
+  zero %TEMP% writes, and zero local MCP subprocesses). Installs all 8 WV plugins (3 UI extensions:
+  WV Antigravity, WV Skills, WV Preview; wv-automations opt-in/disabled by default), writes BOM-free
+  UTF-8 JSON configs, and preserves user skill toggles & GE settings.
 #>
 [CmdletBinding()]
 param(
@@ -27,6 +28,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $UserHome = [Environment]::GetFolderPath("UserProfile")
@@ -61,9 +63,21 @@ function Test-SafeArchiveEntries {
   }
 }
 
-$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$SuiteRoot = Split-Path -Parent $ScriptRoot
-$TempDir = $null
+$SuiteRoot = ""
+if (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
+  $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+  $SuiteRoot = Split-Path -Parent $ScriptRoot
+}
+
+if ([string]::IsNullOrWhiteSpace($ZipUrl)) {
+  $HasLocalPlugins = (-not [string]::IsNullOrWhiteSpace($SuiteRoot)) -and (Test-Path (Join-Path $SuiteRoot "plugins"))
+  $HasLocalZip = (-not [string]::IsNullOrWhiteSpace($SuiteRoot)) -and (Test-Path (Join-Path $SuiteRoot "dist\wv-antigravity-suite.zip"))
+  if ((-not $HasLocalPlugins) -and (-not $HasLocalZip)) {
+    $ZipUrl = $DefaultZipUrl
+  }
+}
+
+$StageDir = $null
 $SourcePluginsDir = $null
 
 try {
@@ -71,12 +85,12 @@ try {
     if (-not $ZipUrl.StartsWith("https://", [System.StringComparison]::OrdinalIgnoreCase)) {
       throw "Refusing non-HTTPS ZipUrl: $ZipUrl"
     }
-    $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("wv-agy-suite-" + [System.Guid]::NewGuid().ToString("N"))
-    New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
-    $ZipFile = Join-Path $TempDir "wv-antigravity-suite.zip"
-    Write-Host "Downloading WV Antigravity Suite v2.0 (<500 KB)..." -ForegroundColor Cyan
+    $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
+    $ZipFile = Join-Path $StageDir "wv-antigravity-suite.zip"
+    Write-Host "Downloading WV Antigravity Suite v2.1.2 (<500 KB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
-    $ExtractDir = Join-Path $TempDir "extracted"
+    $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
     Test-SafeArchiveEntries -ZipPath $ZipFile -ExtractRoot $ExtractDir
     Expand-Archive -Path $ZipFile -DestinationPath $ExtractDir -Force
@@ -88,11 +102,11 @@ try {
         $SourcePluginsDir = Join-Path $sub.FullName "plugins"
       }
     }
-  } elseif (Test-Path (Join-Path $SuiteRoot "plugins")) {
+  } elseif ((-not [string]::IsNullOrWhiteSpace($SuiteRoot)) -and (Test-Path (Join-Path $SuiteRoot "plugins"))) {
     $SourcePluginsDir = Join-Path $SuiteRoot "plugins"
-  } elseif (Test-Path (Join-Path $SuiteRoot "dist\wv-antigravity-suite.zip")) {
-    $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("wv-agy-suite-" + [System.Guid]::NewGuid().ToString("N"))
-    $ExtractDir = Join-Path $TempDir "extracted"
+  } elseif ((-not [string]::IsNullOrWhiteSpace($SuiteRoot)) -and (Test-Path (Join-Path $SuiteRoot "dist\wv-antigravity-suite.zip"))) {
+    $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
+    $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
     $LocalZip = Join-Path $SuiteRoot "dist\wv-antigravity-suite.zip"
     Test-SafeArchiveEntries -ZipPath $LocalZip -ExtractRoot $ExtractDir
@@ -159,7 +173,7 @@ try {
     }
   }
 } finally {
-  if ($null -ne $TempDir -and (Test-Path $TempDir)) {
-    Remove-Item -Recurse -Force -Path $TempDir -ErrorAction SilentlyContinue
+  if ($null -ne $StageDir -and (Test-Path $StageDir)) {
+    Remove-Item -Recurse -Force -Path $StageDir -ErrorAction SilentlyContinue
   }
 }

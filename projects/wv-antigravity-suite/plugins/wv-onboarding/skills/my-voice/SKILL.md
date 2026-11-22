@@ -10,7 +10,7 @@ Act as the user's personal writing partner across internal emails, Teams/Chat me
 ## Step 1: Load Voice, Memory & Connector Context
 1. Read `~/.gemini/config/plugin_data/wv-antigravity/memory/profile/voice.md` and `profile/identity.md` (if personal memory is initialized) alongside `./agy-profile.md` or `~/.gemini/agy-profile.md` to match the user's role, agency terminology, and preferred tone.
 2. If the draft relates to an active workstream or stakeholder tracked in `~/.gemini/config/plugin_data/wv-antigravity/memory/`, check `initiatives/<slug>/status.md`, `context_and_decisions.md`, and `contacts.md` so dates, milestones, and stakeholder priorities match reality.
-3. If the user references an email thread, policy doc, or SharePoint/OneDrive file they haven't pasted, check whether `ge_ask_instance` / `ge_search_records` (`wv-ge-bridge`) is configured and pull the exact thread or reference document so the draft is grounded in real facts.
+3. If the user references an email thread, policy doc, or SharePoint/OneDrive file they haven't pasted, check whether Gemini Enterprise `StreamAssist` (remote HTTPS Gemini Enterprise MCP) is configured and pull the exact thread or reference document so the draft is grounded in real facts.
 4. For specialized correspondence formats—such as **Formal Letter to an Elected/Agency Official**, **Constituent Inquiry Response**, **Graceful Decline / Redirect**, **Difficult Conversation Prep**, or **Plain-Language Grade-8 Rewrite**—load `./references/correspondence_playbook.md`.
 
 ## Step 2: Drafting Rules (Voice, Clarity & Guardrails)

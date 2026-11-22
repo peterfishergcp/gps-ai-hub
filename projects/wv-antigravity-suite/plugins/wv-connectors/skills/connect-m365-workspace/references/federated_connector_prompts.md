@@ -1,4 +1,4 @@
-# High-Signal Federated Query Patterns for `ge_ask_instance`
+# High-Signal Federated Query Patterns for Gemini Enterprise (`StreamAssist`)
 
 Federated connectors execute live API searches against Microsoft Graph, Google Workspace, and GitHub. Specific, bounded queries return much sharper grounding than vague 2-word prompts.
 

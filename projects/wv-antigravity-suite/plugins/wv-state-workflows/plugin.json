@@ -1,7 +1,7 @@
 {
   "name": "wv-state-workflows",
   "displayName": "WV State Skills \u2014 WV FOIA (\u00a7 29B-1-4), Legal, Policy & Government Services",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "description": "West Virginia State Workflows (FOIA Vault/Purview discovery & Vaughn Index, legal/procurement redlines, cross-document policy audits) plus the 7 Government Services (public_sector) Skills (Document Intake & Validation, Expense Auditor, FOIA Request Processing, Plain Language Notice Generator, Policy & Statute Assistant, Public Records Redaction, and RFP Vendor Evaluation).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

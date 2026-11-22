@@ -35,8 +35,8 @@ const GENERIC_CATEGORIES = {
   },
   'agy-connectors': {
     order: 20,
-    categoryLabel: 'Chatski & Gemini Enterprise Connectors',
-    chipLabel: 'Chatski & Connectors',
+    categoryLabel: 'Gemini Enterprise & Cloud Connectors',
+    chipLabel: 'Connectors',
   },
   'agy-design-studio': {
     order: 30,
@@ -93,8 +93,8 @@ const WV_CATEGORIES = {
   },
   'wv-connectors': {
     order: 20,
-    categoryLabel: 'WV Chatski & Gemini Enterprise Connectors',
-    chipLabel: 'WV Chatski & Connectors',
+    categoryLabel: 'WV Gemini Enterprise & Cloud Connectors',
+    chipLabel: 'WV Connectors',
   },
   'wv-design-studio': {
     order: 30,
@@ -221,20 +221,13 @@ export const CURATED_SKILL_SEEDS = {
       '/wv-update Check version-manifest.json and incrementally sync any updated skills or sidecars while preserving my saved settings.',
   },
 
-  // 2. Chatski & Federated Connectors
-  chatski: {
-    title: 'Chatski — Google Chat & GE Connector Companion',
-    subtitle: 'Summarizes unread Spaces & DMs via GE Chat Connector and stages replies into Chatski',
-    badge: 'Left Panel + GE',
-    seedPrompt:
-      '/chatski Check my recent Google Chat Spaces and Direct Messages via my Gemini Enterprise Chat Connector, summarize anything needing my attention, and stage [Draft-Only] replies into Chatski.',
-  },
+  // 2. Federated Connectors
   'connect-ge': {
     title: 'Gemini Enterprise (GE) Instance Wizard',
     subtitle: 'Default hub linking Entra-synced Google Identity to federated sources',
-    badge: 'MCP Bridge',
+    badge: 'GE Connector',
     seedPrompt:
-      '/connect-ge Check my current Gemini Enterprise bridge status and walk me through connecting or testing my federated agency search instance.',
+      '/connect-ge Check my current Gemini Enterprise configuration and walk me through connecting or testing my federated agency search instance.',
   },
   'connect-m365-workspace': {
     title: 'Outlook, SharePoint, OneDrive, Teams & Drive',

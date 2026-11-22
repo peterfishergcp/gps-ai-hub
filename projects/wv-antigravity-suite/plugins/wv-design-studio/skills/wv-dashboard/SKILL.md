@@ -13,7 +13,7 @@ Create clean, dynamic business dashboards that **render visually right inside An
    - `clean-executive`, `dark-ops`, or `civic-forest`.
    - If they attach a screenshot, inspect it (or delegate to `wv-design-architect`) and write its exact hex colors into `dashboard.config.json` under `theme`.
 2. **Data Source (3 Frictionless Paths):**
-   - **Federated Gemini Enterprise (`GE`) Instance (`wv-ge-bridge`):** Pull tables/metrics from SharePoint, OneDrive, Google Sheets/Drive, or Outlook reports via `ge_ask_instance` and populate `data/snapshot.json`!
+   - **Federated Gemini Enterprise (`GE`) Instance (remote HTTPS Gemini Enterprise MCP):** Pull tables/metrics from SharePoint, OneDrive, Google Sheets/Drive, or Outlook reports via Gemini Enterprise `StreamAssist` and populate `data/snapshot.json`!
    - **Google BigQuery (Default Database Connector)** or secondary read-only SQL/CSV (`postgres`, `mysql`, `duckdb`, `csv`) — see `./references/database_and_ge_connectors.md`.
    - **Uploaded CSV / Excel / JSON or Starter Template** (`wv-mountain-state-ready`, `wv-legislative-command-center`, `wv-incident-triage`, `executive-kpi`).
 

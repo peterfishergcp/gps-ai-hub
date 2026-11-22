@@ -10,7 +10,7 @@ Turn messy meeting transcripts, shared call notes, or pasted summaries into stru
 ## Step 1 - Gather Transcript or Meeting Notes
 
 1. **Pasted or Local File Input:** If the user pasted call notes or pointed to local `.md` / `.txt` / `.vtt` files, read them directly.
-2. **Connected MCP Sources (Optional):** If `wv-ge-bridge` (`ge_search_records` / `ge_ask_instance`) or a Drive/SharePoint/Mail MCP is active and the user asks to pull recent meeting notes (such as *"Notes by Gemini"* or Teams meeting recaps), search **both** user-owned and shared-with-me documents from the requested window.
+2. **Connected MCP Sources (Optional):** If a remote HTTPS Gemini Enterprise MCP gateway (`StreamAssist`) or a Drive/SharePoint/Mail MCP is active and the user asks to pull recent meeting notes (such as *"Notes by Gemini"* or Teams meeting recaps), search **both** user-owned and shared-with-me documents from the requested window.
 3. Strip any inline `data:image/...;base64,...` blobs so Markdown files stay under `15 KB` of clean text (or run `node ~/.gemini/config/plugins/wv-second-brain/scripts/vault_cli.mjs ingest-notes --slug "<slug>" --title "<Title>" --file <path>` when `node` is on `PATH`).
 
 ## Step 2 - Update Initiative Topics & Action Items

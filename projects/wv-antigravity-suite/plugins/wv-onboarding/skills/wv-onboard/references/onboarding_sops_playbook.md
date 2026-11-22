@@ -18,7 +18,7 @@ Adapted from the **GPS Public Sector Skills Library** (*Playbook #6: SOPs & Inst
   - **Prerequisites & Access Roles** -> **Step-by-Step Procedure** (one action per numbered step, expected outcome per step) -> **Exception & Escalation Handling** -> **Quality Verification Checklist**.
 
 ## 4. Continuity Desk Guide ("Retiring / Transitioning Expert Playbook")
-- Interviews a departing or transitioning subject-matter expert (or synthesizes their SharePoint/Drive folder via `ge_ask_instance`) into a structured **Continuity Desk Guide**:
+- Interviews a departing or transitioning subject-matter expert (or synthesizes their SharePoint/Drive folder via Gemini Enterprise `StreamAssist`) into a structured **Continuity Desk Guide**:
   - Annual/quarterly statutory calendar ("things that only happen once a year"), key external contacts, recurring gotchas, file/data locations, and top 10 FAQ scenarios.
 
 ## 5. Plain-Language Position Description & Structured Interview Guide

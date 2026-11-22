@@ -11,7 +11,7 @@ Guides West Virginia analysts and engineers through the cleanest zero-install pa
 
 1. **Path 1 — Federated GitHub Search via Your GE Instance (Zero Setup Beyond `/connect-ge`):**
    - Ideal for searching issues, pull requests, READMEs, architecture docs, and code across organization repos already connected to your GE instance:
-   - Call `ge_ask_instance` (`wv-ge-bridge`) with repo/issue/PR-scoped prompts (making sure you clicked **Authorize** on GitHub once inside your GE Web App).
+   - Query your federated GitHub connector via your agency's remote HTTPS GE Gateway or Gemini Enterprise Web App (`StreamAssist`), making sure you clicked **Authorize** on GitHub once inside your GE Web App.
 2. **Path 2 — Direct Git / GitHub Remote MCP (For Branching, Commits & Pull Requests):**
    - For developer workstations creating branches and PRs:
      - Prefer `gh auth login` (HTTPS browser flow—no plaintext PATs stored in files) or Antigravity's **GitHub MCP** integration in **Additional Options (...) > MCP Servers**.

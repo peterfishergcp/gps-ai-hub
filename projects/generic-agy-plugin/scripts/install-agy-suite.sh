@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Fast (<2 second) installer & updater for the Public Sector Antigravity Suite.
-# Supports local directory install, HTTPS ZIP fetch (zero git required), or git sparse-checkout,
-# plus optional --ge-instance pre-configuration for Turn-1 federated connector access.
+# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.2).
+# Stages strictly inside ~/.gemini/config/.install_stage_$$ (zero /tmp or /private/tmp writes,
+# zero 'agy plugin install' /tmp/lsrpc.sh prompts, and zero files outside ~/.gemini/config/).
 
 set -euo pipefail
 
+DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
 ZIP_URL=""
 GIT_REPO_URL=""
 GE_INSTANCE=""
@@ -34,7 +35,7 @@ while [[ $# -gt 0 ]]; do
       OAUTH_CLIENT_SECRET="${2:-}"
       shift 2
       ;;
-    --config-dir)
+    --config-dir|--target-config-dir)
       TARGET_CONFIG_DIR="${2:-}"
       shift 2
       ;;
@@ -49,26 +50,39 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SUITE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]:-}"
+SUITE_ROOT=""
+if [[ -n "${SCRIPT_PATH}" && -f "${SCRIPT_PATH}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+  SUITE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
+
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
 PLUGIN_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-connectors"
+MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/my-antigravity/memory"
 
-mkdir -p "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}"
-chmod 700 "${PLUGIN_DATA_DIR}" 2>/dev/null || true
+mkdir -p -m 700 "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}"
+chmod 700 "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" 2>/dev/null || true
 
-TMP_DIR=""
+STAGE_DIR=""
 cleanup() {
-  if [[ -n "${TMP_DIR}" && -d "${TMP_DIR}" ]]; then
-    rm -rf "${TMP_DIR}"
+  if [[ -n "${STAGE_DIR}" && -d "${STAGE_DIR}" ]]; then
+    rm -rf "${STAGE_DIR}"
   fi
 }
 trap cleanup EXIT
 
+init_stage_dir() {
+  if [[ -z "${STAGE_DIR}" ]]; then
+    STAGE_DIR="${TARGET_CONFIG_DIR}/.install_stage_$$"
+    rm -rf "${STAGE_DIR}"
+    mkdir -p -m 700 "${STAGE_DIR}"
+  fi
+}
+
 validate_and_extract_zip() {
   local zip_path="$1"
   local dest_dir="$2"
-  # Validate archive entries against ZipSlip traversal or absolute paths before extraction
   if command -v unzip >/dev/null 2>&1; then
     local entries
     entries="$(unzip -Z1 "${zip_path}")"
@@ -86,6 +100,13 @@ validate_and_extract_zip() {
   fi
 }
 
+# Default to HTTPS pre-built ZIP when piped via `curl -fsSL ... | bash` without local checkout
+if [[ -z "${ZIP_URL}" && -z "${GIT_REPO_URL}" ]]; then
+  if [[ -z "${SUITE_ROOT}" ]] || [[ ! -d "${SUITE_ROOT}/plugins" && ! -f "${SUITE_ROOT}/dist/generic-agy-plugin.zip" ]]; then
+    ZIP_URL="${DEFAULT_ZIP_URL}"
+  fi
+fi
+
 SOURCE_SUITE_DIR=""
 
 if [[ -n "${ZIP_URL}" ]]; then
@@ -93,11 +114,11 @@ if [[ -n "${ZIP_URL}" ]]; then
     echo "Error: --zip-url must start with https://" >&2
     exit 1
   fi
-  TMP_DIR="$(mktemp -d)"
-  ZIP_FILE="${TMP_DIR}/generic-agy-plugin.zip"
-  EXTRACT_DIR="${TMP_DIR}/extracted"
-  mkdir -p "${EXTRACT_DIR}"
-  echo "Downloading Generic AGY Plugin (~150 KB)..."
+  init_stage_dir
+  ZIP_FILE="${STAGE_DIR}/generic-agy-plugin.zip"
+  EXTRACT_DIR="${STAGE_DIR}/extracted"
+  mkdir -p -m 700 "${EXTRACT_DIR}"
+  echo "Downloading Generic AGY Plugin Suite v1.7.2 (<500 KB)..."
   curl -fsSL "${ZIP_URL}" -o "${ZIP_FILE}"
   validate_and_extract_zip "${ZIP_FILE}" "${EXTRACT_DIR}"
   if [[ -d "${EXTRACT_DIR}/plugins" ]]; then
@@ -111,18 +132,18 @@ elif [[ -n "${GIT_REPO_URL}" ]]; then
     echo "Error: --git-sparse URL must start with https://" >&2
     exit 1
   fi
-  TMP_DIR="$(mktemp -d)"
-  REPO_DIR="${TMP_DIR}/repo"
+  init_stage_dir
+  REPO_DIR="${STAGE_DIR}/repo"
   echo "Fetching projects/generic-agy-plugin via fast git sparse-checkout..."
   git clone --depth 1 --filter=blob:none --sparse "${GIT_REPO_URL}" "${REPO_DIR}" >/dev/null
   git -C "${REPO_DIR}" sparse-checkout set projects/generic-agy-plugin >/dev/null
   SOURCE_SUITE_DIR="${REPO_DIR}/projects/generic-agy-plugin"
-elif [[ -d "${SUITE_ROOT}/plugins" ]]; then
+elif [[ -n "${SUITE_ROOT}" && -d "${SUITE_ROOT}/plugins" ]]; then
   SOURCE_SUITE_DIR="${SUITE_ROOT}"
-elif [[ -f "${SUITE_ROOT}/dist/generic-agy-plugin.zip" ]]; then
-  TMP_DIR="$(mktemp -d)"
-  EXTRACT_DIR="${TMP_DIR}/extracted"
-  mkdir -p "${EXTRACT_DIR}"
+elif [[ -n "${SUITE_ROOT}" && -f "${SUITE_ROOT}/dist/generic-agy-plugin.zip" ]]; then
+  init_stage_dir
+  EXTRACT_DIR="${STAGE_DIR}/extracted"
+  mkdir -p -m 700 "${EXTRACT_DIR}"
   validate_and_extract_zip "${SUITE_ROOT}/dist/generic-agy-plugin.zip" "${EXTRACT_DIR}"
   SOURCE_SUITE_DIR="${EXTRACT_DIR}"
 fi
@@ -158,7 +179,7 @@ if [[ -f "${BASELINE_JSON}" && -d "${PLUGINS_DEST}" ]]; then
       old_sha="$(sha256_of "${old_md}")"
       new_sha="$(sha256_of "${new_md}")"
       if [[ -n "${old_sha}" && "${old_sha}" != "${new_sha}" ]] && ! grep -q "${old_sha}" "${BASELINE_JSON}" 2>/dev/null; then
-        mkdir -p "${PERSONAL_SKILLS_DIR}"
+        mkdir -p -m 700 "${PERSONAL_SKILLS_DIR}"
         chmod 700 "${PERSONAL_SKILLS_DIR}" 2>/dev/null || true
         backup_slug="${sid}-saved"
         if [[ -d "${PERSONAL_SKILLS_DIR}/${backup_slug}" ]]; then
@@ -166,7 +187,7 @@ if [[ -f "${BASELINE_JSON}" && -d "${PLUGINS_DEST}" ]]; then
         fi
         cp -R "${old_sdir}" "${PERSONAL_SKILLS_DIR}/${backup_slug}"
         ts_now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-        cat > "${PERSONAL_SKILLS_DIR}/${backup_slug}/.twin-skill-meta.json" <<METAEOF
+        cat > "${PERSONAL_SKILLS_DIR}/${backup_slug}/.agy-skill-meta.json" <<METAEOF
 {
   "slug": "${backup_slug}",
   "forkedFrom": "${sid}",
@@ -185,32 +206,25 @@ METAEOF
   done
 fi
 
-if command -v agy >/dev/null 2>&1 && [[ "${TARGET_CONFIG_DIR}" == "${HOME}/.gemini/config" ]]; then
-  echo "Installing Generic AGY Plugin via native 'agy plugin install'..."
-  agy plugin install "${SOURCE_SUITE_DIR}"
-else
-  INSTALLED=()
-  for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
-    [[ -d "${pdir}" ]] || continue
-    pname="$(basename "${pdir}")"
-    [[ "${pname}" == .* ]] && continue
-    [[ -f "${pdir}/plugin.json" ]] || continue
-    # Reject symlinks inside plugin source
-    if find "${pdir}" -type l | grep -q .; then
-      echo "Error: Refusing symlink inside plugin ${pname}" >&2
-      exit 1
-    fi
-    rm -rf "${PLUGINS_DEST:?}/${pname}"
-    cp -R "${pdir}" "${PLUGINS_DEST}/${pname}"
-    INSTALLED+=("${pname}")
-  done
-  echo "Installed ${#INSTALLED[@]} AGY plugins to ${PLUGINS_DEST}: ${INSTALLED[*]}"
-fi
+INSTALLED=()
+for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
+  [[ -d "${pdir}" && ! -L "${pdir}" ]] || continue
+  pname="$(basename "${pdir}")"
+  [[ "${pname}" == .* ]] && continue
+  [[ -f "${pdir}/plugin.json" ]] || continue
+  if find "${pdir}" -type l | grep -q .; then
+    echo "Error: Refusing symlink inside plugin ${pname}" >&2
+    exit 1
+  fi
+  rm -rf "${PLUGINS_DEST:?}/${pname}"
+  cp -R "${pdir}" "${PLUGINS_DEST}/${pname}"
+  INSTALLED+=("${pname}")
+done
+echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins to ${PLUGINS_DEST}: ${INSTALLED[*]}"
 
 if [[ -n "${GE_INSTANCE}" ]]; then
   GE_CFG="${PLUGIN_DATA_DIR}/ge-instance.json"
   umask 077
-  # Escape JSON strings safely via parameter substitution (no python/node dependency required)
   esc_ge="${GE_INSTANCE//\\/\\\\}"
   esc_ge="${esc_ge//\"/\\\"}"
   esc_cid="${OAUTH_CLIENT_ID//\\/\\\\}"
@@ -226,7 +240,8 @@ if [[ -n "${GE_INSTANCE}" ]]; then
   "updatedAt": "${ts}"
 }
 EOF
+  chmod 600 "${GE_CFG}" 2>/dev/null || true
   echo "Saved default Gemini Enterprise instance to ${GE_CFG}"
 fi
 
-echo "Ready! Open Google Antigravity -> Extensions -> AGY Skills (or run /agy-onboard) to begin."
+echo "Ready! Open Google Antigravity -> Extensions -> My Antigravity or Skills (or run /agy-onboard) to begin."

@@ -12,7 +12,7 @@ Consult `./references/policy_finance_it_playbook.md` for specialized recipes acr
 
 1. **Cross-Document Consistency Audit (Launch Readiness Gate):**
    - Ideal when an agency prepares a major program (e.g. loans + tiered grants across a staff framework doc, website copy, application form, and public flyer):
-   - Compare every file (or federated SharePoint/OneDrive doc via `ge_ask_instance`) line by line across **funding totals, caps, interest rates, match percentages, tier definitions, eligible applicants, and closing dates**.
+   - Compare every file (or federated SharePoint/OneDrive doc via Gemini Enterprise `StreamAssist`) line by line across **funding totals, caps, interest rates, match percentages, tier definitions, eligible applicants, and closing dates**.
    - Output a **Discrepancy Table** (`Topic | Document A Says (Page/Line) | Document B Says (Page/Line) | Recommended Reconciliation`) so zero contradictory rules reach the public.
 2. **Bill, Statute, or Federal Rule Impact Brief:**
    - Summarizes: Statutory Change (`Current Law vs. Proposed`), Operational Impact on West Virginia Agency Systems/Staff, Fiscal/Budget Implications, Effective Dates & Rulemaking Deadlines, and Open Ambiguities.

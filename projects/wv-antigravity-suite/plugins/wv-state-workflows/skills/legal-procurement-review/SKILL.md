@@ -8,7 +8,7 @@ description: Reviews vendor contracts, SaaS/AI agreements, Statements of Work (S
 Pre-screen vendor contracts, SaaS/AI order forms, SOWs, and solicitations for West Virginia procurement officers, program managers, and legal staff (`[PRE-COUNSEL REVIEW DRAFT — NOT FORMAL LEGAL ADVICE]`).
 
 ## Step 1: Mandatory West Virginia Public-Sector Clause Checklist
-Inspect every uploaded agreement (or SharePoint/OneDrive contract pulled via `ge_ask_instance`) against these 8 state-government redlines:
+Inspect every uploaded agreement (or SharePoint/OneDrive contract pulled via Gemini Enterprise `StreamAssist`) against these 8 state-government redlines:
 1. **Constitutional Sovereign Immunity & Governing Law:** Flag any clause waiving **West Virginia constitutional sovereign immunity** (W. Va. Const. art. VI, § 35) or mandating out-of-state venue / binding commercial arbitration outside West Virginia courts / Legislative Claims Commission.
 2. **Fiscal-Year Non-Appropriation Clause:** Multi-year commitments **must** include an explicit termination-without-penalty right if the West Virginia Legislature or federal grantor does not appropriate funds in a future fiscal year.
 3. **One-Way Customer Indemnification Prohibition:** State agencies generally **cannot indemnify** private vendors (`hold vendor harmless`) creating uncapped contingent state liabilities—flag immediately as **Severity `9` (Blocker)**.

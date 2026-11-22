@@ -40,6 +40,6 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 
 If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `Preview` or `My Antigravity`), run the full installer:
 ```bash
-agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
+curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash
 ```
 *(Or on laptops without `git`, run `bash ~/.gemini/config/plugins/agy-onboarding/skills/agy-update/scripts/install-agy-suite.sh --zip-url "https://github.com/peterfishergcp/gps-ai-hub/raw/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"` on macOS/Linux or `install-agy-suite.ps1 -ZipUrl "..."` on Windows PowerShell.)*

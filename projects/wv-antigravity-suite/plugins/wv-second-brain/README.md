@@ -1,6 +1,6 @@
 # WV Antigravity — Action Items, Personal Memory & Swarm Prep (`wv-second-brain`)
 
-Adds persistent **Personal Memory** (`~/.gemini/config/plugin_data/wv-antigravity/memory/`), the interactive **`WV Antigravity`** side-pane UI (`Extensions -> WV Antigravity` with an AI Inbox **`Action Items`** view, `Suggested to-dos`, `Topics to catch up on`, and a top-right **`Customize`** slider icon), 4-agent parallel swarm orchestration, adversarial pre-meeting coaching, and deterministic anti-slop / outbound scrubbing—with **zero command duplication** alongside `agy-onboarding` (`/wv-onboard`, `/daily-brief`, `/my-voice`) and `agy-connectors` (`wv-ge-bridge`).
+Adds persistent **Personal Memory** (`~/.gemini/config/plugin_data/wv-antigravity/memory/`), the interactive **`WV Antigravity`** side-pane UI (`Extensions -> WV Antigravity` with an AI Inbox **`Action Items`** view, `Suggested to-dos`, `Topics to catch up on`, and a top-right **`Customize`** slider icon), 4-agent parallel swarm orchestration, adversarial pre-meeting coaching, and deterministic anti-slop / outbound scrubbing—with **zero command duplication** alongside `agy-onboarding` (`/wv-onboard`, `/daily-brief`, `/my-voice`) and `agy-connectors` (remote HTTPS Gemini Enterprise MCP).
 
 ## Included Slash Skills (8)
 - **`/memory`** — Initialize, inspect, search, and update `~/.gemini/config/plugin_data/wv-antigravity/memory/` (role presets: `public-sector`, `pm`, `developer`, `leader`; `action_items.md`; `>21d` stakeholder staleness in `contacts.md`; and 4-file isolated `initiatives/<slug>/`).

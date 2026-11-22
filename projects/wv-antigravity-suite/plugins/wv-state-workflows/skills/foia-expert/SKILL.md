@@ -16,8 +16,8 @@ Translate narrative citizen, journalist, or legislative public records requests 
 When given an unstructured FOIA request:
 1. **Extract Core Scoping Parameters:** Subject/project identifiers (exact phrases), date window, record types (*correspondence/email/chat* vs. *contracts/reports/presentations*), and **internal agency custodians**.
    - **CRITICAL CUSTODIAN ISOLATION RULE:** Custodian filters must **ONLY** contain internal agency accounts (`@wv.gov` / `@agency.gov`). **NEVER** place an external citizen requester's personal email address into internal custodian scopes.
-2. **Optional Rapid Pre-Scoping via Federated GE (`wv-ge-bridge`):**
-   - If `ge_ask_instance` / `ge_search_records` is active and the officer wants to identify internal project codenames or custodians before running formal Vault/Purview exports, run a read-only scoping query across connected stores.
+2. **Optional Rapid Pre-Scoping via Federated GE (remote HTTPS Gemini Enterprise MCP):**
+   - If Gemini Enterprise `StreamAssist` is active and the officer wants to identify internal project codenames or custodians before running formal Vault/Purview exports, run a read-only scoping query across connected stores.
 3. **Generate Compliant Repository Queries:**
    - **A. Google Vault (`MAIL`, `DRIVE`, `GROUPS`, `CHAT`):**
      - **Global Rules:** Enclose exact phrases in double quotes (`"Project BlueSky"`); Boolean operators **MUST BE UPPERCASE** (`AND`, `OR`, `NOT`, `AROUND` — lowercase `and`/`or` are treated as literal words!); group logic with parentheses; exclude trash/drafts where appropriate (`-label:trash`).

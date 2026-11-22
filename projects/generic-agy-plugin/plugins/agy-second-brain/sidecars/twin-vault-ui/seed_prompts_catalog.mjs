@@ -93,8 +93,8 @@ const WV_CATEGORIES = {
   },
   'wv-connectors': {
     order: 20,
-    categoryLabel: 'WV Chatski & Gemini Enterprise Connectors',
-    chipLabel: 'WV Chatski & Connectors',
+    categoryLabel: 'WV Gemini Enterprise & Cloud Connectors',
+    chipLabel: 'WV Connectors',
   },
   'wv-design-studio': {
     order: 30,
@@ -221,7 +221,7 @@ export const CURATED_SKILL_SEEDS = {
       '/wv-update Check version-manifest.json and incrementally sync any updated skills or sidecars while preserving my saved settings.',
   },
 
-  // 2. Chatski & Federated Connectors
+  // 2. Federated Connectors
   chatski: {
     title: 'Chatski — Google Chat & GE Connector Companion',
     subtitle: 'Summarizes unread Spaces & DMs via GE Chat Connector and stages replies into Chatski',
@@ -234,7 +234,7 @@ export const CURATED_SKILL_SEEDS = {
     subtitle: 'Default hub linking Entra-synced Google Identity to federated sources',
     badge: 'MCP Bridge',
     seedPrompt:
-      '/connect-ge Check my current Gemini Enterprise bridge status and walk me through connecting or testing my federated agency search instance.',
+      '/connect-ge Check my current Gemini Enterprise configuration and walk me through connecting or testing my federated agency search instance.',
   },
   'connect-m365-workspace': {
     title: 'Outlook, SharePoint, OneDrive, Teams & Drive',

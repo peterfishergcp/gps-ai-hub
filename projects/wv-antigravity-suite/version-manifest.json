@@ -1,7 +1,7 @@
 {
-  "suiteVersion": "2.1.0",
+  "suiteVersion": "2.1.2",
   "updatedAt": "2026-11-22T20:00:00Z",
-  "skillCount": 40,
+  "skillCount": 39,
   "skillManifest": {
     "automations": {
       "plugin": "wv-automations",
@@ -11,46 +11,38 @@
         "SKILL.md": "b04a576e2ef3dda0f7151e509b65cc25490fec96855c8a63371451c0affa97d6"
       }
     },
-    "chatski": {
-      "plugin": "wv-connectors",
-      "skill": "chatski",
-      "treeSha256": "fe930c7af028f9fe",
-      "files": {
-        "SKILL.md": "def5b1c004a9594c71c8e1ca178d30969570322adf0855bbb901f1c312935020"
-      }
-    },
     "connect-ge": {
       "plugin": "wv-connectors",
       "skill": "connect-ge",
-      "treeSha256": "35bb43a514799ea2",
+      "treeSha256": "fb39cfb2a1097ed0",
       "files": {
-        "SKILL.md": "6500c660ebd1af1c60d423c0fbcfc1584fda91a7e1a4f01d2b579cc70ddcbec4",
-        "references/entra_google_identity_federated_ge.md": "cf24b59986d17ac60465649b09c2bafb1f59a1adb3b1155c89e9dc1322a2f209"
+        "SKILL.md": "b100ce16843e97972ac5532f2f147187335a4a0df8e06ef7728b484c0fac698a",
+        "references/entra_google_identity_federated_ge.md": "a6b587f220fd7c956fcaa00011ea2cab2acdbc5306d2a9a3579bc3020aa87330"
       }
     },
     "connect-github-bigquery": {
       "plugin": "wv-connectors",
       "skill": "connect-github-bigquery",
-      "treeSha256": "75e81ff83e548da3",
+      "treeSha256": "eb043c878d90d91b",
       "files": {
-        "SKILL.md": "7e9a8c1ca319067866bafda40602b75b8ee9539af1308192edeab4bf37fab9b3"
+        "SKILL.md": "df65dc9fe9e29ef1dee598870819cafd93e48160f4e2249a8245aea77ef3f5ce"
       }
     },
     "connect-m365-workspace": {
       "plugin": "wv-connectors",
       "skill": "connect-m365-workspace",
-      "treeSha256": "a3a365cd4cea2d9d",
+      "treeSha256": "532f27e37a0b935c",
       "files": {
-        "SKILL.md": "b4db6fc3e251c23dbae63c82be92b18e78bef0dd70f36d8d4d8ca1d70168f98c",
-        "references/federated_connector_prompts.md": "f45a72fe362483594498fd53fa56860f7be40adea2abc6197ed5521e24a8e2fe"
+        "SKILL.md": "451c4ea9a808d9295f25183cb2c57dac87f225fe71bfb295e6b38cfbc110c148",
+        "references/federated_connector_prompts.md": "72f33db350f785a685da20facbe7a8a54d69390c48927c4bcef4d387711064f9"
       }
     },
     "doc-design": {
       "plugin": "wv-design-studio",
       "skill": "doc-design",
-      "treeSha256": "7b4f8c46db925f6d",
+      "treeSha256": "b8d988f7f2263a29",
       "files": {
-        "SKILL.md": "33466200ac1fcd3b624af790d99a4c1eea53c92e60d31822e15875c9519a8752",
+        "SKILL.md": "eb5261f5b0e4e28ad735348761162d643fa9574f1c584a94a3eb2fba370b6ca1",
         "references/executive_comms_templates.md": "6fbb372f18b88e6c806746d88d899dd566c84aa5926ee46e7a9816a0b0dc09b2"
       }
     },
@@ -65,9 +57,9 @@
     "wv-dashboard": {
       "plugin": "wv-design-studio",
       "skill": "wv-dashboard",
-      "treeSha256": "4da4cf6a37d87582",
+      "treeSha256": "1ea98761f20db51d",
       "files": {
-        "SKILL.md": "b6c4bb0dd488243aabd2a88994cd0ff2b8e80f2f3f4d91e11b1e639c11ca779d",
+        "SKILL.md": "d5104313bacd67d40d47398d11ece765b2be286451ae0093fa2e9281bf9bd732",
         "assets/runtime/app.js": "dd642f02477439e2a91a4e210d98474d40c796c152cb2abba0b4cc20aa634960",
         "assets/runtime/index.html": "e3c981daf7f131decb42ee40f4eefad2d808c66293749cff5ea4cb6435b5a9c2",
         "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
@@ -76,7 +68,7 @@
         "assets/templates/wv-incident-triage.json": "f0ae524bee7c721f04f89d98501138c1ce8b5e903fe4096335f51dd74b56ca6d",
         "assets/templates/wv-legislative-command-center.json": "ce0676a73b82eb0ae26dc3096dd76308c2c182838ba0aa6eab46ee5eace5cd36",
         "assets/templates/wv-mountain-state-ready.json": "5a368c159a61a9d6e71a181c571eedbec09bfd54d81a3053c336cd9695d5fe1e",
-        "references/database_and_ge_connectors.md": "f1d40d2bcc6cad45eec5774973917c043e8429d9ebac2feafc4c162edb2165ad",
+        "references/database_and_ge_connectors.md": "f440cf220ff6b8756da8d637f60f0c0e64e5e882c499936dcb52beeab52c890e",
         "scripts/query_connector.mjs": "f3220c5b04e39794cc456ccc4a8ae3ae6703d926e03076781d3f7465d3b8034d",
         "scripts/scaffold_dashboard.mjs": "bb9c508cfbbb93fdd971cbe736a33702e63e130bd97ce0517fb71fa3fcca6448"
       }
@@ -117,18 +109,18 @@
     "daily-brief": {
       "plugin": "wv-onboarding",
       "skill": "daily-brief",
-      "treeSha256": "5e0f89a68adb60bc",
+      "treeSha256": "2212df132d652e8a",
       "files": {
-        "SKILL.md": "d13d9807004b338444b4ce88099e479486b0fdff843724372fb542d287e18078",
-        "references/meetings_project_playbook.md": "35c2e4d31571c487babc58b8e5f7d729f6955830eb7d98c05f5c8e256d2e7457"
+        "SKILL.md": "e9889ac084504dac428cf25e597e1c62b2b7b76ea31ba06dc7e99298ed7a13a5",
+        "references/meetings_project_playbook.md": "acc75d4430fad541539ddf0c31a6f600f1d011f7b29da20b0bc2d2016660a311"
       }
     },
     "inbox-triage": {
       "plugin": "wv-onboarding",
       "skill": "inbox-triage",
-      "treeSha256": "d1bec22fc98396c3",
+      "treeSha256": "54af673ceef3df38",
       "files": {
-        "SKILL.md": "4f19e9f4feb67f7e25e517b62e75825bf12ef33f752d4a10909839052382e352"
+        "SKILL.md": "c1bba3b8cb0e38817592453e918c633b232e8987be0e0c670c4607ee9fdfcb4b"
       }
     },
     "model-guide": {
@@ -143,9 +135,9 @@
     "my-voice": {
       "plugin": "wv-onboarding",
       "skill": "my-voice",
-      "treeSha256": "54808542ce3749c5",
+      "treeSha256": "c049802284654b0b",
       "files": {
-        "SKILL.md": "804d3db4f4c5bff420adbab7c18f666bec93c7e0b10ca7c21835899f5b6f709d",
+        "SKILL.md": "bf31cbff4fe6d42ecaa35abe5225b50b6897ccad4d1112f2742707d2c048080d",
         "references/correspondence_playbook.md": "8e0a58b17105cb0a04e698345e50b8ebdf383cce3dfd7b6df9466a0e427f9861"
       }
     },
@@ -171,46 +163,46 @@
     "wv-onboard": {
       "plugin": "wv-onboarding",
       "skill": "wv-onboard",
-      "treeSha256": "5f601db2ba0092b9",
+      "treeSha256": "506d35996ae1f3f0",
       "files": {
-        "SKILL.md": "e1175210983a3163ad54d863e0c3e6550d914a1b219d9eba12b2d442287ed7c5",
-        "references/onboarding_sops_playbook.md": "745396be1a2e7883244b3e60c7334373005e3fa2256d3b487abe36c6e1b46c40"
+        "SKILL.md": "4d4adbe123997ce751047b17596acf8c52247482effec702f90c330fbe1b680e",
+        "references/onboarding_sops_playbook.md": "36da2c313eb386da1657802f4ba902a78f4dcdb0cac19acef8079a758a430fa0"
       }
     },
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "29150370aa33cf85",
+      "treeSha256": "529e1b478933a9ae",
       "files": {
-        "SKILL.md": "5e4e2dee17eac282d482865121804e0b6a6d86b988b854d7008ec1cccaa75dfd",
-        "scripts/incremental-sync.mjs": "386848affc1d67f95d4e60eb455b70120562502aa405d2eb036bae4745069e61",
-        "scripts/install-wv-suite.ps1": "00828bd5050d917a23d1e43a1e1fa2478e0ac975e33d146645f0f8e621a77cca",
-        "scripts/install-wv-suite.sh": "c9b3cba8f420c739693c33131ebb66c469b68e1ba4ba02dc7a0f7f7ee0e24521"
+        "SKILL.md": "9c7ef3e75e8a3a14734d0a5cc4f8d32ed573cc92369157a284f9f62eb7b8483c",
+        "scripts/incremental-sync.mjs": "65de187e9e80eb71ae611308b749302c99ab958bcb4c9844f12714af4c8e5a8f",
+        "scripts/install-wv-suite.ps1": "8b9c979aa17dbc9895c06247c5a523c13e67cb47d4e0e40eeb9451a8e43ef21f",
+        "scripts/install-wv-suite.sh": "7faa853296d8bbad2a6f319fd96c680e453d29d6bb518c2bee438d62a14fc6cf"
       }
     },
     "followup-plan": {
       "plugin": "wv-second-brain",
       "skill": "followup-plan",
-      "treeSha256": "79f7934cca33c0f1",
+      "treeSha256": "104bad495a2c0661",
       "files": {
-        "SKILL.md": "032ee0b95cc6345ea9721ff335b74ee59c85bb840f93737de3f948fe763968bc"
+        "SKILL.md": "c5e1e5867163c32e59a92b21e5eeca776c69a0ad10d334c1805c472672581b19"
       }
     },
     "meeting-notes": {
       "plugin": "wv-second-brain",
       "skill": "meeting-notes",
-      "treeSha256": "03d2fb0b2fe6c4f7",
+      "treeSha256": "c25a53136df07d8f",
       "files": {
-        "SKILL.md": "c3233ce1269eb3a18afde5e0a10d5debe431225581490040fcf834c3bfa90d0f",
+        "SKILL.md": "45c74fde1b28323fb22bed84f9960595c24df9d3b05f6af3c68d8f69c02a84f6",
         "references/compaction_rubric.md": "36225910450e56d01fc78990a9c8c0c60a3f1010e51fa88973145b0cba5bf6ca"
       }
     },
     "meeting-prep": {
       "plugin": "wv-second-brain",
       "skill": "meeting-prep",
-      "treeSha256": "6f43c8463904e453",
+      "treeSha256": "d5fa7308f3fa0f08",
       "files": {
-        "SKILL.md": "80d63a9e8f7a38fc187ff06b4d9262402796f4854fdf78898b1f926158823e06"
+        "SKILL.md": "434ea82f6b03476be91a589dc87c8bdda842dd2bc6e346acbf04c53f7a48c343"
       }
     },
     "memory": {
@@ -290,9 +282,9 @@
     "foia-expert": {
       "plugin": "wv-state-workflows",
       "skill": "foia-expert",
-      "treeSha256": "b0403b610bf6cd46",
+      "treeSha256": "ba78c3b13a268b61",
       "files": {
-        "SKILL.md": "d6d3ab6d40587aff782c9ec89eb6b6e60043c261325363cc92346085c549c836",
+        "SKILL.md": "418900e4984f2f7aa3393b14f5f081f29cde2f6eab303221ad9dce76e9295ff8",
         "references/wv_and_federal_foia_exemptions.md": "cb7c87c70fb1d55a55adf2997419614de04a94e7a9487914d8ad57d16383329b"
       }
     },
@@ -310,9 +302,9 @@
     "legal-procurement-review": {
       "plugin": "wv-state-workflows",
       "skill": "legal-procurement-review",
-      "treeSha256": "e0cb0c27efd90dec",
+      "treeSha256": "2fd2eb1fc8376a54",
       "files": {
-        "SKILL.md": "3648020102f8a3d021ef78b0d188c8df3a5ddb78aa31f3466e8fb45a94dbc7cc",
+        "SKILL.md": "031193ae6ead3f02c14b9f89f5fd60bf4d8cb9cb61909a6091226c9dafe1e4c5",
         "references/procurement_grants_playbook.md": "0f0a3a03fa9ba8e1def56166a4a1c8a7f5f624658dc55fc938f02426eeb70d33"
       }
     },
@@ -335,9 +327,9 @@
     "policy-program-audit": {
       "plugin": "wv-state-workflows",
       "skill": "policy-program-audit",
-      "treeSha256": "ad6a6ce36baa775d",
+      "treeSha256": "1b05dee14074843f",
       "files": {
-        "SKILL.md": "ac02d673c8cfacd329a9999ac4d96293ef1f664353525fc95c5a7b3f7e7a23f8",
+        "SKILL.md": "2de4c285c36d38da510c089faedf6150086842fd8b265c67943eb485e8d6ceb1",
         "references/policy_finance_it_playbook.md": "3d260ce13e8db14eb8c6ae53679d3f86997907cd782cd21b03f9d22873c45769"
       }
     },
@@ -362,21 +354,6 @@
     }
   },
   "sidecarManifest": {
-    "wv-chatski-ui": {
-      "plugin": "wv-connectors",
-      "sidecar": "wv-chatski-ui",
-      "files": {
-        "app.js": "e9eb4566f44af550795af29eacc11ace23c8cc335115a21d3410e323fd01fa12",
-        "index.html": "b8dc5dc7018d69c85b62a1756bb86a75033724e6ed79c1032e473649026cab0c",
-        "main.mjs": "faaefddbab9af2a572ac4b3070e2cb9593a8f06c6d3bffd3547baaac11903fff",
-        "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
-        "sidecar.json": "cdeb6d909c66341d32b66debfad047b35184eca5183e37dfb2697c2a92275f61",
-        "sidecar_html_inliner.mjs": "167378560fc62dcaef9f1509ac371b40db3aeb5c459708efb44555da7e35611b",
-        "styles.css": "fe3865f99df1c6bdb096d80cba9d01cbe1a7a47367598dc27f541d8b60bcd6bb",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1"
-      }
-    },
     "wv-design-preview": {
       "plugin": "wv-design-studio",
       "sidecar": "wv-design-preview",
@@ -396,11 +373,11 @@
       "plugin": "wv-onboarding",
       "sidecar": "wv-skill-manager",
       "files": {
-        "app.js": "253cfcdcca83beee2f204af8311b7308da8bdc9927daa121d6fa4f51920593ae",
+        "app.js": "3587bc956d0b40dc688a6fdd9ee55beb14f84c0f53b612dddd8beb43b1d535a8",
         "index.html": "1946dde740cf0d362f4e6c3748a0041b13f97b256b2b26318cff2a1d446a333b",
         "main.mjs": "3f8b448b602a0e85418f23ab355193466beb3808df8e78478f016a59196e9811",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "f967a6f02a268ad01b5130f679af261c813c80c0d3eebb360338bfeef755749b",
+        "seed_prompts_catalog.mjs": "9c1d7ebcd9ee2a23b772772b8e76d157e51c6b5e75c1024870fb63ce07e5f8d4",
         "sidecar.json": "9432001f8809f2c69aab65eb0e51b20e7e20952c88bb639a294a1709e53755c6",
         "sidecar_html_inliner.mjs": "167378560fc62dcaef9f1509ac371b40db3aeb5c459708efb44555da7e35611b",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
@@ -419,12 +396,12 @@
       "plugin": "wv-second-brain",
       "sidecar": "wv-antigravity-ui",
       "files": {
-        "antigravity_updates.mjs": "0e84c64459cd34feae32ed3817a2c9a6aeb0d7423c2cd5eb8496be09ee9b6e54",
+        "antigravity_updates.mjs": "0aba085cbb64bb04f808b97e385bac179fed03b49108f84ca9c9524be80e02c3",
         "app.js": "5a99b893b4877abe72964a9e1c24415f9ba50e719f078359c1372e897a18478e",
         "index.html": "6164d9f2ac5f1bbea6a6977a5230ce827266f59159ec965e0c70ff5e0acd0591",
         "main.mjs": "950a30a84f849a82ae2244128e99cf91ae72444e507fc479804baef7eac28b0d",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "f967a6f02a268ad01b5130f679af261c813c80c0d3eebb360338bfeef755749b",
+        "seed_prompts_catalog.mjs": "9c1d7ebcd9ee2a23b772772b8e76d157e51c6b5e75c1024870fb63ce07e5f8d4",
         "sidecar.json": "30a34ca3bca99f3bb82fbcd528640bb2f9eb6b178361c341d2293e1b194ab942",
         "sidecar_html_inliner.mjs": "167378560fc62dcaef9f1509ac371b40db3aeb5c459708efb44555da7e35611b",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",

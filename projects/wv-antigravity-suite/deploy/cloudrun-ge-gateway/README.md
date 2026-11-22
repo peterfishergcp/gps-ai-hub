@@ -1,8 +1,6 @@
 # Optional Agency IT Scale-Out: Shared Cloud Run Streamable HTTP GE Gateway
 
-Out of the box, `plugins/wv-connectors` runs locally on every laptop with **zero extra installs** using Antigravity's built-in `agy-node` runtime (`ge_instance_mcp.mjs`).
-
-For **500+ non-technical state staff**, West Virginia IT can optionally deploy this stateless **Cloud Run Streamable HTTP MCP Gateway** once per agency Gemini Enterprise (`GE`) instance so staff never have to enter `GE_PROJECT_ID` or `GE_ENGINE_ID`:
+To keep State of West Virginia corporate Windows 11 laptops **100% free of local MCP subprocesses or system-`PATH` scripts**, West Virginia IT can deploy this stateless **Cloud Run Streamable HTTP MCP Gateway** once per agency Gemini Enterprise (`GE`) instance (`HTTPS 443` only) so 500+ staff connect without entering `GE_PROJECT_ID` or `GE_ENGINE_ID`:
 
 ## Security Architecture
 - **100% Stateless End-User Bearer Passthrough (Zero Shared Service Account Access to User Data):** Every MCP `tools/call` requires an `Authorization: Bearer <USER_OAUTH_TOKEN>` header from the signed-in Google Identity user (synced with Azure/Entra ID) and forwards that exact user token to `discoveryengine.googleapis.com` (`StreamAssist` & `Search`). If no user Bearer token is supplied, the gateway returns `401 Unauthorized` with RFC 9728 `WWW-Authenticate` metadata so Antigravity initiates per-user OAuth.

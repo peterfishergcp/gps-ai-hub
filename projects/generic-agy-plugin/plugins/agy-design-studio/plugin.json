@@ -1,7 +1,7 @@
 {
   "name": "agy-design-studio",
   "displayName": "Preview \u2014 Antigravity Dashboards, Slides & Docs",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "100% serverless visual dashboards, 16:9 HTML/PDF slide decks, and Public Sector branded flyers/memos\u2014with automatic conversation artifact discovery in the Preview sidebar panel, Side-Pane HTML rendering, Print-to-PDF, and 1-click standalone HTML download (zero Python, zero Node server, and zero firewall ports).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
