@@ -19,13 +19,11 @@ Welcome to **Version 2.1.0** of the **State of West Virginia Antigravity Suite**
 ## Quick 3-Step Setup (Zero-Footprint State Laptop Standard)
 
 1. **Step 1 — Sign In to Antigravity Desktop (`@wv.gov` Business Account):** Complete the [7-Step Antigravity Setup Guide](../setup-guide/index.html), or open the interactive [West Virginia Antigravity v2.1.2 Launchpad](../workshop/index.html) in Chrome or Edge.
-2. **Step 2 — Install the `v2.1.2` Suite (From a New Conversation in Antigravity):** Click **`+ New Conversation`**, optionally switch **`Request Review`** (bottom-right of the prompt box) to **`Turbo`** during setup so you are not prompted 8 times, paste the command below, and switch back to **`Default`** once complete:
+2. **Step 2 — Install the `v2.1.2` Suite (From a New Conversation in Antigravity):** Click **`+ New Conversation`**, optionally switch **`Request Review`** (bottom-right of the prompt box) to **`Turbo`** during setup (then switch back to **`Default`** once complete), and paste:
 
 ```text
-Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the plugin skill and do not write to /tmp) — Windows PowerShell: irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex  |  macOS/Linux: curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
 ```
-
-> **Direct 1-Line PowerShell / Terminal Option (Zero `git`, Zero `/tmp` or `%TEMP%` Writes):** You can also run the `<2s` zero-admin installer directly in **Windows PowerShell 5.1** (`irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex`) or **macOS/Linux Terminal** (`curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash`)—all staging stays strictly inside `$HOME/.gemini/config/`.
 
 3. **Step 3 — Open the 3 West Virginia Extensions & Launch Skills in 1 Click:** Look at the **`Extensions`** rail on the left side of Antigravity. In `v2.1.2`, you will see three West Virginia panels—each with its own distinct icon and a live hoverable **`5h: in | out | thinking`** token pill in the top bar.
 
@@ -33,7 +31,7 @@ Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the
 
 ---
 
-## Meet the 4 West Virginia Left-Sidebar Extensions (`v2.1.2`)
+## Meet the 3 West Virginia Left-Sidebar Extensions (`v2.1.2`)
 
 ![Four West Virginia Left-Sidebar Extensions](./screenshots/wv-sidebar-4-icons.png)
 

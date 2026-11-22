@@ -52,24 +52,15 @@ See where you stand against your monthly pooled `$` quota (`Standard $30`, `Plus
 
 ---
 
-## 3 Frictionless Ways to Install (Pick One)
+## Quick 1-Line Install (Paste into a New Conversation or Terminal)
 
-### 1. Direct Zero-`/tmp` 1-Command Install (Recommended — Zero `/tmp/lsrpc.sh` Prompts)
-Run directly in Terminal / PowerShell (`<2 seconds`, stages strictly inside `~/.gemini/config/`):
-- **macOS / Linux:**
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash
-  ```
-- **Windows PowerShell 5.1:**
-  ```powershell
-  irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex
-  ```
-- **Or paste directly into a `+ New Conversation` in Antigravity Chat:**
-  ```text
-  Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the plugin skill and do not write to /tmp) — macOS/Linux: curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash  |  Windows PowerShell: irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex
-  ```
+### 1. Recommended — 1-Line GitHub Plugin Install
+Click **`+ New Conversation`** in Antigravity (or open a terminal) and paste:
+```text
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
+```
 
-### 2. Fastest Corporate Laptop Install (`< 2 Seconds`, Zero `git` Required)
+### 2. Offline `.zip` or IT-Scripted Install (`< 500 KB`, Zero `git` Required)
 
 **Windows PowerShell** (standard agency corporate laptop — extract `generic-agy-plugin.zip` and run in that folder):
 ```powershell
@@ -82,13 +73,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-agy-suite.ps1 `
 ```bash
 bash ./scripts/install-agy-suite.sh \
   --ge-instance "projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID"
-```
-
-### 3. Fast Git Sparse-Checkout (Developers & Agency IT Admins — Clones Only This Folder)
-```bash
-git clone --depth 1 --filter=blob:none --sparse https://github.com/peterfishergcp/gps-ai-hub.git generic-agy
-cd generic-agy && git sparse-checkout set projects/generic-agy-plugin
-bash projects/generic-agy-plugin/scripts/install-agy-suite.sh
 ```
 
 ---

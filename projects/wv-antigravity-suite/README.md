@@ -37,36 +37,21 @@ Built specifically for **strict State of West Virginia (`WVOT`) corporate Window
 
 ---
 
-## 3 Frictionless Ways to Install (Zero `/tmp` Writes, Zero `git` Required)
+## Quick 1-Line Install (Paste into a New Conversation or Terminal)
 
-### 1. Direct 1-Line HTTPS Setup (Fastest — `< 2 Seconds`)
-- **Windows PowerShell 5.1 (Standard State Corporate Laptop):**
-  ```powershell
-  irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex
-  ```
-- **macOS / Linux Terminal:**
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash
-  ```
-- **Or Paste Directly into a `+ New Conversation` in Antigravity Chat:**
-  ```text
-  Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the plugin skill and do not write to /tmp) — Windows PowerShell: irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex  |  macOS/Linux: curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash
-  ```
+### 1. Recommended — 1-Line GitHub Plugin Install
+Click **`+ New Conversation`** in Antigravity (or open a terminal) and paste:
+```text
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
+```
 
-### 2. Offline Pre-Built `.zip` Install (`< 500 KB`, Zero Internet Required)
+### 2. Offline `.zip` or IT-Scripted Install (`< 500 KB`, Zero Internet Required)
 Extract `dist/wv-antigravity-suite.zip` and run:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install-wv-suite.ps1 `
   -GeInstance "projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID"
 ```
 *(1-Command Clean Uninstall for IT Verification: `powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-wv-suite.ps1 -PurgeMemoryData` or `bash ./scripts/uninstall-wv-suite.sh --purge-data`.)*
-
-### 3. Fast Git Sparse-Checkout (Developers & Agency IT Admins)
-```bash
-git clone --depth 1 --filter=blob:none --sparse https://github.com/peterfishergcp/gps-ai-hub.git wv-agy
-cd wv-agy && git sparse-checkout set projects/wv-antigravity-suite
-bash projects/wv-antigravity-suite/scripts/install-wv-suite.sh
-```
 
 ---
 
