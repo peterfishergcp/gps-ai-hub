@@ -1,7 +1,7 @@
 {
   "name": "wv-connectors",
   "displayName": "WV Chatski & Gemini Enterprise Connectors",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "WV Chatski left-sidebar Google Chat workspace (powered out-of-the-box by your West Virginia Gemini Enterprise Chat Connector) plus the zero-install wv-ge-bridge MCP across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

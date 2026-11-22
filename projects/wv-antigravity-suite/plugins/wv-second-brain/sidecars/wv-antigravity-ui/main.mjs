@@ -26,12 +26,13 @@ import {
   touchContact,
 } from '../../scripts/vault_core.mjs';
 import { buildSkillsCatalog } from './seed_prompts_catalog.mjs';
-import { getTokenMeterSummary } from './token_meter.mjs';
+import { getTokenMeterSummary, writeTokenPrefs } from './token_meter.mjs';
+import { getUpdatesState, saveUpdatesPreferences, syncAntigravityUpdates } from './antigravity_updates.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
 const PLUGIN_NAME = path.basename(PLUGIN_ROOT);
-const PLUGINS_SUITE_ROOT = path.resolve(PLUGIN_ROOT, '..');
+const PLUGINS_SUITE_ROOT = (process.env.ANTIGRAVITY_PLUGINS_ROOT && process.env.ANTIGRAVITY_PLUGINS_ROOT.trim()) ? path.resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT.trim()) : path.resolve(PLUGIN_ROOT, '..');
 const SUITE_MODE = PLUGIN_NAME === 'agy-twin-memory' ? 'twin-kit' : 'generic';
 const DEFAULT_ROLE = SUITE_MODE === 'twin-kit' ? 'pm' : 'public-sector';
 const WRITABLE_EXTENSIONS = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
@@ -168,8 +169,10 @@ function writeCustomSeeds(vaultRoot, seedsObj) {
 function loadCatalogForState(vaultRoot) {
   const personalRoot = getPersonalSkillsRoot();
   const customSeedsMap = readCustomSeeds(vaultRoot);
+  const wsRoot = process.env.ANTIGRAVITY_WORKSPACE_ROOT ? path.join(path.resolve(process.env.ANTIGRAVITY_WORKSPACE_ROOT), '.gemini', 'skills') : '';
   return buildSkillsCatalog(PLUGINS_SUITE_ROOT, {
     personalSkillsRoot: personalRoot,
+    workspaceSkillsRoot: wsRoot,
     customSeedsMap,
     suiteMode: SUITE_MODE,
   });
@@ -192,7 +195,7 @@ function buildManagedPersonalSkillsTree(personalRoot) {
   const children = [];
   for (const name of dirs) {
     const sDir = path.join(personalRoot, name);
-    if (!hasPersonalSkillMeta(sDir)) continue;
+    if (!fs.existsSync(path.join(sDir, 'SKILL.md')) && !fs.existsSync(path.join(sDir, 'SKILL.md.disabled'))) continue;
     const node = buildDirectoryTree(sDir, personalRoot, 1);
     if (node) children.push(node);
   }
@@ -434,6 +437,15 @@ app.api(
 );
 
 app.api(
+  '/tokeneconomics_and_updates_ui.js',
+  () =>
+    new Response(fs.readFileSync(path.join(__dirname, 'tokeneconomics_and_updates_ui.js'), 'utf-8'), {
+      contentType: 'application/javascript; charset=utf-8',
+    }),
+  'GET'
+);
+
+app.api(
   '/token_pill_ui.js',
   () =>
     new Response(fs.readFileSync(path.join(__dirname, 'token_pill_ui.js'), 'utf-8'), {
@@ -442,7 +454,7 @@ app.api(
   'GET'
 );
 
-const ALLOWED_EMOJI_CODES = new Set(['1f60e', '1f36a', '1f6a6', '1f30a', '2728', '2699_fe0f']);
+const ALLOWED_EMOJI_CODES = new Set(['1f60e', '1f36a', '1f6a6', '1f30a', '2728', '2699_fe0f', '1f48e']);
 
 app.api(
   '/api/emoji-png',
@@ -464,7 +476,11 @@ app.api(
 
 app.api(
   '/api/token-summary',
-  async (data) => getTokenMeterSummary((data && data.convId) || ''),
+  async (data) => {
+    const vaultRoot = resolveVault();
+    const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
+    return getTokenMeterSummary((data && data.convId) || '', stateDir);
+  },
   'GET'
 );
 
@@ -477,8 +493,13 @@ app.api(
     const personalTree = buildManagedPersonalSkillsTree(personalRoot);
     const pluginsTree = buildDirectoryTree(PLUGINS_SUITE_ROOT, PLUGINS_SUITE_ROOT);
     const skillsCatalog = loadCatalogForState(vaultRoot);
+    const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
+    const tokenEconomics = await getTokenMeterSummary('', stateDir);
+    const updates = getUpdatesState(stateDir);
     return {
       ok: true,
+      tokenEconomics,
+      updates,
       ...state,
       personalSkillsRoot: personalRoot,
       skillsCatalog,
@@ -898,5 +919,27 @@ app.api('/api/vault/init', async (data) => {
   syncGlobalVoiceProfileRule(vaultRoot);
   return res;
 });
+
+
+app.api('/api/token-prefs', async (data) => {
+  const vaultRoot = resolveVault();
+  const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
+  const prefs = writeTokenPrefs(data || {}, stateDir);
+  const tokenEconomics = await getTokenMeterSummary('', stateDir);
+  return { ok: true, prefs, tokenEconomics };
+}, 'POST');
+
+app.api('/api/updates/prefs', async (data) => {
+  const vaultRoot = resolveVault();
+  const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
+  const subscription = saveUpdatesPreferences(data || {}, stateDir);
+  return { ok: true, subscription, updates: getUpdatesState(stateDir) };
+}, 'POST');
+
+app.api('/api/updates/sync', async () => {
+  const vaultRoot = resolveVault();
+  const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
+  return await syncAntigravityUpdates(stateDir, 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/video-guides.json');
+}, 'POST');
 
 await app.run();

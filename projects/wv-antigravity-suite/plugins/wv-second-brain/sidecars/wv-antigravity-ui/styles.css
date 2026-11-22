@@ -1303,3 +1303,316 @@ th {
   margin-bottom: 12px;
 }
 
+/* === V2 UPGRADES: Toggle Switches, TokenEconomics Dashboard, Mastery Bar & Antigravity Updates Subscribe Hub === */
+
+.ai-skill-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+}
+
+.agy-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid var(--tv-border);
+  background: rgba(156, 163, 175, 0.35);
+  padding: 2px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+  flex-shrink: 0;
+}
+
+.agy-switch.on {
+  background: var(--tv-primary);
+  border-color: var(--tv-primary);
+}
+
+.agy-switch-knob {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  transform: translateX(0);
+  transition: transform 0.16s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  .agy-switch.on .agy-switch-knob {
+    background: #111827;
+  }
+}
+
+.agy-switch.on .agy-switch-knob {
+  transform: translateX(15px);
+}
+
+.skill-md-pre {
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  max-height: 360px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.48;
+  white-space: pre-wrap;
+}
+
+/* Orchestrator Mode Toggle in Search Bar */
+.orch-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 120, 231, 0.28);
+  background: var(--tv-card);
+  color: var(--tv-muted-fg);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.14s ease;
+}
+
+.orch-toggle-pill.active {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+/* 5-Step Antigravity Mastery Onboarding Bar */
+.mastery-bar {
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mastery-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mastery-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mastery-pill {
+  border-radius: 999px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-surface);
+  color: var(--tv-fg);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.mastery-pill:hover {
+  border-color: var(--tv-accent);
+}
+
+.mastery-pill.done {
+  background: var(--tv-green-bg);
+  color: var(--tv-green-fg);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* Overview Spend & Quota Mini-Strip */
+.overview-spend-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 14px;
+  padding: 11px 16px;
+  margin-top: 12px;
+}
+
+.overview-spend-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mini-cap-track {
+  width: 110px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.18);
+  overflow: hidden;
+}
+
+.mini-cap-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #10b981;
+}
+
+.mini-cap-fill.amber { background: #f59e0b; }
+.mini-cap-fill.red { background: #ef4444; }
+
+/* Stay in sync with Google Antigravity Subscribe Banner (Screenshot 1) */
+.agy-subscribe-card {
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 22px;
+  padding: 26px 24px 22px;
+  margin-top: 20px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.agy-subscribe-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tv-fg);
+}
+
+.agy-subscribe-sub {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  color: var(--tv-muted-fg);
+}
+
+.agy-subscribe-pills {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.agy-subscribe-form {
+  display: flex;
+  align-items: center;
+  max-width: 560px;
+  margin: 0 auto 12px;
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  padding: 5px 6px 5px 18px;
+  gap: 8px;
+}
+
+.agy-subscribe-form input[type="email"],
+.agy-subscribe-form input[type="text"] {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  font-size: 13px;
+  color: var(--tv-fg);
+  padding: 6px 0 !important;
+  min-width: 0;
+}
+
+.agy-subscribe-terms {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--tv-muted-fg);
+  cursor: pointer;
+}
+
+/* TokenEconomics Dashboard Grid & Charts */
+.te-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.te-kpi-card {
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 16px;
+  padding: 15px 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.te-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tv-muted-fg);
+}
+
+.te-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tv-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.te-kpi-sub {
+  font-size: 12px;
+  color: var(--tv-muted-fg);
+}
+
+.te-gauge-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.16);
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+
+.te-gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10b981, #2563eb);
+  transition: width 0.25s ease;
+}
+
+.te-gauge-fill.amber {
+  background: linear-gradient(90deg, #f59e0b, #ea580c);
+}
+
+.te-gauge-fill.red {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+}
+
+.te-two-col {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 740px) {
+  .te-two-col {
+    grid-template-columns: 1fr;
+  }
+}

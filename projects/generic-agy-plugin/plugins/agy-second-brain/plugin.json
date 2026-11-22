@@ -1,7 +1,7 @@
 {
   "name": "agy-second-brain",
-  "displayName": "My Antigravity — Action Items, Memory, Workflows & Skills",
-  "version": "1.6.1",
+  "displayName": "My Antigravity \u2014 Action Items, Memory, Workflows & Skills",
+  "version": "1.7.0",
   "description": "Persistent Personal Memory (~/my-antigravity/memory/) with the clean My Antigravity side-pane UI, AI Inbox Action Items & Topics to catch up on, 4-file initiative tracking, Customize voice & memory editor, Adversarial Minto SCQA pre-meeting prep, 4-agent parallel swarm orchestration, 3-Altitude weekly impact ledger, anti-AI-slop editing, and deterministic outbound scrubbing.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

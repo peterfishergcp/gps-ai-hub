@@ -1,4 +1,4 @@
-# State of West Virginia — Zero-Footprint Antigravity Suite (`v2.0.0`)
+# State of West Virginia — Zero-Footprint Antigravity Suite (`v2.1.0`)
 
 A fast-installing, **100% Zero-Footprint** customization suite for **State of West Virginia** cohorts onboarding onto **Google Antigravity (`AGY`)** under **Gemini Enterprise (`GE`) Subscription** licenses.
 
@@ -8,31 +8,35 @@ Built specifically for **strict State of West Virginia (`WVOT`) corporate Window
   - **Zero Home-Directory Clutter:** All configuration, Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`), and sidecar state live strictly inside `~/.gemini/config/plugin_data/wv-*`—creating **zero** folders in `C:\Users\<user>\` and supporting 1-command zero-residue removal (`scripts/uninstall-wv-suite.ps1` / `.sh`).
   - **Zero Open Firewall Ports & Zero Unapproved Cron Daemons:** Dashboards (`/wv-dashboard`), decks (`/slides`), and flyers (`/doc-design`) render serverlessly via `srcdoc` inside **`WV Preview`** and standalone `file://` HTML in Chrome/Edge; `wv-automations` ships **disabled (`opt-in`) by default**.
   - **Windows PowerShell 5.1 & State Proxy Hardened:** Writes BOM-free UTF-8 JSON configs, strips `\uFEFF` across all readers, and bundles local SVG icons + offline Noto Emoji PNG fallbacks so SSL-inspected state networks never stall.
-- **4 Left-Sidebar `Extensions` with Distinct Custom Icons + Live Token Meter (`in | out | thinking`):**
-  1. **`WV Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** workspace across `Overview 😎`, `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, `Skills ✨`, and `Customize ⚙️`.
-  2. **`WV Skills`** *(**Skills Sparkle** Icon)* — AI Inbox skill & connector manager with per-skill toggles (including **`WV State Skills`**) and `<1s` SHA-256 `Sync Updates`.
+- **4 Left-Sidebar `Extensions` with Distinct Custom Icons + `TokenEconomics`, `★ My Personal Skills`, & Updates Hub (`v2.1.0`):**
+  1. **`WV Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** workspace across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 5-step Quick Adoption Checklist, and **`Stay in sync with Google Antigravity`** updates & 3–4 min video walkthroughs), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
+  2. **`WV Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid skill & connector hub displaying all 40 curated skills (including **`WV State Skills`**) **plus** automatic discovery of all user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), `+ New Skill` wizard, `Save My Copy`, Safe Export secret scanner, and `<1s` SHA-256 `Sync Updates`.
   3. **`WV Preview`** *(**Magnifying Glass** Icon)* — Serverless visual preview of WV Command Center Dashboards, 16:9 Slide Decks, and Branded Flyers with Print-to-PDF and 1-click HTML download.
   4. **`WV Chatski`** *(**Chat Bubble** Icon)* — Left-sidebar Google Chat workspace powered **out-of-the-box** by West Virginia's existing **Gemini Enterprise Chat Connector** (`StreamAssist` with `actionDisabled: true` on reads and 2-step human confirmation on sends).
 
 ---
 
-## Visual Tour — The 4 West Virginia Extensions (`v2.0.0`)
+## Visual Tour — The 4 West Virginia Extensions (`v2.1.0`)
 
-### 1. `WV Antigravity` *(Antigravity Rainbow "A" Icon)* — AI Inbox `Action Items` & `Overview`
+### 1. `WV Antigravity` *(Antigravity Rainbow "A" Icon)* — `Overview` (Updates Hub), `TokenEconomics` & `Action Items`
+
+![WV Antigravity — Overview, Orchestrator & Updates Hub](./docs/screenshots/wv-antigravity-overview.png)
+
+![WV Antigravity — TokenEconomics & Spend Optimization](./docs/screenshots/wv-antigravity-tokeneconomics.png)
 
 ![WV Antigravity — AI Inbox Action Items & Topics](./docs/screenshots/wv-antigravity-action-items.png)
 
-![WV Antigravity — Overview & Instant Search](./docs/screenshots/wv-antigravity-overview.png)
+### 2. Dedicated `WV Skills` *(Skills Icon — 40 Suite Skills + `WV State Skills` + `★ My Personal Skills`)*
 
-### 2. `WV Chatski` *(Chat Bubble Icon)* — Google Chat via WV Gemini Enterprise Connector
-
-![WV Chatski — Google Chat Left-Sidebar Panel via Gemini Enterprise](./docs/screenshots/wv-chatski.png)
-
-### 3. `WV Skills` *(Skills Icon)* & `WV Preview` *(Magnifying Glass Icon)*
-
-| `WV Skills ✨` *(AI Inbox Manager + `WV State Skills`)* | `WV Preview 🔍` *(Serverless WV Command Center Preview)* |
+| `WV Skills ✨` *(All Suite Skills + `WV State Skills`)* | `★ My Personal Skills` *(Auto-Discovered User & Workspace Skills)* |
 | :---: | :---: |
-| ![WV Skills — AI Inbox Skill Manager](./docs/screenshots/wv-skills.png) | ![WV Preview — Serverless Deliverable Preview](./docs/screenshots/wv-preview.png) |
+| ![WV Skills — AI Inbox Card Grid](./docs/screenshots/wv-skills.png) | ![WV Skills — Personal Skills](./docs/screenshots/wv-skills-personal.png) |
+
+### 3. `WV Chatski` *(Chat Bubble Icon)* & `WV Preview` *(Magnifying Glass Icon)*
+
+| `WV Chatski 💬` *(Google Chat via WV GE Connector)* | `WV Preview 🔍` *(Serverless WV Command Center Preview)* |
+| :---: | :---: |
+| ![WV Chatski — Google Chat Left-Sidebar Panel via Gemini Enterprise](./docs/screenshots/wv-chatski.png) | ![WV Preview — Serverless Deliverable Preview](./docs/screenshots/wv-preview.png) |
 
 ---
 

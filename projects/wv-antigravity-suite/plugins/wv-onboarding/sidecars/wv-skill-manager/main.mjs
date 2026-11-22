@@ -1,14 +1,24 @@
 #!/usr/bin/env node
 
-const __parseJsonNoBom = (s) => JSON.parse(typeof s === 'string' ? s.replace(/^\uFEFF/, '') : Buffer.isBuffer(s) ? s.toString('utf-8').replace(/^\uFEFF/, '') : s);
+const __parseJsonNoBom = (s) =>
+  JSON.parse(
+    typeof s === 'string'
+      ? s.replace(/^\uFEFF/, '')
+      : Buffer.isBuffer(s)
+        ? s.toString('utf-8').replace(/^\uFEFF/, '')
+        : s
+  );
+
 /**
- * Generic AGY Plugin — Skill Toggle & Connector Control Center
+ * Dedicated Skills & Personal Skills Hub Sidecar (`main.mjs`)
  *
- * Built on Antigravity's native `sidecar_sdk` (zero npm packages; runs on AGY's bundled Node runtime).
- * Supports:
- * 1. Per-skill enable/disable toggles (`SKILL.md` <-> `SKILL.md.disabled` + persisted toggle ledger).
- * 2. Category plugin enable/disable toggles via LanguageServerService/JetboxWriteState.
- * 3. Default Gemini Enterprise (GE) instance configuration (`ge-instance.json`).
+ * Replaces the legacy table Skill Manager with the AI-Inbox Card Grid UI while
+ * preserving 100% of admin capabilities:
+ * 1. Full discovery of user Personal Skills (~/.gemini/config/skills/) + Workspace Skills (.gemini/skills/).
+ * 2. Per-skill & per-category Enable/Disable toggles (`SKILL.md` <-> `SKILL.md.disabled` + ledger + LS sync).
+ * 3. + New Personal Skill wizard, Save My Copy (fork/override), Edit Seed Prompt, & SKILL.md viewer/editor.
+ * 4. Safe Personal Skill Export (`POST /api/skills/export-safe` — deterministic secret/PII/internal-link scrub check).
+ * 5. Gemini Enterprise (`ge-instance.json`) Connector Hub & <1s SHA-256 Incremental Updater.
  */
 
 import crypto from 'node:crypto';
@@ -19,23 +29,178 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
+import { buildSkillsCatalog, SUITE_VARIANT } from './seed_prompts_catalog.mjs';
 import { getTokenMeterSummary } from './token_meter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
+const SAFE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,62}$/;
+const SAFE_SKILL_SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,62}$/;
 const SAFE_SEG_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
-const DEFAULT_RAW_BASE = 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite';
+const MAX_FORK_BYTES = 5 * 1024 * 1024;
+const WRITABLE_EXTENSIONS = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
+const ALLOWED_EMOJI_CODES = new Set(['2728', '1f60e', '1f36a', '1f48e', '2699_fe0f']);
+
+const DEFAULT_RAW_BASE =
+  SUITE_VARIANT === 'wv'
+    ? 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite'
+    : 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin';
+
+const CONNECTORS_PLUGIN_NAME = SUITE_VARIANT === 'wv' ? 'wv-connectors' : 'agy-connectors';
+const AUTOMATIONS_PLUGIN_NAME = SUITE_VARIANT === 'wv' ? 'wv-automations' : 'agy-twin-automations';
+const MEMORY_PLUGIN_DATA_NAME = SUITE_VARIANT === 'wv' ? 'wv-antigravity' : 'my-antigravity';
+const ONBOARDING_PLUGIN_NAME = SUITE_VARIANT === 'wv' ? 'wv-onboarding' : 'agy-onboarding';
+
+function lstatOrNull(p) {
+  try {
+    return fs.lstatSync(p);
+  } catch {
+    return null;
+  }
+}
+
+function getPluginsRoot() {
+  if (process.env.ANTIGRAVITY_PLUGINS_ROOT && process.env.ANTIGRAVITY_PLUGINS_ROOT.trim()) {
+    return path.resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT.trim());
+  }
+  return path.resolve(__dirname, '..', '..', '..');
+}
+
+function getPersonalSkillsRoot() {
+  const custom = process.env.ANTIGRAVITY_PERSONAL_SKILLS_DIR;
+  return custom && custom.trim()
+    ? path.resolve(custom.trim())
+    : path.join(os.homedir(), '.gemini', 'config', 'skills');
+}
+
+function getWorkspaceSkillsRoot() {
+  const ws = process.env.ANTIGRAVITY_WORKSPACE_ROOT || process.env.WORKSPACE_ROOT || '';
+  if (!ws || !ws.trim()) return '';
+  return path.join(path.resolve(ws.trim()), '.gemini', 'skills');
+}
+
+function getSidecarStateDir() {
+  const d =
+    process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR ||
+    process.env.PLUGIN_DATA ||
+    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', ONBOARDING_PLUGIN_NAME);
+  const resolved = path.resolve(d);
+  fs.mkdirSync(resolved, { recursive: true, mode: 0o700 });
+  return resolved;
+}
+
+function getCustomSeedsPaths() {
+  const memSeeds = path.join(
+    os.homedir(),
+    '.gemini',
+    'config',
+    'plugin_data',
+    MEMORY_PLUGIN_DATA_NAME,
+    'memory',
+    'profile',
+    'custom_seeds.json'
+  );
+  const localSeeds = path.join(getSidecarStateDir(), 'custom_seeds.json');
+  return [localSeeds, memSeeds];
+}
+
+function readCustomSeeds() {
+  const merged = {};
+  for (const p of getCustomSeedsPaths().reverse()) {
+    try {
+      if (fs.existsSync(p) && fs.lstatSync(p).isFile()) {
+        const parsed = __parseJsonNoBom(fs.readFileSync(p, 'utf-8'));
+        if (parsed && typeof parsed === 'object') {
+          Object.assign(merged, parsed);
+        }
+      }
+    } catch {}
+  }
+  return merged;
+}
+
+function writeCustomSeeds(seedsObj) {
+  const [localSeeds, memSeeds] = getCustomSeedsPaths();
+  fs.mkdirSync(path.dirname(localSeeds), { recursive: true, mode: 0o700 });
+  const tmp = `${localSeeds}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, JSON.stringify(seedsObj, null, 2) + '\n', { mode: 0o600 });
+  fs.renameSync(tmp, localSeeds);
+
+  // Best-effort mirror to memory profile custom_seeds.json when permitted by sandbox
+  try {
+    fs.mkdirSync(path.dirname(memSeeds), { recursive: true, mode: 0o700 });
+    const tmp2 = `${memSeeds}.tmp-${process.pid}`;
+    fs.writeFileSync(tmp2, JSON.stringify(seedsObj, null, 2) + '\n', { mode: 0o600 });
+    fs.renameSync(tmp2, memSeeds);
+  } catch {}
+}
+
+function hasSymlinkUnderRoot(resolvedPath, rootDir) {
+  const resolvedRoot = path.resolve(rootDir);
+  if (!fs.existsSync(resolvedRoot)) return false;
+  const rootStat = lstatOrNull(resolvedRoot);
+  if (!rootStat || rootStat.isSymbolicLink()) return true;
+  const realRoot = fs.realpathSync(resolvedRoot);
+  const prefix = realRoot.endsWith(path.sep) ? realRoot : realRoot + path.sep;
+
+  let cur = resolvedRoot;
+  const rel = path.relative(resolvedRoot, path.resolve(resolvedPath));
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return true;
+  for (const seg of rel.split(path.sep)) {
+    cur = path.join(cur, seg);
+    const st = lstatOrNull(cur);
+    if (!st) break;
+    if (st.isSymbolicLink()) return true;
+    const realCur = fs.realpathSync(cur);
+    if (realCur !== realRoot && !realCur.startsWith(prefix)) return true;
+  }
+  return false;
+}
+
+function classifySkillFilePath(rawPath) {
+  if (!rawPath || typeof rawPath !== 'string' || rawPath.includes('\0')) {
+    return { allowed: false, writable: false };
+  }
+  const resolved = path.resolve(rawPath);
+  const personalRoot = getPersonalSkillsRoot();
+  if (fs.existsSync(personalRoot) && !hasSymlinkUnderRoot(resolved, personalRoot)) {
+    const rel = path.relative(personalRoot, resolved);
+    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+      const ext = path.extname(resolved).toLowerCase();
+      const isDisabledMd = resolved.endsWith('SKILL.md.disabled');
+      const writable = WRITABLE_EXTENSIONS.has(ext) || isDisabledMd;
+      return { allowed: true, writable, rootId: 'my-skills', resolved };
+    }
+  }
+
+  const wsRoot = getWorkspaceSkillsRoot();
+  if (wsRoot && fs.existsSync(wsRoot) && !hasSymlinkUnderRoot(resolved, wsRoot)) {
+    const rel = path.relative(wsRoot, resolved);
+    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+      return { allowed: true, writable: false, rootId: 'workspace-skills', resolved };
+    }
+  }
+
+  const pluginsRoot = getPluginsRoot();
+  if (fs.existsSync(pluginsRoot) && !hasSymlinkUnderRoot(resolved, pluginsRoot)) {
+    const rel = path.relative(pluginsRoot, resolved);
+    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+      return { allowed: true, writable: false, rootId: 'plugins', resolved };
+    }
+  }
+
+  return { allowed: false, writable: false };
+}
 
 function httpsGetBuffer(urlStr, redirectsLeft = 4) {
   return new Promise((resolve, reject) => {
     const u = new URL(urlStr);
-    if (u.protocol !== 'https:') {
-      reject(new Error('HTTPS required'));
+    if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com') {
+      reject(new Error('Only raw.githubusercontent.com HTTPS updates are permitted'));
       return;
     }
     const req = https.get(
       u,
-      { headers: { 'User-Agent': 'AGY-Skill-Manager-Sidecar/1.3' }, timeout: 12000 },
+      { headers: { 'User-Agent': 'AGY-Skills-Hub/2.1' }, timeout: 12000 },
       (res) => {
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           res.resume();
@@ -75,7 +240,6 @@ function readBaselineHashes(pluginsRoot) {
       }
     } catch {}
   }
-  // Seed from local version-manifest.json if available alongside plugins/
   const seeded = { skills: {}, sidecars: {} };
   const localManifestPath = path.resolve(pluginsRoot, '..', 'version-manifest.json');
   if (fs.existsSync(localManifestPath)) {
@@ -94,11 +258,6 @@ function writeBaselineHashes(baseline) {
   const tmp = `${p}.tmp-${process.pid}`;
   fs.writeFileSync(tmp, JSON.stringify(baseline, null, 2) + '\n', { mode: 0o600 });
   fs.renameSync(tmp, p);
-}
-
-function getPersonalSkillsRoot() {
-  const custom = process.env.ANTIGRAVITY_PERSONAL_SKILLS_DIR;
-  return custom && custom.trim() ? path.resolve(custom.trim()) : path.join(os.homedir(), '.gemini', 'config', 'skills');
 }
 
 async function syncSkillsIncrementally(skillFilter = '') {
@@ -149,7 +308,6 @@ async function syncSkillsIncrementally(skillFilter = '') {
 
       const prevBaselineSha = baseline.skills[skillId][relPath] || null;
       if (localSha && prevBaselineSha && localSha !== prevBaselineSha) {
-        // User edited this stock file directly on disk — NEVER overwrite it!
         skillProtected = true;
         continue;
       }
@@ -167,22 +325,19 @@ async function syncSkillsIncrementally(skillFilter = '') {
       updatedFilesCount += 1;
       skillChanged = true;
     }
-    if (skillProtected) {
-      protectedSkillIds.push(skillId);
-    }
+    if (skillProtected) protectedSkillIds.push(skillId);
     if (skillChanged) {
       updatedSkillsCount += 1;
       updatedSkillIds.push(skillId);
     }
   }
 
-  // Sync UI sidecar files on disk ONLY (zero automatic ManageSidecar restarts — 100% user-driven Refresh)
   const updatedSidecarIds = [];
   if (!skillFilter && manifest.sidecarManifest) {
     for (const [scKey, scEntry] of Object.entries(manifest.sidecarManifest)) {
       const pluginName = scEntry.plugin;
       const scId = scEntry.sidecar || scKey.split('/').pop();
-      if (pluginName === 'wv-automations') continue;
+      if (pluginName === AUTOMATIONS_PLUGIN_NAME) continue;
       if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(scId)) continue;
       const scDir = path.join(pluginsRoot, pluginName, 'sidecars', scId);
       let sidecarChanged = false;
@@ -210,17 +365,14 @@ async function syncSkillsIncrementally(skillFilter = '') {
           sidecarChanged = true;
         }
       }
-      if (sidecarChanged) {
-        updatedSidecarIds.push(`${pluginName}/${scId}`);
-      }
+      if (sidecarChanged) updatedSidecarIds.push(`${pluginName}/${scId}`);
     }
   }
 
   writeBaselineHashes(baseline);
-
   return {
     ok: true,
-    suiteVersion: manifest.suiteVersion || '1.0.0',
+    suiteVersion: manifest.suiteVersion || '2.0.0',
     checkedSkillsCount: targetSkills.length,
     updatedSkillsCount,
     updatedFilesCount,
@@ -228,403 +380,6 @@ async function syncSkillsIncrementally(skillFilter = '') {
     protectedSkillIds,
     updatedSidecarIds,
   };
-}
-
-const SKILL_CATALOG = [
-  {
-    plugin: 'wv-onboarding',
-    categoryLabel: 'Onboarding, Daily Brief & Triage',
-    skills: [
-      {
-        id: 'wv-onboard',
-        title: 'Agency Role, Workspace Memory & GE Quickstart',
-        subtitle: '60-second role + workspace memory setup, 30-60-90 plans & SOP builders',
-        command: '/wv-onboard',
-        badge: 'Playbook + Setup',
-        starterPrompt: '/wv-onboard Help me set up my Public Sector agency role, Personal Workspace Memory, and Gemini Enterprise connection.'
-      },
-      {
-        id: 'model-guide',
-        title: 'Model Selection & Using Claude in AGY',
-        subtitle: 'Switch between Gemini 4, Orchestrator & Anthropic Claude 5.5 + Dual-Model reviews',
-        command: '/model-guide',
-        badge: 'Gemini 4 + Claude',
-        starterPrompt: '/model-guide Show me how to use Google Gemini 4, Orchestrator, and Anthropic Claude 5.5 in Antigravity, when to pick each model, and our Public Sector quota & compliance guardrails.'
-      },
-      {
-        id: 'orchestrator-guide',
-        title: 'Mastering Orchestrator (Planner + Hydrogen)',
-        subtitle: 'Pair Gemini 4 Neon/Argon/Carbon planning with fast Hydrogen execution & auto-recovery',
-        command: '/orchestrator-guide',
-        badge: 'Orchestrator',
-        starterPrompt: '/orchestrator-guide Show me how to select and prompt Orchestrator (Neon, Argon, Carbon) in Antigravity App and CLI for faster execution and lower quota burn.'
-      },
-      {
-        id: 'token-usage',
-        title: 'Token & Quota Consumption Analyzer',
-        subtitle: 'Retrieve exact 5h, 24h & 7d local token telemetry, cache hit % & rendered HTML report',
-        command: '/token-usage',
-        badge: 'Token Telemetry',
-        starterPrompt: '/token-usage Retrieve my exact Antigravity token consumption across 5-hour, 24-hour, and 7-day windows and render the interactive Token Consumption report.'
-      },
-      {
-        id: 'daily-brief',
-        title: 'Daily Executive Kickoff Brief',
-        subtitle: 'Unified morning priorities, GE calendar/inbox + open Action Items & >21d contacts',
-        command: '/daily-brief',
-        badge: 'GE + Memory',
-        starterPrompt: '/daily-brief Summarize my top priorities today, upcoming meetings, open Action Items, and stale stakeholder check-ins.'
-      },
-      {
-        id: 'my-voice',
-        title: 'My Voice & Correspondence Drafter',
-        subtitle: 'Drafts emails, memos, official letters & replies calibrated to voice.md (Draft-Only)',
-        command: '/my-voice',
-        badge: 'Draft-Only',
-        starterPrompt: '/my-voice Draft a clear, concise reply in my voice to the message below.'
-      },
-      {
-        id: 'inbox-triage',
-        title: 'Rule-Driven Inbox & Incident Triage',
-        subtitle: 'Threshold triage with fail-safe hold on unreadable attachments',
-        command: '/inbox-triage',
-        badge: 'GE + Rules',
-        starterPrompt: '/inbox-triage Triage my unread emails from the last 48 hours and flag urgent leadership escalations.'
-      },
-      {
-        id: 'wv-update',
-        title: 'Fast Git & HTTPS Suite Updater',
-        subtitle: 'Syncs latest Public Sector skills & templates in under 2 seconds',
-        command: '/wv-update',
-        badge: 'Executable',
-        starterPrompt: '/wv-update Check if newer Public Sector Antigravity skills or templates are available.'
-      }
-    ]
-  },
-  {
-    plugin: 'wv-connectors',
-    categoryLabel: 'Chatski & Gemini Enterprise Connectors',
-    skills: [
-      {
-        id: 'chatski',
-        title: 'Chatski — Google Chat & GE Connector Companion',
-        subtitle: 'Summarizes unread Spaces/DMs via GE Chat Connector & stages Draft-Only replies in Chatski',
-        command: '/chatski',
-        badge: 'Left Panel + GE',
-        starterPrompt: '/chatski Summarize my unread Google Chat spaces and direct messages via my Gemini Enterprise Chat Connector and stage Draft-Only replies in Chatski.'
-      },
-      {
-        id: 'connect-ge',
-        title: 'Gemini Enterprise (GE) Instance Wizard',
-        subtitle: 'Default hub linking Entra-synced Google Identity to federated sources',
-        command: '/connect-ge',
-        badge: 'MCP Bridge',
-        starterPrompt: '/connect-ge Configure and test my Public Sector Gemini Enterprise instance and federated connectors.'
-      },
-      {
-        id: 'connect-m365-workspace',
-        title: 'Outlook, SharePoint, OneDrive, Teams & Drive',
-        subtitle: 'Chronological thread & citation retrieval across federated M365/Workspace',
-        command: '/connect-m365-workspace',
-        badge: 'GE Federated',
-        starterPrompt: '/connect-m365-workspace Search SharePoint, OneDrive, and Outlook via my GE instance for recent program updates.'
-      },
-      {
-        id: 'connect-github-bigquery',
-        title: 'GitHub & Cost-Capped BigQuery Setup',
-        subtitle: 'Federated GitHub search + direct PR workflow & 1 GB BigQuery caps',
-        command: '/connect-github-bigquery',
-        badge: 'Cloud + Repo',
-        starterPrompt: '/connect-github-bigquery Help me connect to BigQuery with read-only cost guardrails.'
-      }
-    ]
-  },
-  {
-    plugin: 'wv-design-studio',
-    categoryLabel: 'Design Studio — Dashboards, Slides & Docs',
-    skills: [
-      {
-        id: 'wv-dashboard',
-        title: 'Zero-Node Interactive Executive Dashboards',
-        subtitle: 'Runs over file:// in Chrome/Edge with drag-and-drop Customize Layout',
-        command: '/wv-dashboard',
-        badge: 'Executable UI',
-        starterPrompt: '/wv-dashboard Spin up a West Virginia branded executive dashboard I can customize visually in Chrome or Edge.'
-      },
-      {
-        id: 'slides',
-        title: '16:9 Executive Presentation Decks',
-        subtitle: 'Responsive HTML/CSS slide decks with speaker notes & Save-to-PDF',
-        command: '/slides',
-        badge: 'Visual Deck',
-        starterPrompt: '/slides Create an 8-slide Public Sector leadership presentation deck with speaker notes.'
-      },
-      {
-        id: 'doc-design',
-        title: 'Branded Stakeholder Flyers & BLUF Memos',
-        subtitle: 'Print-CSS fact sheets, 1-page decision memos & public notices',
-        command: '/doc-design',
-        badge: 'Print-Ready',
-        starterPrompt: '/doc-design Design a 2-page print-ready stakeholder flyer and eligibility checklist.'
-      }
-    ]
-  },
-  {
-    categoryId: 'wv-state-workflows',
-    plugin: 'wv-state-workflows',
-    categoryLabel: 'WV State Skills — WV FOIA (§ 29B-1-4), Legal & Policy',
-    chipLabel: 'WV State Skills',
-    skills: [
-      {
-        id: 'foia-expert',
-        title: 'Public Records / FOIA Discovery, Redaction & Vaughn Index',
-        subtitle: 'Google Vault + Purview KQL + W. Va. Code § 29B-1-4 & 5 U.S.C. § 552 segregability audit',
-        command: '/foia-expert',
-        badge: 'Statutory SOP',
-        starterPrompt: '/foia-expert Formulate Google Vault and Purview KQL discovery queries for this FOIA request and build a Vaughn Index report.'
-      },
-      {
-        id: 'legal-procurement-review',
-        title: 'State Legal & Procurement Contract Review',
-        subtitle: 'Checks sovereign immunity, fiscal non-appropriation & AI terms (1:3:9)',
-        command: '/legal-procurement-review',
-        badge: '1:3:9 Risk',
-        starterPrompt: '/legal-procurement-review Review this vendor contract against Public Sector sovereign immunity and non-appropriation rules.'
-      },
-      {
-        id: 'policy-program-audit',
-        title: 'Legislative & Cross-Document Consistency Audit',
-        subtitle: 'Catches conflicting caps, dates, or rules across flyers & policy docs',
-        command: '/policy-program-audit',
-        badge: 'Audit Gate',
-        starterPrompt: '/policy-program-audit Check our program rules, stakeholder flyer, and web copy for any conflicting numbers or dates.'
-      }
-    ]
-  },
-  {
-    categoryId: 'public_sector',
-    plugin: 'wv-state-workflows',
-    categoryLabel: 'Government Services (public_sector) Skills',
-    chipLabel: 'Government Services (public_sector)',
-    skills: [
-      {
-        id: 'document-intake-cleanup-and-validation',
-        title: 'Public Sector Document Intake & Validation',
-        subtitle: 'Validates citizen paystubs, leases, residency proofs & monthly gross income math',
-        command: '/document-intake-cleanup-and-validation',
-        badge: 'public_sector',
-        starterPrompt: '/document-intake-cleanup-and-validation Validate this citizen\'s uploaded paystubs and residential lease, and calculate prospective monthly gross income.'
-      },
-      {
-        id: 'expense-auditor',
-        title: 'Expense Auditor (2 CFR Part 200)',
-        subtitle: 'Audits grant expenditure ledgers, receipts & vouchers against Uniform Guidance',
-        command: '/expense-auditor',
-        badge: 'public_sector',
-        starterPrompt: '/expense-auditor Audit this grant expenditure ledger against 2 CFR Part 200 Uniform Guidance and flag any unallowable costs.'
-      },
-      {
-        id: 'foia-request-processing',
-        title: 'FOIA Request Processing',
-        subtitle: 'First-pass search & 3-table officer report across connected agency systems',
-        command: '/foia-request-processing',
-        badge: 'public_sector',
-        starterPrompt: '/foia-request-processing Review this public records request, confirm the governing law, search connected systems, and return the three-table first-pass report.'
-      },
-      {
-        id: 'plain-language-notice-generator',
-        title: 'Plain Language Notice Generator',
-        subtitle: 'Rewrites public advisories & notices into plain language with zero fact invention',
-        command: '/plain-language-notice-generator',
-        badge: 'public_sector',
-        starterPrompt: '/plain-language-notice-generator Rewrite this public health advisory into compliant plain language while preserving all dates, contacts, and regulatory blocks.'
-      },
-      {
-        id: 'policy-and-statute-assistant',
-        title: 'Policy and Statute Assistant',
-        subtitle: 'Pinpoint federal/CFR & state administrative code citations with hierarchy',
-        command: '/policy-and-statute-assistant',
-        badge: 'public_sector',
-        starterPrompt: '/policy-and-statute-assistant Research the controlling federal regulation and state administrative rule for this program eligibility question.'
-      },
-      {
-        id: 'public-records-redaction',
-        title: 'Public Records Redaction',
-        subtitle: 'Drafts 50-state & federal FOIA redactions with pinpoint citations & officer flags',
-        command: '/public-records-redaction',
-        badge: 'public_sector',
-        starterPrompt: '/public-records-redaction Draft first-pass public records redactions on this document under Federal FOIA (5 U.S.C. § 552) and applicable State Public Records law with citations and reasons.'
-      },
-      {
-        id: 'rfp-vendor-evaluation',
-        title: 'RFP Vendor Evaluation',
-        subtitle: 'Cross-checks vendor bid packages against RFP rubrics with page-cited matrices',
-        command: '/rfp-vendor-evaluation',
-        badge: 'public_sector',
-        starterPrompt: '/rfp-vendor-evaluation Evaluate these vendor proposals against our RFP mandatory requirements and compile page-cited rubric evidence.'
-      }
-    ]
-  },
-  {
-    plugin: 'wv-engineering-cloud',
-    categoryLabel: 'Engineering — Refactoring, Cloud Run & BigQuery',
-    skills: [
-      {
-        id: 'modernize-refactor',
-        title: 'Stage-Gated Legacy App Modernization',
-        subtitle: 'Stage 0/1/2 Crucible + 6-section blueprint & A/B parity verification',
-        command: '/modernize-refactor',
-        badge: '3-Stage Crucible',
-        starterPrompt: '/modernize-refactor Inspect this legacy codebase and generate a Stage 1 6-section modernization blueprint.'
-      },
-      {
-        id: 'deploy-cloudrun',
-        title: 'Zero-Docker Cloud Run Source Deployment',
-        subtitle: 'Remote Cloud Build deploy with dedicated SA & Secret Manager',
-        command: '/deploy-cloudrun',
-        badge: 'Cloud Run',
-        starterPrompt: '/deploy-cloudrun Prepare this service for a hardened zero-Docker Cloud Run source deployment in us-east4.'
-      },
-      {
-        id: 'bigquery-architect',
-        title: 'BigQuery SQL Translator & Cost Optimizer',
-        subtitle: 'Legacy T-SQL/Oracle/Postgres migration, partitioning & dry-run caps',
-        command: '/bigquery-architect',
-        badge: 'BigQuery SQL',
-        starterPrompt: '/bigquery-architect Translate this legacy SQL query to BigQuery Standard SQL with partitioning and a 1 GB cap.'
-      },
-      {
-        id: 'find-cloud-skill',
-        title: 'On-Demand Google Cloud Skill Loader',
-        subtitle: 'Loads specialized GKE, AlloyDB, Apigee & Vertex AI skills on demand',
-        command: '/find-cloud-skill',
-        badge: 'Live Catalog',
-        starterPrompt: '/find-cloud-skill Load the official Google Cloud skill for Assured Workloads and VPC Service Controls.'
-      }
-    ]
-  },
-  {
-    plugin: 'wv-security',
-    categoryLabel: 'Security, Assured Workloads & IAM Hygiene',
-    skills: [
-      {
-        id: 'security-audit',
-        title: 'OWASP, Cloud WAF & Assured Workloads Audit',
-        subtitle: 'Zero-install code & architecture security review (CJIS/HIPAA/FedRAMP)',
-        command: '/security-audit',
-        badge: 'Security Gate',
-        starterPrompt: '/security-audit Run an OWASP and Google Cloud WAF security audit on this application.'
-      },
-      {
-        id: 'iam-secret-hygiene',
-        title: 'Least-Privilege IAM & Secret Manager Hygiene',
-        subtitle: 'Replaces primitive roles & env secrets with Entra-synced groups',
-        command: '/iam-secret-hygiene',
-        badge: 'IAM + Secrets',
-        starterPrompt: '/iam-secret-hygiene Audit our IAM bindings and replace plaintext env secrets with Secret Manager.'
-      }
-    ]
-  },
-  {
-    categoryId: 'second-brain',
-    plugin: 'wv-second-brain',
-    categoryLabel: 'Memory, Action Items, Prep & Anti-Slop',
-    chipLabel: 'Memory & Prep',
-    skills: [
-      {
-        id: 'memory',
-        title: 'Personal Workspace Memory & Action Items',
-        subtitle: 'Role-adaptive setup, Action Items (action_items.md) & >21d stakeholder pulse',
-        command: '/memory',
-        badge: 'Memory + Actions',
-        starterPrompt: '/memory Initialize my personal workspace memory using the public-sector preset and summarize my active Action Items and initiatives.'
-      },
-      {
-        id: 'meeting-notes',
-        title: 'Meeting Notes Harvester & Action Extractor',
-        subtitle: 'Strips base64 bloat, applies 4-Tier compaction & extracts Action Items',
-        command: '/meeting-notes',
-        badge: '4-Tier Memory',
-        starterPrompt: '/meeting-notes Ingest and compact these call notes into my initiative folder, extract open to-dos to action_items.md, and update contacts.md.'
-      },
-      {
-        id: 'meeting-prep',
-        title: 'T-15m Pre-Meeting Brief & SCQA Red-Team Coach',
-        subtitle: '1-card initiative brief + Adversarial Minto Pyramid (SCQA) pushback critic',
-        command: '/meeting-prep',
-        badge: 'SCQA Critic',
-        starterPrompt: '/meeting-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my top active initiative.'
-      },
-      {
-        id: 'followup-plan',
-        title: 'Follow-Up & Action Item Sweep',
-        subtitle: 'Audits sent replies first, syncs action_items.md & stages [Draft-Only] messages',
-        command: '/followup-plan',
-        badge: 'Action Sweep',
-        starterPrompt: '/followup-plan Run a follow-up sweep across my workspace memory and stage [Draft-Only] replies for open P0 and P1 action items.'
-      },
-      {
-        id: 'swarm-prep',
-        title: '4-Agent Parallel Swarm Orchestrator',
-        subtitle: 'Fans out Memory Scout, SCQA Critic, Solution Architect & Safety Auditor',
-        command: '/swarm-prep',
-        badge: '4-Agent Swarm',
-        starterPrompt: '/swarm-prep Run a 4-agent parallel 360 prep pack for my highest-priority initiative.'
-      },
-      {
-        id: 'weekly-impact',
-        title: 'Friday Closeout & 3-Altitude Impact Ledger',
-        subtitle: 'Distills Executive Outcomes, Reusable Assets & Velocity into weekly/ & ledger.json',
-        command: '/weekly-impact',
-        badge: '3-Altitude ROI',
-        starterPrompt: '/weekly-impact Generate my Friday 3-Altitude weekly impact summary from my workspace memory.'
-      },
-      {
-        id: 'no-ai-slop',
-        title: 'Hardlined Anti-AI-Slop Editor',
-        subtitle: 'Cuts 17 LLM filler patterns, binary contrasts & em-dash clusters',
-        command: '/no-ai-slop',
-        badge: 'Voice Polish',
-        starterPrompt: '/no-ai-slop Tighten the draft below and strip all AI-slop clichés while keeping concrete numbers and citations intact.'
-      },
-      {
-        id: 'outbound-scrub',
-        title: 'Deterministic Outbound Safety & PII Scrubber',
-        subtitle: 'Scans external drafts for secrets, SSNs, [CONFIRM] tags & slop (Node + regex fallback)',
-        command: '/outbound-scrub',
-        badge: 'Safety Gate',
-        starterPrompt: '/outbound-scrub Run a deterministic outbound safety, PII/secret, and placeholder check on the deliverable below before sharing.'
-      }
-    ]
-  },
-  {
-    categoryId: 'automations',
-    plugin: 'wv-automations',
-    categoryLabel: 'Scheduled Automations (Opt-In)',
-    chipLabel: 'Automations',
-    skills: [
-      {
-        id: 'automations',
-        title: 'Scheduled Briefings & Memory Compactor Setup',
-        subtitle: 'Configures IANA timezone & enables opt-in weekday briefings in Automations',
-        command: '/automations',
-        badge: 'Opt-In Cron',
-        starterPrompt: '/automations Set my IANA timezone across my scheduled automations and show me how to enable them in the Automations dashboard.'
-      }
-    ]
-  }
-];
-
-function getPluginsRoot() {
-  // __dirname = <pluginsRoot>/wv-onboarding/sidecars/agy-skill-manager
-  return path.resolve(__dirname, '..', '..', '..');
-}
-
-function getSidecarStateDir() {
-  const d = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || process.env.PLUGIN_DATA || path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'wv-onboarding');
-  const resolved = path.resolve(d);
-  fs.mkdirSync(resolved, { recursive: true, mode: 0o700 });
-  return resolved;
 }
 
 function getLedgerPath() {
@@ -635,7 +390,7 @@ function readToggleLedger() {
   const p = getLedgerPath();
   if (!fs.existsSync(p)) return { disabledSkills: {}, disabledPlugins: {} };
   try {
-    const parsed = __parseJsonNoBom(fs.readFileSync(p, 'utf8'));
+    const parsed = __parseJsonNoBom(fs.readFileSync(p, 'utf-8'));
     return {
       disabledSkills: parsed.disabledSkills || {},
       disabledPlugins: parsed.disabledPlugins || {},
@@ -674,15 +429,17 @@ function callLanguageServerRpc(method, bodyObj) {
           'x-codeium-csrf-token': csrf,
           'Content-Length': Buffer.byteLength(payload),
         },
-        timeout: 4000,
+        timeout: 3500,
       },
       (res) => {
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {
-          const text = Buffer.concat(chunks).toString('utf8');
+          const text = Buffer.concat(chunks).toString('utf-8');
           let json = null;
-          try { json = __parseJsonNoBom(text); } catch {}
+          try {
+            json = __parseJsonNoBom(text);
+          } catch {}
           resolve({ ok: res.statusCode === 200, json });
         });
       }
@@ -695,28 +452,6 @@ function callLanguageServerRpc(method, bodyObj) {
     req.write(payload);
     req.end();
   });
-}
-
-function inspectSkillDiskState(pluginsRoot, pluginName, skillId, ledger) {
-  const key = `${pluginName}/${skillId}`;
-  if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(skillId)) {
-    return true;
-  }
-  const skillDir = path.join(pluginsRoot, pluginName, 'skills', skillId);
-  if (!skillDir.startsWith(pluginsRoot + path.sep)) return true;
-  const activeMd = path.join(skillDir, 'SKILL.md');
-  const disabledMd = path.join(skillDir, 'SKILL.md.disabled');
-  try {
-    if (fs.existsSync(disabledMd) && !fs.existsSync(activeMd)) {
-      return false;
-    }
-    if (fs.existsSync(activeMd)) {
-      return ledger.disabledSkills[key] ? false : true;
-    }
-  } catch {
-    // Inside strict read-only sibling sandbox on Linux, fall back cleanly to ledger
-  }
-  return !Boolean(ledger.disabledSkills[key]);
 }
 
 function toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled) {
@@ -734,16 +469,20 @@ function toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled) {
 
   const personalRoot = getPersonalSkillsRoot();
   const baseRoot = pluginName === 'my-skills' ? personalRoot : pluginsRoot;
-  const skillDir = pluginName === 'my-skills' ? path.join(personalRoot, skillId) : path.join(pluginsRoot, pluginName, 'skills', skillId);
+  const skillDir =
+    pluginName === 'my-skills'
+      ? path.join(personalRoot, skillId)
+      : path.join(pluginsRoot, pluginName, 'skills', skillId);
+
   let diskSynced = false;
-  if (skillDir.startsWith(baseRoot + path.sep)) {
+  if (!hasSymlinkUnderRoot(skillDir, baseRoot)) {
     const activeMd = path.join(skillDir, 'SKILL.md');
     const disabledMd = path.join(skillDir, 'SKILL.md.disabled');
     try {
-      if (!enabled && fs.existsSync(activeMd)) {
+      if (!enabled && fs.existsSync(activeMd) && !lstatOrNull(activeMd).isSymbolicLink()) {
         fs.renameSync(activeMd, disabledMd);
         diskSynced = true;
-      } else if (enabled && fs.existsSync(disabledMd)) {
+      } else if (enabled && fs.existsSync(disabledMd) && !lstatOrNull(disabledMd).isSymbolicLink()) {
         fs.renameSync(disabledMd, activeMd);
         diskSynced = true;
       } else if ((enabled && fs.existsSync(activeMd)) || (!enabled && fs.existsSync(disabledMd))) {
@@ -758,13 +497,13 @@ function toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled) {
 
 function readGeInstanceConfig() {
   const candidates = [
-    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'wv-connectors', 'ge-instance.json'),
+    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', CONNECTORS_PLUGIN_NAME, 'ge-instance.json'),
     path.join(getSidecarStateDir(), 'ge-instance.json'),
   ];
   for (const p of candidates) {
     try {
-      if (fs.existsSync(p)) {
-        return __parseJsonNoBom(fs.readFileSync(p, 'utf8'));
+      if (fs.existsSync(p) && fs.lstatSync(p).isFile()) {
+        return __parseJsonNoBom(fs.readFileSync(p, 'utf-8'));
       }
     } catch {}
   }
@@ -772,70 +511,88 @@ function readGeInstanceConfig() {
 }
 
 function saveGeInstanceConfig(rawInput) {
-  const cleaned = String(rawInput || '').trim();
+  const cleaned = String(rawInput || '').trim().slice(0, 500);
   const payload = {
     rawInput: cleaned,
     updatedAt: new Date().toISOString(),
   };
-  // Always save inside sidecar data dir AND attempt shared agy-connectors plugin_data on macOS/Windows
   const localTarget = path.join(getSidecarStateDir(), 'ge-instance.json');
   fs.writeFileSync(localTarget, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });
 
-  const connectorsDir = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'wv-connectors');
+  const connectorsDir = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', CONNECTORS_PLUGIN_NAME);
   try {
     fs.mkdirSync(connectorsDir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(path.join(connectorsDir, 'ge-instance.json'), JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });
+    fs.writeFileSync(path.join(connectorsDir, 'ge-instance.json'), JSON.stringify(payload, null, 2) + '\n', {
+      mode: 0o600,
+    });
   } catch {}
   return payload;
 }
 
-const app = new SidecarApp();
-
-app.page('/', () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'));
-
-app.api('/styles.css', () => {
-  return new Response(fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf-8'), {
-    contentType: 'text/css; charset=utf-8',
-  });
-}, 'GET');
-
-app.api('/app.js', () => {
-  return new Response(fs.readFileSync(path.join(__dirname, 'app.js'), 'utf-8'), {
-    contentType: 'application/javascript; charset=utf-8',
-  });
-}, 'GET');
-
-app.api('/token_pill_ui.js', () => {
-  return new Response(fs.readFileSync(path.join(__dirname, 'token_pill_ui.js'), 'utf-8'), {
-    contentType: 'application/javascript; charset=utf-8',
-  });
-}, 'GET');
-
-app.api('/api/token-summary', async (data) => {
-  return getTokenMeterSummary((data && data.convId) || '');
-}, 'GET');
-
-function readPluginDefaultDisabled(pluginsRoot, pluginName) {
-  if (!SAFE_ID_RE.test(pluginName)) return false;
-  const manifestPath = path.join(pluginsRoot, pluginName, 'plugin.json');
-  try {
-    if (fs.existsSync(manifestPath)) {
-      const parsed = __parseJsonNoBom(fs.readFileSync(manifestPath, 'utf8'));
-      return Boolean(parsed.disabled);
-    }
-  } catch {}
-  return false;
-}
-
-function isPluginCurrentlyDisabled(pluginsRoot, pluginName, lsDisabledMap, ledger) {
-  if (lsDisabledMap[pluginName] !== undefined) return Boolean(lsDisabledMap[pluginName]);
-  if (ledger.disabledPlugins && ledger.disabledPlugins[pluginName] !== undefined) {
-    return Boolean(ledger.disabledPlugins[pluginName]);
+function rewriteSkillFrontmatterName(markdownText, newSlug) {
+  const raw = String(markdownText || '').replace(/^\uFEFF/, '');
+  const fmMatch = raw.match(/^(---\r?\n)([\s\S]*?)(\r?\n---\r?\n?)/);
+  if (!fmMatch) {
+    return `---\nname: ${newSlug}\ndescription: Custom personal skill (${newSlug}).\n---\n\n${raw}`;
   }
-  return readPluginDefaultDisabled(pluginsRoot, pluginName);
+  const body = fmMatch[2];
+  const updatedBody = /^name\s*:/m.test(body)
+    ? body.replace(/^name\s*:.*$/m, `name: ${newSlug}`)
+    : `name: ${newSlug}\n${body}`;
+  return `${fmMatch[1]}${updatedBody}${fmMatch[3]}${raw.slice(fmMatch[0].length)}`;
 }
 
-app.api('/api/state', async () => {
+function copySkillBundleRecursive(srcDir, destDir, newSlug) {
+  let totalBytes = 0;
+  function walkAndCopy(curSrc, curDest, isRoot) {
+    fs.mkdirSync(curDest, { recursive: true, mode: 0o700 });
+    for (const entry of fs.readdirSync(curSrc, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') && entry.name !== '.gitkeep') continue;
+      if (entry.name === 'node_modules' || entry.name === '__pycache__') continue;
+      const srcPath = path.join(curSrc, entry.name);
+      const lst = lstatOrNull(srcPath);
+      if (!lst || lst.isSymbolicLink()) {
+        throw new Error('Refusing to copy symbolic link inside skill directory');
+      }
+      if (lst.isDirectory()) {
+        walkAndCopy(srcPath, path.join(curDest, entry.name), false);
+      } else if (lst.isFile()) {
+        totalBytes += lst.size;
+        if (totalBytes > MAX_FORK_BYTES) {
+          throw new Error('Skill bundle exceeds 5 MB copy limit');
+        }
+        const outName = isRoot && entry.name === 'SKILL.md.disabled' ? 'SKILL.md' : entry.name;
+        const destPath = path.join(curDest, outName);
+        if (isRoot && outName === 'SKILL.md') {
+          const rewritten = rewriteSkillFrontmatterName(fs.readFileSync(srcPath, 'utf-8'), newSlug);
+          fs.writeFileSync(destPath, rewritten, { mode: 0o600 });
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+    }
+  }
+  walkAndCopy(srcDir, destDir, true);
+}
+
+function scanSkillForSafeExport(mdText) {
+  const findings = [];
+  const rules = [
+    { re: /\bAIza[0-9A-Za-z_-]{30,}\b/, label: 'API key (AIza...)' },
+    { re: /\bsk-[A-Za-z0-9_-]{20,}\b/, label: 'Secret token (sk-...)' },
+    { re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/, label: 'Private key block' },
+    { re: /\b\d{3}-\d{2}-\d{4}\b/, label: 'SSN-like pattern' },
+    { re: /\b(?:go|b|cl)\/[a-zA-Z0-9_-]{2,}\b/, label: 'Internal shortlink (go/, b/, cl/)' },
+    { re: /\/usr\/local\/google\/home\/[a-z0-9_]+/i, label: 'Local home path' },
+    { re: /\[(?:CONFIRM|TODO):[^\]]*\]/i, label: 'Unresolved [CONFIRM]/[TODO] placeholder' },
+  ];
+  for (const r of rules) {
+    if (r.re.test(mdText)) findings.push(r.label);
+  }
+  return findings;
+}
+
+async function buildFullState() {
   const pluginsRoot = getPluginsRoot();
   const ledger = readToggleLedger();
   const lsRes = await callLanguageServerRpc('GetAllPlugins', {});
@@ -847,150 +604,90 @@ app.api('/api/state', async () => {
     }
   }
 
-  const sharedPluginCounts = {};
-  for (const cat of SKILL_CATALOG) {
-    sharedPluginCounts[cat.plugin] = (sharedPluginCounts[cat.plugin] || 0) + 1;
-  }
-
-  const categories = SKILL_CATALOG.map((cat) => {
-    const catPluginDisabled = isPluginCurrentlyDisabled(pluginsRoot, cat.plugin, lsDisabledMap, ledger);
-    const mappedSkills = cat.skills.map((s) => {
-      const skillPlugin = s.plugin || cat.plugin;
-      const skillPluginDisabled = isPluginCurrentlyDisabled(pluginsRoot, skillPlugin, lsDisabledMap, ledger);
-      return {
-        ...s,
-        plugin: skillPlugin,
-        enabled: !skillPluginDisabled && inspectSkillDiskState(pluginsRoot, skillPlugin, s.id, ledger),
-      };
-    });
-    const isSharedPlugin = (sharedPluginCounts[cat.plugin] || 0) > 1;
-    const categoryEnabled = isSharedPlugin
-      ? !catPluginDisabled && mappedSkills.some((s) => s.enabled)
-      : !catPluginDisabled;
-    return {
-      categoryId: cat.categoryId || cat.plugin,
-      plugin: cat.plugin,
-      categoryLabel: cat.categoryLabel,
-      chipLabel: cat.chipLabel || '',
-      pluginEnabled: categoryEnabled,
-      skills: mappedSkills,
-    };
+  const categories = buildSkillsCatalog(pluginsRoot, {
+    personalSkillsRoot: getPersonalSkillsRoot(),
+    workspaceSkillsRoot: getWorkspaceSkillsRoot(),
+    customSeedsMap: readCustomSeeds(),
+    toggleLedger: ledger,
+    lsDisabledMap,
+    suiteMode: 'generic',
   });
 
-  // Prepend ★ My Custom Skills from ~/.gemini/config/skills/ if present
-  const personalRoot = getPersonalSkillsRoot();
-  if (fs.existsSync(personalRoot)) {
-    try {
-      const personalSkills = [];
-      const pDirs = fs
-        .readdirSync(personalRoot, { withFileTypes: true })
-        .filter((d) => d.isDirectory() && !d.isSymbolicLink() && !d.name.startsWith('.'))
-        .map((d) => d.name)
-        .sort();
-      for (const sid of pDirs) {
-        const sDir = path.join(personalRoot, sid);
-        const newMeta = path.join(sDir, '.agy-skill-meta.json');
-        const legacyMeta = path.join(sDir, '.twin-skill-meta.json');
-        const metaPath = fs.existsSync(newMeta) ? newMeta : legacyMeta;
-        const activeMd = path.join(sDir, 'SKILL.md');
-        const disabledMd = path.join(sDir, 'SKILL.md.disabled');
-        if (!fs.existsSync(metaPath) || (!fs.existsSync(activeMd) && !fs.existsSync(disabledMd))) continue;
-        let meta = {};
-        try {
-          meta = __parseJsonNoBom(fs.readFileSync(metaPath, 'utf-8'));
-        } catch {}
-        personalSkills.push({
-          id: sid,
-          plugin: 'my-skills',
-          isPersonalCopy: true,
-          title: meta.title || `${sid} (My Copy)`,
-          subtitle: meta.subtitle || 'Saved in ~/.gemini/config/skills/ — protected from plugin updates',
-          command: `/${sid}`,
-          badge: meta.mode === 'override' ? 'My Override · Protected' : 'My Copy · Protected',
-          starterPrompt: meta.seedPrompt || `/${sid} Run my customized workflow.`,
-          enabled: fs.existsSync(activeMd),
-        });
-      }
-      if (personalSkills.length > 0) {
-        categories.unshift({
-          categoryId: 'my-skills',
-          plugin: 'my-skills',
-          categoryLabel: '★ My Custom Skills (Protected in ~/.gemini/config/skills/)',
-          chipLabel: '★ My Skills',
-          pluginEnabled: personalSkills.some((s) => s.enabled),
-          skills: personalSkills,
-        });
-      }
-    } catch {}
-  }
-
-  // Record initial stock hashes on first state read if baseline-hashes.json does not exist yet
-  if (!fs.existsSync(getBaselineHashesPath())) {
-    try {
-      const baseline = readBaselineHashes(pluginsRoot);
-      for (const cat of SKILL_CATALOG) {
-        for (const s of cat.skills) {
-          const pName = s.plugin || cat.plugin;
-          const sDir = path.join(pluginsRoot, pName, 'skills', s.id);
-          const md = fs.existsSync(path.join(sDir, 'SKILL.md'))
-            ? path.join(sDir, 'SKILL.md')
-            : path.join(sDir, 'SKILL.md.disabled');
-          if (fs.existsSync(md) && fs.lstatSync(md).isFile()) {
-            if (!baseline.skills[s.id]) baseline.skills[s.id] = {};
-            if (!baseline.skills[s.id]['SKILL.md']) {
-              baseline.skills[s.id]['SKILL.md'] = crypto.createHash('sha256').update(fs.readFileSync(md)).digest('hex');
-            }
-          }
-        }
-      }
-      writeBaselineHashes(baseline);
-    } catch {}
-  }
-
   return {
+    ok: true,
+    suiteVariant: SUITE_VARIANT,
+    personalSkillsRoot: getPersonalSkillsRoot(),
+    workspaceSkillsRoot: getWorkspaceSkillsRoot(),
     categories,
     geConfig: readGeInstanceConfig(),
   };
-}, 'GET');
+}
+
+const app = new SidecarApp();
+
+app.page('/', () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'));
+
+app.api('/styles.css', () =>
+  new Response(fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf-8'), {
+    contentType: 'text/css; charset=utf-8',
+  }),
+  'GET'
+);
+
+app.api('/app.js', () =>
+  new Response(fs.readFileSync(path.join(__dirname, 'app.js'), 'utf-8'), {
+    contentType: 'application/javascript; charset=utf-8',
+  }),
+  'GET'
+);
+
+app.api('/token_pill_ui.js', () =>
+  new Response(fs.readFileSync(path.join(__dirname, 'token_pill_ui.js'), 'utf-8'), {
+    contentType: 'application/javascript; charset=utf-8',
+  }),
+  'GET'
+);
+
+app.api(
+  '/api/emoji-png',
+  (data) => {
+    const code = String((data && data.code) || '').trim();
+    if (!ALLOWED_EMOJI_CODES.has(code)) {
+      return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+    }
+    const pngPath = path.join(__dirname, 'assets', 'emoji', `${code}.png`);
+    if (!fs.existsSync(pngPath)) {
+      return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+    }
+    return new Response(fs.readFileSync(pngPath), { contentType: 'image/png' });
+  },
+  'GET'
+);
+
+app.api(
+  '/api/token-summary',
+  async (data) => getTokenMeterSummary((data && data.convId) || '', getSidecarStateDir()),
+  'GET'
+);
+
+app.api('/api/state', async () => buildFullState(), 'GET');
 
 app.api('/api/toggle-skill', async (data) => {
-  const pluginsRoot = getPluginsRoot();
-  const pluginName = String(data.plugin || '');
-  const skillId = String(data.skill || '');
-  const enabled = Boolean(data.enabled);
-  const res = toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled);
-  if (enabled) {
-    const ledger = readToggleLedger();
-    if (ledger.disabledPlugins[pluginName] === true || readPluginDefaultDisabled(pluginsRoot, pluginName)) {
-      ledger.disabledPlugins[pluginName] = false;
-      writeToggleLedger(ledger);
-      await callLanguageServerRpc('JetboxWriteState', {
-        userConfig: { plugins: { [pluginName]: { enabled: true } } },
+  try {
+    const pluginsRoot = getPluginsRoot();
+    const pluginName = String((data && data.plugin) || '');
+    const skillId = String((data && data.skill) || '');
+    const enabled = Boolean(data && data.enabled);
+    if (pluginName === 'workspace-skills') {
+      return new Response(JSON.stringify({ ok: false, error: 'Workspace skills are managed in your repo .gemini/skills/ folder.' }), {
+        contentType: 'application/json',
+        status: 400,
       });
     }
-  }
-  return { ok: true, ...res };
-}, 'POST');
-
-app.api('/api/toggle-category', async (data) => {
-  const pluginName = String(data.plugin || '');
-  const categoryId = String(data.categoryId || pluginName);
-  if (!SAFE_ID_RE.test(pluginName)) {
-    throw new Error('Invalid plugin identifier.');
-  }
-  const enabled = Boolean(data.enabled);
-  const matchingCats = SKILL_CATALOG.filter((c) => c.plugin === pluginName);
-  if (matchingCats.length > 1) {
-    // Multiple UI categories live inside the same plugin (e.g., agy-public-workflows + public_sector):
-    // toggle only the skills belonging to this specific category so sibling categories remain untouched!
-    const targetCat = SKILL_CATALOG.find((c) => (c.categoryId || c.plugin) === categoryId);
-    if (targetCat) {
-      const pluginsRoot = getPluginsRoot();
-      for (const s of targetCat.skills) {
-        toggleSkillOnDiskAndLedger(pluginsRoot, s.plugin || pluginName, s.id, enabled);
-      }
-      if (enabled) {
-        const ledger = readToggleLedger();
+    const res = toggleSkillOnDiskAndLedger(pluginsRoot, pluginName, skillId, enabled);
+    if (enabled && pluginName !== 'my-skills') {
+      const ledger = readToggleLedger();
+      if (ledger.disabledPlugins[pluginName] === true) {
         ledger.disabledPlugins[pluginName] = false;
         writeToggleLedger(ledger);
         await callLanguageServerRpc('JetboxWriteState', {
@@ -998,26 +695,48 @@ app.api('/api/toggle-category', async (data) => {
         });
       }
     }
-    return { ok: true, categoryId, plugin: pluginName, enabled };
+    return { ok: true, ...res };
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: err.message || 'Invalid identifier' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
   }
+}, 'POST');
 
-  const ledger = readToggleLedger();
-  ledger.disabledPlugins[pluginName] = !enabled;
-  writeToggleLedger(ledger);
-
-  // Sync live with Antigravity Language Server config.json
-  await callLanguageServerRpc('JetboxWriteState', {
-    userConfig: {
-      plugins: {
-        [pluginName]: { enabled },
-      },
-    },
-  });
+app.api('/api/toggle-category', async (data) => {
+  const pluginName = String((data && data.plugin) || '');
+  const categoryId = String((data && data.categoryId) || pluginName);
+  if (!SAFE_ID_RE.test(pluginName)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid plugin identifier' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  const enabled = Boolean(data && data.enabled);
+  const full = await buildFullState();
+  const targetCat = full.categories.find((c) => (c.categoryId || c.plugin) === categoryId);
+  if (targetCat) {
+    const pluginsRoot = getPluginsRoot();
+    for (const s of targetCat.skills) {
+      if (s.plugin !== 'workspace-skills') {
+        toggleSkillOnDiskAndLedger(pluginsRoot, s.plugin || pluginName, s.id, enabled);
+      }
+    }
+  }
+  if (pluginName !== 'my-skills') {
+    const ledger = readToggleLedger();
+    ledger.disabledPlugins[pluginName] = !enabled;
+    writeToggleLedger(ledger);
+    await callLanguageServerRpc('JetboxWriteState', {
+      userConfig: { plugins: { [pluginName]: { enabled } } },
+    });
+  }
   return { ok: true, categoryId, plugin: pluginName, enabled };
 }, 'POST');
 
 app.api('/api/save-ge', async (data) => {
-  const saved = saveGeInstanceConfig(data.geInstance || '');
+  const saved = saveGeInstanceConfig((data && data.geInstance) || '');
   return { ok: true, geConfig: saved };
 }, 'POST');
 
@@ -1026,82 +745,359 @@ app.api('/api/incremental-sync', async (data) => {
   return await syncSkillsIncrementally(skillFilter);
 }, 'POST');
 
-app.api('/api/fork-skill', async (data) => {
-  const pluginsRoot = getPluginsRoot();
+app.api('/api/skills/create', async (data) => {
   const personalRoot = getPersonalSkillsRoot();
-  const pluginName = String((data && data.plugin) || '').trim();
-  const skillId = String((data && data.skill) || '').trim();
-  if (!SAFE_ID_RE.test(pluginName) || !SAFE_ID_RE.test(skillId)) {
-    return new Response(JSON.stringify({ ok: false, error: 'Invalid skill identifier' }), {
-      contentType: 'application/json',
-      status: 400,
-    });
-  }
-  const srcDir = path.join(pluginsRoot, pluginName, 'skills', skillId);
-  if (!fs.existsSync(srcDir)) {
-    return new Response(JSON.stringify({ ok: false, error: 'Source skill not found' }), {
-      contentType: 'application/json',
-      status: 404,
-    });
-  }
-  fs.mkdirSync(personalRoot, { recursive: true, mode: 0o700 });
-  let targetSlug = `${skillId}-my`;
-  let suffix = 2;
-  while (fs.existsSync(path.join(personalRoot, targetSlug))) {
-    targetSlug = `${skillId}-my-${suffix}`;
-    suffix += 1;
-  }
-  const destDir = path.join(personalRoot, targetSlug);
-
-  function copyRecursive(curSrc, curDest, isRoot) {
-    fs.mkdirSync(curDest, { recursive: true });
-    for (const entry of fs.readdirSync(curSrc, { withFileTypes: true })) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === '__pycache__') continue;
-      const sp = path.join(curSrc, entry.name);
-      const st = fs.lstatSync(sp);
-      if (st.isSymbolicLink()) continue;
-      if (st.isDirectory()) {
-        copyRecursive(sp, path.join(curDest, entry.name), false);
-      } else if (st.isFile()) {
-        const outName = isRoot && entry.name === 'SKILL.md.disabled' ? 'SKILL.md' : entry.name;
-        const dp = path.join(curDest, outName);
-        if (isRoot && outName === 'SKILL.md') {
-          const raw = fs.readFileSync(sp, 'utf-8');
-          const rewritten = raw.replace(/^(---\r?\n[\s\S]*?^name\s*:).*$/m, `$1 ${targetSlug}`);
-          fs.writeFileSync(dp, rewritten, 'utf-8');
-        } else {
-          fs.copyFileSync(sp, dp);
-        }
-      }
-    }
-  }
-
-  copyRecursive(srcDir, destDir, true);
-  const nowIso = new Date().toISOString();
-  const baseTitle = String((data && data.title) || skillId).trim();
-  const starter = String((data && data.starterPrompt) || `/${targetSlug} Run my customized workflow.`)
+  const rawSlug = String((data && data.slug) || '')
     .trim()
-    .replace(new RegExp(`^/${skillId}\\b`), `/${targetSlug}`);
+    .replace(/^\/+/, '')
+    .toLowerCase();
+  const title = String((data && data.title) || '').trim().slice(0, 90);
+  const description = String((data && data.description) || '').trim().slice(0, 260);
+  const instructions = String((data && data.instructions) || '').trim();
+  const seedPromptRaw = String((data && data.seedPrompt) || '').trim();
+
+  if (!SAFE_SKILL_SLUG_RE.test(rawSlug)) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: 'Skill command slug must be 2–63 lowercase letters, numbers, or hyphens (e.g. weekly-grant-check).',
+      }),
+      { contentType: 'application/json', status: 400 }
+    );
+  }
+
+  fs.mkdirSync(personalRoot, { recursive: true, mode: 0o700 });
+  const rootStat = lstatOrNull(personalRoot);
+  if (!rootStat || rootStat.isSymbolicLink()) {
+    return new Response(JSON.stringify({ ok: false, error: 'Personal skills root cannot be a symlink' }), {
+      contentType: 'application/json',
+      status: 403,
+    });
+  }
+
+  const destDir = path.join(personalRoot, rawSlug);
+  if (fs.existsSync(destDir)) {
+    return new Response(
+      JSON.stringify({ ok: false, error: `/${rawSlug} already exists in ~/.gemini/config/skills/.` }),
+      { contentType: 'application/json', status: 409 }
+    );
+  }
+
+  fs.mkdirSync(destDir, { recursive: true, mode: 0o700 });
+  const cleanTitle = title || rawSlug;
+  const cleanDesc = description || `Personal Antigravity workflow for ${cleanTitle}.`;
+  const cleanBody =
+    instructions ||
+    `# ${cleanTitle}\n\n## Goal\n${cleanDesc}\n\n## Workflow Steps\n1. Gather context from the user or workspace.\n2. Execute the checklist deterministically.\n3. Return a concise summary with next actions.\n`;
+
+  const mdContent = `---\nname: ${rawSlug}\ndescription: >-\n  ${cleanDesc.replace(/\r?\n/g, ' ')}\n---\n\n${cleanBody}\n`;
+  const mdPath = path.join(destDir, 'SKILL.md');
+  fs.writeFileSync(mdPath, mdContent, { mode: 0o600 });
+
+  const nowIso = new Date().toISOString();
+  const seedPrompt = seedPromptRaw
+    ? seedPromptRaw.startsWith('/') ? seedPromptRaw : `/${rawSlug} ${seedPromptRaw}`
+    : `/${rawSlug} Run my ${cleanTitle} workflow on the task below.`;
+
   fs.writeFileSync(
     path.join(destDir, '.agy-skill-meta.json'),
     JSON.stringify(
       {
-        slug: targetSlug,
-        forkedFrom: skillId,
-        sourcePlugin: pluginName,
-        mode: 'copy',
-        title: `${baseTitle} (My Copy)`,
-        subtitle: String((data && data.subtitle) || '').trim(),
-        seedPrompt: starter,
+        slug: rawSlug,
+        mode: 'authored',
+        title: cleanTitle,
+        subtitle: cleanDesc,
+        seedPrompt,
         createdAt: nowIso,
         updatedAt: nowIso,
       },
       null,
       2
     ) + '\n',
-    'utf-8'
+    { mode: 0o600 }
   );
-  return { ok: true, slug: targetSlug, command: `/${targetSlug}` };
+
+  const seeds = readCustomSeeds();
+  seeds[rawSlug] = {
+    title: cleanTitle,
+    subtitle: cleanDesc,
+    seedPrompt,
+    isPersonalCopy: true,
+    updatedAt: nowIso,
+  };
+  writeCustomSeeds(seeds);
+
+  return {
+    ok: true,
+    slug: rawSlug,
+    command: `/${rawSlug}`,
+    skillMdPath: mdPath,
+  };
 }, 'POST');
 
-app.run();
+app.api('/api/skills/fork', async (data) => {
+  const pluginsRoot = getPluginsRoot();
+  const personalRoot = getPersonalSkillsRoot();
+  const sourcePlugin = String((data && data.sourcePlugin) || '').trim();
+  const sourceSkillId = String((data && data.sourceSkillId) || '').trim();
+  const rawTargetSlug = String((data && data.targetSlug) || '')
+    .trim()
+    .replace(/^\/+/, '')
+    .toLowerCase();
+  const overwrite = Boolean(data && data.overwrite);
+
+  if (!SAFE_ID_RE.test(sourcePlugin) || !SAFE_SKILL_SLUG_RE.test(sourceSkillId) || !SAFE_SKILL_SLUG_RE.test(rawTargetSlug)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid skill identifier or target slug' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+
+  const srcDir =
+    sourcePlugin === 'my-skills'
+      ? path.join(personalRoot, sourceSkillId)
+      : path.join(pluginsRoot, sourcePlugin, 'skills', sourceSkillId);
+  const srcRoot = sourcePlugin === 'my-skills' ? personalRoot : pluginsRoot;
+
+  if (!fs.existsSync(srcDir) || hasSymlinkUnderRoot(srcDir, srcRoot)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Source skill directory not found' }), {
+      contentType: 'application/json',
+      status: 404,
+    });
+  }
+
+  fs.mkdirSync(personalRoot, { recursive: true, mode: 0o700 });
+  const rootStat = lstatOrNull(personalRoot);
+  if (!rootStat || rootStat.isSymbolicLink()) {
+    return new Response(JSON.stringify({ ok: false, error: 'Personal skills root cannot be a symlink' }), {
+      contentType: 'application/json',
+      status: 403,
+    });
+  }
+
+  const destDir = path.join(personalRoot, rawTargetSlug);
+  if (fs.existsSync(destDir)) {
+    const hasMeta =
+      fs.existsSync(path.join(destDir, '.agy-skill-meta.json')) ||
+      fs.existsSync(path.join(destDir, '.twin-skill-meta.json'));
+    if (!overwrite) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `/${rawTargetSlug} already exists in ~/.gemini/config/skills/. Pick another name or check Replace Existing.`,
+        }),
+        { contentType: 'application/json', status: 409 }
+      );
+    }
+    if (!hasMeta) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `Refusing to overwrite pre-existing personal skill /${rawTargetSlug} that was not created here.`,
+        }),
+        { contentType: 'application/json', status: 409 }
+      );
+    }
+    if (hasSymlinkUnderRoot(destDir, personalRoot)) {
+      return new Response(JSON.stringify({ ok: false, error: 'Refusing symlinked destination' }), {
+        contentType: 'application/json',
+        status: 403,
+      });
+    }
+    fs.rmSync(destDir, { recursive: true, force: false });
+  }
+
+  try {
+    copySkillBundleRecursive(srcDir, destDir, rawTargetSlug);
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: err.message || 'Copy failed' }), {
+      contentType: 'application/json',
+      status: 500,
+    });
+  }
+
+  const nowIso = new Date().toISOString();
+  const mode = rawTargetSlug === sourceSkillId ? 'override' : 'copy';
+  const customTitle = String((data && data.title) || '').trim();
+  const customSubtitle = String((data && data.subtitle) || '').trim();
+  const rawSeed = String((data && data.seedPrompt) || '').trim();
+  const normalizedSeed = rawSeed
+    ? rawSeed.replace(new RegExp(`^/${sourceSkillId}\\b`), `/${rawTargetSlug}`)
+    : `/${rawTargetSlug} Run my customized workflow.`;
+
+  fs.writeFileSync(
+    path.join(destDir, '.agy-skill-meta.json'),
+    JSON.stringify(
+      {
+        slug: rawTargetSlug,
+        forkedFrom: sourceSkillId,
+        sourcePlugin,
+        mode,
+        title: customTitle,
+        subtitle: customSubtitle,
+        seedPrompt: normalizedSeed,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      },
+      null,
+      2
+    ) + '\n',
+    { mode: 0o600 }
+  );
+
+  const seeds = readCustomSeeds();
+  seeds[rawTargetSlug] = {
+    seedPrompt: normalizedSeed,
+    title: customTitle,
+    subtitle: customSubtitle,
+    isPersonalCopy: true,
+    updatedAt: nowIso,
+  };
+  writeCustomSeeds(seeds);
+
+  return {
+    ok: true,
+    slug: rawTargetSlug,
+    command: `/${rawTargetSlug}`,
+    mode,
+    skillMdPath: path.join(destDir, 'SKILL.md'),
+  };
+}, 'POST');
+
+app.api('/api/skills/save-seed', async (data) => {
+  const skillId = String((data && data.skillId) || '').trim().replace(/^\/+/, '');
+  if (!SAFE_SKILL_SLUG_RE.test(skillId)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid skill ID' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  const seeds = readCustomSeeds();
+  if (data && data.reset) {
+    delete seeds[skillId];
+  } else {
+    const promptText = String((data && data.seedPrompt) || '').trim();
+    if (!promptText) {
+      return new Response(JSON.stringify({ ok: false, error: 'Seed prompt cannot be empty' }), {
+        contentType: 'application/json',
+        status: 400,
+      });
+    }
+    const existing = seeds[skillId] || {};
+    const nextTitle = data && typeof data.title === 'string' ? data.title.trim() : existing.title;
+    seeds[skillId] = {
+      ...existing,
+      ...(nextTitle ? { title: nextTitle } : {}),
+      seedPrompt: promptText,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  writeCustomSeeds(seeds);
+  return { ok: true, skillId };
+}, 'POST');
+
+app.api('/api/skills/delete-copy', async (data) => {
+  const personalRoot = getPersonalSkillsRoot();
+  const slug = String((data && data.slug) || '').trim().replace(/^\/+/, '');
+  if (!SAFE_SKILL_SLUG_RE.test(slug)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid personal skill slug' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  const targetDir = path.join(personalRoot, slug);
+  const hasMeta =
+    fs.existsSync(path.join(targetDir, '.agy-skill-meta.json')) ||
+    fs.existsSync(path.join(targetDir, '.twin-skill-meta.json'));
+  if (!fs.existsSync(targetDir) || !hasMeta || hasSymlinkUnderRoot(targetDir, personalRoot)) {
+    return new Response(
+      JSON.stringify({ ok: false, error: 'Only managed personal copies created in this hub can be deleted here.' }),
+      { contentType: 'application/json', status: 403 }
+    );
+  }
+  fs.rmSync(targetDir, { recursive: true, force: false });
+  const seeds = readCustomSeeds();
+  delete seeds[slug];
+  writeCustomSeeds(seeds);
+  return { ok: true, slug };
+}, 'POST');
+
+app.api('/api/skills/export-safe', async (data) => {
+  const check = classifySkillFilePath(data && data.path);
+  if (!check.allowed || !fs.existsSync(check.resolved)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Skill file not accessible' }), {
+      contentType: 'application/json',
+      status: 403,
+    });
+  }
+  const st = lstatOrNull(check.resolved);
+  if (!st || st.isSymbolicLink() || !st.isFile() || st.size > 1024 * 1024) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid skill file' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  const content = fs.readFileSync(check.resolved, 'utf-8');
+  const findings = scanSkillForSafeExport(content);
+  return {
+    ok: findings.length === 0,
+    clean: findings.length === 0,
+    findings,
+    content: findings.length === 0 ? content : '',
+  };
+}, 'POST');
+
+app.api('/api/file', async (data) => {
+  const check = classifySkillFilePath(data && data.path);
+  if (!check.allowed || !fs.existsSync(check.resolved)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Path outside allowed skill roots or contains symlink' }), {
+      contentType: 'application/json',
+      status: 403,
+    });
+  }
+  const lst = lstatOrNull(check.resolved);
+  if (!lst || lst.isSymbolicLink() || !lst.isFile() || lst.size > 2 * 1024 * 1024) {
+    return new Response(JSON.stringify({ ok: false, error: 'Invalid or oversized file' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
+  return {
+    ok: true,
+    path: check.resolved,
+    name: path.basename(check.resolved),
+    writable: check.writable,
+    rootId: check.rootId,
+    content: fs.readFileSync(check.resolved, 'utf-8'),
+  };
+}, 'GET');
+
+app.api('/api/file', async (data) => {
+  const check = classifySkillFilePath(data && data.path);
+  if (!check.allowed || !check.writable || check.rootId !== 'my-skills') {
+    return new Response(
+      JSON.stringify({ ok: false, error: 'Only personal skills in ~/.gemini/config/skills/ are directly writable.' }),
+      { contentType: 'application/json', status: 403 }
+    );
+  }
+  const content = typeof (data && data.content) === 'string' ? data.content : '';
+  if (Buffer.byteLength(content, 'utf-8') > 2 * 1024 * 1024) {
+    return new Response(JSON.stringify({ ok: false, error: 'Payload exceeds 2 MB limit' }), {
+      contentType: 'application/json',
+      status: 413,
+    });
+  }
+  const lst = lstatOrNull(check.resolved);
+  if (lst && (lst.isSymbolicLink() || lst.isDirectory())) {
+    return new Response(JSON.stringify({ ok: false, error: 'Target is not a regular file' }), {
+      contentType: 'application/json',
+      status: 403,
+    });
+  }
+  const tmp = `${check.resolved}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, content, { mode: 0o600 });
+  fs.renameSync(tmp, check.resolved);
+  return { ok: true, path: check.resolved };
+}, 'POST');
+
+await app.run();

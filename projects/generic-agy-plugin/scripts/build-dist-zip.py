@@ -95,6 +95,7 @@ def build_zip() -> Path:
 
     include_roots = [
         suite_root / "version-manifest.json",
+        suite_root / "video-guides.json",
         suite_root / "README.md",
         suite_root / "scripts" / "install-agy-suite.ps1",
         suite_root / "scripts" / "install-agy-suite.sh",

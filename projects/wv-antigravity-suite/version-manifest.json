@@ -1,136 +1,7 @@
 {
-  "suiteName": "wv-antigravity-suite",
-  "displayName": "State of West Virginia Antigravity Skill & Zero-Footprint Connector Suite",
-  "suiteVersion": "2.0.0",
-  "releasedAt": "2026-11-21T01:20:00Z",
-  "minAntigravityVersion": "1.0.0",
-  "plugins": {
-    "wv-onboarding": {
-      "version": "2.0.0",
-      "category": "WV Skills Panel (Skills Icon + AI Inbox + Hover Token Meter), Token Usage (/token-usage), Orchestrator Guide (/orchestrator-guide), Model Guide (Gemini 4 + Claude 5.5), Daily Brief & My Voice (/my-voice)",
-      "skills": [
-        "wv-onboard",
-        "model-guide",
-        "orchestrator-guide",
-        "token-usage",
-        "daily-brief",
-        "my-voice",
-        "inbox-triage",
-        "wv-update"
-      ],
-      "sidecars": [
-        "wv-skill-manager"
-      ]
-    },
-    "wv-connectors": {
-      "version": "2.0.0",
-      "category": "WV Chatski Left-Sidebar Google Chat Panel (Chat Bubble Icon) + West Virginia Gemini Enterprise Federated Connectors",
-      "skills": [
-        "chatski",
-        "connect-ge",
-        "connect-m365-workspace",
-        "connect-github-bigquery"
-      ],
-      "mcpServers": [
-        "wv-ge-bridge"
-      ],
-      "sidecars": [
-        "wv-chatski-ui"
-      ]
-    },
-    "wv-design-studio": {
-      "version": "2.0.0",
-      "category": "WV Preview Serverless Panel (Magnifying Glass Icon) + WV Official Dashboards, 16:9 Slides & Branded Docs",
-      "skills": [
-        "wv-dashboard",
-        "slides",
-        "doc-design"
-      ],
-      "agents": [
-        "wv-design-architect"
-      ],
-      "sidecars": [
-        "wv-design-preview"
-      ]
-    },
-    "wv-state-workflows": {
-      "version": "2.0.0",
-      "category": "WV State Skills (WV FOIA \u00a7 29B-1-4, WV Sovereign Immunity & Policy) + Government Services (public_sector) Skills (7)",
-      "skills": [
-        "foia-expert",
-        "legal-procurement-review",
-        "policy-program-audit",
-        "document-intake-cleanup-and-validation",
-        "expense-auditor",
-        "foia-request-processing",
-        "plain-language-notice-generator",
-        "policy-and-statute-assistant",
-        "public-records-redaction",
-        "rfp-vendor-evaluation"
-      ]
-    },
-    "wv-engineering-cloud": {
-      "version": "2.0.0",
-      "category": "WV Engineering \u2014 Legacy App Refactoring, Cloud Run & BigQuery Architecture",
-      "skills": [
-        "modernize-refactor",
-        "deploy-cloudrun",
-        "bigquery-architect",
-        "find-cloud-skill"
-      ]
-    },
-    "wv-security": {
-      "version": "2.0.0",
-      "category": "WV Security, OWASP, Google Cloud WAF, Assured Workloads (CJIS/HIPAA/FedRAMP) & IAM Hygiene",
-      "skills": [
-        "security-audit",
-        "iam-secret-hygiene"
-      ]
-    },
-    "wv-second-brain": {
-      "version": "2.0.0",
-      "category": "WV Antigravity Panel (Rainbow 'A' Icon + AI Inbox Action Items & Memory) + 4-Agent Parallel Swarm",
-      "skills": [
-        "memory",
-        "meeting-notes",
-        "meeting-prep",
-        "followup-plan",
-        "swarm-prep",
-        "weekly-impact",
-        "no-ai-slop",
-        "outbound-scrub"
-      ],
-      "agents": [
-        "wv-context-memory-scout",
-        "wv-scqa-redteam-critic",
-        "wv-domain-solution-architect",
-        "wv-outbound-safety-auditor"
-      ],
-      "sidecars": [
-        "wv-antigravity-ui"
-      ]
-    },
-    "wv-automations": {
-      "version": "2.0.0",
-      "disabledByDefault": true,
-      "category": "Opt-In Scheduled Weekday Briefings & Memory Compactors (Disabled by Default \u2014 Zero Background Footprint)",
-      "skills": [
-        "automations"
-      ]
-    }
-  },
-  "changelog": [
-    {
-      "version": "2.0.0",
-      "date": "2026-11-21",
-      "highlights": [
-        "Added all 4 WV Left-Sidebar Extensions with custom vector icons: WV Antigravity (Rainbow 'A'), WV Skills (Skills Sparkle), WV Preview (Magnifying Glass), and WV Chatski (Chat Bubble).",
-        "Adopted the unified AI Inbox look & feel across WV Antigravity and WV Skills with live hoverable token consumption telemetry (in | out | thinking) on every panel.",
-        "Expanded from 28 to 40 skills while keeping the dedicated WV State Skills category (WV FOIA \u00a7 29B-1-4, WV Sovereign Immunity & Purchasing \u00a7 5A-3, Legislative Audit).",
-        "Enforced strict WVOT Zero-Footprint laptop standards: 100% self-contained storage inside ~/.gemini/config/, BOM-free PowerShell 5.1 JSON handling, offline Noto Emoji PNG fallbacks, opt-in disabled automations, and 1-command clean uninstallers."
-      ]
-    }
-  ],
+  "suiteVersion": "2.1.0",
+  "updatedAt": "2026-11-22T20:00:00Z",
+  "skillCount": 40,
   "skillManifest": {
     "automations": {
       "plugin": "wv-automations",
@@ -501,8 +372,8 @@
         "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
         "sidecar.json": "cdeb6d909c66341d32b66debfad047b35184eca5183e37dfb2697c2a92275f61",
         "styles.css": "fe3865f99df1c6bdb096d80cba9d01cbe1a7a47367598dc27f541d8b60bcd6bb",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1"
       }
     },
     "wv-design-preview": {
@@ -515,22 +386,29 @@
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "d37e183b4bc7bc9350325cc5f060ebec487c1f46b73548a9c77bb7f5bf34341b",
         "styles.css": "7a35edf81abc7368e4dd130153fa79175bdad3ca1bfaa4512528f1cbaf77e010",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9"
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1"
       }
     },
     "wv-skill-manager": {
       "plugin": "wv-onboarding",
       "sidecar": "wv-skill-manager",
       "files": {
-        "app.js": "ebc462f989c41159ae412052c6fca51b6aefe5698a104e6aad816e6312d51a1e",
-        "index.html": "cfc8faa2c09385927a4e4d2e23c017610a87601c1bd805e9c6beabddde0abaee",
-        "main.mjs": "8b5d412888536054f3c9ddca64bc355edfb1667877cb4284ca64a8b87d77ad67",
+        "app.js": "253cfcdcca83beee2f204af8311b7308da8bdc9927daa121d6fa4f51920593ae",
+        "index.html": "684fe43dc684434246f046c419a1f819dfd936f3777579e649d7f69e517ae624",
+        "main.mjs": "625b88ce1f4a981fa431502fc7ddbf3ba26e476f046fc794effb2d608786a6f2",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
+        "seed_prompts_catalog.mjs": "f967a6f02a268ad01b5130f679af261c813c80c0d3eebb360338bfeef755749b",
         "sidecar.json": "9432001f8809f2c69aab65eb0e51b20e7e20952c88bb639a294a1709e53755c6",
-        "styles.css": "fb9acc81ab08bc3be136c3d88e6ed92dbcc284e36531b768d782cd293a8d8c86",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9",
+        "styles.css": "73189df7a6f3cb9d599e59b3f404c987d5e59c5a8f59f09c4caede41d69b9f6c",
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1",
+        "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
+        "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
+        "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
+        "assets/emoji/1f60e.png": "6532a77006aeea8413a52707fc3088761b2b0eae0a827a5ba7919f41171df43b",
+        "assets/emoji/1f6a6.png": "e3f5dc9f6b2fc9aa803691a7a73d7ebb5a0543bf09586fc8816fb89040aa4822",
+        "assets/emoji/2699_fe0f.png": "edaee6acd8bae516871bb6cb28f95dd362f24347477eddc5b20ed22a2b782ed5",
         "assets/emoji/2728.png": "1ede340356e26664f17b39fc9b092b68519f6bed245ead84b6dbaf901004ad8c"
       }
     },
@@ -538,17 +416,20 @@
       "plugin": "wv-second-brain",
       "sidecar": "wv-antigravity-ui",
       "files": {
-        "app.js": "770d9eb19a70b760af1b8d18260ecb68a45ac9419619554d3986b759fcf586fd",
-        "index.html": "77f7b6e99e273d0628da61976ce938b9b8862d2d573713d65374ae242df4fadc",
-        "main.mjs": "5d9d769dca22fa10e3806f28b530b8bbdb09bdcc3a59e604f1994c72a09ba7ea",
+        "antigravity_updates.mjs": "0e84c64459cd34feae32ed3817a2c9a6aeb0d7423c2cd5eb8496be09ee9b6e54",
+        "app.js": "5a99b893b4877abe72964a9e1c24415f9ba50e719f078359c1372e897a18478e",
+        "index.html": "11a4d0156e1701edaa20c09f7e7a69e98195b1febb58e4536082ea67303ce488",
+        "main.mjs": "0e235ccbb80ab3805c0e0e43912e251bdae98dd85015740ead64758443c1606b",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "38e56d2d77595ad42e622531db3ee5a632ad2694d3d9d59f4056cc3f824309cf",
+        "seed_prompts_catalog.mjs": "f967a6f02a268ad01b5130f679af261c813c80c0d3eebb360338bfeef755749b",
         "sidecar.json": "30a34ca3bca99f3bb82fbcd528640bb2f9eb6b178361c341d2293e1b194ab942",
-        "styles.css": "e678e2c9a1ee62e8a4d158442e14fb4378c859ed6e0b8be7487c868cc74d1320",
-        "token_meter.mjs": "e6cbdd956d5e16815b6830c348d075b0b5622f4bf9acef61ec921c641ee2bf73",
-        "token_pill_ui.js": "6d80a3e56b4940293a24968b71b7559c077b12dadfa3522ff23f6828e9a7eef9",
+        "styles.css": "73189df7a6f3cb9d599e59b3f404c987d5e59c5a8f59f09c4caede41d69b9f6c",
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1",
+        "tokeneconomics_and_updates_ui.js": "80b28003b3a71255ec90f11dbd9ae6d35634b91bdfd03cd5beeb162a936f6ddc",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
+        "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
         "assets/emoji/1f60e.png": "6532a77006aeea8413a52707fc3088761b2b0eae0a827a5ba7919f41171df43b",
         "assets/emoji/1f6a6.png": "e3f5dc9f6b2fc9aa803691a7a73d7ebb5a0543bf09586fc8816fb89040aa4822",
         "assets/emoji/2699_fe0f.png": "edaee6acd8bae516871bb6cb28f95dd362f24347477eddc5b20ed22a2b782ed5",

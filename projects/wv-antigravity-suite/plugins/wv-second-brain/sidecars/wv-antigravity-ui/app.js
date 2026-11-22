@@ -1,6 +1,7 @@
 (function () {
   let appState = null;
-  const VALID_TABS = new Set(['overview', 'actions', 'initiatives', 'contacts', 'skills', 'customize']);
+  const VALID_TABS = new Set(['overview', 'actions', 'initiatives', 'contacts', 'tokens', 'customize']);
+  let orchestratorOptimizeMode = false;
   const initialTabParam =
     typeof window !== 'undefined' && window.location && window.location.search
       ? new URLSearchParams(window.location.search).get('tab')
@@ -124,6 +125,48 @@
     toastEl.classList.add('visible');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 2400);
+  }
+
+  function openDedicatedSkillsHub() {
+    try {
+      if (window.sidecar && window.sidecar.ui) {
+        if (typeof window.sidecar.ui.openSidecar === 'function') {
+          window.sidecar.ui.openSidecar('wv-onboarding', 'wv-skill-manager');
+          return;
+        }
+        if (typeof window.sidecar.ui.toggleSidecar === 'function') {
+          window.sidecar.ui.toggleSidecar('wv-onboarding', 'wv-skill-manager');
+          return;
+        }
+      }
+    } catch {}
+    showToast('Click "WV Skills" (Sparkles icon) in the left Extensions sidebar to browse all skills & Personal Skills!');
+  }
+
+  function markMasteryStep(stepId) {
+    apiPost('/api/updates/prefs', { completeStep: stepId }).catch(() => {});
+  }
+
+  function getUiBridgeContext() {
+    return {
+      el,
+      appState,
+      isWv: true,
+      makeAnimatedEmoji,
+      makeWaveSvg,
+      showToast,
+      apiPost,
+      dispatchPrompt,
+      openSkillsExtension: openDedicatedSkillsHub,
+      markMasteryStep,
+      reloadState: loadState,
+      rerender: render,
+      switchTab: (nextTab) => {
+        activeTab = nextTab;
+        syncTabButtons();
+        render();
+      },
+    };
   }
 
   async function apiGet(url) {
@@ -572,7 +615,11 @@
         askInput.focus();
         return;
       }
-      dispatchPrompt(q, 'WV Antigravity');
+      const finalPrompt =
+        orchestratorOptimizeMode && window.AGYTokenAndUpdatesUI
+          ? window.AGYTokenAndUpdatesUI.wrapPromptForOrchestrator(q)
+          : q;
+      dispatchPrompt(finalPrompt, orchestratorOptimizeMode ? 'Orchestrator Task' : 'WV Antigravity');
     }
 
     function updateHeroSearch() {
@@ -664,7 +711,7 @@
         ' and ',
         el('span', {
           className: 'ai-blue-count',
-          text: QUICK_WORKFLOWS.length + ' workflows',
+          text: ((appState && appState.updates && appState.updates.items && appState.updates.items.length) || 10) + ' updates & guides',
         }),
         ' ready.',
       ]),
@@ -678,10 +725,28 @@
       ]),
     ]);
 
+    const orchToggleBtn = el('button', {
+      type: 'button',
+      className: 'orch-toggle-pill' + (orchestratorOptimizeMode ? ' active' : ''),
+      id: 'btn-orch-optimize',
+      title: 'Wrap multi-step prompts with Orchestrator (Planner + Hydrogen) execution instructions',
+      text: orchestratorOptimizeMode ? '\u26A1 Orchestrator ON' : '\u26A1 Orchestrator',
+      onClick: () => {
+        orchestratorOptimizeMode = !orchestratorOptimizeMode;
+        render();
+        showToast(
+          orchestratorOptimizeMode
+            ? 'Orchestrator Prompt Optimizer ON — prompts will structure Planner + Hydrogen delegation'
+            : 'Standard prompt mode'
+        );
+      },
+    });
+
     const searchSection = el('div', { style: { marginBottom: '18px' } }, [
       el('div', { className: 'ai-search-bar' }, [
         el('span', { className: 'muted', style: { fontSize: '15px', fontWeight: '700' }, text: '\u2315' }),
         askInput,
+        orchToggleBtn,
         el('button', {
           type: 'button',
           className: 'ai-sky-pill',
@@ -791,16 +856,23 @@
       ),
     ]);
 
+    const uiCtx = getUiBridgeContext();
+    const masteryNode = window.AGYTokenAndUpdatesUI ? window.AGYTokenAndUpdatesUI.buildMasteryOnboardingBar(uiCtx) : null;
+    const spendStripNode = window.AGYTokenAndUpdatesUI ? window.AGYTokenAndUpdatesUI.buildOverviewSpendMiniStrip(uiCtx) : null;
+    const updatesHubNode = window.AGYTokenAndUpdatesUI ? window.AGYTokenAndUpdatesUI.buildUpdatesAndSubscribeSection(uiCtx) : workflowsSection;
+
     return [
       el('div', { className: 'ai-inbox-wrap' }, [
         buildRoleSetupCard(),
         headRow,
         searchSection,
+        masteryNode,
         el('p', { className: 'ai-section-label', text: 'Up next for you' }),
         topTodosStack,
         overviewFoot,
+        spendStripNode,
         el('div', { className: 'ai-wave-sep' }, [makeWaveSvg()]),
-        workflowsSection,
+        updatesHubNode,
       ]),
     ];
   }
@@ -2464,7 +2536,7 @@
     else if (activeTab === 'actions') nodes = buildActionItemsNodes();
     else if (activeTab === 'initiatives') nodes = buildInitiativesNodes();
     else if (activeTab === 'contacts') nodes = buildContactsNodes();
-    else if (activeTab === 'skills') nodes = buildSkillsNodes();
+    else if (activeTab === 'tokens') nodes = window.AGYTokenAndUpdatesUI ? window.AGYTokenAndUpdatesUI.buildTokenEconomicsView(getUiBridgeContext()) : [];
     else if (activeTab === 'customize') nodes = buildCustomizeNodes();
 
     viewRoot.replaceChildren(...nodes);
@@ -2490,6 +2562,11 @@
       .then(() => showToast('Refreshed action items, skills & token meter'))
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
+
+  const openSkillsBtn = document.getElementById('btn-open-skills-ext');
+  if (openSkillsBtn) {
+    openSkillsBtn.addEventListener('click', openDedicatedSkillsHub);
+  }
 
   const customizeBtn = document.getElementById('btn-customize');
   if (customizeBtn) {
