@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.7.2).
+  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.7.3).
 .DESCRIPTION
   Stages strictly inside $HOME\.gemini\config\.install_stage_<guid> (zero %TEMP% writes, zero
   'agy plugin install' prompts, zero standalone Node/Python/Git required). Installs all 8 AGY plugins,
@@ -86,7 +86,7 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "generic-agy-plugin.zip"
-    Write-Host "Downloading Generic AGY Plugin Suite v1.7.2 (<500 KB)..." -ForegroundColor Cyan
+    Write-Host "Downloading Generic AGY Plugin Suite v1.7.3 (<500 KB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
@@ -188,6 +188,12 @@ try {
       updatedAt         = (Get-Date).ToUniversalTime().ToString("o")
     } | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($GeConfigPath, ($Payload + "`n"), $Utf8NoBom)
+    $AgyRoot = Join-Path (Split-Path -Parent $TargetConfigDir) "antigravity"
+    if (Test-Path $AgyRoot) {
+      $AgyDataDir = Join-Path $AgyRoot "plugin_data\agy-connectors"
+      New-Item -ItemType Directory -Force -Path $AgyDataDir | Out-Null
+      [System.IO.File]::WriteAllText((Join-Path $AgyDataDir "ge-instance.json"), ($Payload + "`n"), $Utf8NoBom)
+    }
     Write-Host "Saved BOM-free Gemini Enterprise instance to $GeConfigPath" -ForegroundColor Green
   }
 

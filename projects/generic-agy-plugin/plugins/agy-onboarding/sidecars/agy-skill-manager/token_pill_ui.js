@@ -28,6 +28,7 @@
       '  transition: border-color 0.14s ease, background 0.14s ease;',
       '}',
       '.agy-tm-pill.ctx-warn { border-color: #f59e0b; background: rgba(245, 158, 11, 0.08); }',
+      'html[data-theme="dark"] .agy-tm-pill { color: #fbbf24; }',
       '@media (prefers-color-scheme: dark) {',
       '  .agy-tm-pill { color: #f59e0b; }',
       '}',
@@ -95,7 +96,7 @@
   }
 
   function sidecarFetch(url) {
-    var fn = (window.sidecar && window.sidecar.fetch) ? window.sidecar.fetch : window.fetch.bind(window);
+    var fn = window.__agyAuthedFetch || ((window.sidecar && window.sidecar.fetch) ? window.sidecar.fetch : window.fetch.bind(window));
     return fn(url);
   }
 

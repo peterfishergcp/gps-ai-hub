@@ -183,7 +183,7 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
     });
   }
 
-  // Also sync sidecars (agy-skill-manager & agy-design-preview) when running a full suite sync (!skillFilter)
+  // Also sync sidecars and shared plugin scripts when running a full suite sync (!skillFilter)
   const sidecarManifest = manifest.sidecarManifest || {};
   if (!skillFilter) {
     for (const [scKey, scEntry] of Object.entries(sidecarManifest)) {
@@ -208,6 +208,29 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
           }
           updatedFilesCount += 1;
         }
+      }
+    }
+
+    const scriptManifest = manifest.scriptManifest || {};
+    for (const [, scrEntry] of Object.entries(scriptManifest)) {
+      const pluginName = scrEntry.plugin;
+      const relPath = scrEntry.path;
+      const expectedSha = scrEntry.sha256;
+      if (!SAFE_SEGMENT_RE.test(pluginName) || !isSafeRelPath(relPath) || !expectedSha) continue;
+      const localPath = path.join(pluginsRoot, pluginName, relPath);
+      const localSha = sha256FileIfExists(localPath);
+      if (localSha !== expectedSha) {
+        if (!checkOnly) {
+          const buf = await httpsGetBuffer(`${rawBase}/plugins/${pluginName}/${relPath}`);
+          if (sha256Buffer(buf) !== expectedSha) {
+            throw new Error(`SHA-256 mismatch on script ${pluginName}/${relPath}`);
+          }
+          fs.mkdirSync(path.dirname(localPath), { recursive: true });
+          const tmpPath = `${localPath}.tmp-${process.pid}`;
+          fs.writeFileSync(tmpPath, buf, { mode: 0o755 });
+          fs.renameSync(tmpPath, localPath);
+        }
+        updatedFilesCount += 1;
       }
     }
   }

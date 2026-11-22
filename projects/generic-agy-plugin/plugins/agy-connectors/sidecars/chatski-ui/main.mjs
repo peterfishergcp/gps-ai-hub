@@ -6,10 +6,10 @@
  *
  * Connection Modes:
  *  1. `ge` (Default / Zero Extra Setup): Reuses the user's configured Gemini Enterprise
- *     instance (`~/.gemini/config/plugin_data/agy-connectors/ge-instance.json`) and its
- *     Google Chat (or Microsoft Teams) connector via `AssistantService.StreamAssist` and
- *     `SearchService.Search` (`actionDisabled: true` on all reads; explicit user confirmation
- *     required on all sends).
+ *     instance (`~/.gemini/antigravity/plugin_data/agy-connectors/ge-instance.json` or
+ *     `~/.gemini/config/plugin_data/agy-connectors/ge-instance.json`) and its Google Chat
+ *     (or Microsoft Teams) connector via `AssistantService.StreamAssist` (strictly read-only
+ *     retrieval prompts on sync/refresh; explicit human click confirmation required on sends).
  *  2. `direct` (Optional Turbo Upgrade): Direct `https://chat.googleapis.com/v1` REST API
  *     via 1-time Desktop OAuth PKCE (`127.0.0.1` loopback).
  *  3. `demo` (Interactive Sample Workspace): Automatic fallback before `/connect-ge` is
@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
-import { buildInlinedSidecarHtml } from './sidecar_html_inliner.mjs';
+import { buildInlinedSidecarHtml, readOfficialPreloadJs } from './sidecar_html_inliner.mjs';
 import { extractStreamAssistPayload, parseGeInstanceInput } from '../../scripts/ge_instance_mcp.mjs';
 import { getTokenMeterSummary } from './token_meter.mjs';
 
@@ -42,11 +42,89 @@ function lstatOrNull(p) {
   }
 }
 
+/**
+ * Resolves all candidate `agy-connectors` plugin_data directories in priority order.
+ * Antigravity Desktop passes `PLUGIN_DATA` (`~/.gemini/antigravity/plugin_data/agy-connectors`)
+ * to MCP servers (`ge_instance_mcp.mjs`), whereas UI sidecars receive `ANTIGRAVITY_APP_DATA_DIR`
+ * and `ANTIGRAVITY_EXECUTABLE_DATA_DIR` without `PLUGIN_DATA`. Checking all candidate roots
+ * ensures Chatski immediately sees `/connect-ge` credentials regardless of host runtime.
+ */
+function getConnectorDataDirs() {
+  const pinned = (process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR || '').trim();
+  if (pinned) {
+    return [path.resolve(pinned)];
+  }
+  const raw = [];
+  const pluginData = (process.env.PLUGIN_DATA || '').trim();
+  if (pluginData) {
+    const resolvedPd = path.resolve(pluginData);
+    if (path.basename(resolvedPd) === 'agy-connectors') {
+      raw.push(resolvedPd);
+    } else {
+      raw.push(path.resolve(resolvedPd, '..', 'agy-connectors'));
+      raw.push(resolvedPd);
+    }
+  }
+  const appData = (process.env.ANTIGRAVITY_APP_DATA_DIR || '').trim();
+  if (appData) {
+    raw.push(path.join(path.resolve(appData), 'plugin_data', 'agy-connectors'));
+  }
+  const execData = (process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || '').trim();
+  if (execData) {
+    const resolvedExec = path.resolve(execData);
+    for (const seg of [`${path.sep}sidecar_data${path.sep}`, `${path.sep}plugin_data${path.sep}`]) {
+      const idx = resolvedExec.indexOf(seg);
+      if (idx > 0) {
+        raw.push(path.join(resolvedExec.slice(0, idx), 'plugin_data', 'agy-connectors'));
+      }
+    }
+  }
+  const home = os.homedir();
+  raw.push(
+    path.join(home, '.gemini', 'antigravity', 'plugin_data', 'agy-connectors'),
+    path.join(home, '.gemini', 'jetski', 'plugin_data', 'agy-connectors'),
+    path.join(home, '.gemini', 'config', 'plugin_data', 'agy-connectors')
+  );
+  if (execData) {
+    raw.push(path.resolve(execData));
+  }
+  const seen = new Set();
+  const out = [];
+  for (const candidate of raw) {
+    if (!candidate) continue;
+    const norm = path.resolve(candidate);
+    if (!seen.has(norm)) {
+      seen.add(norm);
+      out.push(norm);
+    }
+  }
+  return out;
+}
+
 function getConnectorDataDir() {
-  const custom = process.env.PLUGIN_DATA || process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR;
-  const dir = custom && custom.trim()
-    ? path.resolve(custom.trim())
-    : path.resolve(os.homedir(), '.gemini', 'config', 'plugin_data', 'agy-connectors');
+  const pinned = (process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR || '').trim();
+  if (pinned) {
+    const d = path.resolve(pinned);
+    fs.mkdirSync(d, { recursive: true, mode: 0o700 });
+    return d;
+  }
+  const pd = (process.env.PLUGIN_DATA || '').trim();
+  if (pd && path.basename(path.resolve(pd)) === 'agy-connectors') {
+    const d = path.resolve(pd);
+    fs.mkdirSync(d, { recursive: true, mode: 0o700 });
+    return d;
+  }
+  const appData = (process.env.ANTIGRAVITY_APP_DATA_DIR || '').trim();
+  if (appData) {
+    const d = path.join(path.resolve(appData), 'plugin_data', 'agy-connectors');
+    fs.mkdirSync(d, { recursive: true, mode: 0o700 });
+    return d;
+  }
+  const home = os.homedir();
+  const agyRoot = path.join(home, '.gemini', 'antigravity');
+  const dir = fs.existsSync(agyRoot)
+    ? path.join(agyRoot, 'plugin_data', 'agy-connectors')
+    : path.resolve(home, '.gemini', 'config', 'plugin_data', 'agy-connectors');
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
 }
@@ -74,6 +152,11 @@ function readJsonSafe(dir, fileName) {
 }
 
 function writeJsonSafe(dir, fileName, obj) {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const dirSt = lstatOrNull(dir);
+  if (!dirSt || dirSt.isSymbolicLink() || !dirSt.isDirectory()) {
+    throw new Error('Invalid target directory');
+  }
   const safe = path.basename(fileName);
   const target = path.join(dir, safe);
   if (!target.startsWith(dir + path.sep)) {
@@ -87,6 +170,71 @@ function writeJsonSafe(dir, fileName, obj) {
   fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + '\n', { mode: 0o600 });
   fs.renameSync(tmp, target);
   return target;
+}
+
+function isConnectorFileConfigured(fileName, obj) {
+  if (!obj || typeof obj !== 'object') return false;
+  if (fileName === 'ge-instance.json') {
+    try {
+      const p = parseGeInstanceInput(obj.rawInput || '', obj);
+      return Boolean(p.projectId && p.engineId);
+    } catch {
+      return false;
+    }
+  }
+  if (fileName === 'ge-oauth-token.json' || fileName === 'chatski-direct-oauth.json') {
+    return Boolean(obj.refreshToken && obj.clientId);
+  }
+  return Object.keys(obj).length > 0;
+}
+
+function readConnectorJson(fileName) {
+  const safe = path.basename(fileName);
+  let best = null;
+  for (const dir of getConnectorDataDirs()) {
+    const target = path.join(dir, safe);
+    if (!target.startsWith(dir + path.sep)) continue;
+    const st = lstatOrNull(target);
+    if (!st || st.isSymbolicLink() || !st.isFile()) continue;
+    const parsed = readJsonSafe(dir, safe);
+    if (!parsed) continue;
+    const configured = isConnectorFileConfigured(safe, parsed);
+    const ts = Date.parse(parsed.updatedAt || parsed.savedAt || '') || st.mtimeMs || 0;
+    if (
+      !best ||
+      (configured && !best.configured) ||
+      (configured === best.configured && ts > best.ts)
+    ) {
+      best = { parsed, configured, ts };
+    }
+  }
+  return best ? best.parsed : null;
+}
+
+function writeConnectorJson(fileName, obj) {
+  const primaryDir = getConnectorDataDir();
+  const savedTarget = writeJsonSafe(primaryDir, fileName, obj);
+
+  if (!(process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR || '').trim()) {
+    const home = os.homedir();
+    const mirrors = [
+      process.env.ANTIGRAVITY_APP_DATA_DIR
+        ? path.join(path.resolve(process.env.ANTIGRAVITY_APP_DATA_DIR), 'plugin_data', 'agy-connectors')
+        : '',
+      fs.existsSync(path.join(home, '.gemini', 'antigravity'))
+        ? path.join(home, '.gemini', 'antigravity', 'plugin_data', 'agy-connectors')
+        : '',
+      path.join(home, '.gemini', 'config', 'plugin_data', 'agy-connectors'),
+    ].filter(Boolean);
+    for (const mDir of mirrors) {
+      const resolvedMirror = path.resolve(mDir);
+      if (resolvedMirror === primaryDir) continue;
+      try {
+        writeJsonSafe(resolvedMirror, fileName, obj);
+      } catch {}
+    }
+  }
+  return savedTarget;
 }
 
 function httpsJsonRequest(urlString, { method = 'GET', headers = {}, bodyObj = null, formParams = null, timeoutMs = 45000 } = {}) {
@@ -143,7 +291,7 @@ function httpsJsonRequest(urlString, { method = 'GET', headers = {}, bodyObj = n
 }
 
 function loadGeConfig() {
-  const saved = readJsonSafe(getConnectorDataDir(), 'ge-instance.json') || {};
+  const saved = readConnectorJson('ge-instance.json') || {};
   const parsed = parseGeInstanceInput(saved.rawInput || process.env.GE_INSTANCE || '', {
     projectId: saved.projectId,
     location: saved.location,
@@ -212,8 +360,7 @@ async function resolveGeAccessToken(cfg) {
     return geTokenCache;
   }
 
-  const connDir = getConnectorDataDir();
-  const savedTok = readJsonSafe(connDir, 'ge-oauth-token.json');
+  const savedTok = readConnectorJson('ge-oauth-token.json');
   if (savedTok && savedTok.refreshToken && savedTok.clientId) {
     const ref = await refreshOAuthToken({
       clientId: savedTok.clientId,
@@ -278,7 +425,7 @@ async function resolveDirectChatToken() {
   if (directChatTokenCache.accessToken && Date.now() < directChatTokenCache.expiresAt) {
     return directChatTokenCache.accessToken;
   }
-  const saved = readJsonSafe(getConnectorDataDir(), 'chatski-direct-oauth.json');
+  const saved = readConnectorJson('chatski-direct-oauth.json');
   if (!saved || !saved.refreshToken || !saved.clientId) return '';
   const ref = await refreshOAuthToken({
     clientId: saved.clientId,
@@ -525,7 +672,161 @@ function parseJsonBlockFromAnswer(answerText) {
       return JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
     } catch {}
   }
+  const firstBracket = candidate.indexOf('[');
+  const lastBracket = candidate.lastIndexOf(']');
+  if (firstBracket >= 0 && lastBracket > firstBracket) {
+    try {
+      const arr = JSON.parse(candidate.slice(firstBracket, lastBracket + 1));
+      if (Array.isArray(arr)) return { conversations: arr };
+    } catch {}
+  }
   return null;
+}
+
+function stripOuterQuotes(s) {
+  const t = String(s || '').trim();
+  if (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith('“') && t.endsWith('”')))) {
+    return t.slice(1, -1).trim();
+  }
+  return t;
+}
+
+function parseMessageLinesFromProse(rawText) {
+  const lines = String(rawText || '').split(/\r?\n/);
+  const parsed = [];
+  const patTimeFirst =
+    /^(?:[-*•]\s+|\d+[.)]\s+)?\[?(\d{4}-\d{2}-\d{2}[T\s][^\-\]]{2,26}|\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|UTC)?)\]?\s*[-–—]\s*\*{0,2}([^:*\n]{1,64})\*{0,2}\s*:\s*(.+)$/i;
+  const patSenderFirst = /^(?:[-*•]\s+|\d+[.)]\s+)?\*{0,2}([^(*:\n]{1,64})\*{0,2}\s*\(([^)]{2,32})\)\s*:\s*(.+)$/;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const m1 = trimmed.match(patTimeFirst);
+    if (m1) {
+      parsed.push({
+        id: `prose-m-${parsed.length + 1}`,
+        timeLabel: m1[1].trim(),
+        sender: m1[2].trim(),
+        text: stripOuterQuotes(m1[3]),
+      });
+      continue;
+    }
+    const m2 = trimmed.match(patSenderFirst);
+    if (m2) {
+      parsed.push({
+        id: `prose-m-${parsed.length + 1}`,
+        sender: m2[1].trim(),
+        timeLabel: m2[2].trim(),
+        text: stripOuterQuotes(m2[3]),
+      });
+    }
+  }
+
+  if (parsed.length >= 2) {
+    const tFirst = Date.parse(parsed[0].timeLabel);
+    const tLast = Date.parse(parsed[parsed.length - 1].timeLabel);
+    if (!Number.isNaN(tFirst) && !Number.isNaN(tLast) && tFirst > tLast) {
+      parsed.reverse();
+    }
+  }
+  return parsed;
+}
+
+function extractChatSpaceRef(str) {
+  const s = String(str || '');
+  const urlMatch = s.match(/https:\/\/(?:chat\.google\.com\/(dm|room|space)|mail\.google\.com\/chat\/u\/\d+\/#chat\/(dm|space))\/([A-Za-z0-9_-]+)/i);
+  if (urlMatch) {
+    const kindHint = (urlMatch[1] || urlMatch[2] || '').toLowerCase() === 'dm' ? 'dm' : 'space';
+    const spaceId = urlMatch[3];
+    return {
+      spaceId,
+      spaceName: `spaces/${spaceId}`,
+      kind: kindHint,
+      webUrl: urlMatch[0],
+    };
+  }
+  const resMatch = s.match(/\bspaces\/([A-Za-z0-9_-]{4,})\b/);
+  if (resMatch) {
+    const spaceId = resMatch[1];
+    return {
+      spaceId,
+      spaceName: `spaces/${spaceId}`,
+      kind: /\bdm\b|direct message/i.test(s) ? 'dm' : 'space',
+      webUrl: /\bdm\b|direct message/i.test(s)
+        ? `https://chat.google.com/dm/${spaceId}`
+        : `https://mail.google.com/chat/u/0/#chat/space/${spaceId}`,
+    };
+  }
+  return null;
+}
+
+function parseConversationsFromGroundedProseAndCitations(answerText, citations = []) {
+  const proseMsgs = parseMessageLinesFromProse(answerText);
+  const groups = new Map();
+
+  for (let i = 0; i < citations.length; i += 1) {
+    const cit = citations[i] || {};
+    const ref = extractChatSpaceRef(`${cit.uri || ''} ${cit.title || ''} ${cit.snippet || ''}`);
+    const key = ref ? ref.spaceName : cit.uri || `cit-${i}`;
+    if (!groups.has(key)) {
+      const kind = ref ? ref.kind : /\bdm\b|direct/i.test(cit.title || '') ? 'dm' : 'space';
+      groups.set(key, {
+        id: ref ? `spaces-${ref.spaceId}` : `ge-cit-${i}`,
+        spaceName: ref ? ref.spaceName : '',
+        kind,
+        title: cit.title || (kind === 'dm' ? 'Direct Message' : `Chat Space ${groups.size + 1}`),
+        webUrl: cit.uri || (ref ? ref.webUrl : 'https://mail.google.com/chat/u/0/#chat/home'),
+        messages: [],
+      });
+    }
+    const g = groups.get(key);
+    const snippetMsgs = parseMessageLinesFromProse(cit.snippet || '');
+    if (snippetMsgs.length > 0) {
+      g.messages.push(...snippetMsgs);
+    } else if (cit.snippet) {
+      g.messages.push({
+        id: `cit-m-${i}`,
+        sender: g.kind === 'dm' && g.title !== 'Direct Message' ? g.title : 'Google Chat',
+        timeLabel: 'Recent',
+        text: stripOuterQuotes(cit.snippet),
+      });
+    }
+  }
+
+  if (groups.size === 0) {
+    const proseRef = extractChatSpaceRef(answerText);
+    if (proseRef || proseMsgs.length > 0) {
+      const kind = proseRef ? proseRef.kind : /\bdm\b|direct message/i.test(answerText) ? 'dm' : 'space';
+      const defaultTitle =
+        kind === 'dm' && proseMsgs.length > 0
+          ? proseMsgs[proseMsgs.length - 1].sender || 'Direct Message'
+          : proseRef
+            ? `Chat (${proseRef.spaceName})`
+            : 'Recent Google Chat Activity';
+      groups.set(proseRef ? proseRef.spaceName : 'prose-default', {
+        id: proseRef ? `spaces-${proseRef.spaceId}` : 'ge-prose-chat',
+        spaceName: proseRef ? proseRef.spaceName : '',
+        kind,
+        title: defaultTitle,
+        webUrl: proseRef ? proseRef.webUrl : 'https://mail.google.com/chat/u/0/#chat/home',
+        messages: proseMsgs,
+      });
+    }
+  } else if (groups.size === 1 && proseMsgs.length > 0) {
+    const only = groups.values().next().value;
+    if (proseMsgs.length >= only.messages.length) {
+      only.messages = proseMsgs;
+    }
+    if (
+      only.kind === 'dm' &&
+      (only.title === 'Direct Message' || /^spaces\//i.test(only.title)) &&
+      proseMsgs[0]?.sender
+    ) {
+      only.title = proseMsgs[0].sender;
+    }
+  }
+
+  return normalizeConversationList(Array.from(groups.values()));
 }
 
 async function discoverGeChatDataStores(cfg, auth) {
@@ -548,7 +849,7 @@ async function discoverGeChatDataStores(cfg, auth) {
   });
 
   const chatStores = engineStores.filter((ds) => {
-    const hay = `${ds.name || ''} ${ds.displayName || ''}`.toLowerCase();
+    const hay = JSON.stringify(ds || {}).toLowerCase();
     return hay.includes('chat') || hay.includes('dynamite') || hay.includes('teams');
   });
 
@@ -558,7 +859,7 @@ async function discoverGeChatDataStores(cfg, auth) {
   };
 }
 
-async function callGeStreamAssist(cfg, auth, { queryText, dataStores = [], allowActions = false, session = '' }) {
+async function callGeStreamAssist(cfg, auth, { queryText, dataStores = [], session = '' }) {
   const base = discoveryEngineBaseUrl(cfg.location);
   const headers = { Authorization: `Bearer ${auth.accessToken}` };
   if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
@@ -568,9 +869,10 @@ async function callGeStreamAssist(cfg, auth, { queryText, dataStores = [], allow
     `/collections/${encodeURIComponent(cfg.collectionId)}/engines/${encodeURIComponent(cfg.engineId)}` +
     `/assistants/default_assistant`;
 
+  // Discovery Engine v1alpha StreamAssistRequest accepts { query, toolsSpec, session } only.
+  // Never pass unknown top-level fields like actionSpec (rejected with HTTP 400).
   const body = {
     query: { text: queryText },
-    actionSpec: { actionDisabled: !allowActions },
   };
   if (dataStores.length > 0) {
     body.toolsSpec = {
@@ -657,10 +959,10 @@ async function syncConversationsFromGe() {
   }
   const auth = await resolveGeAccessToken(cfg);
   const { allEngineStores, chatStores } = await discoverGeChatDataStores(cfg, auth);
-  const targetStores = chatStores.length > 0 ? chatStores : allEngineStores;
+  const targetStores = allEngineStores.length > 0 ? allEngineStores : chatStores;
 
   const rosterPrompt = [
-    'Use the connected Google Chat (or Microsoft Teams) connector to list my most recent Direct Messages and Spaces (up to 12 total) along with the 2–4 most recent messages in each.',
+    'Retrieve and list only (do NOT send, post, or modify any messages): use the connected Google Chat (or Microsoft Teams) connector to list my most recent Direct Messages and Spaces (up to 12 total) along with the 2–5 most recent messages in each.',
     'Return ONLY valid JSON matching this exact schema (no extra commentary):',
     '{"conversations":[{"id":"spaces/AAAA... or slug","spaceName":"spaces/AAAA...","kind":"space|dm","title":"Space or Person Name","unreadCount":0,"updatedAgo":"5m","webUrl":"https://...","messages":[{"id":"m1","sender":"Full Name","timeLabel":"2:15 PM","text":"Message text","mentionsMe":false}]}]}',
   ].join('\n');
@@ -668,7 +970,6 @@ async function syncConversationsFromGe() {
   const assist = await callGeStreamAssist(cfg, auth, {
     queryText: rosterPrompt,
     dataStores: targetStores,
-    allowActions: false,
   });
 
   let convs = [];
@@ -677,27 +978,12 @@ async function syncConversationsFromGe() {
     convs = normalizeConversationList(parsed.conversations);
   }
 
-  // Fallback: synthesize conversations from GE citations if StreamAssist returned prose + source links
-  if (convs.length === 0 && Array.isArray(assist.citations) && assist.citations.length > 0) {
-    convs = normalizeConversationList(
-      assist.citations.slice(0, 12).map((cit, idx) => ({
-        id: `ge-cit-${idx}`,
-        kind: /dm|direct/i.test(cit.title) ? 'dm' : 'space',
-        title: cit.title || `Chat Thread ${idx + 1}`,
-        webUrl: cit.uri || 'https://mail.google.com/chat/u/0/#chat/home',
-        messages: [
-          {
-            id: `cit-m-${idx}`,
-            sender: 'Recent Activity',
-            timeLabel: 'From Gemini Enterprise',
-            text: cit.snippet || assist.answerText.slice(0, 400),
-          },
-        ],
-      }))
-    );
+  // Fallback: coalesce grounded Google Chat citations + timestamped prose bullets into DMs/Spaces
+  if (convs.length === 0) {
+    convs = parseConversationsFromGroundedProseAndCitations(assist.answerText, assist.citations || []);
   }
 
-  // If GE answered in plain text with zero citations (e.g., summarizing recent chats), surface as an Inbox Digest space
+  // If GE answered in plain text with zero citations/structured lines, surface as an Inbox Digest space
   if (convs.length === 0 && assist.answerText) {
     convs = normalizeConversationList([
       {
@@ -719,7 +1005,9 @@ async function syncConversationsFromGe() {
 
   return {
     conversations: convs,
-    chatStoreNames: chatStores.map((d) => d.displayName || String(d.name || '').split('/').pop()),
+    chatStoreNames: (chatStores.length > 0 ? chatStores : allEngineStores).map(
+      (d) => d.displayName || String(d.name || '').split('/').pop()
+    ),
     authPrompts: assist.authPrompts || [],
   };
 }
@@ -768,7 +1056,7 @@ function buildEffectiveState() {
   const geCfg = loadGeConfig();
   const hasDirectToken = Boolean(
     (process.env.AGY_CHAT_DIRECT_TEST_BEARER && process.env.AGY_GE_TEST_ORIGIN) ||
-      readJsonSafe(getConnectorDataDir(), 'chatski-direct-oauth.json')?.refreshToken
+      readConnectorJson('chatski-direct-oauth.json')?.refreshToken
   );
 
   let activeMode = persisted.modePreference;
@@ -802,6 +1090,15 @@ function buildEffectiveState() {
 const app = new SidecarApp();
 
 app.page('/', () => buildInlinedSidecarHtml(__dirname, ['token_pill_ui.js', 'app.js']));
+
+app.api(
+  '/preload.js',
+  () =>
+    new Response(readOfficialPreloadJs(), {
+      contentType: 'application/javascript; charset=utf-8',
+    }),
+  'GET'
+);
 
 app.api(
   '/styles.css',
@@ -850,6 +1147,35 @@ app.api('/api/mode', async (data) => {
   persisted.modePreference = nextMode;
   savePersistedChatskiState(persisted);
   return buildEffectiveState();
+});
+
+app.api('/api/save-ge', async (data) => {
+  try {
+    const rawInstance = String((data && data.geInstance) || '').trim().slice(0, 500);
+    const existing = readConnectorJson('ge-instance.json') || {};
+    const parsed = parseGeInstanceInput(rawInstance, {
+      projectId: (data && data.projectId) || '',
+      location: (data && data.location) || '',
+      collectionId: (data && data.collectionId) || '',
+      engineId: (data && data.engineId) || '',
+      webAppUrl: (data && data.webAppUrl) || existing.webAppUrl || '',
+    });
+    const record = {
+      ...parsed,
+      rawInput: rawInstance,
+      oauthClientId: existing.oauthClientId || '',
+      oauthClientSecret: existing.oauthClientSecret || '',
+      updatedAt: new Date().toISOString(),
+    };
+    writeConnectorJson('ge-instance.json', record);
+    geTokenCache = { accessToken: '', expiresAt: 0, quotaProjectId: '', source: '' };
+    return buildEffectiveState();
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: err.message || 'Invalid Gemini Enterprise resource' }), {
+      contentType: 'application/json',
+      status: 400,
+    });
+  }
 });
 
 app.api('/api/sync', async () => {
@@ -948,17 +1274,20 @@ app.api('/api/messages/refresh', async (data) => {
     const auth = await resolveGeAccessToken(cfg);
     const { allEngineStores, chatStores } = await discoverGeChatDataStores(cfg, auth);
     const prompt = [
-      `Use the Google Chat connector to retrieve the latest 12 messages in "${target.title}"${target.spaceResource ? ` (${target.spaceResource})` : ''}.`,
+      `Retrieve and list only (do NOT send, post, or modify any messages): use the Google Chat connector to retrieve the latest 12 messages in "${target.title}"${target.spaceResource ? ` (${target.spaceResource})` : ''}.`,
       'Return ONLY valid JSON: {"messages":[{"id":"m1","sender":"Full Name","timeLabel":"2:30 PM","text":"Message text","replyCount":0}]}',
     ].join('\n');
     const assist = await callGeStreamAssist(cfg, auth, {
       queryText: prompt,
-      dataStores: chatStores.length > 0 ? chatStores : allEngineStores,
-      allowActions: false,
+      dataStores: allEngineStores.length > 0 ? allEngineStores : chatStores,
     });
     const parsed = parseJsonBlockFromAnswer(assist.answerText);
-    if (parsed && Array.isArray(parsed.messages)) {
-      const normalized = normalizeConversationList([{ ...target, messages: parsed.messages }])[0];
+    const candidateMsgs =
+      parsed && Array.isArray(parsed.messages)
+        ? parsed.messages
+        : parseMessageLinesFromProse(assist.answerText);
+    if (candidateMsgs.length > 0) {
+      const normalized = normalizeConversationList([{ ...target, messages: candidateMsgs }])[0];
       if (normalized) {
         const existingIdx = persisted.conversations.findIndex((c) => c.id === convId);
         if (existingIdx >= 0) {
@@ -1097,8 +1426,7 @@ app.api('/api/send', async (data) => {
 
       const assist = await callGeStreamAssist(cfg, auth, {
         queryText: prompt,
-        dataStores: chatStores.length > 0 ? chatStores : allEngineStores,
-        allowActions: true,
+        dataStores: allEngineStores.length > 0 ? allEngineStores : chatStores,
         session: geSession,
       });
 
@@ -1210,7 +1538,7 @@ app.api('/api/direct-oauth/start', async (data) => {
           timeoutMs: 15000,
         });
         if (tokResp.status === 200 && tokResp.json && tokResp.json.access_token) {
-          writeJsonSafe(getConnectorDataDir(), 'chatski-direct-oauth.json', {
+          writeConnectorJson('chatski-direct-oauth.json', {
             clientId,
             clientSecret,
             refreshToken: tokResp.json.refresh_token || '',

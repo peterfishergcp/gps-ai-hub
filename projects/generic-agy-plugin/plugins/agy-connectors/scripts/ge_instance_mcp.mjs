@@ -26,22 +26,111 @@ const SERVER_VERSION = '1.0.0';
 const SAFE_SEGMENT_RE = /^[A-Za-z0-9._-]+$/;
 const ALLOWED_DE_HOST_RE = /^(?:[a-z0-9-]+-)?discoveryengine\.googleapis\.com$/;
 
-// Resolve persistent plugin data directory outside the plugin code folder so /agy-update preserves settings.
+// Resolve persistent plugin data directories across Antigravity Desktop (`~/.gemini/antigravity/plugin_data`),
+// `ANTIGRAVITY_APP_DATA_DIR`, Jetski (`~/.gemini/jetski/plugin_data`), and `~/.gemini/config/plugin_data`
+// so MCP tools (`PLUGIN_DATA`) and UI sidecars (`ANTIGRAVITY_APP_DATA_DIR`) always share `ge-instance.json`.
+function lstatSafe(p) {
+  try {
+    return fs.lstatSync(p);
+  } catch {
+    return null;
+  }
+}
+
+export function getConnectorDataDirs(pluginSlug = 'agy-connectors') {
+  const pinned = process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR;
+  if (pinned && pinned.trim()) {
+    return [path.resolve(pinned.trim())];
+  }
+  const raw = [];
+  const pluginData = (process.env.PLUGIN_DATA || '').trim();
+  if (pluginData) {
+    const resolvedPd = path.resolve(pluginData);
+    if (path.basename(resolvedPd) === pluginSlug) {
+      raw.push(resolvedPd);
+    } else {
+      raw.push(path.resolve(resolvedPd, '..', pluginSlug));
+      raw.push(resolvedPd);
+    }
+  }
+  const appData = (process.env.ANTIGRAVITY_APP_DATA_DIR || '').trim();
+  if (appData) {
+    raw.push(path.join(path.resolve(appData), 'plugin_data', pluginSlug));
+  }
+  const execData = (process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || '').trim();
+  if (execData) {
+    const resolvedExec = path.resolve(execData);
+    for (const seg of [`${path.sep}sidecar_data${path.sep}`, `${path.sep}plugin_data${path.sep}`]) {
+      const idx = resolvedExec.indexOf(seg);
+      if (idx > 0) {
+        raw.push(path.join(resolvedExec.slice(0, idx), 'plugin_data', pluginSlug));
+      }
+    }
+  }
+  const home = os.homedir();
+  raw.push(
+    path.join(home, '.gemini', 'antigravity', 'plugin_data', pluginSlug),
+    path.join(home, '.gemini', 'jetski', 'plugin_data', pluginSlug),
+    path.join(home, '.gemini', 'config', 'plugin_data', pluginSlug)
+  );
+  if (execData) {
+    raw.push(path.resolve(execData));
+  }
+  const seen = new Set();
+  const out = [];
+  for (const candidate of raw) {
+    if (!candidate) continue;
+    const norm = path.resolve(candidate);
+    if (!seen.has(norm)) {
+      seen.add(norm);
+      out.push(norm);
+    }
+  }
+  return out;
+}
+
 function getDataDir() {
-  const envDir = process.env.PLUGIN_DATA;
-  const baseDir = envDir && envDir.trim()
-    ? path.resolve(envDir.trim())
-    : path.resolve(os.homedir(), '.gemini', 'config', 'plugin_data', 'agy-connectors');
+  const pinned = (process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR || '').trim();
+  if (pinned) {
+    const d = path.resolve(pinned);
+    fs.mkdirSync(d, { recursive: true, mode: 0o700 });
+    return d;
+  }
+  const envDir = (process.env.PLUGIN_DATA || '').trim();
+  if (envDir) {
+    const d = path.resolve(envDir);
+    fs.mkdirSync(d, { recursive: true, mode: 0o700 });
+    return d;
+  }
+  const appData = (process.env.ANTIGRAVITY_APP_DATA_DIR || '').trim();
+  if (appData) {
+    const d = path.join(path.resolve(appData), 'plugin_data', 'agy-connectors');
+    fs.mkdirSync(d, { recursive: true, mode: 0o700 });
+    return d;
+  }
+  const home = os.homedir();
+  const agyRoot = path.join(home, '.gemini', 'antigravity');
+  const baseDir = fs.existsSync(agyRoot)
+    ? path.join(agyRoot, 'plugin_data', 'agy-connectors')
+    : path.resolve(home, '.gemini', 'config', 'plugin_data', 'agy-connectors');
   fs.mkdirSync(baseDir, { recursive: true, mode: 0o700 });
   return baseDir;
 }
 
-function writePrivateJson(fileName, dataObj) {
-  const dir = getDataDir();
+function writeAtomicJsonInDir(dir, fileName, dataObj) {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const dirStat = lstatSafe(dir);
+  if (!dirStat || dirStat.isSymbolicLink() || !dirStat.isDirectory()) {
+    throw new Error('Invalid plugin data directory');
+  }
   const safeName = path.basename(fileName);
   const target = path.join(dir, safeName);
   if (!target.startsWith(dir + path.sep)) {
     throw new Error('Blocked path outside plugin data directory.');
+  }
+  const targetStat = lstatSafe(target);
+  if (targetStat && targetStat.isSymbolicLink()) {
+    throw new Error('Refusing symlinked target file.');
   }
   const tmp = path.join(dir, `.${safeName}.${crypto.randomBytes(6).toString('hex')}.tmp`);
   fs.writeFileSync(tmp, JSON.stringify(dataObj, null, 2) + '\n', { mode: 0o600 });
@@ -49,18 +138,75 @@ function writePrivateJson(fileName, dataObj) {
   return target;
 }
 
+function writePrivateJson(fileName, dataObj) {
+  const primaryDir = getDataDir();
+  const primaryTarget = writeAtomicJsonInDir(primaryDir, fileName, dataObj);
+
+  // Mirror across Antigravity Desktop and ~/.gemini/config/plugin_data so sidecars and CLI stay in sync
+  if (!(process.env.ANTIGRAVITY_CONNECTORS_DATA_DIR || '').trim()) {
+    const home = os.homedir();
+    const mirrors = [
+      process.env.ANTIGRAVITY_APP_DATA_DIR
+        ? path.join(path.resolve(process.env.ANTIGRAVITY_APP_DATA_DIR), 'plugin_data', 'agy-connectors')
+        : '',
+      fs.existsSync(path.join(home, '.gemini', 'antigravity'))
+        ? path.join(home, '.gemini', 'antigravity', 'plugin_data', 'agy-connectors')
+        : '',
+      path.join(home, '.gemini', 'config', 'plugin_data', 'agy-connectors'),
+    ].filter(Boolean);
+    for (const mDir of mirrors) {
+      const resolvedMirror = path.resolve(mDir);
+      if (resolvedMirror === primaryDir) continue;
+      try {
+        writeAtomicJsonInDir(resolvedMirror, fileName, dataObj);
+      } catch {}
+    }
+  }
+  return primaryTarget;
+}
+
+function isRecordConfigured(fileName, obj) {
+  if (!obj || typeof obj !== 'object') return false;
+  if (fileName === 'ge-instance.json') {
+    if (obj.projectId && obj.engineId) return true;
+    if (obj.rawInput) {
+      try {
+        const p = parseGeInstanceInput(obj.rawInput, obj);
+        return Boolean(p.projectId && p.engineId);
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+  if (fileName === 'ge-oauth-token.json') {
+    return Boolean(obj.refreshToken && obj.clientId);
+  }
+  return Object.keys(obj).length > 0;
+}
+
 function readPrivateJson(fileName) {
-  const dir = getDataDir();
   const safeName = path.basename(fileName);
-  const target = path.join(dir, safeName);
-  if (!target.startsWith(dir + path.sep) || !fs.existsSync(target)) {
-    return null;
+  let best = null;
+  for (const dir of getConnectorDataDirs('agy-connectors')) {
+    const target = path.join(dir, safeName);
+    if (!target.startsWith(dir + path.sep)) continue;
+    const st = lstatSafe(target);
+    if (!st || st.isSymbolicLink() || !st.isFile()) continue;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(target, 'utf8'));
+      const configured = isRecordConfigured(safeName, parsed);
+      const ts = Date.parse(parsed?.updatedAt || parsed?.savedAt || '') || st.mtimeMs || 0;
+      if (
+        !best ||
+        (configured && !best.configured) ||
+        (configured === best.configured && ts > best.ts)
+      ) {
+        best = { parsed, configured, ts };
+      }
+    } catch {}
   }
-  try {
-    return JSON.parse(fs.readFileSync(target, 'utf8'));
-  } catch {
-    return null;
-  }
+  return best ? best.parsed : null;
 }
 
 /**

@@ -1,5 +1,10 @@
 :root,
 html[data-theme="dark"] {
+  --background: #13161d;
+  --foreground: #eef2f6;
+  --card: #1b202b;
+  --secondary: #222836;
+  --muted-foreground: #94a3b8;
   --bg-rail: #0d0f14;
   --bg-pane: #13161d;
   --bg-card: #1b202b;
@@ -20,6 +25,11 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --secondary: #f3f6fb;
+  --muted-foreground: #475569;
   --bg-rail: #f8fafc;
   --bg-pane: #ffffff;
   --bg-card: #f3f6fb;
@@ -49,9 +59,13 @@ body {
   padding: 0;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Google Sans", "Segoe UI", Roboto, sans-serif;
-  background: var(--bg-pane);
-  color: var(--fg);
+  background: var(--bg-pane) !important;
+  color: var(--fg) !important;
   overflow: hidden;
+}
+
+.chatski-shell {
+  color: var(--fg);
 }
 
 .hidden {

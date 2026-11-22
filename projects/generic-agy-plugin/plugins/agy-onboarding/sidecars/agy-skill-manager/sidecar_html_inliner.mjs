@@ -1,16 +1,20 @@
 /**
  * Zero-Subresource HTML Inliner & Host Dark-Mode Bridge (`sidecar_html_inliner.mjs`)
  *
- * Solves cross-origin iframe third-party cookie blocking in Jetski Web / Cloudtop
- * gateways by serving a 100% self-contained single HTML document on `GET /`:
+ * Solves cross-origin iframe third-party cookie blocking in Antigravity Desktop,
+ * Jetski Web, and Cloudtop gateways by serving a 100% self-contained single HTML
+ * document on `GET /`:
  *   - Inlines `<style>` (`styles.css`)
  *   - Inlines official `sidecar_sdk/preload.js`
+ *   - Inlines `?token=` + `X-Sidecar-Token` iframe auth bridge across `window.fetch`
+ *     and `window.sidecar.fetch` (safe even when `window.sidecar` is frozen)
  *   - Inlines automatic Host `--background` Luminance + OS + Manual Dark-Mode Bridge
  *   - Inlines `window.__EMOJI_MAP` base64 PNGs
  *   - Inlines all frontend `.js` scripts with safe `<\/script` & `<\!--` escaping
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,10 +38,16 @@ export function readOfficialPreloadJs() {
     candidates.push(path.join(sdkDir, 'preload.js'));
     candidates.push(path.join(sdkDir, '..', 'preload.js'));
   } catch {}
+  const home = os.homedir();
+  if (process.env.SIDECAR_PRELOAD_JS_PATH) {
+    candidates.push(process.env.SIDECAR_PRELOAD_JS_PATH);
+  }
+  if (process.env.ANTIGRAVITY_APP_DATA_DIR) {
+    candidates.push(path.join(process.env.ANTIGRAVITY_APP_DATA_DIR, 'lib', 'node_modules', 'sidecar_sdk', 'preload.js'));
+  }
   candidates.push(
-    process.env.SIDECAR_PRELOAD_JS_PATH || '',
-    path.join(process.env.HOME || '', '.gemini', 'antigravity', 'lib', 'node_modules', 'sidecar_sdk', 'preload.js'),
-    path.join(process.env.HOME || '', '.gemini', 'jetski', 'lib', 'node_modules', 'sidecar_sdk', 'preload.js')
+    path.join(home, '.gemini', 'antigravity', 'lib', 'node_modules', 'sidecar_sdk', 'preload.js'),
+    path.join(home, '.gemini', 'jetski', 'lib', 'node_modules', 'sidecar_sdk', 'preload.js')
   );
   for (const p of candidates) {
     try {
@@ -54,42 +64,70 @@ export function readOfficialPreloadJs() {
 export const HOST_DARK_THEME_BRIDGE_JS = `
 (function () {
   'use strict';
-  // 1. Gateway-safe fetch wrapper: preserves ?token=<uiToken> AND X-Sidecar-Token
-  //    on every GET/POST call so cross-origin iframes never fail when 3P cookies are blocked.
+  // 1. Gateway-safe fetch wrapper: propagates ?token=<uiToken> AND X-Sidecar-Token
+  //    on every relative GET/POST call (including preload.js /_sidecar/* RPCs) so
+  //    cross-origin sidecar iframes never fail auth when third-party cookies are blocked.
   var params = new URLSearchParams(window.location.search || '');
   var uiToken = params.get('token') || '';
+  if (!uiToken && window.location.hash && window.location.hash.indexOf('token=') !== -1) {
+    try {
+      var hashParams = new URLSearchParams(window.location.hash.replace(/^#\\??/, ''));
+      uiToken = hashParams.get('token') || '';
+    } catch (e) {}
+  }
   window.__AGY_UI_TOKEN__ = uiToken;
+
+  function isRelativeSidecarUrl(rawUrl) {
+    return typeof rawUrl === 'string' && rawUrl.charAt(0) === '/' && rawUrl.charAt(1) !== '/';
+  }
 
   function withUiTokenUrl(rawUrl) {
     var u = String(rawUrl || '');
-    if (!uiToken || !u.startsWith('/')) return u;
+    if (!uiToken || !isRelativeSidecarUrl(u)) return u;
     if (/[?&]token=/.test(u)) return u;
     return u + (u.indexOf('?') === -1 ? '?' : '&') + 'token=' + encodeURIComponent(uiToken);
   }
 
-  var origSidecarFetch = window.sidecar && window.sidecar.fetch ? window.sidecar.fetch.bind(window.sidecar) : null;
   var origWindowFetch = window.fetch.bind(window);
 
-  function authedFetch(url, opts) {
-    var nextUrl = withUiTokenUrl(url);
-    var options = Object.assign({}, opts || {});
-    var headers = new Headers(options.headers || {});
-    if (uiToken && !headers.has('X-Sidecar-Token')) {
-      headers.set('X-Sidecar-Token', uiToken);
+  function authedFetch(input, opts) {
+    if (typeof input === 'string' || (typeof URL !== 'undefined' && input instanceof URL)) {
+      var rawStr = String(input);
+      var isRel = isRelativeSidecarUrl(rawStr);
+      var nextUrl = isRel ? withUiTokenUrl(rawStr) : rawStr;
+      var options = Object.assign({}, opts || {});
+      var headers = new Headers(options.headers || {});
+      if (uiToken && isRel && !headers.has('X-Sidecar-Token')) {
+        headers.set('X-Sidecar-Token', uiToken);
+      }
+      if (
+        isRel &&
+        options.method &&
+        options.method.toUpperCase() === 'POST' &&
+        typeof options.body === 'string' &&
+        !headers.has('Content-Type')
+      ) {
+        headers.set('Content-Type', 'application/json');
+      }
+      options.headers = headers;
+      return origWindowFetch(nextUrl, options);
     }
-    if (options.method && options.method.toUpperCase() === 'POST' && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-    options.headers = headers;
-    return origWindowFetch(nextUrl, options);
+    return origWindowFetch(input, opts);
   }
 
-  if (window.sidecar) {
-    window.sidecar.fetch = authedFetch;
-  } else {
-    window.sidecar = { fetch: authedFetch };
-  }
-  window.__agyAuthedFetch = origSidecarFetch ? authedFetch : authedFetch;
+  try {
+    window.fetch = authedFetch;
+  } catch (e) {}
+
+  try {
+    if (window.sidecar && typeof window.sidecar === 'object') {
+      window.sidecar.fetch = authedFetch;
+    } else if (!window.sidecar) {
+      window.sidecar = { fetch: authedFetch };
+    }
+  } catch (e) {}
+
+  window.__agyAuthedFetch = authedFetch;
 
   // 2. Host CSS Variable + OS + Manual Dark-Mode Synchronizer
   var STORAGE_KEY = 'agy-sidecar-theme-override';
@@ -99,7 +137,7 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
     try {
       var v = window.localStorage.getItem(STORAGE_KEY);
       if (v === 'dark' || v === 'light') return v;
-    } catch {}
+    } catch (e) {}
     return 'auto';
   }
 
@@ -145,13 +183,17 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
     return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   }
 
+  function getThemeButton() {
+    return document.getElementById('btn-theme-toggle') || document.getElementById('btn-theme');
+  }
+
   function applyThemeAttr() {
     var dark = detectIsDark();
     var root = document.documentElement;
     root.setAttribute('data-theme', dark ? 'dark' : 'light');
     root.classList.toggle('dark', dark);
     root.style.colorScheme = dark ? 'dark' : 'light';
-    var btn = document.getElementById('btn-theme-toggle');
+    var btn = getThemeButton();
     if (btn) {
       var ov = getOverride();
       btn.textContent = dark ? '☀' : '☾';
@@ -164,7 +206,7 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
     var next = curDark ? 'light' : 'dark';
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {}
+    } catch (e) {}
     applyThemeAttr();
   };
 
@@ -176,11 +218,11 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
   if (window.matchMedia) {
     try {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyThemeAttr);
-    } catch {}
+    } catch (e) {}
   }
   function wireToggleBtn() {
     applyThemeAttr();
-    var btn = document.getElementById('btn-theme-toggle');
+    var btn = getThemeButton();
     if (btn && !btn.__agyBound) {
       btn.__agyBound = true;
       btn.addEventListener('click', function () {
