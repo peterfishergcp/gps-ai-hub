@@ -186,8 +186,9 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
   // Also sync sidecars (agy-skill-manager & agy-design-preview) when running a full suite sync (!skillFilter)
   const sidecarManifest = manifest.sidecarManifest || {};
   if (!skillFilter) {
-    for (const [scId, scEntry] of Object.entries(sidecarManifest)) {
+    for (const [scKey, scEntry] of Object.entries(sidecarManifest)) {
       const pluginName = scEntry.plugin;
+      const scId = String(scEntry.sidecar || scKey);
       if (!SAFE_SEGMENT_RE.test(pluginName) || !SAFE_SEGMENT_RE.test(scId)) continue;
       const scDir = path.join(pluginsRoot, pluginName, 'sidecars', scId);
       for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {

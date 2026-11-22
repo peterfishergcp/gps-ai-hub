@@ -29,8 +29,8 @@ Ask the user (allowing rough or 1-line answers):
    - Agency / Division & Role
    - Preferred Voice & Formatting Rules (BLUF, plain language, West Virginia brand palette `#053254` Navy / `#C1452C` Rust / `#D5A245` Gold when designing visuals)
    - Standing Guardrails: **Draft-Only (never send emails/chats automatically)**, **Zero hardcoded secrets**, and **Verify PII/statutory citations before external release**.
-2. If the user pasted a **Gemini Enterprise URL or Engine ID** in Question 4 and the `wv-ge-bridge` MCP tool `ge_configure_instance` is available:
-   - Call `ge_configure_instance` immediately and then `ge_instance_status` to confirm connectivity (or guide them through `/connect-ge` 1-click Google Identity sign-in if not signed in yet).
+2. If the user pasted a **Gemini Enterprise URL or Engine ID** in Question 4 and the remote HTTPS Gemini Enterprise MCP MCP tool `GE Connector Hub` is available:
+   - Call `GE Connector Hub` immediately and then `~/.gemini/config/plugin_data/wv-connectors/ge-instance.json` to confirm connectivity (or guide them through `/connect-ge` 1-click Google Identity sign-in if not signed in yet).
 
 ---
 

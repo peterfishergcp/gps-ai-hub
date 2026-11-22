@@ -1,12 +1,12 @@
 {
   "name": "wv-connectors",
-  "displayName": "WV Chatski & Gemini Enterprise Connectors",
-  "version": "2.1.0",
-  "description": "WV Chatski left-sidebar Google Chat workspace (powered out-of-the-box by your West Virginia Gemini Enterprise Chat Connector) plus the zero-install wv-ge-bridge MCP across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery.",
+  "displayName": "WV Gemini Enterprise & Cloud Connectors",
+  "version": "2.1.2",
+  "description": "Zero-footprint West Virginia Gemini Enterprise (GE) & BigQuery connector playbooks for Entra-synced @wv.gov accounts across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and cost-capped BigQuery (zero local MCP subprocesses or open ports).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "Run /chatski to summarize my unread Google Chat spaces and direct messages via my West Virginia Gemini Enterprise Chat Connector",
-    "Run /connect-ge to link my West Virginia Gemini Enterprise instance and test my federated connectors",
-    "Search my federated SharePoint, OneDrive, and Outlook via Gemini Enterprise for recent grant updates"
+    "Run /connect-ge to configure my West Virginia Gemini Enterprise instance and verify federated connector readiness",
+    "Run /connect-m365-workspace to synthesize Outlook, SharePoint, OneDrive, Teams, or Drive records with strict citations",
+    "Run /connect-github-bigquery to set up cost-capped 1 GB read-only BigQuery analytics for WV dashboards"
   ]
 }

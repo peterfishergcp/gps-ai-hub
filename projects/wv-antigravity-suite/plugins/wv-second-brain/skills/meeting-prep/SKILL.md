@@ -14,7 +14,7 @@ Give the user a 60-second read before stepping into a stakeholder review, techni
    - `initiatives/<slug>/status.md` & `running_notes.md` (focusing on Tier 1 `0-7d` notes)
    - `initiatives/<slug>/context_and_decisions.md` & `stakeholders.md`
    - Matching open `[ ]` items in `~/.gemini/config/plugin_data/wv-antigravity/memory/action_items.md` and `Last_Touch_Date` in `contacts.md`.
-3. If a Calendar or Federated Gemini Enterprise MCP (`wv-ge-bridge`) is connected, pull the invite agenda and most recent email/chat exchange with the attendees.
+3. If a Calendar or Federated Gemini Enterprise MCP (remote HTTPS Gemini Enterprise MCP) is connected, pull the invite agenda and most recent email/chat exchange with the attendees.
 
 ## Step 2 - Produce the 1-Card Pre-Meeting Brief + Adversarial SCQA Critic
 

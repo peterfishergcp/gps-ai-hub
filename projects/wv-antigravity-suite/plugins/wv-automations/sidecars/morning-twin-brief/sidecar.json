@@ -5,7 +5,7 @@
     "agentapi",
     "new-conversation",
     "--",
-    "Run /daily-brief using ~/.gemini/config/plugin_data/wv-antigravity/memory/ and any connected read-only MCP servers (such as wv-ge-bridge for Calendar, Mail, Teams, and SharePoint). Summarize today's Top 3 actions, upcoming meetings, open P0/P1 action items, active initiative milestones, and any stakeholders in contacts.md over 21 days since last touch."
+    "Run /daily-brief using ~/.gemini/config/plugin_data/wv-antigravity/memory/ and any connected read-only MCP servers (such as remote HTTPS Gemini Enterprise MCP for Calendar, Mail, Teams, and SharePoint). Summarize today's Top 3 actions, upcoming meetings, open P0/P1 action items, active initiative milestones, and any stakeholders in contacts.md over 21 days since last touch."
   ],
   "restart_policy": "always",
   "display_name": "Morning Kickoff Brief",

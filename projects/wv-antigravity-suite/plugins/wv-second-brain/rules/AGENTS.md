@@ -15,7 +15,7 @@ While `wv-second-brain` is enabled, ground your assistance in the user's local *
 
 ## 2. Connector & Standalone Execution Rules
 
-1. **Works Standalone or With Connected MCP Bridges:** If MCP connectors are active (such as `wv-ge-bridge` for federated Gemini Enterprise search across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub), query them with user-scoped permissions to ground `/daily-brief`, `/my-voice`, `/followup-plan`, and `/meeting-notes`. When no external MCP server is connected, operate directly on `~/.gemini/config/plugin_data/wv-antigravity/memory/`, workspace files, and pasted text without failing.
+1. **Works Standalone or With Connected MCP Bridges:** If MCP connectors are active (such as remote HTTPS Gemini Enterprise MCP for federated Gemini Enterprise search across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub), query them with user-scoped permissions to ground `/daily-brief`, `/my-voice`, `/followup-plan`, and `/meeting-notes`. When no external MCP server is connected, operate directly on `~/.gemini/config/plugin_data/wv-antigravity/memory/`, workspace files, and pasted text without failing.
 2. **Inspectable Plain Markdown:** Store all memory artifacts as clean UTF-8 Markdown (`.md`) or JSON (`.json`) inside `~/.gemini/config/plugin_data/wv-antigravity/memory/` so the user can view, search, and customize every file directly inside **`Extensions -> WV Antigravity`** (via the top-right **Customize** icon).
 
 ## 3. Authentic Voice, Anti-Slop & Outbound Safety Guardrails

@@ -1,7 +1,7 @@
 {
   "name": "agy-connectors",
   "displayName": "Chatski & Gemini Enterprise Connectors",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "Includes the Chatski Google Chat left-sidebar panel (powered out-of-the-box by your Gemini Enterprise Google Chat / Teams Connector or optional Direct Chat REST API) plus the zero-install Gemini Enterprise (GE) federated connector bridge for Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

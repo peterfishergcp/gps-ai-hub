@@ -188,8 +188,9 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
   // Also sync sidecars (agy-skill-manager & agy-design-preview) when running a full suite sync (!skillFilter)
   const sidecarManifest = manifest.sidecarManifest || {};
   if (!skillFilter) {
-    for (const [scId, scEntry] of Object.entries(sidecarManifest)) {
+    for (const [scKey, scEntry] of Object.entries(sidecarManifest)) {
       const pluginName = scEntry.plugin;
+      const scId = String(scEntry.sidecar || scKey);
       if (!SAFE_SEGMENT_RE.test(pluginName) || !SAFE_SEGMENT_RE.test(scId)) continue;
       const scDir = path.join(pluginsRoot, pluginName, 'sidecars', scId);
       for (const [relPath, expectedSha] of Object.entries(scEntry.files || {})) {
@@ -212,6 +213,20 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
       }
     }
   }
+
+    // Clean up retired pre-v2.1.2 local stdio MCP config & legacy chat sidecar if present
+    if (!checkOnly) {
+      const retiredPaths = [
+        path.join(pluginsRoot, 'wv-connectors', 'mcp_config.json'),
+        path.join(pluginsRoot, 'wv-connectors', 'scripts'),
+        path.join(pluginsRoot, 'wv-connectors', 'sidecars'),
+      ];
+      for (const rp of retiredPaths) {
+        if (fs.existsSync(rp)) {
+          try { fs.rmSync(rp, { recursive: true, force: true }); } catch {}
+        }
+      }
+    }
 
   return {
     ok: true,

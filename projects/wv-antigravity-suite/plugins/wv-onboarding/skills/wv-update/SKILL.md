@@ -39,7 +39,8 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 ## Step 2: Optional Full Suite Re-Install (Only When a New Sidecar or MCP Binary Is Added)
 
 If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `WV Preview`), run the full installer:
-```bash
-agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
+```powershell
+irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex
 ```
+*(Or on macOS/Linux: `curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash` — zero `/tmp` writes, stages strictly inside `~/.gemini/config/`.)*
 *(Or on laptops without `git`, run `bash ~/.gemini/config/plugins/wv-onboarding/skills/wv-update/scripts/install-wv-suite.sh --zip-url "https://github.com/peterfishergcp/gps-ai-hub/raw/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"` on macOS/Linux or `install-wv-suite.ps1 -ZipUrl "..."` on Windows PowerShell.)*

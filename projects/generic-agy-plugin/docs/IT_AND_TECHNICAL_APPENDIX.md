@@ -21,7 +21,7 @@ For agencies whose corporate firewalls restrict `github.com` or `raw.githubuserc
       --ge-instance "projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID"
     ```
 - **Option B — Agency-Hosted Internal Git Mirror:**
-  Clone `projects/generic-agy-plugin` into your agency's internal GitHub Enterprise, GitLab, or Cloud Source repository and substitute that internal HTTPS URL in `agy plugin install <INTERNAL_REPO_URL>`.
+  Clone `projects/generic-agy-plugin` into your agency's internal GitHub Enterprise, GitLab, or Cloud Source repository and pass `--zip-url <INTERNAL_HTTPS_ZIP_URL>` to `install-agy-suite.sh` (or `-ZipUrl` to `install-agy-suite.ps1`) so staging stays strictly inside `~/.gemini/config/`.
 - **Zero Extra Laptop Dependencies:** All 8 plugins, 39 skills, 3 UI sidecars (`My Antigravity`, `Skills`, and `Preview`), 4 opt-in `"builtin": "schedule"` automations, and the `agy-ge-bridge` MCP server run natively on Antigravity's built-in `agy-node` runtime—requiring zero separate `Node.js`, `Python`, `npm`, `pip`, or `Docker` installations on staff laptops.
 
 ---

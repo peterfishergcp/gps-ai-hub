@@ -8,8 +8,8 @@ description: Triages unread emails (Outlook or Gmail via Federated Gemini Enterp
 Sort high-volume email queues or operational field reports deterministically using **explicit threshold rules**—modeled on the GPS Public Sector Inbox Triage playbook and West Virginia's operational incident triage standard.
 
 ## Step 1: Retrieve Messages & Active Threshold Rules
-1. **Check Federated GE Instance First (`wv-ge-bridge`):**
-   - If `ge_ask_instance` / `ge_search_records` is configured, query unread or recent messages from the user's federated **Outlook** or **Gmail** connector (default window: last 24–72 hours, or user-specified query/sender/folder), requesting message subject, sender, timestamp, attachment names, and key body excerpt.
+1. **Check Federated GE Instance First (remote HTTPS Gemini Enterprise MCP):**
+   - If Gemini Enterprise `StreamAssist` is configured, query unread or recent messages from the user's federated **Outlook** or **Gmail** connector (default window: last 24–72 hours, or user-specified query/sender/folder), requesting message subject, sender, timestamp, attachment names, and key body excerpt.
    - If no connector is active yet, process pasted threads, `.eml` files, `.csv` logs, or folder documents directly (and mention `/connect-ge` as a 1-step option for live Outlook/Gmail access).
 2. **Apply Explicit 4-Bucket Triage Rules** (use custom agency rules if the user provides a policy doc, otherwise apply this baseline):
    - **Bucket 1 — Immediate Director / Leadership Alert (`[URGENT ESCALATION]`):**

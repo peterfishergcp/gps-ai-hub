@@ -2,7 +2,7 @@
 
 ## 1. Pulling Metrics from Federated SharePoint, OneDrive, Drive, or Email via GE
 When a business user wants a dashboard built from spreadsheets, grant trackers, or status emails stored in **SharePoint, OneDrive, Google Drive, or Outlook**:
-1. Call `ge_ask_instance` (`wv-ge-bridge`) to retrieve the latest figures and cite the authoritative source document + last-modified timestamp.
+1. Call your Gemini Enterprise `StreamAssist` connector to retrieve the latest figures and cite the authoritative source document + last-modified timestamp.
 2. Normalize the rows into `<target>/data/snapshot.json` (`rows`, `updatedAt`, `sourceLabel`) and sync `<script id="initial-data" type="application/json">` in `index.html`.
 3. Display the verified source document title and timestamp in `dashboard.config.json`'s `subtitle` so executives know exactly which SharePoint/Drive record backs the numbers.
 

@@ -320,7 +320,7 @@
       el('p', {
         className: 'muted',
         style: { marginTop: '0', marginBottom: '8px' },
-        text: 'Paste your Gemini Enterprise Engine Resource Path to connect federated SharePoint, Outlook, OneDrive, Teams, Drive, and Google Chat (Chatski).',
+        text: 'Paste your Gemini Enterprise Engine Resource Path to connect federated SharePoint, Outlook, OneDrive, Teams, Drive, and GitHub.',
       }),
       el('div', { className: 'form-row' }, [
         el('div', { style: { flex: '1', minWidth: '260px' } }, [geInput]),

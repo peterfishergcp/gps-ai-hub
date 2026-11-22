@@ -14,12 +14,12 @@ Consult `./references/executive_comms_templates.md` and match the user's goal:
 2. **One-Page Executive Decision Memo (`BLUF`):**
    - Headline recommendation -> Background in 4 sentences -> **Options Comparison Table** (Pros, Cons, Cost, Timeline, Risk) -> Recommended Decision & Sign-Off Block.
 3. **Executive Summary of a Long Report / Federal Guidance:**
-   - Distills 30–200 page PDFs or federated SharePoint/Drive documents (pulled via `ge_ask_instance`) into a 1-page leadership brief citing exact section/page numbers.
+   - Distills 30–200 page PDFs or federated SharePoint/Drive documents (pulled via Gemini Enterprise `StreamAssist`) into a 1-page leadership brief citing exact section/page numbers.
 4. **Public Notice, FAQ, or Press Release:**
    - Plain-language (`<= 8th-grade` reading level), clear eligibility/deadline bullets, and verified contact placeholders (`[CONFIRM CONTACT/URL BEFORE PUBLISHING]`).
 
 ## Step 2: Cross-Document Fact & Number Check
-Before finalizing any flyer or memo, verify every dollar amount, statutory citation, eligibility tier, and deadline against the user's source document (or `ge_ask_instance` retrieval) and flag any discrepancy across drafts!
+Before finalizing any flyer or memo, verify every dollar amount, statutory citation, eligibility tier, and deadline against the user's source document (or Gemini Enterprise `StreamAssist` retrieval) and flag any discrepancy across drafts!
 
 ## Step 3: Mandatory Serverless Visual Preview (ZERO `127.0.0.1` `.url.json` Cards & ZERO Workspace `flyer.html` Code Links!)
 > **CRITICAL UX & FIREWALL RULE:**

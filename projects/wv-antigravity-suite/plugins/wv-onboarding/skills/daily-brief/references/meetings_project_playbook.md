@@ -5,7 +5,7 @@ Adapted from the **GPS Public Sector Skills Library** (*Playbook #2: Meetings & 
 ## 1. Single-Meeting Prep Brief (`1 Page, 3-Minute Read`)
 - **Sections:**
   1. **Meeting Purpose & Desired Outcome** (what needs to be decided before the call ends)
-  2. **Attendee Context & Recent Touchpoints** (grounded in federated Outlook/Gmail/Teams/SharePoint via `ge_ask_instance` or pasted threads)
+  2. **Attendee Context & Recent Touchpoints** (grounded in federated Outlook/Gmail/Teams/SharePoint via Gemini Enterprise `StreamAssist` or pasted threads)
   3. **3 Key Talking Points & Anticipated Questions**
   4. **Open Commitments / Risks to Raise**
 

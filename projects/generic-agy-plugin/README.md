@@ -11,9 +11,9 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
   - Ships as a `< 500 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 8 plugins and 40 skills in seconds—with or without `git` installed.
-- **100% Zero-Footprint Architecture (`~/.gemini/config/` Only — `v1.7.0`):**
+- **100% Zero-Footprint Architecture (`~/.gemini/config/` Only — `v1.7.2`):**
   - All Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`), toggles, and sidecar state live strictly inside `~/.gemini/config/plugin_data/my-antigravity/memory/`—leaving zero extra folders in `$HOME`.
-- **4 Left-Sidebar `Extensions` with Distinct Custom Icons, Dedicated `Skills` (`★ My Personal Skills`), `TokenEconomics`, & Antigravity Updates Hub (`v1.7.0`):**
+- **4 Left-Sidebar `Extensions` with Distinct Custom Icons, Dedicated `Skills` (`★ My Personal Skills`), `TokenEconomics`, & Antigravity Updates Hub (`v1.7.2`):**
   1. **`My Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 5-step Quick Adoption Checklist, **`Stay in sync with Google Antigravity`** blog/video updates & subscribe hub), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, `5h`/`24h`/`7d`/`30d` telemetry, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
   2. **`Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid skill & connector hub displaying all 40 curated suite skills **plus** automatic discovery of all user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), `+ New Skill` wizard, `Save My Copy`, per-skill toggles, Safe Export secret scanner, and `<1s` `Sync Updates`.
   3. **`Preview`** *(**Magnifying Glass** Icon)* — Serverless visual preview of Dashboards, 16:9 Slide Decks, and Branded Flyers with Print-to-PDF and 1-click HTML download.
@@ -21,7 +21,7 @@ Designed specifically for **strict government corporate laptop policies**:
 
 ---
 
-## Visual Tour — `My Antigravity`, Dedicated `Skills`, `TokenEconomics` & `Chatski` (`v1.7.0`)
+## Visual Tour — `My Antigravity`, Dedicated `Skills`, `TokenEconomics` & `Chatski` (`v1.7.2`)
 
 ### 1. `Overview` — Instant Search, `⚡ Orchestrator` Optimizer & Antigravity Updates + Video Walkthroughs (`😎`)
 Search across Action Items, Initiatives, Stakeholders, and all 40 skills, toggle **`⚡ Orchestrator`** prompt optimization, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates:
@@ -54,12 +54,20 @@ See where you stand against your monthly pooled `$` quota (`Standard $30`, `Plus
 
 ## 3 Frictionless Ways to Install (Pick One)
 
-### 1. Native Antigravity 1-Command Bulk Install (Recommended)
-Open a **+ New Conversation** in Antigravity, paste the command below into the chat box at the bottom of the window, and press **Enter** *(leave Default permissions on—you may be asked to click **Accept** a few times during installation)*:
-```bash
-agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
-```
-*(Or point to your agency's internal Git mirror/fork of `projects/generic-agy-plugin`.)*
+### 1. Direct Zero-`/tmp` 1-Command Install (Recommended — Zero `/tmp/lsrpc.sh` Prompts)
+Run directly in Terminal / PowerShell (`<2 seconds`, stages strictly inside `~/.gemini/config/`):
+- **macOS / Linux:**
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash
+  ```
+- **Windows PowerShell 5.1:**
+  ```powershell
+  irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex
+  ```
+- **Or paste directly into a `+ New Conversation` in Antigravity Chat:**
+  ```text
+  Run the direct HTTPS setup script for my OS in ~/.gemini/config (do not load the plugin skill and do not write to /tmp) — macOS/Linux: curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash  |  Windows PowerShell: irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex
+  ```
 
 ### 2. Fastest Corporate Laptop Install (`< 2 Seconds`, Zero `git` Required)
 

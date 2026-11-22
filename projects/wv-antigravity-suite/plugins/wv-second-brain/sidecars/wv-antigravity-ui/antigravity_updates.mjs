@@ -46,7 +46,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Google Antigravity Plugin Suite — Complete Tour',
     summary:
-      'Two-host walkthrough of My Antigravity Overview, AI Inbox Action Items, Dedicated Skills Hub (with Personal Skills), TokenEconomics, Preview, and Chatski.',
+      'Two-host walkthrough of WV Antigravity Overview, AI Inbox Action Items, Dedicated WV Skills Hub (with Personal Skills), TokenEconomics, and serverless WV Preview.',
     url: YOUTUBE_CHANNEL_URL,
     tryLabel: 'Tour My Workspace →',
     tryPrompt:
