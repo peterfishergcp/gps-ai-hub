@@ -27,6 +27,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
+import { buildInlinedSidecarHtml } from './sidecar_html_inliner.mjs';
 import { extractStreamAssistPayload, parseGeInstanceInput } from '../../scripts/ge_instance_mcp.mjs';
 import { getTokenMeterSummary } from './token_meter.mjs';
 
@@ -802,7 +803,7 @@ function buildEffectiveState() {
 
 const app = new SidecarApp();
 
-app.page('/', () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'));
+app.page('/', () => buildInlinedSidecarHtml(__dirname, ['token_pill_ui.js', 'app.js']));
 
 app.api(
   '/styles.css',
