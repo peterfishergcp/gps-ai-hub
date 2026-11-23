@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.2.0-proto",
-  "updatedAt": "2026-11-23T04:45:00Z",
+  "suiteVersion": "2.2.0",
+  "updatedAt": "2026-11-23T17:10:37Z",
   "skillCount": 40,
   "skillManifest": {
     "automations": {
@@ -180,12 +180,12 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "76ad2d5ff8170c8e",
+      "treeSha256": "93a0b802f56f11c2",
       "files": {
         "SKILL.md": "9c7ef3e75e8a3a14734d0a5cc4f8d32ed573cc92369157a284f9f62eb7b8483c",
-        "scripts/incremental-sync.mjs": "1a853f7d847f240a7b24bdfac2dce0348372ae62e2c58811928001e40cfd2ea7",
-        "scripts/install-wv-suite.ps1": "e9bb72a1813a7dfae357ff5bbb4992e06ce7e83e9654eb21f3f47c827cba2bde",
-        "scripts/install-wv-suite.sh": "9757d89caebe3e6bdab2739720edf152798ac05afc6b303a7371b0755e5c1f92"
+        "scripts/incremental-sync.mjs": "65de187e9e80eb71ae611308b749302c99ab958bcb4c9844f12714af4c8e5a8f",
+        "scripts/install-wv-suite.ps1": "24563072f9b696757ac90fc6dab87e9a81a0413041d02cf966f6f2bc7d9b2289",
+        "scripts/install-wv-suite.sh": "f57e5add7cdab00da5b675806c239395937ef31b1771883046fd2b509d042035"
       }
     },
     "followup-plan": {

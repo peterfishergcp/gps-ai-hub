@@ -28,7 +28,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/wv-clawy-coordinator/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
+$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $UserHome = [Environment]::GetFolderPath("UserProfile")

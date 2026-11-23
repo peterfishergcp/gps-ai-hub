@@ -4,7 +4,7 @@
 # zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
 set -euo pipefail
 
-DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/wv-clawy-coordinator/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
+DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 ZIP_URL=""
 GE_INSTANCE=""
 OAUTH_CLIENT_ID=""
