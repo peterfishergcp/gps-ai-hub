@@ -1,5 +1,5 @@
 /**
- * AGY Coordinator — Core State, LS Discovery, AgentAPI Relay, Persona & Voice Engine
+ * AGY Coordinator — Core State, Desktop/Brain Discovery, AgentAPI Relay, Persona & Voice Engine
  *
  * Zero external npm dependencies. Uses only Node built-ins (`node:*`).
  * Persistent state lives strictly under `~/.gemini/config/plugin_data/agy-coordinator/`
@@ -9,14 +9,20 @@
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
+import readline from 'node:readline';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
 export const SAFE_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{1,120}$/;
 export const DEFAULT_VOICE_MODEL = 'gemini-3.8-live';
+export const DEFAULT_MULTIMODAL_MODEL = 'gemini-3.8-flash';
+
+const BRAIN_CONV_CACHE = new Map();
+let cachedAdcToken = null; // { accessToken, expiresAt, quotaProjectId }
 
 const DEFAULT_IDENTITY_MD = `# Coordinator Identity
 
@@ -126,10 +132,10 @@ export function ensureInitialized() {
       voicePath,
       JSON.stringify(
         {
-          mode: 'browser',
+          mode: 'gemini-live',
           model: DEFAULT_VOICE_MODEL,
           apiKey: '',
-          useGcloudAdc: false,
+          useGcloudAdc: true,
           ttsEnabled: true,
           voiceRate: 1.0,
           voicePitch: 1.05,
@@ -240,10 +246,10 @@ export function loadVoicePrefsRaw() {
   const voicePath = path.join(dir, 'voice_prefs.json');
   const raw = readJsonSafe(voicePath, {});
   return {
-    mode: raw.mode === 'gemini-live' ? 'gemini-live' : 'browser',
+    mode: raw.mode === 'browser' ? 'browser' : 'gemini-live',
     model: typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : DEFAULT_VOICE_MODEL,
     apiKey: typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '',
-    useGcloudAdc: Boolean(raw.useGcloudAdc),
+    useGcloudAdc: raw.useGcloudAdc !== false,
     ttsEnabled: raw.ttsEnabled !== false,
     voiceRate: Number.isFinite(Number(raw.voiceRate)) ? Math.min(1.6, Math.max(0.6, Number(raw.voiceRate))) : 1.0,
     voicePitch: Number.isFinite(Number(raw.voicePitch)) ? Math.min(1.5, Math.max(0.7, Number(raw.voicePitch))) : 1.05,
@@ -271,23 +277,259 @@ export function saveVoicePrefs(patch) {
   return getPublicVoiceStatus();
 }
 
+export function findAdcCredentialsFile() {
+  const candidates = [];
+  const envAdc = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim();
+  if (envAdc) candidates.push(envAdc);
+  if (process.platform === 'win32' && process.env.APPDATA) {
+    candidates.push(path.join(process.env.APPDATA, 'gcloud', 'application_default_credentials.json'));
+  }
+  candidates.push(path.join(os.homedir(), '.config', 'gcloud', 'application_default_credentials.json'));
+
+  for (const p of candidates) {
+    try {
+      if (!p || !fs.existsSync(p)) continue;
+      const st = fs.lstatSync(p);
+      if (!st.isFile() || st.isSymbolicLink()) continue;
+      const parsed = readJsonSafe(p, null);
+      if (parsed && parsed.refresh_token && parsed.client_id) {
+        return { path: p, creds: parsed };
+      }
+    } catch {
+      // Ignore unreadable candidates.
+    }
+  }
+  return null;
+}
+
 export function getPublicVoiceStatus() {
   const prefs = loadVoicePrefsRaw();
   const envKey = (process.env.GEMINI_API_KEY || '').trim();
   const effectiveKey = envKey || prefs.apiKey || '';
-  const keySource = envKey ? 'env' : prefs.apiKey ? 'prefs' : prefs.useGcloudAdc ? 'gcloud-adc' : 'none';
+  const adcFile = findAdcCredentialsFile();
+  const keySource = envKey
+    ? 'env'
+    : prefs.apiKey
+      ? 'prefs'
+      : adcFile
+        ? 'adc-file'
+        : prefs.useGcloudAdc
+          ? 'gcloud-adc'
+          : 'none';
   return {
     mode: prefs.mode,
     model: prefs.model,
     hasApiKey: Boolean(effectiveKey),
+    hasAdcFile: Boolean(adcFile),
     keySource,
     useGcloudAdc: prefs.useGcloudAdc,
     ttsEnabled: prefs.ttsEnabled,
     voiceRate: prefs.voiceRate,
     voicePitch: prefs.voicePitch,
-    readyForGeminiLive: Boolean(effectiveKey || prefs.useGcloudAdc),
+    readyForGeminiLive: Boolean(effectiveKey || adcFile || prefs.useGcloudAdc),
     prefsPath: path.join(getDataDir(), 'voice_prefs.json'),
   };
+}
+
+/* ---------- Brain Transcript Discovery (Fast <15ms Desktop Fallback) ---------- */
+
+export function getBrainRoots() {
+  const candidates = [];
+  if (process.env.ANTIGRAVITY_BRAIN_DIR) {
+    candidates.push(process.env.ANTIGRAVITY_BRAIN_DIR);
+  }
+  const appData = (process.env.ANTIGRAVITY_APP_DATA_DIR || '').trim();
+  if (appData) {
+    candidates.push(path.join(path.resolve(appData), 'brain'));
+  }
+  const execDir = (process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || '').trim();
+  if (execDir) {
+    const marker = path.sep + 'sidecar_data' + path.sep;
+    const idx = execDir.indexOf(marker);
+    if (idx > 0) {
+      candidates.push(path.join(execDir.slice(0, idx), 'brain'));
+    }
+  }
+  if (process.env.ANTIGRAVITY_BRAIN_ISOLATED !== '1') {
+    candidates.push(path.join(os.homedir(), '.gemini', 'antigravity', 'brain'));
+    candidates.push(path.join(os.homedir(), '.gemini', 'jetski', 'brain'));
+  }
+
+  const seen = new Set();
+  const roots = [];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    try {
+      const st = fs.lstatSync(raw);
+      if (!st.isDirectory() || st.isSymbolicLink()) continue;
+      const real = fs.realpathSync(raw);
+      if (seen.has(real)) continue;
+      seen.add(real);
+      roots.push(real);
+    } catch {
+      // Missing dir; ignore.
+    }
+  }
+  return roots;
+}
+
+function cleanSnippet(raw, maxLen) {
+  return String(raw || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[#*_`>\[\]]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLen);
+}
+
+async function parseBrainTranscriptCached(txPath, convId, st) {
+  const hit = BRAIN_CONV_CACHE.get(txPath);
+  if (hit && hit.mtimeMs === st.mtimeMs && hit.size === st.size) {
+    return hit;
+  }
+
+  let firstUserTitle = '';
+  let latestUserPrompt = '';
+  let latestPlannerSnippet = '';
+  let firstTime = null;
+  let lastTime = null;
+  let lastType = '';
+
+  const stream = fs.createReadStream(txPath, { encoding: 'utf-8' });
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+  for await (const line of rl) {
+    if (!line || line[0] !== '{') continue;
+    let obj;
+    try {
+      obj = JSON.parse(line.replace(/^\uFEFF/, ''));
+    } catch {
+      continue;
+    }
+
+    const typ = String(obj.type || '');
+    if (typ) lastType = typ;
+    if (typeof obj.created_at === 'string' && obj.created_at) {
+      if (!firstTime) firstTime = obj.created_at;
+      lastTime = obj.created_at;
+    }
+
+    if (typ === 'USER_INPUT' && typeof obj.content === 'string') {
+      const cleaned = cleanSnippet(obj.content, 76);
+      if (cleaned) {
+        if (!firstUserTitle) firstUserTitle = cleaned;
+        latestUserPrompt = cleaned;
+      }
+    } else if (typ === 'PLANNER_RESPONSE' && typeof obj.content === 'string') {
+      const cleaned = cleanSnippet(obj.content, 120);
+      if (cleaned) latestPlannerSnippet = cleaned;
+    }
+  }
+
+  const entry = {
+    id: convId,
+    mtimeMs: st.mtimeMs,
+    size: st.size,
+    title: firstUserTitle || latestUserPrompt || `Conversation ${convId.slice(0, 8)}`,
+    summary: latestPlannerSnippet || latestUserPrompt || '',
+    createTime: firstTime || new Date(st.birthtimeMs || st.mtimeMs).toISOString(),
+    updateTime: lastTime || new Date(st.mtimeMs).toISOString(),
+    lastType,
+  };
+
+  if (BRAIN_CONV_CACHE.size > 320) {
+    const oldest = BRAIN_CONV_CACHE.keys().next().value;
+    if (oldest) BRAIN_CONV_CACHE.delete(oldest);
+  }
+  BRAIN_CONV_CACHE.set(txPath, entry);
+  return entry;
+}
+
+export async function discoverBrainConversations(limit = 40) {
+  const roots = getBrainRoots();
+  const candidates = [];
+
+  for (const brainRoot of roots) {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(brainRoot, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const ent of entries) {
+      if (!ent.isDirectory() || ent.isSymbolicLink() || ent.name.startsWith('.')) continue;
+      if (!SAFE_ID_RE.test(ent.name)) continue;
+      const txPath = path.join(brainRoot, ent.name, '.system_generated', 'logs', 'transcript.jsonl');
+      try {
+        const st = fs.lstatSync(txPath);
+        if (!st.isFile() || st.isSymbolicLink() || st.size <= 0) continue;
+        const real = fs.realpathSync(txPath);
+        if (!real.startsWith(brainRoot + path.sep)) continue;
+        candidates.push({ convId: ent.name, txPath: real, st });
+      } catch {
+        // No transcript.jsonl yet; skip.
+      }
+    }
+  }
+
+  candidates.sort((a, b) => b.st.mtimeMs - a.st.mtimeMs);
+  const sliced = candidates.slice(0, limit);
+  const nowMs = Date.now();
+  const out = [];
+
+  for (const item of sliced) {
+    try {
+      const parsed = await parseBrainTranscriptCached(item.txPath, item.convId, item.st);
+      const ageMs = Math.max(0, nowMs - (parsed.mtimeMs || 0));
+      const isWorking = ageMs < 90_000 && parsed.lastType === 'USER_INPUT';
+      out.push({
+        id: parsed.id,
+        title: parsed.title,
+        summary: parsed.summary,
+        runState: isWorking ? 'RUN_STATE_RUNNING' : 'RUN_STATE_IDLE',
+        createTime: parsed.createTime,
+        updateTime: parsed.updateTime,
+        projectId: '',
+        archived: false,
+        source: 'brain-transcript',
+      });
+    } catch {
+      // Skip malformed transcript safely.
+    }
+  }
+
+  return out;
+}
+
+/* ---------- Language Server Discovery (Safe HTML/JSON Guard) ---------- */
+
+async function safeLsJsonPost(baseUrl, rpcPath, csrfToken, bodyObj) {
+  const url = `${baseUrl.replace(/\/$/, '')}${rpcPath}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Connect-Protocol-Version': '1',
+      'x-codeium-csrf-token': csrfToken,
+    },
+    body: JSON.stringify(bodyObj || {}),
+    signal: AbortSignal.timeout(3500),
+  });
+  if (!resp.ok) {
+    return { ok: false, status: resp.status, reason: `HTTP ${resp.status}`, data: null };
+  }
+  const ct = String(resp.headers.get('content-type') || '').toLowerCase();
+  const rawText = await resp.text();
+  const trimmed = rawText.trimStart();
+  if (!ct.includes('application/json') || trimmed.startsWith('<')) {
+    return { ok: false, status: resp.status, reason: 'Non-JSON HTML response from LS endpoint', data: null };
+  }
+  try {
+    return { ok: true, status: resp.status, reason: '', data: JSON.parse(rawText.replace(/^\uFEFF/, '')) };
+  } catch {
+    return { ok: false, status: resp.status, reason: 'Invalid JSON payload from LS', data: null };
+  }
 }
 
 export async function listLsConversations({ includeArchived = false } = {}) {
@@ -297,60 +539,84 @@ export async function listLsConversations({ includeArchived = false } = {}) {
     return {
       ok: false,
       available: false,
-      reason: 'ANTIGRAVITY_LS_ADDRESS or ANTIGRAVITY_CSRF_TOKEN is not set in the current environment.',
+      reason: 'LS env vars not set',
       conversations: [],
     };
   }
 
   const baseUrl = /^https?:\/\//i.test(lsAddr) ? lsAddr : `http://${lsAddr}`;
-  const url = `${baseUrl.replace(/\/$/, '')}/jetski.product.v1.ConversationService/ListConversations`;
   try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Connect-Protocol-Version': '1',
-        'x-codeium-csrf-token': csrfToken,
-      },
-      body: JSON.stringify({ pageSize: 50 }),
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!resp.ok) {
-      return {
-        ok: false,
-        available: true,
-        reason: `Language Server returned HTTP ${resp.status}`,
-        conversations: [],
-      };
+    const primary = await safeLsJsonPost(
+      baseUrl,
+      '/jetski.product.v1.ConversationService/ListConversations',
+      csrfToken,
+      { pageSize: 50 }
+    );
+    if (primary.ok && primary.data) {
+      const rawList = Array.isArray(primary.data.conversations) ? primary.data.conversations : [];
+      const conversations = rawList
+        .map((c) => {
+          const id = String(c?.id || c?.conversationId || '').trim();
+          if (!id) return null;
+          const annotations = c?.annotations && typeof c.annotations === 'object' ? c.annotations : {};
+          const metadata = c?.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+          const state = c?.state && typeof c.state === 'object' ? c.state : {};
+          const archived = Boolean(annotations.archived);
+          if (!includeArchived && archived) return null;
+          return {
+            id,
+            title: String(annotations.title || `Conversation ${id.slice(0, 8)}`).trim(),
+            summary: String(state.summary || '').trim(),
+            runState: String(state.runState || 'RUN_STATE_UNSPECIFIED'),
+            createTime: metadata.createTime || null,
+            updateTime: state.updateTime || metadata.createTime || null,
+            projectId: metadata.projectId || '',
+            archived,
+            source: 'live-ls',
+          };
+        })
+        .filter(Boolean);
+      return { ok: true, available: true, reason: '', conversations };
     }
-    const data = await resp.json();
-    const rawList = Array.isArray(data?.conversations) ? data.conversations : [];
-    const conversations = rawList
-      .map((c) => {
-        const id = String(c?.id || c?.conversationId || '').trim();
-        if (!id) return null;
-        const annotations = c?.annotations && typeof c.annotations === 'object' ? c.annotations : {};
-        const metadata = c?.metadata && typeof c.metadata === 'object' ? c.metadata : {};
-        const state = c?.state && typeof c.state === 'object' ? c.state : {};
-        const archived = Boolean(annotations.archived);
-        if (!includeArchived && archived) return null;
-        return {
-          id,
-          title: String(annotations.title || `Conversation ${id.slice(0, 8)}`).trim(),
-          summary: String(state.summary || '').trim(),
-          runState: String(state.runState || 'RUN_STATE_UNSPECIFIED'),
-          createTime: metadata.createTime || null,
-          updateTime: state.updateTime || metadata.createTime || null,
-          projectId: metadata.projectId || '',
-          archived,
-        };
-      })
-      .filter(Boolean);
+
+    // Desktop Language Server RPC fallback
+    const desktop = await safeLsJsonPost(
+      baseUrl,
+      '/exa.language_server_pb.LanguageServerService/GetAllCascadeTrajectories',
+      csrfToken,
+      {}
+    );
+    if (desktop.ok && desktop.data) {
+      const summaries = desktop.data.cascadeSummaries || desktop.data.trajectories || {};
+      const entries = Array.isArray(summaries)
+        ? summaries.map((v, idx) => [String(v?.cascadeId || v?.id || idx), v])
+        : Object.entries(summaries);
+      const conversations = entries
+        .map(([id, item]) => {
+          const cleanId = String(item?.cascadeId || item?.id || id || '').trim();
+          if (!cleanId) return null;
+          const status = String(item?.status || item?.runState || '');
+          return {
+            id: cleanId,
+            title: String(item?.summary || item?.title || `Cascade ${cleanId.slice(0, 8)}`).trim().slice(0, 80),
+            summary: String(item?.latestResponse || item?.summary || '').trim().slice(0, 120),
+            runState: status.includes('RUNNING') ? 'RUN_STATE_RUNNING' : 'RUN_STATE_IDLE',
+            createTime: item?.createdTime || null,
+            updateTime: item?.lastModifiedTime || item?.updateTime || null,
+            projectId: '',
+            archived: false,
+            source: 'desktop-ls',
+          };
+        })
+        .filter(Boolean);
+      return { ok: true, available: true, reason: '', conversations };
+    }
+
     return {
-      ok: true,
-      available: true,
-      reason: '',
-      conversations,
+      ok: false,
+      available: false,
+      reason: primary.reason || desktop.reason || 'LS endpoint unavailable',
+      conversations: [],
     };
   } catch (err) {
     return {
@@ -364,13 +630,18 @@ export async function listLsConversations({ includeArchived = false } = {}) {
 
 export async function getMergedWorkers({ includeArchived = false } = {}) {
   const state = loadState();
-  const ls = await listLsConversations({ includeArchived });
+  const [ls, brainConvs] = await Promise.all([
+    listLsConversations({ includeArchived }),
+    discoverBrainConversations(40),
+  ]);
   const workerMeta = state.workers || {};
   const byId = new Map();
 
-  for (const conv of ls.conversations) {
+  function upsertConversation(conv) {
+    const existing = byId.get(conv.id);
     const meta = workerMeta[conv.id] || {};
-    const runState = conv.runState || '';
+    if (meta.removed) return;
+    const runState = conv.runState || (existing ? existing.runState : '');
     const derivedStatus =
       meta.customStatus ||
       (runState.includes('RUNNING')
@@ -381,15 +652,29 @@ export async function getMergedWorkers({ includeArchived = false } = {}) {
             ? 'IDLE'
             : 'ACTIVE');
     byId.set(conv.id, {
+      ...(existing || {}),
       ...conv,
+      title: conv.title || (existing && existing.title) || meta.title || `Worker ${conv.id.slice(0, 8)}`,
+      summary: conv.summary || (existing && existing.summary) || meta.note || '',
       groupId: meta.groupId || 'group-default',
       pinned: Boolean(meta.pinned),
       labels: Array.isArray(meta.labels) ? meta.labels : [],
       customStatus: meta.customStatus || '',
       status: derivedStatus,
       note: meta.note || '',
-      source: 'live-ls',
+      source: existing ? existing.source : conv.source,
     });
+  }
+
+  for (const conv of ls.conversations) upsertConversation(conv);
+  for (const conv of brainConvs) {
+    if (!byId.has(conv.id)) {
+      upsertConversation(conv);
+    } else {
+      // Enrich LS entry if brain has a richer summary
+      const cur = byId.get(conv.id);
+      if (!cur.summary && conv.summary) cur.summary = conv.summary;
+    }
   }
 
   for (const [id, meta] of Object.entries(workerMeta)) {
@@ -407,7 +692,7 @@ export async function getMergedWorkers({ includeArchived = false } = {}) {
       pinned: Boolean(meta.pinned),
       labels: Array.isArray(meta.labels) ? meta.labels : [],
       customStatus: meta.customStatus || '',
-      status: meta.customStatus || (ls.available ? 'OFFLINE' : 'TRACKED'),
+      status: meta.customStatus || 'TRACKED',
       note: meta.note || '',
       source: 'local-meta',
     });
@@ -422,9 +707,11 @@ export async function getMergedWorkers({ includeArchived = false } = {}) {
 
   return {
     lsStatus: {
-      ok: ls.ok,
-      available: ls.available,
-      reason: ls.reason,
+      ok: ls.ok || brainConvs.length > 0,
+      available: ls.available || brainConvs.length > 0,
+      lsLive: ls.ok,
+      brainCount: brainConvs.length,
+      reason: ls.ok ? '' : brainConvs.length > 0 ? `Synced ${brainConvs.length} local brain transcripts` : ls.reason,
     },
     workers,
   };
@@ -567,11 +854,7 @@ export function updateWorkerMeta({ convId, groupId, pinned, addLabel, removeLabe
   }
   const state = loadState();
   const cur = state.workers[cleanId] || { groupId: 'group-default', pinned: false, labels: [] };
-  if (remove === true) {
-    cur.removed = true;
-  } else {
-    cur.removed = false;
-  }
+  cur.removed = remove === true;
   if (typeof groupId === 'string' && groupId.trim()) cur.groupId = groupId.trim();
   if (typeof pinned === 'boolean') cur.pinned = pinned;
   if (typeof customStatus === 'string') cur.customStatus = customStatus.trim().slice(0, 32);
@@ -742,19 +1025,100 @@ export function appendChatTurn({ role, text, source = 'text', action = null }) {
   return entry;
 }
 
+/* ---------- Pure Node HTTPS ADC OAuth2 Exchange & Gemini Auth ---------- */
+
+function httpsFormPost(urlString, formParams, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(urlString);
+    const body = new URLSearchParams(formParams).toString();
+    const req = https.request(
+      {
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: parsed.pathname + parsed.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(body),
+          Accept: 'application/json',
+        },
+        timeout: timeoutMs,
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf-8');
+          try {
+            resolve({ status: res.statusCode || 0, json: JSON.parse(text) });
+          } catch {
+            resolve({ status: res.statusCode || 0, json: null });
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy(new Error('OAuth2 token refresh timed out'));
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
 async function resolveGeminiAuth(prefs) {
   const envKey = (process.env.GEMINI_API_KEY || '').trim();
   const apiKey = envKey || prefs.apiKey || '';
   if (apiKey) {
-    return { type: 'apiKey', token: apiKey };
+    return { type: 'apiKey', token: apiKey, source: envKey ? 'env' : 'prefs' };
   }
+
+  // 1. Keyless ADC file refresh via pure HTTPS POST (0 subprocesses needed)
+  if (cachedAdcToken && cachedAdcToken.expiresAt > Date.now()) {
+    return {
+      type: 'bearer',
+      token: cachedAdcToken.accessToken,
+      quotaProjectId: cachedAdcToken.quotaProjectId || '',
+      source: 'adc-file',
+    };
+  }
+
+  const adc = findAdcCredentialsFile();
+  if (adc && adc.creds) {
+    try {
+      const form = {
+        client_id: adc.creds.client_id,
+        refresh_token: adc.creds.refresh_token,
+        grant_type: 'refresh_token',
+      };
+      if (adc.creds.client_secret) form.client_secret = adc.creds.client_secret;
+      const resp = await httpsFormPost('https://oauth2.googleapis.com/token', form, 10000);
+      if (resp.status === 200 && resp.json && resp.json.access_token) {
+        cachedAdcToken = {
+          accessToken: resp.json.access_token,
+          expiresAt: Date.now() + Math.max(60, Number(resp.json.expires_in || 3500) - 60) * 1000,
+          quotaProjectId: String(adc.creds.quota_project_id || ''),
+        };
+        return {
+          type: 'bearer',
+          token: cachedAdcToken.accessToken,
+          quotaProjectId: cachedAdcToken.quotaProjectId,
+          source: 'adc-file',
+        };
+      }
+    } catch {
+      // Fall through to gcloud CLI fallback if enabled.
+    }
+  }
+
+  // 2. Optional gcloud CLI fallback
   if (prefs.useGcloudAdc) {
     try {
       const { stdout } = await execFileAsync('gcloud', ['auth', 'print-access-token'], {
         timeout: 5000,
       });
       const tok = String(stdout || '').trim();
-      if (tok) return { type: 'bearer', token: tok };
+      if (tok) return { type: 'bearer', token: tok, quotaProjectId: '', source: 'gcloud-adc' };
     } catch {
       return null;
     }
@@ -765,46 +1129,167 @@ async function resolveGeminiAuth(prefs) {
 function buildCoordinatorSystemContext({ identity, state, workers }) {
   const activeGoals = state.goals.filter((g) => g.status !== 'done');
   const openTasks = state.tasks.filter((t) => !t.done);
-  const workerLines = (workers || []).slice(0, 8).map((w) => `- [${w.status}] ${w.title} (id: ${w.id.slice(0, 8)})`);
-  const goalLines = activeGoals.slice(0, 8).map((g) => `- [${g.status}] ${g.title} (id: ${g.id})`);
+  const groupLines = state.groups.map((g) => `- ${g.title} (groupId: ${g.id})`);
+  const workerLines = (workers || []).slice(0, 10).map((w) => `- [${w.status}] ${w.title} (id: ${w.id.slice(0, 8)})`);
+  const goalLines = activeGoals.slice(0, 10).map((g) => `- [${g.status}] ${g.title} (goalId: ${g.id}, groupId: ${g.groupId})`);
   return [
     identity.identityMd.trim(),
     identity.soulMd.trim(),
     `Current Coordinator Snapshot (${new Date().toISOString()}):`,
     `- Groups: ${state.groups.length}, Active Goals: ${activeGoals.length}, Open Tasks: ${openTasks.length}, Tracked Workers: ${(workers || []).length}`,
+    `Groups:\n${groupLines.join('\n')}`,
     workerLines.length ? `Workers:\n${workerLines.join('\n')}` : 'Workers: none active yet.',
     goalLines.length ? `Goals:\n${goalLines.join('\n')}` : 'Goals: none created yet.',
-    'Respond in 1-3 crisp sentences suitable for voice playback.',
+    [
+      'Return ONLY valid JSON with this exact shape:',
+      '{',
+      '  "transcript": "<exact user utterance if audio was provided, else user text>",',
+      '  "reply": "<1-3 crisp spoken sentences from the coordinator>",',
+      '  "action": {',
+      '    "type": "none | create_group | create_goal | add_task | spawn | relay",',
+      '    "groupTitle": "<if create_group>",',
+      '    "groupId": "<optional existing groupId for create_goal>",',
+      '    "goalTitle": "<if create_goal>",',
+      '    "goalId": "<existing goalId for add_task>",',
+      '    "taskTitle": "<if add_task>",',
+      '    "convId": "<worker id or prefix for relay>",',
+      '    "prompt": "<if spawn>",',
+      '    "message": "<if relay>"',
+      '  }',
+      '}',
+    ].join('\n'),
   ].join('\n\n');
 }
 
-function buildLocalCoordinatorReply(prompt, { identity, state, workers }) {
-  const lower = String(prompt || '').toLowerCase();
+function parseStructuredCoordinatorJson(rawText, fallbackTranscript = '') {
+  const txt = String(rawText || '').trim();
+  const stripped = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  try {
+    const obj = JSON.parse(stripped);
+    if (obj && typeof obj === 'object') {
+      return {
+        transcript: typeof obj.transcript === 'string' && obj.transcript.trim() ? obj.transcript.trim() : fallbackTranscript,
+        reply: typeof obj.reply === 'string' && obj.reply.trim() ? obj.reply.trim() : stripped,
+        action: obj.action && typeof obj.action === 'object' ? obj.action : null,
+      };
+    }
+  } catch {
+    // Non-JSON text fallback.
+  }
+  return {
+    transcript: fallbackTranscript,
+    reply: txt,
+    action: null,
+  };
+}
+
+async function executeCoordinatorAction(action, { workers, state }) {
+  if (!action || !action.type || action.type === 'none') return null;
+  const typ = String(action.type).toLowerCase();
+
+  if (typ === 'create_group' && action.groupTitle) {
+    const res = mutateGroups({ action: 'add', title: String(action.groupTitle) });
+    return { type: 'create_group', ok: true, group: res.group };
+  }
+
+  if (typ === 'create_goal' && action.goalTitle) {
+    let targetGroupId = action.groupId && state.groups.some((g) => g.id === action.groupId) ? action.groupId : 'group-default';
+    if (!action.groupId && action.groupTitle) {
+      const matchGrp = state.groups.find((g) => g.title.toLowerCase() === String(action.groupTitle).toLowerCase());
+      if (matchGrp) targetGroupId = matchGrp.id;
+    }
+    const res = mutateGoals({ action: 'add', groupId: targetGroupId, title: String(action.goalTitle) });
+    return { type: 'create_goal', ok: true, goal: res.goal };
+  }
+
+  if (typ === 'add_task' && action.taskTitle) {
+    const targetGoalId =
+      action.goalId && state.goals.some((g) => g.id === action.goalId)
+        ? action.goalId
+        : state.goals.find((g) => g.status !== 'done')?.id || state.goals[0]?.id;
+    if (!targetGoalId) {
+      const createdGoal = mutateGoals({
+        action: 'add',
+        groupId: 'group-default',
+        title: action.goalTitle || 'Active Sprint',
+      });
+      const tRes = mutateTasks({ action: 'add', goalId: createdGoal.goal.id, title: String(action.taskTitle) });
+      return { type: 'add_task', ok: true, task: tRes.task, goal: createdGoal.goal };
+    }
+    const tRes = mutateTasks({ action: 'add', goalId: targetGoalId, title: String(action.taskTitle) });
+    return { type: 'add_task', ok: true, task: tRes.task };
+  }
+
+  if (typ === 'spawn' && action.prompt) {
+    const spawned = await spawnWorker({ prompt: String(action.prompt), groupId: action.groupId || 'group-default' });
+    return { type: 'spawn', ok: true, conversationId: spawned.conversationId };
+  }
+
+  if (typ === 'relay' && action.convId && action.message) {
+    const q = String(action.convId).toLowerCase();
+    const hit = (workers || []).find((w) => w.id.toLowerCase().startsWith(q));
+    if (!hit) return { type: 'relay', ok: false, error: `Worker "${action.convId}" not found` };
+    await relayToWorker({ convId: hit.id, message: String(action.message) });
+    return { type: 'relay', ok: true, conversationId: hit.id };
+  }
+
+  return null;
+}
+
+function buildLocalActionOrReply(prompt, { identity, state, workers }) {
+  const text = String(prompt || '').trim();
+  const goalMatch = text.match(/^\/?(?:create|add)\s+goal\s*[:\-]\s*(.+)$/i);
+  if (goalMatch) {
+    return {
+      transcript: text,
+      reply: `${identity.name} created goal "${goalMatch[1].trim()}".`,
+      action: { type: 'create_goal', goalTitle: goalMatch[1].trim(), groupId: 'group-default' },
+    };
+  }
+  const grpMatch = text.match(/^\/?(?:create|add)\s+group\s*[:\-]\s*(.+)$/i);
+  if (grpMatch) {
+    return {
+      transcript: text,
+      reply: `${identity.name} created group "${grpMatch[1].trim()}".`,
+      action: { type: 'create_group', groupTitle: grpMatch[1].trim() },
+    };
+  }
+  const taskMatch = text.match(/^\/?(?:create|add)\s+task\s*[:\-]\s*(.+)$/i);
+  if (taskMatch) {
+    return {
+      transcript: text,
+      reply: `${identity.name} added task "${taskMatch[1].trim()}".`,
+      action: { type: 'add_task', taskTitle: taskMatch[1].trim() },
+    };
+  }
+
+  const lower = text.toLowerCase();
   const name = identity.name || 'Clawy';
   const activeGoals = state.goals.filter((g) => g.status !== 'done');
   const openTasks = state.tasks.filter((t) => !t.done);
   const runningWorkers = (workers || []).filter((w) => w.status === 'WORKING');
 
+  let reply = '';
   if (/\b(status|summary|overview|what('?s| is) happening|workers?)\b/.test(lower)) {
-    return (
+    reply =
       `${name} reporting: you have ${(workers || []).length} worker conversation(s) ` +
       `(${runningWorkers.length} working), ${state.groups.length} group(s), ` +
-      `${activeGoals.length} active goal(s), and ${openTasks.length} open task(s).`
-    );
-  }
-  if (/\b(goal|goals|task|tasks)\b/.test(lower)) {
+      `${activeGoals.length} active goal(s), and ${openTasks.length} open task(s).`;
+  } else if (/\b(goal|goals|task|tasks)\b/.test(lower)) {
     if (activeGoals.length === 0) {
-      return `${name} here: no active goals yet. Open the Goals tab or tell me a goal title to create one under a Group.`;
+      reply = `${name} here: no active goals yet. Say "Create goal: <title>" or use the Goals tab.`;
+    } else {
+      const top = activeGoals[0];
+      const topOpen = openTasks.filter((t) => t.goalId === top.id).length;
+      reply = `${name} tracking ${activeGoals.length} active goal(s). Top focus: "${top.title}" with ${topOpen} open task(s).`;
     }
-    const top = activeGoals[0];
-    const topOpen = openTasks.filter((t) => t.goalId === top.id).length;
-    return `${name} tracking ${activeGoals.length} active goal(s). Top focus: "${top.title}" with ${topOpen} open task(s).`;
+  } else {
+    reply =
+      `${name} received: "${text.slice(0, 120)}". ` +
+      `Tracking ${(workers || []).length} worker(s) and ${activeGoals.length} active goal(s).`;
   }
-  return (
-    `${name} received: "${String(prompt || '').trim().slice(0, 120)}". ` +
-    `Currently tracking ${(workers || []).length} worker(s) and ${activeGoals.length} active goal(s). ` +
-    `Use "relay <id>: <msg>" or "spawn: <prompt>" to dispatch directly.`
-  );
+
+  return { transcript: text, reply, action: null };
 }
 
 async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
@@ -816,7 +1301,10 @@ async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
       ? `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(auth.token)}`
       : 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
-  const wsOpts = auth.type === 'bearer' ? { headers: { Authorization: `Bearer ${auth.token}` } } : undefined;
+  const headers = {};
+  if (auth.type === 'bearer') headers.Authorization = `Bearer ${auth.token}`;
+  if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
+  const wsOpts = Object.keys(headers).length ? { headers } : undefined;
   const fullModel = model.startsWith('models/') ? model : `models/${model}`;
 
   return await new Promise((resolve, reject) => {
@@ -826,28 +1314,19 @@ async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
-        try {
-          ws.close();
-        } catch {}
-        if (textOut.trim()) {
-          resolve(textOut.trim());
-        } else {
-          reject(new Error('Gemini Live WebSocket timed out'));
-        }
+        try { ws.close(); } catch {}
+        if (textOut.trim()) resolve(textOut.trim());
+        else reject(new Error('Gemini Live WebSocket timed out'));
       }
-    }, 9000);
+    }, 8500);
 
     ws.addEventListener('open', () => {
       ws.send(
         JSON.stringify({
           setup: {
             model: fullModel,
-            generationConfig: {
-              responseModalities: ['TEXT'],
-            },
-            systemInstruction: {
-              parts: [{ text: systemPrompt }],
-            },
+            generationConfig: { responseModalities: ['TEXT'] },
+            systemInstruction: { parts: [{ text: systemPrompt }] },
           },
         })
       );
@@ -866,12 +1345,7 @@ async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
           ws.send(
             JSON.stringify({
               clientContent: {
-                turns: [
-                  {
-                    role: 'user',
-                    parts: [{ text: userPrompt }],
-                  },
-                ],
+                turns: [{ role: 'user', parts: [{ text: userPrompt }] }],
                 turnComplete: true,
               },
             })
@@ -880,27 +1354,19 @@ async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
         }
         const parts = msg?.serverContent?.modelTurn?.parts || [];
         for (const p of parts) {
-          if (typeof p?.text === 'string') {
-            textOut += p.text;
-          }
+          if (typeof p?.text === 'string') textOut += p.text;
         }
-        if (msg?.serverContent?.turnComplete) {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            try {
-              ws.close();
-            } catch {}
-            resolve(textOut.trim());
-          }
+        if (msg?.serverContent?.turnComplete && !settled) {
+          settled = true;
+          clearTimeout(timer);
+          try { ws.close(); } catch {}
+          resolve(textOut.trim());
         }
       } catch (err) {
         if (!settled) {
           settled = true;
           clearTimeout(timer);
-          try {
-            ws.close();
-          } catch {}
+          try { ws.close(); } catch {}
           reject(err);
         }
       }
@@ -918,36 +1384,55 @@ async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
       if (!settled) {
         settled = true;
         clearTimeout(timer);
-        if (textOut.trim()) {
-          resolve(textOut.trim());
-        } else {
-          reject(new Error('Gemini Live WebSocket closed before response'));
-        }
+        if (textOut.trim()) resolve(textOut.trim());
+        else reject(new Error('Gemini Live WebSocket closed before response'));
       }
     });
   });
 }
 
-async function runGeminiRestFallback({ auth, model, systemPrompt, userPrompt }) {
-  const cleanModel = model.replace(/^models\//, '');
+async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, audioBase64 = '', mimeType = '' }) {
+  const cleanModel = (model || DEFAULT_MULTIMODAL_MODEL).replace(/^models\//, '');
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`;
   const headers = { 'Content-Type': 'application/json' };
   if (auth.type === 'apiKey') {
     headers['x-goog-api-key'] = auth.token;
   } else {
-    headers['Authorization'] = `Bearer ${auth.token}`;
+    headers.Authorization = `Bearer ${auth.token}`;
+    if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
   }
+
+  const userParts = [];
+  if (audioBase64) {
+    userParts.push({
+      inlineData: {
+        mimeType: mimeType || 'audio/webm',
+        data: audioBase64,
+      },
+    });
+    userParts.push({
+      text: userPrompt || 'Transcribe this audio command accurately into "transcript", execute any requested coordinator action, and answer concisely in "reply".',
+    });
+  } else {
+    userParts.push({ text: userPrompt });
+  }
+
   const resp = await fetch(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      contents: [{ role: 'user', parts: userParts }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.3,
+      },
     }),
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(14000),
   });
   if (!resp.ok) {
-    throw new Error(`Gemini REST returned HTTP ${resp.status}`);
+    const errText = await resp.text().catch(() => '');
+    throw new Error(`Gemini REST HTTP ${resp.status}${errText ? ': ' + errText.slice(0, 140) : ''}`);
   }
   const data = await resp.json();
   const parts = data?.candidates?.[0]?.content?.parts || [];
@@ -956,9 +1441,18 @@ async function runGeminiRestFallback({ auth, model, systemPrompt, userPrompt }) 
   return text;
 }
 
-export async function processCoordinatorTurn({ prompt, source = 'text', requestedMode = '' }) {
+export async function processCoordinatorTurn({
+  prompt = '',
+  audioBase64 = '',
+  mimeType = '',
+  source = 'text',
+  requestedMode = '',
+}) {
   const cleanPrompt = String(prompt || '').trim();
-  if (!cleanPrompt) throw new Error('Prompt cannot be empty.');
+  const cleanAudio = String(audioBase64 || '').trim();
+  if (!cleanPrompt && !cleanAudio) {
+    throw new Error('Prompt or audio payload is required.');
+  }
 
   const identity = loadIdentity();
   const state = loadState();
@@ -966,101 +1460,151 @@ export async function processCoordinatorTurn({ prompt, source = 'text', requeste
   const prefs = loadVoicePrefsRaw();
   const mode = requestedMode || prefs.mode;
 
-  appendChatTurn({ role: 'user', text: cleanPrompt, source });
+  // Deterministic prefix commands for text mode
+  if (cleanPrompt && !cleanAudio) {
+    const spawnMatch = cleanPrompt.match(/^\/?spawn\s*:\s*(.+)$/i);
+    if (spawnMatch) {
+      appendChatTurn({ role: 'user', text: cleanPrompt, source });
+      try {
+        const spawned = await spawnWorker({ prompt: spawnMatch[1].trim() });
+        const replyText = `${identity.name} dispatched a new worker${spawned.conversationId ? ` (${spawned.conversationId.slice(0, 8)})` : ''}.`;
+        const assistantMsg = appendChatTurn({
+          role: 'assistant',
+          text: replyText,
+          source,
+          action: { type: 'spawn', conversationId: spawned.conversationId },
+        });
+        return { ok: true, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
+      } catch (err) {
+        const replyText = `Could not spawn worker via agentapi: ${err instanceof Error ? err.message : String(err)}`;
+        const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
+        return { ok: false, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
+      }
+    }
 
-  // Built-in quick command routing: "spawn: <prompt>" or "relay <idPrefix>: <msg>"
-  const spawnMatch = cleanPrompt.match(/^\/?spawn\s*:\s*(.+)$/i);
-  if (spawnMatch) {
-    try {
-      const spawned = await spawnWorker({ prompt: spawnMatch[1].trim() });
-      const replyText = `${identity.name} dispatched a new worker${spawned.conversationId ? ` (${spawned.conversationId.slice(0, 8)})` : ''}.`;
-      const assistantMsg = appendChatTurn({
-        role: 'assistant',
-        text: replyText,
-        source,
-        action: { type: 'spawn', conversationId: spawned.conversationId },
-      });
-      return { ok: true, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
-    } catch (err) {
-      const replyText = `Could not spawn worker via agentapi: ${err instanceof Error ? err.message : String(err)}`;
-      const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
-      return { ok: false, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
+    const relayMatch = cleanPrompt.match(/^\/?relay\s+([a-zA-Z0-9_-]{4,80})\s*:\s*(.+)$/i);
+    if (relayMatch) {
+      appendChatTurn({ role: 'user', text: cleanPrompt, source });
+      const idQuery = relayMatch[1].toLowerCase();
+      const matchWorker = workers.find((w) => w.id.toLowerCase().startsWith(idQuery));
+      if (!matchWorker) {
+        const replyText = `No worker found matching prefix "${relayMatch[1]}".`;
+        const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
+        return { ok: false, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
+      }
+      try {
+        await relayToWorker({ convId: matchWorker.id, message: relayMatch[2].trim() });
+        const replyText = `${identity.name} relayed your instruction to "${matchWorker.title}".`;
+        const assistantMsg = appendChatTurn({
+          role: 'assistant',
+          text: replyText,
+          source,
+          action: { type: 'relay', conversationId: matchWorker.id },
+        });
+        return { ok: true, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
+      } catch (err) {
+        const replyText = `Relay failed: ${err instanceof Error ? err.message : String(err)}`;
+        const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
+        return { ok: false, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
+      }
     }
   }
 
-  const relayMatch = cleanPrompt.match(/^\/?relay\s+([a-zA-Z0-9_-]{4,80})\s*:\s*(.+)$/i);
-  if (relayMatch) {
-    const idQuery = relayMatch[1].toLowerCase();
-    const matchWorker = workers.find((w) => w.id.toLowerCase().startsWith(idQuery));
-    if (!matchWorker) {
-      const replyText = `No worker found matching prefix "${relayMatch[1]}". Check the Workers tab for active IDs.`;
-      const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
-      return { ok: false, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
-    }
-    try {
-      await relayToWorker({ convId: matchWorker.id, message: relayMatch[2].trim() });
-      const replyText = `${identity.name} relayed your instruction to "${matchWorker.title}".`;
-      const assistantMsg = appendChatTurn({
-        role: 'assistant',
-        text: replyText,
-        source,
-        action: { type: 'relay', conversationId: matchWorker.id },
-      });
-      return { ok: true, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
-    } catch (err) {
-      const replyText = `Relay failed: ${err instanceof Error ? err.message : String(err)}`;
-      const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
-      return { ok: false, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
-    }
-  }
-
-  let replyText = '';
+  let parsed = null;
   let modeUsed = 'browser-local';
   let liveError = '';
 
-  if (mode === 'gemini-live') {
+  if (mode === 'gemini-live' || cleanAudio) {
     const auth = await resolveGeminiAuth(prefs);
     if (!auth) {
-      liveError = 'No GEMINI_API_KEY or gcloud ADC token configured; answered locally.';
+      liveError = 'No GEMINI_API_KEY or ADC credentials detected';
     } else {
       const systemPrompt = buildCoordinatorSystemContext({ identity, state, workers });
-      try {
-        replyText = await runGeminiLiveBidi({
-          auth,
-          model: prefs.model || DEFAULT_VOICE_MODEL,
-          systemPrompt,
-          userPrompt: cleanPrompt,
-        });
-        modeUsed = `gemini-live-ws:${prefs.model || DEFAULT_VOICE_MODEL}`;
-      } catch (wsErr) {
+      if (cleanAudio) {
+        // Multimodal audio input via fast Gemini Flash REST endpoint
         try {
-          replyText = await runGeminiRestFallback({
+          const rawResp = await runGeminiRestGenerate({
+            auth,
+            model: DEFAULT_MULTIMODAL_MODEL,
+            systemPrompt,
+            userPrompt: cleanPrompt,
+            audioBase64: cleanAudio,
+            mimeType: mimeType || 'audio/webm',
+          });
+          parsed = parseStructuredCoordinatorJson(rawResp, '(Voice Command)');
+          modeUsed = `gemini-audio:${DEFAULT_MULTIMODAL_MODEL}(${auth.source})`;
+        } catch (err) {
+          liveError = err instanceof Error ? err.message : String(err);
+        }
+      } else {
+        try {
+          const rawWs = await runGeminiLiveBidi({
             auth,
             model: prefs.model || DEFAULT_VOICE_MODEL,
             systemPrompt,
             userPrompt: cleanPrompt,
           });
-          modeUsed = `gemini-rest:${prefs.model || DEFAULT_VOICE_MODEL}`;
-        } catch (restErr) {
-          liveError = `${wsErr.message}; fallback: ${restErr.message}`;
+          parsed = parseStructuredCoordinatorJson(rawWs, cleanPrompt);
+          modeUsed = `gemini-live-ws:${prefs.model || DEFAULT_VOICE_MODEL}(${auth.source})`;
+        } catch (wsErr) {
+          try {
+            const rawRest = await runGeminiRestGenerate({
+              auth,
+              model: DEFAULT_MULTIMODAL_MODEL,
+              systemPrompt,
+              userPrompt: cleanPrompt,
+            });
+            parsed = parseStructuredCoordinatorJson(rawRest, cleanPrompt);
+            modeUsed = `gemini-rest:${DEFAULT_MULTIMODAL_MODEL}(${auth.source})`;
+          } catch (restErr) {
+            liveError = `${wsErr.message}; ${restErr.message}`;
+          }
         }
       }
     }
   }
 
-  if (!replyText) {
-    replyText = buildLocalCoordinatorReply(cleanPrompt, { identity, state, workers });
+  if (!parsed) {
+    if (cleanAudio) {
+      const msg = liveError
+        ? `Voice audio could not reach Gemini (${liveError}). Add a GEMINI_API_KEY or ADC credentials in Identity & Voice, or type your command.`
+        : 'Voice audio requires Gemini credentials (GEMINI_API_KEY or ADC).';
+      appendChatTurn({ role: 'user', text: '(Voice audio clip)', source });
+      const assistantMsg = appendChatTurn({ role: 'assistant', text: msg, source: 'voice-notice' });
+      return { ok: false, transcript: '', reply: msg, liveError, modeUsed: 'none', assistantMsg };
+    }
+    parsed = buildLocalActionOrReply(cleanPrompt, { identity, state, workers });
     if (liveError) {
-      replyText += ` (${liveError})`;
+      parsed.reply += ` (Local fallback: ${liveError})`;
     }
   }
 
-  const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source: modeUsed });
+  const userText = parsed.transcript || cleanPrompt || '(Voice command)';
+  appendChatTurn({ role: 'user', text: userText, source });
+
+  let actionResult = null;
+  if (parsed.action) {
+    try {
+      actionResult = await executeCoordinatorAction(parsed.action, { workers, state });
+    } catch (actErr) {
+      parsed.reply += ` (Action error: ${actErr instanceof Error ? actErr.message : String(actErr)})`;
+    }
+  }
+
+  const assistantMsg = appendChatTurn({
+    role: 'assistant',
+    text: parsed.reply,
+    source: modeUsed,
+    action: actionResult,
+  });
+
   return {
     ok: true,
+    transcript: userText,
+    reply: parsed.reply,
+    action: actionResult,
     modeUsed,
     liveError,
-    reply: replyText,
     assistantMsg,
   };
 }

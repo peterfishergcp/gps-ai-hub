@@ -258,6 +258,22 @@ export function buildInlinedSidecarHtml(sidecarDir, scriptFiles = ['app.js']) {
   }
   const emojiBootJs = `window.__EMOJI_MAP = ${JSON.stringify(emojiMap).replace(/<\//g, '<\\/')};`;
 
+  // Inline Clawy 3D mascot PNG if present in sidecar assets/ or plugin assets/
+  let mascotDataUrl = '';
+  const mascotCandidates = [
+    path.join(sidecarDir, 'assets', 'clawy_mascot.png'),
+    path.join(sidecarDir, '..', '..', 'assets', 'clawy_mascot.png'),
+  ];
+  for (const mc of mascotCandidates) {
+    try {
+      if (fs.existsSync(mc) && !fs.lstatSync(mc).isSymbolicLink()) {
+        mascotDataUrl = 'data:image/png;base64,' + fs.readFileSync(mc).toString('base64');
+        break;
+      }
+    } catch {}
+  }
+  const mascotBootJs = `window.__CLAWY_MASCOT_DATA_URL = ${JSON.stringify(mascotDataUrl).replace(/<\//g, '<\\/')};`;
+
   let out = rawHtml;
   out = out.replace(
     /<link\s+rel=["']stylesheet["']\s+href=["']\/styles\.css["']\s*\/?>/i,
@@ -267,7 +283,7 @@ export function buildInlinedSidecarHtml(sidecarDir, scriptFiles = ['app.js']) {
     /<script\s+src=["']\/preload\.js["']\s*><\/script>/i,
     () =>
       `<script>\n${escapeJsForInlineScript(preloadJs)}\n</script>\n` +
-      `<script>\n${escapeJsForInlineScript(HOST_DARK_THEME_BRIDGE_JS)}\n${emojiBootJs}\n</script>`
+      `<script>\n${escapeJsForInlineScript(HOST_DARK_THEME_BRIDGE_JS)}\n${emojiBootJs}\n${mascotBootJs}\n</script>`
   );
 
   for (const sf of scriptFiles) {

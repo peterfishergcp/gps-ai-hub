@@ -36,73 +36,33 @@
       </div>
     </header>
 
-    <section class="coord-perch" id="mascotPerch" data-mood="idle" data-mouth="closed" aria-label="Mascot Perch and Voice Controls">
+    <section class="coord-perch" id="mascotPerch" data-mood="idle" aria-label="Mascot Perch and Voice Controls">
       <div class="coord-perch-stage">
         <div class="coord-mascot-wrap" id="mascotWrap" title="Click Clawy for a quick voice check">
-          <svg class="coord-mascot-svg" id="clawySvg" viewBox="0 0 120 112" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="perchBodyGrad" x1="22" y1="20" x2="98" y2="90" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#38BDF8"/>
-                <stop offset="55%" stop-color="#2563EB"/>
-                <stop offset="100%" stop-color="#4F46E5"/>
-              </linearGradient>
-              <linearGradient id="perchClawGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#FB7185"/>
-                <stop offset="100%" stop-color="#F97316"/>
-              </linearGradient>
-            </defs>
-            <g class="coord-mascot-body">
-              <g class="coord-antenna-left">
-                <line x1="46" y1="24" x2="38" y2="10" stroke="#38BDF8" stroke-width="3.5" stroke-linecap="round"/>
-                <circle cx="37" cy="9" r="4.2" fill="#F97316"/>
-              </g>
-              <g class="coord-antenna-right">
-                <line x1="74" y1="24" x2="82" y2="10" stroke="#38BDF8" stroke-width="3.5" stroke-linecap="round"/>
-                <circle cx="83" cy="9" r="4.2" fill="#10B981"/>
-              </g>
-              <!-- Geometric Claws -->
-              <path class="coord-claw-left" d="M24 52C12 49 8 38 14 30C18 25 24 28 22 35C27 30 32 35 29 42C28 47 26 50 24 52Z" fill="url(#perchClawGrad)"/>
-              <path class="coord-claw-right" d="M96 52C108 49 112 38 106 30C102 25 96 28 98 35C93 30 88 35 91 42C92 47 94 50 96 52Z" fill="url(#perchClawGrad)"/>
-              <!-- Shell -->
-              <rect x="24" y="23" width="72" height="62" rx="26" fill="url(#perchBodyGrad)"/>
-              <!-- Visor -->
-              <rect x="32" y="34" width="56" height="38" rx="16" fill="#0F172A"/>
-              <!-- Eyes -->
-              <g class="coord-eyes">
-                <circle class="coord-eye" cx="47" cy="48" r="5.4" fill="#38BDF8"/>
-                <circle cx="48.8" cy="46.2" r="1.8" fill="#FFFFFF"/>
-                <circle class="coord-eye" cx="73" cy="48" r="5.4" fill="#38BDF8"/>
-                <circle cx="74.8" cy="46.2" r="1.8" fill="#FFFFFF"/>
-              </g>
-              <!-- Cheek blush -->
-              <ellipse cx="39" cy="57" rx="3.8" ry="2" fill="#FB7185" opacity="0.72"/>
-              <ellipse cx="81" cy="57" rx="3.8" ry="2" fill="#FB7185" opacity="0.72"/>
-              <!-- Multi-state Lip-Sync Mouth -->
-              <path class="coord-mouth-closed" d="M52 60C55.5 63.2 64.5 63.2 68 60" stroke="#34D399" stroke-width="3" stroke-linecap="round"/>
-              <ellipse class="coord-mouth-half" cx="60" cy="60.5" rx="6.5" ry="2.8" fill="#34D399"/>
-              <ellipse class="coord-mouth-open" cx="60" cy="61" rx="7.5" ry="5.2" fill="#34D399"/>
-              <ellipse class="coord-mouth-wide" cx="60" cy="61" rx="9.2" ry="6.5" fill="#F97316"/>
-            </g>
-            <!-- Perch Bar -->
-            <rect x="16" y="92" width="88" height="7" rx="3.5" fill="#64748B" opacity="0.65"/>
-          </svg>
+          <canvas id="clawyCanvas" class="coord-mascot-canvas" width="176" height="176" aria-label="Clawy animated mascot"></canvas>
         </div>
 
         <div class="coord-perch-info">
           <div class="coord-perch-head">
             <span class="coord-mascot-name" id="mascotNameLabel">Clawy</span>
             <span class="coord-mood-pill" id="mascotMoodPill">Idle</span>
+            <div class="coord-wave-wrap" id="voiceWaveWrap" hidden>
+              <div class="coord-wave-bars" id="voiceWaveBar" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <span class="coord-wave-label" id="voiceWaveLabel">Listening — release to send</span>
+            </div>
             <select class="coord-voice-select" id="voiceModeSelect" title="Select Voice Engine">
-              <option value="browser">Browser Instant Voice (Zero-Key)</option>
-              <option value="gemini-live">Gemini Live (gemini-3.8-live)</option>
+              <option value="gemini-live">Gemini Live (Audio + ADC)</option>
+              <option value="browser">Browser Instant Voice</option>
             </select>
           </div>
           <div class="coord-perch-bubble" id="perchBubble">Ready to coordinate Workers, Groups, and Goals.</div>
           <div class="coord-voice-row">
-            <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button">🎙️ Speak</button>
+            <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button" title="Hold >= 250ms to talk and release to send, or quick-tap to toggle">🎙️ Hold / Click to Talk</button>
             <button class="btn btn-secondary btn-sm" id="btnVoiceTts" type="button" title="Toggle spoken voice replies">🔊 TTS On</button>
             <form class="coord-quick-form" id="quickCmdForm">
-              <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy, or 'spawn: ...' / 'relay <id>: ...'" autocomplete="off" />
+              <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy, 'Create goal: ...', 'spawn: ...', or 'relay <id>: ...'" autocomplete="off" />
               <button class="btn btn-secondary btn-sm" type="submit">Send</button>
             </form>
           </div>

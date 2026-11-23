@@ -3,12 +3,12 @@
  *
  * Pure DOM API construction (`createElement` + `textContent` + `replaceChildren`).
  * Drives:
- *  - Animated Clawy mascot perch (blinking + voice lip-sync)
- *  - Browser Instant Voice (Web Speech API) & Gemini Live API (`gemini-3.8-live`) bridge
- *  - Workers board + Spawn/Relay controls
- *  - Strict 2-level Group -> Goal -> Task hierarchy
+ *  - Dynamic 3D-feel <canvas> Clawy mascot rig with live mic-RMS listening rings & mouth-seam lip-sync
+ *  - True Hold-to-Talk (>=250ms) + Click-to-Toggle (<250ms) MediaRecorder -> Gemini Audio Bridge
+ *  - Workers board (LS + Desktop brain/ fallback + window.sidecar.agent dispatch fallback)
+ *  - Strict 2-level Group -> Goal -> Task hierarchy (with voice/chat structured actions)
  *  - Coordinator Chat & Board feed
- *  - Editable IDENTITY.md / SOUL.md & Voice Preferences
+ *  - Editable IDENTITY.md / SOUL.md & Auto-ADC Voice Preferences
  */
 (function () {
   'use strict';
@@ -19,15 +19,37 @@
     snapshot: null,
     speaking: false,
     listening: false,
+    thinking: false,
+    clickToggleActive: false,
     ttsEnabled: true,
     showSpawnForm: false,
+    micRms: 0,
+    mouthOpenness: 0,
+    pointerX: 0,
+    pointerY: 0,
+    blinkFactor: 1,
+    lastBubbleText: 'Ready to coordinate Workers, Groups, and Goals.',
   };
 
   var tokenMeter = null;
   var toastTimer = null;
-  var blinkTimer = null;
   var lipSyncTimer = null;
-  var activeRecognition = null;
+  var mediaRecorder = null;
+  var mediaStream = null;
+  var audioCtx = null;
+  var analyserNode = null;
+  var analyserData = null;
+  var recordedChunks = [];
+  var recordDownAt = 0;
+  var recordStartedAt = 0;
+  var recordMimeType = 'audio/webm';
+  var cancelPendingCapture = false;
+
+  // Offscreen mascot sprite (either processed PNG or 3D-shaded fallback)
+  var spriteCanvas = null;
+  var spriteReady = false;
+  var nextBlinkAt = performance.now() + 2600;
+  var blinkEndAt = 0;
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -66,46 +88,350 @@
     }, 2600);
   }
 
-  /* ---------- Mascot Animation & Lip-Sync ---------- */
+  function setPerchBubble(text, persistAsIdle) {
+    var bubble = document.getElementById('perchBubble');
+    var clean = String(text || '').trim();
+    if (persistAsIdle && clean) state.lastBubbleText = clean;
+    if (bubble) bubble.textContent = clean || state.lastBubbleText;
+  }
 
   function setMascotMood(mood, labelText) {
     var perch = document.getElementById('mascotPerch');
     var pill = document.getElementById('mascotMoodPill');
     if (perch) perch.setAttribute('data-mood', mood || 'idle');
     if (pill) {
-      pill.textContent = labelText || (mood === 'listening' ? 'Listening' : mood === 'thinking' ? 'Thinking' : mood === 'speaking' ? 'Speaking' : 'Idle');
+      pill.textContent =
+        labelText ||
+        (mood === 'listening'
+          ? 'Listening'
+          : mood === 'thinking'
+            ? 'Thinking'
+            : mood === 'speaking'
+              ? 'Speaking'
+              : 'Idle');
     }
   }
 
-  function setMouthShape(shape) {
-    var perch = document.getElementById('mascotPerch');
-    if (perch) perch.setAttribute('data-mouth', shape || 'closed');
+  /* ---------- 3D Canvas Mascot Sprite Loader & White-BG Removal ---------- */
+
+  function removeWhiteBackground(canvasEl) {
+    var w = canvasEl.width;
+    var h = canvasEl.height;
+    var ctx = canvasEl.getContext('2d');
+    var img = ctx.getImageData(0, 0, w, h);
+    var d = img.data;
+    var visited = new Uint8Array(w * h);
+    var queue = [];
+
+    function isNearWhite(idx) {
+      var r = d[idx];
+      var g = d[idx + 1];
+      var b = d[idx + 2];
+      var a = d[idx + 3];
+      return a > 0 && r > 236 && g > 236 && b > 236;
+    }
+
+    // Seed flood-fill from image border pixels
+    for (var x = 0; x < w; x += 1) {
+      queue.push(x, (h - 1) * w + x);
+    }
+    for (var y = 0; y < h; y += 1) {
+      queue.push(y * w, y * w + (w - 1));
+    }
+
+    while (queue.length > 0) {
+      var pos = queue.pop();
+      if (visited[pos]) continue;
+      visited[pos] = 1;
+      var i4 = pos * 4;
+      if (!isNearWhite(i4)) continue;
+      d[i4 + 3] = 0;
+      var px = pos % w;
+      var py = (pos - px) / w;
+      if (px > 0) queue.push(pos - 1);
+      if (px < w - 1) queue.push(pos + 1);
+      if (py > 0) queue.push(pos - w);
+      if (py < h - 1) queue.push(pos + w);
+    }
+
+    // Soft-feather residual bright edge halo pixels
+    for (var p = 0; p < w * h; p += 1) {
+      var j = p * 4;
+      if (d[j + 3] > 0 && d[j] > 246 && d[j + 1] > 246 && d[j + 2] > 246) {
+        d[j + 3] = Math.round(d[j + 3] * 0.25);
+      }
+    }
+    ctx.putImageData(img, 0, 0);
   }
 
-  function startBlinkLoop() {
-    if (blinkTimer) clearTimeout(blinkTimer);
-    var delay = 2600 + Math.floor(Math.random() * 2800);
-    blinkTimer = setTimeout(function () {
-      var eyes = document.querySelector('.coord-eyes');
-      if (eyes) {
-        eyes.classList.add('blink');
-        setTimeout(function () {
-          eyes.classList.remove('blink');
-        }, 120);
-      }
-      startBlinkLoop();
-    }, delay);
+  function buildFallback3DSprite() {
+    var c = document.createElement('canvas');
+    c.width = 176;
+    c.height = 176;
+    var ctx = c.getContext('2d');
+
+    // Antennae
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(68, 44);
+    ctx.lineTo(54, 22);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(108, 44);
+    ctx.lineTo(122, 22);
+    ctx.stroke();
+
+    var orbL = ctx.createRadialGradient(51, 18, 1, 53, 20, 9);
+    orbL.addColorStop(0, '#fed7aa');
+    orbL.addColorStop(1, '#f97316');
+    ctx.fillStyle = orbL;
+    ctx.beginPath();
+    ctx.arc(53, 20, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    var orbR = ctx.createRadialGradient(121, 18, 1, 123, 20, 9);
+    orbR.addColorStop(0, '#a7f3d0');
+    orbR.addColorStop(1, '#10b981');
+    ctx.fillStyle = orbR;
+    ctx.beginPath();
+    ctx.arc(123, 20, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Claws with 3D gradient
+    var clawGrad = ctx.createLinearGradient(16, 60, 44, 102);
+    clawGrad.addColorStop(0, '#fda4af');
+    clawGrad.addColorStop(0.5, '#fb7185');
+    clawGrad.addColorStop(1, '#ea580c');
+    ctx.fillStyle = clawGrad;
+    ctx.beginPath();
+    ctx.ellipse(28, 80, 14, 18, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(148, 80, 14, 18, 0.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3D Rounded Shell
+    var bodyGrad = ctx.createRadialGradient(72, 62, 10, 88, 92, 66);
+    bodyGrad.addColorStop(0, '#7dd3fc');
+    bodyGrad.addColorStop(0.45, '#2563eb');
+    bodyGrad.addColorStop(1, '#312e81');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.roundRect(38, 42, 100, 92, 36);
+    ctx.fill();
+
+    // Specular rim highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.38)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(41, 44, 94, 86, 34);
+    ctx.stroke();
+
+    // Glossy Visor
+    var visorGrad = ctx.createLinearGradient(50, 60, 50, 114);
+    visorGrad.addColorStop(0, '#0f172a');
+    visorGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = visorGrad;
+    ctx.beginPath();
+    ctx.roundRect(49, 60, 78, 52, 22);
+    ctx.fill();
+
+    // Cheeks
+    ctx.fillStyle = 'rgba(251, 113, 133, 0.72)';
+    ctx.beginPath();
+    ctx.ellipse(61, 95, 6, 3.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(115, 95, 6, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    spriteCanvas = c;
+    spriteReady = true;
   }
+
+  function initMascotSprite() {
+    var dataUrl = typeof window.__CLAWY_MASCOT_DATA_URL === 'string' ? window.__CLAWY_MASCOT_DATA_URL : '';
+    if (!dataUrl) {
+      buildFallback3DSprite();
+      return;
+    }
+    var img = new Image();
+    img.onload = function () {
+      var off = document.createElement('canvas');
+      off.width = 176;
+      off.height = 176;
+      var octx = off.getContext('2d');
+      octx.drawImage(img, 0, 0, 176, 176);
+      try {
+        removeWhiteBackground(off);
+      } catch (e) {}
+      spriteCanvas = off;
+      spriteReady = true;
+    };
+    img.onerror = function () {
+      buildFallback3DSprite();
+    };
+    img.src = dataUrl;
+  }
+
+  function renderMascotFrame(now) {
+    var canvas = document.getElementById('clawyCanvas');
+    if (canvas && spriteReady && spriteCanvas) {
+      var ctx = canvas.getContext('2d');
+      var w = canvas.width;
+      var h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Update eye blink state
+      if (now >= nextBlinkAt) {
+        blinkEndAt = now + 115;
+        nextBlinkAt = now + 2600 + Math.random() * 2800;
+      }
+      state.blinkFactor = now < blinkEndAt ? 0.1 : 1.0;
+
+      // Update live mic RMS if recording
+      if (state.listening && analyserNode && analyserData) {
+        analyserNode.getByteTimeDomainData(analyserData);
+        var sumSq = 0;
+        for (var i = 0; i < analyserData.length; i += 1) {
+          var v = (analyserData[i] - 128) / 128;
+          sumSq += v * v;
+        }
+        var rms = Math.sqrt(sumSq / analyserData.length);
+        state.micRms = state.micRms * 0.6 + Math.min(1, rms * 4.2) * 0.4;
+        updateWaveBars(state.micRms);
+      } else {
+        state.micRms = state.micRms * 0.85;
+      }
+
+      var t = now * 0.001;
+      var floatY = Math.sin(t * 2.3) * (state.speaking ? 4.2 : 3.2);
+      var breath = 1 + Math.sin(t * 2.3 + 0.6) * 0.022;
+      var scale = state.listening ? 1.05 + state.micRms * 0.04 : 1.0;
+      var tilt = state.thinking
+        ? Math.sin(t * 4.5) * 0.06
+        : state.listening
+          ? 0.035
+          : state.pointerX * 0.04;
+
+      var cx = w * 0.5;
+      var cy = h * 0.5 + floatY;
+
+      // Concentric listening rings driven by AnalyserNode mic RMS
+      if (state.listening) {
+        for (var ring = 0; ring < 3; ring += 1) {
+          var phase = ((t * 1.4 + ring * 0.33) % 1);
+          var rRad = 44 + phase * 34 + state.micRms * 18;
+          var rAlpha = Math.max(0, (1 - phase) * (0.28 + state.micRms * 0.45));
+          ctx.beginPath();
+          ctx.arc(cx, cy, rRad, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(239, 68, 68, ' + rAlpha.toFixed(3) + ')';
+          ctx.lineWidth = 2.6;
+          ctx.stroke();
+        }
+      } else if (state.thinking) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 58 + Math.sin(t * 5) * 4, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.36)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      } else if (state.speaking) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 56 + state.mouthOpenness * 14, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.36)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      // Perch shadow bar
+      ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
+      ctx.beginPath();
+      ctx.roundRect(w * 0.16, h * 0.87, w * 0.68, 7, 3.5);
+      ctx.fill();
+
+      // Sprite transform
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(tilt);
+      ctx.scale(scale * (2 - breath), scale * breath);
+      var drawW = 136;
+      var drawH = 136;
+      ctx.drawImage(spriteCanvas, -drawW / 2, -drawH / 2, drawW, drawH);
+
+      // Draw expressive eyes when using fallback sprite (no external PNG)
+      if (!window.__CLAWY_MASCOT_DATA_URL) {
+        var eyeLookX = state.pointerX * 2.5;
+        var eyeLookY = state.pointerY * 2.0;
+        var eyeR = 6.2;
+        [-17, 17].forEach(function (ex) {
+          ctx.save();
+          ctx.translate(ex + eyeLookX, -6 + eyeLookY);
+          ctx.scale(1, state.blinkFactor);
+          ctx.fillStyle = state.listening ? '#fb7185' : '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(0, 0, eyeR, 0, Math.PI * 2);
+          ctx.fill();
+          if (state.blinkFactor > 0.5) {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(2.1, -2.1, 2.1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        });
+      }
+
+      // Smooth mouth-seam lip-sync overlay anchored at (mouthCenterU: 0.5, mouthSeamV: 0.57)
+      var mx = (0.5 - 0.5) * drawW;
+      var my = (0.57 - 0.5) * drawH;
+      var openAmt = state.speaking ? state.mouthOpenness : 0;
+      if (openAmt > 0.04) {
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.ellipse(mx, my, 9 + openAmt * 4, 2.5 + openAmt * 7.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.ellipse(mx, my + openAmt * 1.5, 6.5 + openAmt * 2.5, 1.5 + openAmt * 4.0, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (!window.__CLAWY_MASCOT_DATA_URL) {
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 3.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(mx - 8, my - 1);
+        ctx.quadraticCurveTo(mx, my + 4.5, mx + 8, my - 1);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+    requestAnimationFrame(renderMascotFrame);
+  }
+
+  function updateWaveBars(rms) {
+    var container = document.getElementById('voiceWaveBar');
+    if (!container) return;
+    var spans = container.querySelectorAll('span');
+    var weights = [0.55, 0.85, 1.0, 0.85, 0.55];
+    for (var i = 0; i < spans.length; i += 1) {
+      var jitter = 0.75 + Math.random() * 0.45;
+      var px = Math.round(4 + Math.min(1, rms * weights[i] * jitter) * 11);
+      spans[i].style.height = px + 'px';
+    }
+  }
+
+  /* ---------- Speech Output & Lip-Sync ---------- */
 
   function startLipSyncPulse() {
     stopLipSyncPulse();
-    var seq = ['half', 'open', 'wide', 'open', 'half', 'open'];
-    var idx = 0;
+    state.speaking = true;
     setMascotMood('speaking', 'Speaking');
+    var phase = 0;
     lipSyncTimer = setInterval(function () {
-      setMouthShape(seq[idx % seq.length]);
-      idx += 1;
-    }, 115);
+      phase += 0.65;
+      state.mouthOpenness = 0.25 + Math.abs(Math.sin(phase)) * 0.72;
+    }, 65);
   }
 
   function stopLipSyncPulse() {
@@ -113,22 +439,19 @@
       clearInterval(lipSyncTimer);
       lipSyncTimer = null;
     }
-    setMouthShape('closed');
-    if (!state.listening) {
-      setMascotMood('idle', 'Idle');
-    }
+    state.speaking = false;
+    state.mouthOpenness = 0;
+    if (!state.listening && !state.thinking) setMascotMood('idle', 'Idle');
   }
 
   function speakText(text) {
     var clean = String(text || '').trim();
-    var bubble = document.getElementById('perchBubble');
-    if (bubble && clean) bubble.textContent = clean;
+    if (clean) setPerchBubble(clean, true);
     if (!clean || !state.ttsEnabled) return;
 
     if (typeof window.speechSynthesis === 'undefined' || typeof window.SpeechSynthesisUtterance === 'undefined') {
-      // Visual-only lip-sync fallback when Web Speech synthesis isn't mounted
       startLipSyncPulse();
-      setTimeout(stopLipSyncPulse, Math.min(4200, Math.max(1000, clean.length * 42)));
+      setTimeout(stopLipSyncPulse, Math.min(4200, Math.max(900, clean.length * 40)));
       return;
     }
 
@@ -138,22 +461,10 @@
       var vPrefs = state.snapshot && state.snapshot.voiceStatus ? state.snapshot.voiceStatus : {};
       utter.rate = Number(vPrefs.voiceRate) || 1.0;
       utter.pitch = Number(vPrefs.voicePitch) || 1.05;
-      utter.onstart = function () {
-        state.speaking = true;
-        startLipSyncPulse();
-      };
-      utter.onboundary = function () {
-        var shapes = ['half', 'open', 'wide'];
-        setMouthShape(shapes[Math.floor(Math.random() * shapes.length)]);
-      };
-      utter.onend = function () {
-        state.speaking = false;
-        stopLipSyncPulse();
-      };
-      utter.onerror = function () {
-        state.speaking = false;
-        stopLipSyncPulse();
-      };
+      utter.onstart = function () { startLipSyncPulse(); };
+      utter.onboundary = function () { state.mouthOpenness = 0.45 + Math.random() * 0.52; };
+      utter.onend = function () { stopLipSyncPulse(); };
+      utter.onerror = function () { stopLipSyncPulse(); };
       startLipSyncPulse();
       window.speechSynthesis.speak(utter);
     } catch (e) {
@@ -161,76 +472,181 @@
     }
   }
 
-  /* ---------- Voice Recognition (Browser Instant Voice + Gemini Live) ---------- */
+  /* ---------- True Hold-to-Talk + Click-to-Toggle MediaRecorder ---------- */
 
-  function stopVoiceListening() {
+  function pickRecorderMimeType() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    var candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (var i = 0; i < candidates.length; i += 1) {
+      try {
+        if (MediaRecorder.isTypeSupported(candidates[i])) return candidates[i];
+      } catch {}
+    }
+    return '';
+  }
+
+  function cleanupAudioStream() {
+    if (mediaStream) {
+      try {
+        mediaStream.getTracks().forEach(function (tr) { tr.stop(); });
+      } catch {}
+      mediaStream = null;
+    }
+    if (audioCtx) {
+      try { audioCtx.close(); } catch {}
+      audioCtx = null;
+    }
+    analyserNode = null;
+    analyserData = null;
+  }
+
+  function resetMicUi(restoreBubble) {
     state.listening = false;
+    state.clickToggleActive = false;
+    state.micRms = 0;
     var micBtn = document.getElementById('btnVoiceMic');
     if (micBtn) {
       micBtn.classList.remove('btn-active-mic');
-      micBtn.textContent = '🎙️ Speak';
+      micBtn.textContent = '🎙️ Hold / Click to Talk';
     }
-    if (activeRecognition) {
-      try { activeRecognition.stop(); } catch (e) {}
-      activeRecognition = null;
-    }
-    if (!state.speaking) setMascotMood('idle', 'Idle');
+    var waveWrap = document.getElementById('voiceWaveWrap');
+    if (waveWrap) waveWrap.hidden = true;
+    if (restoreBubble) setPerchBubble(state.lastBubbleText, false);
+    if (!state.thinking && !state.speaking) setMascotMood('idle', 'Idle');
   }
 
-  function toggleVoiceListening() {
-    if (state.listening) {
-      stopVoiceListening();
-      return;
-    }
-    var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRec) {
-      showToast('Browser SpeechRecognition unavailable here — type in the quick command bar below');
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onloadend = function () {
+        var res = String(reader.result || '');
+        var comma = res.indexOf(',');
+        resolve(comma >= 0 ? res.slice(comma + 1) : res);
+      };
+      reader.onerror = function () { reject(new Error('Failed to encode audio')); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function startMediaRecording() {
+    if (state.listening) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      showToast('Microphone API unavailable here — type in the quick command bar');
       var inp = document.getElementById('quickCmdInput');
       if (inp) inp.focus();
       return;
     }
 
+    cancelPendingCapture = false;
     try {
-      var rec = new SpeechRec();
-      rec.lang = 'en-US';
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-      activeRecognition = rec;
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Wire WebAudio AnalyserNode for live RMS listening rings & waveform
+      var AudioCtor = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtor) {
+        audioCtx = new AudioCtor();
+        var srcNode = audioCtx.createMediaStreamSource(mediaStream);
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserData = new Uint8Array(analyserNode.fftSize);
+        srcNode.connect(analyserNode);
+      }
+
+      var chosenMime = pickRecorderMimeType();
+      recordMimeType = chosenMime || 'audio/webm';
+      recordedChunks = [];
+      mediaRecorder = chosenMime ? new MediaRecorder(mediaStream, { mimeType: chosenMime }) : new MediaRecorder(mediaStream);
+
+      mediaRecorder.ondataavailable = function (ev) {
+        if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
+      };
+
+      mediaRecorder.onstop = async function () {
+        var durationMs = Date.now() - recordStartedAt;
+        var chunksCopy = recordedChunks.slice();
+        var mimeCopy = (mediaRecorder && mediaRecorder.mimeType) || recordMimeType;
+        cleanupAudioStream();
+        mediaRecorder = null;
+
+        if (cancelPendingCapture || durationMs < 150 || chunksCopy.length === 0) {
+          resetMicUi(true);
+          return;
+        }
+
+        var blob = new Blob(chunksCopy, { type: mimeCopy || 'audio/webm' });
+        if (blob.size < 200) {
+          resetMicUi(true);
+          return;
+        }
+
+        resetMicUi(false);
+        try {
+          var b64 = await blobToBase64(blob);
+          await submitCoordinatorAudio(b64, blob.type || 'audio/webm');
+        } catch (err) {
+          setPerchBubble(state.lastBubbleText, false);
+          showToast('Audio encode failed');
+        }
+      };
+
+      recordStartedAt = Date.now();
       state.listening = true;
+      setMascotMood('listening', 'Listening');
+      setPerchBubble('Listening to you...', false);
       var micBtn = document.getElementById('btnVoiceMic');
       if (micBtn) {
         micBtn.classList.add('btn-active-mic');
-        micBtn.textContent = '⏹ Stop';
+        micBtn.textContent = '⏹ Release / Done';
       }
-      setMascotMood('listening', 'Listening');
-      var bubble = document.getElementById('perchBubble');
-      if (bubble) bubble.textContent = 'Listening... speak your command.';
+      var waveWrap = document.getElementById('voiceWaveWrap');
+      var waveLbl = document.getElementById('voiceWaveLabel');
+      if (waveWrap) waveWrap.hidden = false;
+      if (waveLbl) waveLbl.textContent = 'Listening — release to send';
 
-      var finalTranscript = '';
-      rec.onresult = function (ev) {
-        var interim = '';
-        for (var i = ev.resultIndex; i < ev.results.length; i += 1) {
-          var t = ev.results[i][0].transcript;
-          if (ev.results[i].isFinal) finalTranscript += t;
-          else interim += t;
-        }
-        if (bubble) bubble.textContent = (finalTranscript || interim || 'Listening...').trim();
-      };
-      rec.onerror = function (ev) {
-        showToast('Mic notice: ' + (ev && ev.error ? ev.error : 'unavailable'));
-        stopVoiceListening();
-      };
-      rec.onend = function () {
-        var spoken = finalTranscript.trim();
-        stopVoiceListening();
-        if (spoken) {
-          submitCoordinatorPrompt(spoken, 'voice');
-        }
-      };
-      rec.start();
+      mediaRecorder.start(100);
     } catch (err) {
-      stopVoiceListening();
-      showToast('Could not start microphone');
+      cleanupAudioStream();
+      resetMicUi(true);
+      showToast('Mic permission/device error — type command in the box');
+    }
+  }
+
+  function stopMediaRecording(cancel) {
+    cancelPendingCapture = Boolean(cancel);
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try {
+        mediaRecorder.stop();
+        return;
+      } catch {}
+    }
+    cleanupAudioStream();
+    resetMicUi(true);
+  }
+
+  async function submitCoordinatorAudio(audioBase64, mimeType) {
+    var modeSel = document.getElementById('voiceModeSelect');
+    var mode = modeSel ? modeSel.value : 'gemini-live';
+    state.thinking = true;
+    setMascotMood('thinking', 'Transcribing...');
+    setPerchBubble('Processing voice with Gemini...', false);
+
+    try {
+      var res = await apiPost('/api/voice/live-turn', {
+        audioBase64: audioBase64,
+        mimeType: mimeType,
+        source: 'voice',
+        mode: mode,
+      });
+      state.thinking = false;
+      if (res && res.snapshot) state.snapshot = res.snapshot;
+      var reply = (res && res.reply) || (res && res.error) || 'Done.';
+      speakText(reply);
+      renderHeaderAndPerch();
+      renderActiveTab();
+    } catch (err) {
+      state.thinking = false;
+      setMascotMood('idle', 'Idle');
+      setPerchBubble(state.lastBubbleText, false);
+      showToast('Voice turn failed');
     }
   }
 
@@ -238,10 +654,10 @@
     var clean = String(prompt || '').trim();
     if (!clean) return;
     var modeSel = document.getElementById('voiceModeSelect');
-    var mode = modeSel ? modeSel.value : 'browser';
-    setMascotMood('thinking', mode === 'gemini-live' ? 'Gemini Live...' : 'Thinking');
-    var bubble = document.getElementById('perchBubble');
-    if (bubble) bubble.textContent = 'Thinking...';
+    var mode = modeSel ? modeSel.value : 'gemini-live';
+    state.thinking = true;
+    setMascotMood('thinking', mode === 'gemini-live' ? 'Gemini...' : 'Thinking');
+    setPerchBubble('Thinking...', false);
 
     try {
       var res = await apiPost('/api/voice/live-turn', {
@@ -249,15 +665,16 @@
         source: source || 'text',
         mode: mode,
       });
-      if (res && res.snapshot) {
-        state.snapshot = res.snapshot;
-      }
+      state.thinking = false;
+      if (res && res.snapshot) state.snapshot = res.snapshot;
       var reply = (res && res.reply) || (res && res.error) || 'Done.';
       speakText(reply);
       renderHeaderAndPerch();
       renderActiveTab();
     } catch (err) {
+      state.thinking = false;
       setMascotMood('idle', 'Idle');
+      setPerchBubble(state.lastBubbleText, false);
       showToast('Failed to send command');
     }
   }
@@ -284,7 +701,7 @@
     if (ttsBtn) ttsBtn.textContent = state.ttsEnabled ? '🔊 TTS On' : '🔇 Muted';
   }
 
-  /* ---------- Tab 1: Workers ---------- */
+  /* ---------- Tab 1: Workers (Desktop Brain Discovery + Sidecar Agent Fallback) ---------- */
 
   function renderWorkersTab(root) {
     var snap = state.snapshot;
@@ -292,9 +709,14 @@
     var groups = snap.groups || [];
     var workers = snap.workers || [];
 
-    if (!ls.available) {
-      var warn = el('div', 'coord-banner', 'Language Server env vars unavailable (' + (ls.reason || 'offline') + '). Local worker metadata & agentapi dispatch still work.');
-      root.appendChild(warn);
+    if (workers.length === 0 && !ls.available) {
+      root.appendChild(
+        el(
+          'div',
+          'coord-banner',
+          'No active conversations discovered yet. Click "+ Spawn Worker" to start one.'
+        )
+      );
     }
 
     var topRow = el('div', 'coord-row-between');
@@ -346,24 +768,43 @@
       formCard.appendChild(submitRow);
       formCard.addEventListener('submit', async function (ev) {
         ev.preventDefault();
-        if (!promptIn.value.trim()) return;
+        var cleanPrompt = promptIn.value.trim();
+        var cleanTitle = titleIn.value.trim();
+        if (!cleanPrompt) return;
         goBtn.disabled = true;
         goBtn.textContent = 'Dispatching...';
         var res = await apiPost('/api/workers/spawn', {
-          title: titleIn.value.trim(),
+          title: cleanTitle,
           groupId: grpSel.value,
-          prompt: promptIn.value.trim(),
+          prompt: cleanPrompt,
         });
         if (res && res.ok && res.snapshot) {
           state.snapshot = res.snapshot;
           state.showSpawnForm = false;
           showToast('Spawned worker');
           renderActiveTab();
-        } else {
-          goBtn.disabled = false;
-          goBtn.textContent = 'Dispatch Worker';
-          showToast('Spawn failed: ' + ((res && res.error) || 'error'));
+          return;
         }
+        // Desktop fallback: window.sidecar.agent.startConversation
+        if (window.sidecar && window.sidecar.agent && window.sidecar.agent.startConversation) {
+          try {
+            var created = await window.sidecar.agent.startConversation(cleanPrompt, cleanTitle || cleanPrompt.slice(0, 48));
+            if (created && created.conversationId) {
+              await apiPost('/api/workers/meta', {
+                convId: created.conversationId,
+                groupId: grpSel.value,
+                customStatus: 'WORKING',
+              });
+            }
+            state.showSpawnForm = false;
+            showToast('Started worker via Antigravity host');
+            refreshAll(false);
+            return;
+          } catch (e) {}
+        }
+        goBtn.disabled = false;
+        goBtn.textContent = 'Dispatch Worker';
+        showToast('Spawn failed: ' + ((res && res.error) || 'error'));
       });
       root.appendChild(formCard);
     }
@@ -445,18 +886,30 @@
       relayForm.appendChild(relayBtn);
       relayForm.addEventListener('submit', async function (ev) {
         ev.preventDefault();
-        if (!relayIn.value.trim()) return;
+        var msgText = relayIn.value.trim();
+        if (!msgText) return;
         relayBtn.disabled = true;
-        var res = await apiPost('/api/workers/relay', { convId: w.id, message: relayIn.value.trim() });
+        var res = await apiPost('/api/workers/relay', { convId: w.id, message: msgText });
         relayBtn.disabled = false;
         if (res && res.ok && res.snapshot) {
           state.snapshot = res.snapshot;
           relayIn.value = '';
           showToast('Relayed to ' + (w.title || w.id.slice(0, 8)));
           renderActiveTab();
-        } else {
-          showToast('Relay failed: ' + ((res && res.error) || 'error'));
+          return;
         }
+        // Desktop fallback: window.sidecar.agent.sendMessage
+        if (window.sidecar && window.sidecar.agent && window.sidecar.agent.sendMessage) {
+          try {
+            await window.sidecar.agent.sendMessage(msgText, w.id);
+            relayIn.value = '';
+            showToast('Relayed via Antigravity host');
+            await apiPost('/api/board', { author: 'Coordinator', kind: 'relay', summary: 'Relayed to ' + w.id.slice(0, 8) + ': ' + msgText.slice(0, 100) });
+            refreshAll(false);
+            return;
+          } catch (e) {}
+        }
+        showToast('Relay failed: ' + ((res && res.error) || 'error'));
       });
       card.appendChild(relayForm);
 
@@ -615,11 +1068,11 @@
 
     var chatCard = el('div', 'coord-card');
     chatCard.appendChild(el('div', 'coord-card-title', 'Coordinator Conversation'));
-    chatCard.appendChild(el('div', 'coord-card-sub', 'Tip: Type naturally, or use "spawn: <prompt>" / "relay <idPrefix>: <message>".'));
+    chatCard.appendChild(el('div', 'coord-card-sub', 'Say or type naturally (e.g., "Create goal: Ship v1.8", "spawn: ...", or "relay <idPrefix>: ...").'));
 
     var list = el('div', 'coord-chat-list');
     if (chatLog.length === 0) {
-      list.appendChild(el('div', 'coord-card-sub', 'No messages yet. Speak or type in the perch bar above!'));
+      list.appendChild(el('div', 'coord-card-sub', 'No messages yet. Hold the mic button or type in the perch bar above!'));
     } else {
       chatLog.slice(-30).forEach(function (m) {
         var msgBox = el('div', 'coord-chat-msg ' + (m.role === 'user' ? 'user' : 'assistant'));
@@ -709,29 +1162,29 @@
     root.appendChild(idCard);
 
     var voiceCard = el('form', 'coord-card');
-    voiceCard.appendChild(el('div', 'coord-card-title', 'Dual-Mode Voice Settings'));
+    voiceCard.appendChild(el('div', 'coord-card-title', 'Dual-Mode Voice & Auto-ADC Settings'));
     voiceCard.appendChild(
       el(
         'div',
         'coord-card-sub',
-        'Auth status: ' + (vs.readyForGeminiLive ? 'Gemini Live ready (' + vs.keySource + ')' : 'Browser Instant Voice active (zero API keys needed)') +
+        'Auth detected: ' + (vs.readyForGeminiLive ? 'Gemini Ready (' + vs.keySource + ')' : 'Local fallback (no API key or ADC file detected)') +
         ' · Stored with 0600 permissions in plugin_data/agy-coordinator/voice_prefs.json'
       )
     );
 
     var mLbl = el('label', 'coord-field-lbl', 'Default Voice Engine');
     var mSel = el('select', 'coord-select');
-    var o1 = el('option', '', 'Browser Instant Voice (Web Speech API — Zero Key)');
-    o1.value = 'browser';
-    var o2 = el('option', '', 'Gemini Live API Bridge (gemini-3.8-live)');
-    o2.value = 'gemini-live';
+    var o1 = el('option', '', 'Gemini Live (MediaRecorder Audio + Auto-ADC)');
+    o1.value = 'gemini-live';
+    var o2 = el('option', '', 'Browser Instant Voice (Local Fallback)');
+    o2.value = 'browser';
     mSel.appendChild(o1);
     mSel.appendChild(o2);
-    mSel.value = vs.mode || 'browser';
+    mSel.value = vs.mode || 'gemini-live';
     voiceCard.appendChild(mLbl);
     voiceCard.appendChild(mSel);
 
-    var keyLbl = el('label', 'coord-field-lbl', 'Optional GEMINI_API_KEY (leave blank to keep existing or use env/gcloud ADC)');
+    var keyLbl = el('label', 'coord-field-lbl', 'Optional GEMINI_API_KEY (leave blank to auto-use ADC or env)');
     var keyIn = el('input', 'coord-input coord-input-sm');
     keyIn.type = 'password';
     keyIn.placeholder = vs.hasApiKey ? '•••••••• (key saved — type to replace)' : 'AIza... (optional)';
@@ -741,9 +1194,9 @@
     var adcRow = el('label', 'coord-row');
     var adcChk = el('input');
     adcChk.type = 'checkbox';
-    adcChk.checked = Boolean(vs.useGcloudAdc);
+    adcChk.checked = vs.useGcloudAdc !== false;
     adcRow.appendChild(adcChk);
-    adcRow.appendChild(el('span', '', 'Use keyless gcloud ADC (gcloud auth print-access-token) for Gemini Live'));
+    adcRow.appendChild(el('span', '', 'Auto-use keyless gcloud ADC (application_default_credentials.json / gcloud CLI)'));
     voiceCard.appendChild(adcRow);
 
     var btnRow = el('div', 'coord-row');
@@ -808,6 +1261,16 @@
       tokenMeter = window.AGYTokenPill.mount(actionsEl);
     }
 
+    initMascotSprite();
+    requestAnimationFrame(renderMascotFrame);
+
+    window.addEventListener('pointermove', function (ev) {
+      var vw = window.innerWidth || 800;
+      var vh = window.innerHeight || 600;
+      state.pointerX = Math.max(-1, Math.min(1, (ev.clientX / vw) * 2 - 1));
+      state.pointerY = Math.max(-1, Math.min(1, (ev.clientY / vh) * 2 - 1));
+    });
+
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -822,8 +1285,41 @@
       refreshBtn.addEventListener('click', function () { refreshAll(true); });
     }
 
+    // Hold-to-Talk (>=250ms) + Click-to-Toggle (<250ms) on #btnVoiceMic
     var micBtn = document.getElementById('btnVoiceMic');
-    if (micBtn) micBtn.addEventListener('click', toggleVoiceListening);
+    if (micBtn) {
+      micBtn.addEventListener('pointerdown', function (ev) {
+        if (ev.button !== undefined && ev.button !== 0) return;
+        ev.preventDefault();
+        if (state.listening && state.clickToggleActive) {
+          stopMediaRecording(false);
+          return;
+        }
+        recordDownAt = Date.now();
+        state.clickToggleActive = false;
+        startMediaRecording();
+      });
+
+      var finishPointer = function () {
+        if (!state.listening || state.clickToggleActive) return;
+        var heldMs = Date.now() - recordDownAt;
+        if (heldMs >= 250) {
+          stopMediaRecording(false);
+        } else {
+          state.clickToggleActive = true;
+          micBtn.textContent = '⏹ Done Speaking';
+          var waveLbl = document.getElementById('voiceWaveLabel');
+          if (waveLbl) waveLbl.textContent = 'Listening — click Done when finished';
+        }
+      };
+
+      micBtn.addEventListener('pointerup', finishPointer);
+      micBtn.addEventListener('pointercancel', function () {
+        if (state.listening && !state.clickToggleActive) {
+          stopMediaRecording(true);
+        }
+      });
+    }
 
     var ttsBtn = document.getElementById('btnVoiceTts');
     if (ttsBtn) {
@@ -839,7 +1335,7 @@
       modeSel.addEventListener('change', async function () {
         var res = await apiPost('/api/voice/prefs', { mode: modeSel.value });
         if (res && res.snapshot) state.snapshot = res.snapshot;
-        showToast('Voice mode: ' + modeSel.value);
+        showToast('Voice mode saved: ' + modeSel.value);
       });
     }
 
@@ -847,7 +1343,7 @@
     if (mascotWrap) {
       mascotWrap.addEventListener('click', function () {
         var name = (state.snapshot && state.snapshot.identity && state.snapshot.identity.name) || 'Clawy';
-        speakText(name + ' reporting in. Ready for your next instruction.');
+        speakText(name + ' reporting in. Hold the mic button or type below to coordinate.');
       });
     }
 
@@ -863,7 +1359,6 @@
       });
     }
 
-    startBlinkLoop();
     refreshAll(false);
   }
 

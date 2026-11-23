@@ -389,13 +389,13 @@
       "plugin": "agy-coordinator",
       "sidecar": "coordinator-ui",
       "files": {
-        "app.js": "3b12094ed5b82a418ab18ea24bb30d449152862eabead3aeffdcb394ba9b9e3d",
-        "index.html": "d4b6695f17a1ffece0e11aa050d0062bb41aeeb2be170263aa38e7bdad1a0616",
-        "main.mjs": "41545267dffb890d559cedfadf122442310f5b5cdbc683541eed28bb75ea7dc4",
+        "app.js": "67a78c75dbe1decefcba50aa36abfa891f74d9c154d19f0614e1de1c3f2fe020",
+        "index.html": "3159cb5d513e4720c0d220cabb8cc8cb9f241120e610275ee1550768f2aa0e1c",
+        "main.mjs": "dc10c27cbf3007a1ffd3d4717efc09bc78b7f96f5e8d7e048d3eb14e043077b1",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
         "sidecar.json": "937269eed9ade4cae645e853a39223dd509031df02b2e164dde03c4c333b85b5",
-        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "fd691430f9a7ef2fe26889b0676129274851bbb102da81415e6e2ff559d92246",
+        "sidecar_html_inliner.mjs": "f0abe996f6bb4fd39db3d3b8f3a9cd2134d7d8e8f13601a534e896d0b994c058",
+        "styles.css": "d750d9d49a015624b335e5119659ecd100b1b48c276248f60200c544399593e3",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
@@ -473,7 +473,7 @@
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "b0ce061ab8fbeb7fbea2c7448622d1f1ba8e38aa14ea8daa45f6b67d4dc4a2c2"
+      "sha256": "7d5145db6135b9c2dfe013745a61700353d23279f8e0b316fdd6d19a54bbd9f9"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",

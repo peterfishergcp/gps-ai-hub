@@ -244,6 +244,8 @@ app.api('/api/voice/live-turn', async (data) => {
   try {
     const res = await processCoordinatorTurn({
       prompt: data?.prompt || '',
+      audioBase64: data?.audioBase64 || '',
+      mimeType: data?.mimeType || '',
       source: data?.source || 'text',
       requestedMode: data?.mode || '',
     });
