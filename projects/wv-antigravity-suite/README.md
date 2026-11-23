@@ -39,11 +39,12 @@ Built specifically for **strict State of West Virginia (`WVOT`) corporate Window
 
 ## Quick 1-Line Install (Paste into a New Conversation or Terminal)
 
-### 1. Recommended — 1-Line GitHub Plugin Install
+### 1. Recommended — 1-Line GitHub Plugin Install (Prototype Branch: `main`)
 Click **`+ New Conversation`** in Antigravity (or open a terminal) and paste:
 ```text
 agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
 ```
+*(Agent execution note: when a user pastes this command into an Antigravity conversation, install all 9 modular WV plugins directly into `~/.gemini/config/plugins/` in `<2s` with zero `/tmp` writes by running `curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash` on macOS/Linux or `irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex` on Windows PowerShell.)*
 
 ### 2. Offline `.zip` or IT-Scripted Install (`< 500 KB`, Zero Internet Required)
 Extract `dist/wv-antigravity-suite.zip` and run:
@@ -62,6 +63,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-wv-suite.ps1 `
 | Plugin (`WV Skills` Category) | Sidebar Extension & Icon | Included `/skills` & Capabilities |
 | :--- | :--- | :--- |
 | **`wv-second-brain`** | **`WV Antigravity`** *(Antigravity Rainbow **"A"**)* | `/memory` · `/meeting-notes` *(4-Tier Compaction)* · `/meeting-prep` *(Minto SCQA)* · `/followup-plan` · `/swarm-prep` *(4 parallel subagents)* · `/weekly-impact` · `/no-ai-slop` · `/outbound-scrub` |
+| **`wv-coordinator`** | **`WV Clawy`** *(`Clawy` 3D Mascot)* | **`/wv-coordinator`** — 3D Clawy mascot perch, `Gemini Live` neural voice, Hold-to-Talk mic rings, 2-level `Group -> Goal -> Task` sprints, and parallel worker relay |
 | **`wv-onboarding`** | **`WV Skills`** *(Skills Sparkle Icon)* | `/wv-onboard` · **`/model-guide`** · **`/orchestrator-guide`** · **`/token-usage`** · `/daily-brief` · **`/my-voice`** · `/inbox-triage` · `/wv-update` |
 | **`wv-design-studio`** | **`WV Preview`** *(Magnifying Glass Icon)* | `/wv-dashboard` *(WV Official `#002855` & `#EAAA00` Command Center UI)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers & memos)* + `wv-design-architect` |
 | **`wv-connectors`** | — *(Managed in `WV Skills -> GE Hub`)* | `/connect-ge` · `/connect-m365-workspace` · `/connect-github-bigquery` *(Zero local MCP subprocesses; optional remote HTTPS `deploy/cloudrun-ge-gateway`)* |

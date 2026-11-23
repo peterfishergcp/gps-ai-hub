@@ -38,10 +38,12 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
 $PluginDataDir = Join-Path $TargetConfigDir "plugin_data\wv-connectors"
 $MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\wv-antigravity\memory"
+$CoordDataDir = Join-Path $TargetConfigDir "plugin_data\wv-coordinator"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
 New-Item -ItemType Directory -Force -Path $PluginDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
+New-Item -ItemType Directory -Force -Path $CoordDataDir | Out-Null
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)
