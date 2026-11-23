@@ -374,9 +374,9 @@
       "plugin": "agy-connectors",
       "sidecar": "chatski-ui",
       "files": {
-        "app.js": "1f961972f07b123b0df231c23c5ee1793940172bc6e94610e353719b39ad180f",
+        "app.js": "49d196c5fca06ca91c4c1be5e52fb137cbc59acc9c90e847aaa34ee81ef0273d",
         "index.html": "c1ea44869291683db83f50d0a8614168a7823d66040a04c0914ae8e0f4f38d79",
-        "main.mjs": "a08eea5b36e2d7e97e02567b94194469b178e13dd78dfba4ba3136e559c0b934",
+        "main.mjs": "f26ffb4ec7deaaa976332dad6d32371386177fe7fd3de1db330f87ee58e6bafe",
         "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
         "sidecar.json": "3157da7a82b28cd54def6db3ad13bdb2ec28141d50fd070e1c69a0c7269bd58d",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",

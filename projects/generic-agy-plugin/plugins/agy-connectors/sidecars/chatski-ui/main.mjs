@@ -349,8 +349,10 @@ async function refreshOAuthToken({ clientId, clientSecret, refreshToken }) {
   };
 }
 
+const GE_DATASTORE_CACHE_TTL_MS = 10 * 60 * 1000;
 let geTokenCache = { accessToken: '', expiresAt: 0, quotaProjectId: '', source: '' };
 let directChatTokenCache = { accessToken: '', expiresAt: 0 };
+const geDataStoresCache = new Map();
 
 async function resolveGeAccessToken(cfg) {
   if (process.env.AGY_GE_TEST_BEARER && process.env.AGY_GE_TEST_ORIGIN) {
@@ -665,6 +667,7 @@ function loadPersistedChatskiState() {
       modePreference: saved.modePreference || 'auto', // 'auto' | 'ge' | 'direct' | 'demo'
       lastSyncedIso: cleanedConvs.length === 0 && Array.isArray(saved.conversations) && saved.conversations.length > 0 ? '' : saved.lastSyncedIso || '',
       geChatStores: Array.isArray(saved.geChatStores) ? saved.geChatStores : [],
+      authPrompts: Array.isArray(saved.authPrompts) ? saved.authPrompts.filter((u) => typeof u === 'string' && u.startsWith('https://')) : [],
       conversations: cleanedConvs,
       drafts: Array.isArray(saved.drafts) ? saved.drafts : [],
     };
@@ -673,6 +676,7 @@ function loadPersistedChatskiState() {
     modePreference: 'auto',
     lastSyncedIso: '',
     geChatStores: [],
+    authPrompts: [],
     conversations: [],
     drafts: [],
   };
@@ -955,8 +959,13 @@ function parseConversationsFromGroundedProseAndCitations(answerText, citations =
       g.messages = mergeUniqueMessages(g.messages, snippetMsgs);
     } else if (cit.snippet && !isEmptyJsonOrNoResultText(cit.snippet)) {
       const sdSender =
-        (sd && (sd.sender_name || sd.sender || sd.author || sd.creator || (sd.sender && sd.sender.displayName))) || '';
-      const sdTime = (sd && (sd.create_time || sd.createTime || sd.timestamp)) || 'Recent';
+        cit.sender ||
+        (sd && (sd.sender_name || sd.sender || sd.author || sd.creator || (sd.sender && sd.sender.displayName))) ||
+        '';
+      const sdTime =
+        cit.timeLabel ||
+        (sd && (sd.create_time || sd.createTime || sd.timestamp || sd.sent_time)) ||
+        'Recent';
       g.messages = mergeUniqueMessages(g.messages, [
         {
           id: `cit-m-${i}`,
@@ -1000,6 +1009,16 @@ function parseConversationsFromGroundedProseAndCitations(answerText, citations =
 }
 
 async function discoverGeChatDataStores(cfg, auth) {
+  const cacheKey = `${cfg.projectId}|${cfg.location}|${cfg.collectionId}|${cfg.engineId}`;
+  const cached = geDataStoresCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return {
+      allEngineStores: cached.allEngineStores,
+      chatStores: cached.chatStores,
+      cacheHit: true,
+    };
+  }
+
   const base = discoveryEngineBaseUrl(cfg.location);
   const headers = { Authorization: `Bearer ${auth.accessToken}` };
   if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
@@ -1023,13 +1042,20 @@ async function discoverGeChatDataStores(cfg, auth) {
     return hay.includes('chat') || hay.includes('dynamite') || hay.includes('teams');
   });
 
+  geDataStoresCache.set(cacheKey, {
+    allEngineStores: engineStores,
+    chatStores,
+    expiresAt: Date.now() + GE_DATASTORE_CACHE_TTL_MS,
+  });
+
   return {
     allEngineStores: engineStores,
     chatStores,
+    cacheHit: false,
   };
 }
 
-async function callGeStreamAssist(cfg, auth, { queryText, dataStores = [], session = '' }) {
+async function callGeStreamAssist(cfg, auth, { queryText, dataStores = [], session = '', timeoutMs = 55000 }) {
   const base = discoveryEngineBaseUrl(cfg.location);
   const headers = { Authorization: `Bearer ${auth.accessToken}` };
   if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
@@ -1059,7 +1085,7 @@ async function callGeStreamAssist(cfg, auth, { queryText, dataStores = [], sessi
     method: 'POST',
     headers,
     bodyObj: body,
-    timeoutMs: 55000,
+    timeoutMs,
   });
   if (resp.status !== 200) {
     throw new Error(`Gemini Enterprise StreamAssist returned HTTP ${resp.status}: ${resp.text.slice(0, 260)}`);
@@ -1122,6 +1148,18 @@ function normalizeConversationList(rawConvs) {
     .filter((c) => c.title);
 }
 
+function formatShortTimeLabel(rawTs) {
+  const s = String(rawTs || '').trim();
+  if (!s) return 'Recent';
+  const ms = Date.parse(s);
+  if (Number.isNaN(ms)) return s;
+  try {
+    return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  } catch {
+    return s;
+  }
+}
+
 async function searchGeChatDataStores(cfg, auth, chatStores = []) {
   if (!Array.isArray(chatStores) || chatStores.length === 0) return [];
   const base = discoveryEngineBaseUrl(cfg.location);
@@ -1137,7 +1175,7 @@ async function searchGeChatDataStores(cfg, auth, chatStores = []) {
       headers,
       bodyObj: {
         query: 'a OR e OR i OR o OR u OR the OR hi OR test',
-        pageSize: 20,
+        pageSize: 30,
         dataStoreSpecs: chatStores.map((ds) => ({ dataStore: ds.name })),
         contentSearchSpec: {
           snippetSpec: { returnSnippet: true },
@@ -1153,6 +1191,16 @@ async function searchGeChatDataStores(cfg, auth, chatStores = []) {
       const dsd = doc.derivedStructData || {};
       const uri = String(dsd.link || dsd.uri || sd.uri || sd.url || sd.link || '').trim();
       const title = String(dsd.title || sd.title || sd.space_display_name || sd.spaceName || doc.name || '').trim();
+      const sender = String(
+        sd.sender_name ||
+          (sd.sender && typeof sd.sender === 'object' ? sd.sender.displayName : sd.sender) ||
+          sd.author ||
+          sd.creator ||
+          dsd.author ||
+          ''
+      ).trim();
+      const rawTs = sd.create_time || sd.createTime || sd.timestamp || sd.sent_time || dsd.createTime || '';
+      const timeLabel = formatShortTimeLabel(rawTs);
       const snipArr = Array.isArray(dsd.snippets) ? dsd.snippets.map((s) => s && s.snippet).filter(Boolean) : [];
       const textBody =
         snipArr.join('\n') ||
@@ -1161,6 +1209,8 @@ async function searchGeChatDataStores(cfg, auth, chatStores = []) {
         syntheticCitations.push({
           title,
           uri,
+          sender,
+          timeLabel,
           snippet: textBody,
           structData: { ...dsd, ...sd },
         });
@@ -1212,6 +1262,7 @@ async function syncConversationsFromGe() {
     callGeStreamAssist(cfg, auth, {
       queryText: naturalRosterPrompt,
       dataStores: primaryStores,
+      timeoutMs: 22000,
     }),
   ]);
 
@@ -1235,6 +1286,7 @@ async function syncConversationsFromGe() {
     assist = await callGeStreamAssist(cfg, auth, {
       queryText: naturalRosterPrompt,
       dataStores: allEngineStores,
+      timeoutMs: 22000,
     });
     assistConvs = parseConversationsFromGroundedProseAndCitations(assist.answerText, assist.citations || []);
   }
@@ -1274,6 +1326,16 @@ async function syncConversationsFromGe() {
   };
 }
 
+async function runInBatches(items, batchSize, fn) {
+  const results = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const chunk = items.slice(i, i + batchSize);
+    const chunkRes = await Promise.all(chunk.map(fn));
+    results.push(...chunkRes);
+  }
+  return results;
+}
+
 async function syncConversationsFromDirectApi() {
   const token = await resolveDirectChatToken();
   if (!token) {
@@ -1281,35 +1343,56 @@ async function syncConversationsFromDirectApi() {
   }
   const base = chatApiBaseUrl();
   const headers = { Authorization: `Bearer ${token}` };
-  const spacesResp = await httpsJsonRequest(`${base}/v1/spaces?pageSize=20`, { headers });
+  const spacesResp = await httpsJsonRequest(`${base}/v1/spaces?pageSize=40`, { headers });
   if (spacesResp.status !== 200) {
     throw new Error(`Google Chat API spaces.list returned HTTP ${spacesResp.status}`);
   }
   const rawSpaces = Array.isArray(spacesResp.json?.spaces) ? spacesResp.json.spaces : [];
-  const convs = [];
-  for (const sp of rawSpaces.slice(0, 14)) {
+  const sortedSpaces = rawSpaces
+    .filter((sp) => /^spaces\/[A-Za-z0-9_-]+$/.test(String(sp?.name || '')))
+    .sort((a, b) => {
+      const ta = Date.parse(a.lastActiveTime || a.createTime || '') || 0;
+      const tb = Date.parse(b.lastActiveTime || b.createTime || '') || 0;
+      return tb - ta;
+    })
+    .slice(0, 16);
+
+  const convs = await runInBatches(sortedSpaces, 6, async (sp) => {
     const spaceName = String(sp.name || '');
-    if (!/^spaces\/[A-Za-z0-9_-]+$/.test(spaceName)) continue;
     const isDm = sp.spaceType === 'DIRECT_MESSAGE' || sp.spaceType === 'GROUP_CHAT' || sp.type === 'DM';
-    const msgResp = await httpsJsonRequest(
-      `${base}/v1/${spaceName}/messages?pageSize=10&orderBy=createTime%20desc`,
-      { headers }
-    );
-    const rawMsgs = Array.isArray(msgResp.json?.messages) ? msgResp.json.messages.slice().reverse() : [];
-    convs.push({
+    const [msgResp, readResp] = await Promise.all([
+      httpsJsonRequest(`${base}/v1/${spaceName}/messages?pageSize=10&orderBy=createTime%20desc`, { headers }),
+      httpsJsonRequest(`${base}/v1/users/me/${spaceName}/spaceReadState`, { headers }).catch(() => null),
+    ]);
+    const rawMsgs = Array.isArray(msgResp?.json?.messages) ? msgResp.json.messages.slice().reverse() : [];
+    const lastActiveMs =
+      Date.parse(sp.lastActiveTime || (rawMsgs.length > 0 ? rawMsgs[rawMsgs.length - 1].createTime : '') || '') || 0;
+    const lastReadMs =
+      readResp && readResp.status === 200 && readResp.json?.lastReadTime
+        ? Date.parse(readResp.json.lastReadTime) || 0
+        : 0;
+    let unreadCount = 0;
+    if (lastReadMs > 0 && lastActiveMs > lastReadMs) {
+      const newer = rawMsgs.filter((m) => (Date.parse(m.createTime || '') || 0) > lastReadMs).length;
+      unreadCount = Math.max(1, newer);
+    }
+
+    return {
       id: spaceName.replace('/', '-'),
       spaceName,
       kind: isDm ? 'dm' : 'space',
       title: sp.displayName || (isDm ? 'Direct Message' : spaceName),
+      unreadCount,
+      updatedAgo: lastActiveMs ? formatShortTimeLabel(new Date(lastActiveMs).toISOString()) : 'Recent',
       webUrl: sp.spaceUri || `https://mail.google.com/chat/u/0/#chat/space/${spaceName.split('/')[1]}`,
       messages: rawMsgs.map((m) => ({
         id: m.name || '',
         sender: m.sender?.displayName || m.sender?.name || 'Member',
-        timeLabel: m.createTime ? new Date(m.createTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '',
+        timeLabel: m.createTime ? formatShortTimeLabel(m.createTime) : '',
         text: m.formattedText || m.text || '',
       })),
-    });
-  }
+    };
+  });
   return normalizeConversationList(convs);
 }
 
@@ -1343,6 +1426,7 @@ function buildEffectiveState() {
       : '',
     geWebAppUrl: geCfg.webAppUrl || '',
     geChatStores: persisted.geChatStores,
+    authPrompts: persisted.authPrompts || [],
     directApiConnected: hasDirectToken,
     conversations,
     drafts: persisted.drafts,
@@ -1431,6 +1515,7 @@ app.api('/api/save-ge', async (data) => {
     };
     writeConnectorJson('ge-instance.json', record);
     geTokenCache = { accessToken: '', expiresAt: 0, quotaProjectId: '', source: '' };
+    geDataStoresCache.clear();
     return buildEffectiveState();
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: err.message || 'Invalid Gemini Enterprise resource' }), {
@@ -1447,6 +1532,7 @@ app.api('/api/sync', async () => {
     if (stateBefore.activeMode === 'direct') {
       const convs = await syncConversationsFromDirectApi();
       persisted.conversations = convs;
+      persisted.authPrompts = [];
       persisted.lastSyncedIso = new Date().toISOString();
       savePersistedChatskiState(persisted);
       return { ...buildEffectiveState(), syncSource: 'direct' };
@@ -1458,6 +1544,9 @@ app.api('/api/sync', async () => {
         persisted.lastSyncedIso = new Date().toISOString();
       }
       persisted.geChatStores = geRes.chatStoreNames;
+      persisted.authPrompts = Array.isArray(geRes.authPrompts)
+        ? geRes.authPrompts.filter((u) => typeof u === 'string' && u.startsWith('https://'))
+        : [];
       if (persisted.modePreference === 'demo') {
         persisted.modePreference = 'ge';
       }
@@ -1465,7 +1554,7 @@ app.api('/api/sync', async () => {
       return {
         ...buildEffectiveState(),
         syncSource: 'ge',
-        authPrompts: geRes.authPrompts,
+        authPrompts: persisted.authPrompts,
         notice: geRes.emptyResultNotice || '',
       };
     }
@@ -1525,7 +1614,9 @@ app.api('/api/messages/refresh', async (data) => {
           });
         const idx = persisted.conversations.findIndex((c) => c.id === convId);
         if (idx >= 0) {
-          persisted.conversations[idx].messages = refreshedMsgs;
+          persisted.conversations[idx].messages = Boolean(data && data.incremental)
+            ? mergeUniqueMessages(persisted.conversations[idx].messages || [], refreshedMsgs).slice(-40)
+            : refreshedMsgs;
           persisted.conversations[idx].unreadCount = 0;
           savePersistedChatskiState(persisted);
         }
@@ -1544,6 +1635,7 @@ app.api('/api/messages/refresh', async (data) => {
     const assist = await callGeStreamAssist(cfg, auth, {
       queryText: prompt,
       dataStores: primaryStores,
+      timeoutMs: Boolean(data && data.incremental) ? 22000 : 35000,
     });
     const parsed = parseJsonBlockFromAnswer(assist.answerText);
     let candidateMsgs =
@@ -1554,16 +1646,26 @@ app.api('/api/messages/refresh', async (data) => {
       const fromCit = parseConversationsFromGroundedProseAndCitations('', assist.citations);
       if (fromCit.length > 0) candidateMsgs = fromCit[0].messages || [];
     }
+    const nextAuthPrompts = Array.isArray(assist.authPrompts)
+      ? assist.authPrompts.filter((u) => typeof u === 'string' && u.startsWith('https://'))
+      : [];
+    if (nextAuthPrompts.length > 0) {
+      persisted.authPrompts = nextAuthPrompts;
+      savePersistedChatskiState(persisted);
+    }
     if (candidateMsgs.length > 0) {
       const normalized = normalizeConversationList([{ ...target, messages: candidateMsgs }])[0];
       if (normalized) {
         const existingIdx = persisted.conversations.findIndex((c) => c.id === convId);
         if (existingIdx >= 0) {
-          persisted.conversations[existingIdx].messages = normalized.messages;
+          persisted.conversations[existingIdx].messages = Boolean(data && data.incremental)
+            ? mergeUniqueMessages(persisted.conversations[existingIdx].messages || [], normalized.messages).slice(-40)
+            : normalized.messages;
           persisted.conversations[existingIdx].unreadCount = 0;
         } else {
           persisted.conversations.unshift(normalized);
         }
+        persisted.authPrompts = nextAuthPrompts;
         savePersistedChatskiState(persisted);
       }
     }

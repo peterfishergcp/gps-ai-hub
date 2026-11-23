@@ -12,6 +12,8 @@
   let quotedMessage = null;
   let pendingSendPayload = null;
   let toastTimer = null;
+  let syncInFlight = false;
+  let activePollTimer = null;
 
   const railListsEl = document.getElementById('rail-lists');
   const headerLeftEl = document.getElementById('chat-header-left');
@@ -178,7 +180,34 @@
         : 'Sample preview · connect GE';
 
     connBannerEl.replaceChildren();
-    if (!state.geConfigured && !state.directApiConnected) {
+    const hasAuthPrompts = Array.isArray(state.authPrompts) && state.authPrompts.length > 0;
+    if (hasAuthPrompts) {
+      const authTarget = state.authPrompts[0] || state.geWebAppUrl || '';
+      connBannerEl.classList.remove('hidden');
+      connBannerEl.appendChild(
+        el('span', {
+          text: 'Google Chat connector authorization is required once in Gemini Enterprise to sync your live Spaces & DMs.',
+        })
+      );
+      connBannerEl.appendChild(
+        el('button', {
+          type: 'button',
+          className: 'hdr-btn',
+          id: 'btn-banner-authorize-ge',
+          text: 'Authorize Google Chat Connector in Gemini Enterprise →',
+          onClick: () => {
+            if (authTarget) {
+              openExternalSafe(authTarget);
+            } else {
+              dispatchToAntigravity(
+                '/connect-ge Help me authorize the Google Chat connector in my Gemini Enterprise instance.',
+                'Authorize GE Chat Connector'
+              );
+            }
+          },
+        })
+      );
+    } else if (!state.geConfigured && !state.directApiConnected) {
       connBannerEl.classList.remove('hidden');
       connBannerEl.appendChild(
         el('span', {
@@ -210,7 +239,7 @@
           className: 'hdr-btn',
           id: 'btn-banner-sync',
           text: '↻ Sync Live Chat Now',
-          onClick: () => triggerSync(),
+          onClick: () => triggerSync({ background: false }),
         })
       );
     } else {
@@ -721,8 +750,11 @@
     );
   }
 
-  async function triggerSync() {
-    railStatusEl.textContent = 'Syncing from Gemini Enterprise...';
+  async function triggerSync(opts) {
+    const isBackground = Boolean(opts && opts.background);
+    if (syncInFlight) return;
+    syncInFlight = true;
+    railStatusEl.textContent = isBackground ? 'Syncing...' : 'Syncing from Gemini Enterprise...';
     try {
       const res = await apiPost('/api/sync', {});
       state = res;
@@ -735,17 +767,58 @@
       }
       render();
       if (Array.isArray(res.authPrompts) && res.authPrompts.length > 0) {
-        showToast('Click Authorize in Gemini Enterprise Web App to finish linking Google Chat');
-        openExternalSafe(res.authPrompts[0]);
-      } else if (res.notice) {
+        if (!isBackground) {
+          showToast('Click Authorize in Gemini Enterprise Web App to finish linking Google Chat');
+          openExternalSafe(res.authPrompts[0]);
+        }
+      } else if (res.notice && !isBackground) {
         showToast(res.notice);
-      } else {
+      } else if (!isBackground) {
         showToast('Synced conversations (' + (res.syncSource || 'ready') + ')');
       }
     } catch (err) {
       renderModeAndBanner();
-      showToast('Sync error: ' + err.message);
+      if (!isBackground) {
+        showToast('Sync error: ' + err.message);
+      }
+    } finally {
+      syncInFlight = false;
     }
+  }
+
+  async function pollActiveConversation() {
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    if (syncInFlight) return;
+    if (!state || (!state.geConfigured && !state.directApiConnected) || state.showingSamplePreview) return;
+    const conv = getActiveConversation();
+    if (!conv || !conv.id) return;
+
+    syncInFlight = true;
+    try {
+      const wasNearBottom = viewportEl
+        ? viewportEl.scrollHeight - viewportEl.scrollTop - viewportEl.clientHeight < 80
+        : true;
+      const nextState = await apiPost('/api/messages/refresh', {
+        conversationId: conv.id,
+        incremental: true,
+      });
+      if (nextState && nextState.ok) {
+        state = nextState;
+        render();
+        if (wasNearBottom && viewportEl) {
+          viewportEl.scrollTop = viewportEl.scrollHeight;
+        }
+      }
+    } catch {
+      // Quietly ignore transient background poll failures so visible messages stay intact
+    } finally {
+      syncInFlight = false;
+    }
+  }
+
+  function startActiveThreadPolling() {
+    if (activePollTimer) clearInterval(activePollTimer);
+    activePollTimer = setInterval(pollActiveConversation, 15000);
   }
 
   function render() {
@@ -762,8 +835,13 @@
       selectedConvId = state.conversations[0].id;
     }
     render();
-    if (state.geConfigured && state.showingSamplePreview && !state.lastSyncedIso && state.activeMode === 'ge') {
-      triggerSync();
+    startActiveThreadPolling();
+
+    const canSync = Boolean(state.geConfigured || state.directApiConnected);
+    const lastMs = state.lastSyncedIso ? Date.parse(state.lastSyncedIso) : NaN;
+    const isStale = !state.lastSyncedIso || Number.isNaN(lastMs) || Date.now() - lastMs > 60000;
+    if (canSync && isStale) {
+      triggerSync({ background: true });
     }
   }
 
