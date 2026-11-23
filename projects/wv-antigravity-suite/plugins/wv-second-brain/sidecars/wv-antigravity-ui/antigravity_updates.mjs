@@ -42,12 +42,12 @@ export const BUNDLED_VIDEO_GUIDES = [
     id: 'vid-suite-overview',
     kind: 'video',
     topic: 'videos',
-    badge: '3–4 Min · 2-Host Video',
+    badge: '3 Min · How-To Video',
     dateLabel: 'Nov 2026',
     title: 'Google Antigravity Plugin Suite — Complete Tour',
     summary:
-      'Two-host walkthrough of WV Antigravity Overview, WV Clawy (Brown Bear Multi-Agent & Voice Hub), AI Inbox Action Items, WV Skills Hub, TokenEconomics, and WV Preview.',
-    url: 'https://www.youtube.com/watch?v=Qk6TZEhROmo',
+      'Practical tour of where to click across WV Antigravity Overview, WV Clawy 🐻, Action Items, WV Skills & Personal Skills, TokenEconomics, and WV Preview.',
+    url: 'https://www.youtube.com/watch?v=_VjZQ2_HkSA',
     tryLabel: 'Tour My Workspace →',
     tryPrompt:
       '/daily-brief Walk me through my workspace Overview, open Action Items, Personal Skills, and TokenEconomics health.',
@@ -56,12 +56,12 @@ export const BUNDLED_VIDEO_GUIDES = [
     id: 'vid-getting-started-turbo',
     kind: 'video',
     topic: 'videos',
-    badge: '3–4 Min · 2-Host Video',
+    badge: '3 Min · How-To Video',
     dateLabel: 'Nov 2026',
-    title: 'Getting Started in 60 Seconds & Using Turbo Mode Safely',
+    title: 'Getting Started in 60 Seconds & Using Turbo Mode',
     summary:
-      'How to install the plugin suite in one command, when to toggle Request Review to Turbo for trusted setup and back to Default for daily safety, and running onboarding.',
-    url: 'https://www.youtube.com/watch?v=g5bVwFgt-xU',
+      'Step-by-step guide to pasting the 1-line install command, using ⚡ Turbo during setup vs. 🔒 Default for daily work, and setting your role and writing voice.',
+    url: 'https://www.youtube.com/watch?v=JMNn19uuJCo',
     tryLabel: 'Run 60s Setup →',
     tryPrompt:
       '/memory Check my role profile, writing voice, and personal memory setup and confirm Default review safety best practices.',
@@ -70,12 +70,12 @@ export const BUNDLED_VIDEO_GUIDES = [
     id: 'vid-skills-dashboard-preview',
     kind: 'video',
     topic: 'videos',
-    badge: '3–4 Min · 2-Host Video',
+    badge: '2.5 Min · How-To Video',
     dateLabel: 'Nov 2026',
-    title: 'Using 1-Click Skills, Personal Skills & Visual Previews (Dashboard & Slides)',
+    title: 'Using 1-Click Skills, Personal Skills & Visual Previews (Dashboards & Slides)',
     summary:
-      'Explore suite & personal skills in the dedicated Skills panel, spin up an interactive KPI Dashboard and 16:9 Slide Deck, customize layout, and view serverless in Preview.',
-    url: 'https://www.youtube.com/watch?v=jLuitwvpwaY',
+      'How to run 40 ready-made skills in WV Skills, create your own Personal Skills (+ New Skill), and customize interactive Dashboards & 16:9 Slide Decks in WV Preview.',
+    url: 'https://www.youtube.com/watch?v=EBNOPmh48d0',
     tryLabel: 'Build Sample Deck →',
     tryPrompt:
       '/slides Create a crisp 5-slide executive readiness briefing deck with speaker notes and open the rendered visual preview in the Side Pane.',
@@ -84,17 +84,39 @@ export const BUNDLED_VIDEO_GUIDES = [
     id: 'vid-orchestrator-workflows-tokens',
     kind: 'video',
     topic: 'videos',
-    badge: '3–4 Min · 2-Host Video',
+    badge: '2.5 Min · How-To Video',
     dateLabel: 'Nov 2026',
-    title: 'Mastering Orchestrator, Workflows & TokenEconomics',
+    title: 'Working Faster with Orchestrator & Managing TokenEconomics',
     summary:
-      'Pair Gemini 4 Argon/Neon planning with fast Hydrogen execution, offload repetitive work to deterministic Workflows vs Swarm, and manage your monthly pooled spend cap.',
-    url: 'https://www.youtube.com/watch?v=qw43eb33nzA',
-    tryLabel: 'Master Orchestrator →',
+      'How to click ⚡ Orchestrator on multi-step tasks, prep big meetings in 60s with /swarm-prep, and track your monthly plan in TokenEconomics.',
+    url: 'https://www.youtube.com/watch?v=UNkIaYH8O6M',
+    tryLabel: 'Try Orchestrator →',
     tryPrompt:
       '/orchestrator-guide Show me how to combine Orchestrator (Argon/Neon + Hydrogen) with deterministic Workflows to maximize quality and stretch my pooled quota.',
   },
+  {
+    id: 'vid-clawy-coordinator',
+    kind: 'video',
+    topic: 'videos',
+    badge: '3 Min · How-To Video',
+    dateLabel: 'Nov 2026',
+    title: 'How to Use Clawy — Multi-Agent Command Center & Gemini Live Voice',
+    summary:
+      'How to open WV Clawy 🐻, see which parallel chats Need You, click ↗ Pop Out for side-by-side split view, connect Kore Gemini Live voice, and track Goals.',
+    url: 'https://www.youtube.com/watch?v=TeWdmiyXnxo',
+    tryLabel: 'Open WV Clawy 🐻 →',
+    tryPrompt:
+      '/wv-coordinator Summarize my active agent conversations and show any items waiting on me.',
+  },
 ];
+
+const LEGACY_VIDEO_URLS = new Set([
+  YOUTUBE_CHANNEL_URL,
+  'https://www.youtube.com/watch?v=Qk6TZEhROmo',
+  'https://www.youtube.com/watch?v=g5bVwFgt-xU',
+  'https://www.youtube.com/watch?v=jLuitwvpwaY',
+  'https://www.youtube.com/watch?v=qw43eb33nzA',
+]);
 
 export const BUNDLED_BLOG_UPDATES = [
   {
@@ -326,14 +348,12 @@ export function getUpdatesState(stateDir = '', videoManifestOverride = null) {
         cachedBlog = c.items;
         lastSyncedIso = c.lastSyncedIso || null;
       }
-      if (Array.isArray(c.videos) && c.videos.length > 0) {
-        cachedVideos = c.videos.map((v) => {
-          if (!v || !v.url || v.url === YOUTUBE_CHANNEL_URL) {
-            const bundled = BUNDLED_VIDEO_GUIDES.find((b) => b.id === v?.id || b.title === v?.title);
-            return bundled ? { ...v, url: bundled.url } : v;
-          }
-          return v;
-        });
+      if (
+        Array.isArray(c.videos) &&
+        c.videos.length >= BUNDLED_VIDEO_GUIDES.length &&
+        !c.videos.some((v) => !v || !v.url || LEGACY_VIDEO_URLS.has(v.url))
+      ) {
+        cachedVideos = c.videos;
       }
     }
   } catch {}
