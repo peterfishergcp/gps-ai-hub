@@ -126,12 +126,12 @@
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "520f4f5ada8d07a1",
+      "treeSha256": "cd1962b3839ad601",
       "files": {
         "SKILL.md": "9fd7546dfc121913fd8d35d3eace46ed8bca17828b5bbc9f5fc80a5f65ada6ab",
-        "scripts/incremental-sync.mjs": "3e2ddd94d9371085ab515c1e2fa51f91647cea0e5216a51b99f29a6d441e682e",
-        "scripts/install-agy-suite.ps1": "ab681155d3541d0a3a7cc7e3fdf09e910afa55a9050d77fcf3949501552ba884",
-        "scripts/install-agy-suite.sh": "60ede4b332c1d06ad2be99657e7a6705ac3b9bc917c5d672bfe0a833ee185528"
+        "scripts/incremental-sync.mjs": "6d8c9c04c1f33d1eb4965d76e7425cd3e8b96b9ccc3e12d89b7b20fc55cd653c",
+        "scripts/install-agy-suite.ps1": "fb205bd4204c2b9b095fe53f060b6632c034fd787fe27dffb8cc3cce62bb9277",
+        "scripts/install-agy-suite.sh": "5686274d59393624561d5d47e6d1a507ad8d2b0f1504b2ba3ffab466fe27f874"
       }
     },
     "daily-brief": {
@@ -393,7 +393,7 @@
         "index.html": "d4b6695f17a1ffece0e11aa050d0062bb41aeeb2be170263aa38e7bdad1a0616",
         "main.mjs": "41545267dffb890d559cedfadf122442310f5b5cdbc683541eed28bb75ea7dc4",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
-        "sidecar.json": "e69cdaae3d94525f40a6f9b7405340b8baab802eb944d3e86450782473783302",
+        "sidecar.json": "937269eed9ade4cae645e853a39223dd509031df02b2e164dde03c4c333b85b5",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "fd691430f9a7ef2fe26889b0676129274851bbb102da81415e6e2ff559d92246",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",

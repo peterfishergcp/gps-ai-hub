@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/agy-coordinator-prototype/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
 ZIP_URL=""
 GIT_REPO_URL=""
 GE_INSTANCE=""

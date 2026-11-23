@@ -26,7 +26,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/agy-coordinator-prototype/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $UserHome = [Environment]::GetFolderPath("UserProfile")

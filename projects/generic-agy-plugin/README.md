@@ -57,7 +57,7 @@ See where you stand against your monthly pooled `$` quota (`Standard $30`, `Plus
 ### 1. Recommended — 1-Line GitHub Plugin Install
 Click **`+ New Conversation`** in Antigravity (or open a terminal) and paste:
 ```text
-agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
+agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/feat/agy-coordinator-prototype/projects/generic-agy-plugin
 ```
 
 ### 2. Offline `.zip` or IT-Scripted Install (`< 500 KB`, Zero `git` Required)
