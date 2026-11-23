@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="clawyBody" x1="18" y1="20" x2="82" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="55%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="clawyClaw" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FB7185"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+    <linearGradient id="clawyVisor" x1="25" y1="36" x2="75" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+  </defs>
+  <!-- Antennae -->
+  <line x1="39" y1="24" x2="33" y2="12" stroke="#38BDF8" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="32" cy="11" r="4" fill="#F97316"/>
+  <line x1="61" y1="24" x2="67" y2="12" stroke="#38BDF8" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="68" cy="11" r="4" fill="#10B981"/>
+  <!-- Cute Geometric Claws -->
+  <path d="M22 48C13 45 9 36 14 29C17 25 22 27 21 33C25 29 29 33 27 39C26 43 24 46 22 48Z" fill="url(#clawyClaw)"/>
+  <path d="M78 48C87 45 91 36 86 29C83 25 78 27 79 33C75 29 71 33 73 39C74 43 76 46 78 48Z" fill="url(#clawyClaw)"/>
+  <!-- Rounded Bot Shell -->
+  <rect x="21" y="24" width="58" height="54" rx="22" fill="url(#clawyBody)"/>
+  <!-- Face Visor -->
+  <rect x="28" y="34" width="44" height="30" rx="13" fill="url(#clawyVisor)"/>
+  <!-- Expressive Eyes -->
+  <circle cx="40" cy="47" r="4.8" fill="#38BDF8"/>
+  <circle cx="41.5" cy="45.5" r="1.6" fill="#FFFFFF"/>
+  <circle cx="60" cy="47" r="4.8" fill="#38BDF8"/>
+  <circle cx="61.5" cy="45.5" r="1.6" fill="#FFFFFF"/>
+  <!-- Cheek Blush -->
+  <ellipse cx="34" cy="54" rx="3.4" ry="1.8" fill="#FB7185" opacity="0.75"/>
+  <ellipse cx="66" cy="54" rx="3.4" ry="1.8" fill="#FB7185" opacity="0.75"/>
+  <!-- Smile -->
+  <path d="M44 55.5C46.5 58.2 53.5 58.2 56 55.5" stroke="#34D399" stroke-width="2.8" stroke-linecap="round"/>
+  <!-- Perch Bar -->
+  <rect x="18" y="83" width="64" height="6" rx="3" fill="#64748B" opacity="0.7"/>
+</svg>

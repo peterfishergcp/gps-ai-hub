@@ -1,0 +1,6 @@
+{
+  "name": "agy_coordinator_ui",
+  "version": "1.7.4",
+  "type": "module",
+  "description": "Zero-dependency Antigravity UI Sidecar for AGY Coordinator — animated Clawy mascot perch, live Worker board, 2-level goals, and dual-mode voice."
+}

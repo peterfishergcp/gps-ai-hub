@@ -1,0 +1,12 @@
+{
+  "name": "agy-coordinator",
+  "displayName": "AGY Coordinator — Multi-Agent Hub, Mascot & Live Voice",
+  "version": "1.7.4",
+  "description": "Zero-dependency multi-agent coordinator with an animated Clawy mascot perch, live Antigravity Worker board, 2-level Group -> Goal -> Task tracker, editable IDENTITY.md/SOUL.md persona, and Dual-Mode Voice (Browser Web Speech + Gemini Live API).",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "/agy-coordinator Summarize my active Workers, Groups, and Goal progress",
+    "/agy-coordinator Create a new Group and Goal for today's multi-agent sprint",
+    "/agy-coordinator Relay a status check to my active worker conversations"
+  ]
+}

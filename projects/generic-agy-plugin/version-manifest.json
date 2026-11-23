@@ -1,7 +1,7 @@
 {
   "suiteVersion": "1.7.4",
-  "updatedAt": "2026-11-23T00:30:00Z",
-  "skillCount": 40,
+  "updatedAt": "2026-11-23T01:12:00Z",
+  "skillCount": 41,
   "skillManifest": {
     "chatski": {
       "plugin": "agy-connectors",
@@ -35,6 +35,14 @@
       "files": {
         "SKILL.md": "356f93b872d758323b15012e64eb699591ad443197c97f8840426ac68360291a",
         "references/federated_connector_prompts.md": "f45a72fe362483594498fd53fa56860f7be40adea2abc6197ed5521e24a8e2fe"
+      }
+    },
+    "agy-coordinator": {
+      "plugin": "agy-coordinator",
+      "skill": "agy-coordinator",
+      "treeSha256": "a826f8856b6a6e82",
+      "files": {
+        "SKILL.md": "d162a0ba96fcdecd3a98460463eaad18666e522a6c7e3a681e7430ab9be8e42d"
       }
     },
     "agy-dashboard": {
@@ -377,6 +385,21 @@
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
     },
+    "coordinator-ui": {
+      "plugin": "agy-coordinator",
+      "sidecar": "coordinator-ui",
+      "files": {
+        "app.js": "3b12094ed5b82a418ab18ea24bb30d449152862eabead3aeffdcb394ba9b9e3d",
+        "index.html": "d4b6695f17a1ffece0e11aa050d0062bb41aeeb2be170263aa38e7bdad1a0616",
+        "main.mjs": "41545267dffb890d559cedfadf122442310f5b5cdbc683541eed28bb75ea7dc4",
+        "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
+        "sidecar.json": "e69cdaae3d94525f40a6f9b7405340b8baab802eb944d3e86450782473783302",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
+        "styles.css": "fd691430f9a7ef2fe26889b0676129274851bbb102da81415e6e2ff559d92246",
+        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
+      }
+    },
     "agy-design-preview": {
       "plugin": "agy-design-studio",
       "sidecar": "agy-design-preview",
@@ -446,6 +469,16 @@
       "plugin": "agy-connectors",
       "path": "scripts/ge_instance_mcp.mjs",
       "sha256": "4979c3312f50806e70032a25a87fcff3fe01ec04ff722e866637f3102df2298e"
+    },
+    "agy-coordinator/scripts/coord_core.mjs": {
+      "plugin": "agy-coordinator",
+      "path": "scripts/coord_core.mjs",
+      "sha256": "b0ce061ab8fbeb7fbea2c7448622d1f1ba8e38aa14ea8daa45f6b67d4dc4a2c2"
+    },
+    "agy-coordinator/scripts/coord_ctl.mjs": {
+      "plugin": "agy-coordinator",
+      "path": "scripts/coord_ctl.mjs",
+      "sha256": "17630b2bccfd3c9ef25616922eb6bb2bfea4abade3c1c9dbbe0d06dde3a5fd18"
     },
     "agy-design-studio/scripts/register_deliverable.mjs": {
       "plugin": "agy-design-studio",

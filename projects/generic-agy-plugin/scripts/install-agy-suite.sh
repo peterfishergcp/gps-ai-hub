@@ -60,9 +60,10 @@ fi
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
 PLUGIN_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-connectors"
 MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/my-antigravity/memory"
+COORD_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-coordinator"
 
-mkdir -p -m 700 "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}"
-chmod 700 "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" 2>/dev/null || true
+mkdir -p -m 700 "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}"
+chmod 700 "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}" 2>/dev/null || true
 
 STAGE_DIR=""
 cleanup() {
