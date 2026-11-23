@@ -44,9 +44,11 @@ Ask the user (allowing rough or 1-line answers):
 
 ---
 
-## Step 3: Recommend Personalized Day-1 Starter Commands
+## Step 3: Highlight Clawy (`🐻`) & Personalized Day-1 Starter Commands
 
-- **Executives, Chiefs of Staff & Program Managers:** `/daily-brief`, `/memory`, `/meeting-prep`, `/swarm-prep`, `/weekly-impact`, `/agy-dashboard`
-- **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`, `/outbound-scrub`
-- **Communications & Operations Leads:** `/my-voice`, `/no-ai-slop`, `/outbound-scrub`, `/slides`, `/doc-design`
-- **Application, Data & Cloud Engineers:** `/orchestrator-guide`, `/token-usage`, `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`
+Always point out **`Clawy`** (the warm Brown Bear icon in the left Extensions sidebar, or `/agy-coordinator`) so the user knows they can view and pop out active agent conversations side-by-side, connect their Google Cloud Project (`Settings -> General -> GCP Project ID`) for `Kore` Gemini Live neural voice, and track `Group -> Goal -> Task` sprints.
+
+- **Executives, Chiefs of Staff & Program Managers:** `/agy-coordinator`, `/daily-brief`, `/memory`, `/meeting-prep`, `/swarm-prep`, `/weekly-impact`, `/agy-dashboard`
+- **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`, `/outbound-scrub`, `/agy-coordinator`
+- **Communications & Operations Leads:** `/my-voice`, `/no-ai-slop`, `/outbound-scrub`, `/slides`, `/doc-design`, `/agy-coordinator`
+- **Application, Data & Cloud Engineers:** `/agy-coordinator`, `/orchestrator-guide`, `/token-usage`, `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`

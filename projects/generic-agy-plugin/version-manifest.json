@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "1.9.0",
-  "updatedAt": "2026-11-23T17:12:37Z",
+  "suiteVersion": "1.9.1",
+  "updatedAt": "2026-11-23T17:52:00Z",
   "skillCount": 40,
   "skillManifest": {
     "connect-ge": {
@@ -109,9 +109,9 @@
     "agy-onboard": {
       "plugin": "agy-onboarding",
       "skill": "agy-onboard",
-      "treeSha256": "6860ec5323da6695",
+      "treeSha256": "a82e1a014096db20",
       "files": {
-        "SKILL.md": "4057e10c6c43a8bda0f3d5dc1fc7b0230c92f025a3834a3889f94ec735ae3e6a",
+        "SKILL.md": "ea3695cf0ddde55909c082b3d3d44c03c0e16e4124a6ee70427f9faf8865f66a",
         "references/onboarding_sops_playbook.md": "80d0dc02bbe54da4b013534ce165801b153ade1ab343ae1d74238613f5364734"
       }
     },
@@ -419,9 +419,9 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "antigravity_updates.mjs": "21439965b13fab7faff68c2304fbd2cd5142d308768154c15335b84488d33be7",
-        "app.js": "311e770a45ad8327cf99098aa4ad1fef44ceb2247add12155097f779b20eef0e",
-        "index.html": "2c9d0106df0f24da5817fb6050e467b0792a34c802baea6adf94a5a061aa46b0",
+        "antigravity_updates.mjs": "01dcf6fae66c90ff368598b70c6b0a26037677916ed9f6c85a1bb27482e4532a",
+        "app.js": "57beb2ad78df86a71505f378d28616f6d81291fab800aab89663aaa7b1813bb3",
+        "index.html": "a74ce5ba5d8ac88a5cf1e00f51d6a56b84a4e50e1e43e4a0201cc8ecffd14f3c",
         "main.mjs": "e0071d12d46c972d1b995b11ff244a1b475d8893bd0395eeb14958c91c25facc",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "37c66d7341f08f37a582be31d2b68f9e69b28ab06701890e9abb134a9c0ffc0e",
@@ -430,7 +430,7 @@
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
-        "tokeneconomics_and_updates_ui.js": "80b28003b3a71255ec90f11dbd9ae6d35634b91bdfd03cd5beeb162a936f6ddc",
+        "tokeneconomics_and_updates_ui.js": "ce6f36471aceb4b2ea5fea53610a3132f490066c34b79c2a36e3cda3cc924f31",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
