@@ -1,6 +1,6 @@
 {
   "channelUrl": "https://www.youtube.com/@PeterFisher-gps-google",
-  "updatedAt": "2026-11-23T19:20:00Z",
+  "updatedAt": "2026-11-23T20:26:00Z",
   "videos": [
     {
       "id": "vid-suite-overview",
@@ -18,11 +18,11 @@
       "id": "vid-getting-started-turbo",
       "kind": "video",
       "topic": "videos",
-      "badge": "3 Min \u00b7 How-To Video",
+      "badge": "2.5 Min \u00b7 WV How-To Video",
       "dateLabel": "Nov 2026",
-      "title": "Getting Started in 60 Seconds & Using Turbo Mode",
-      "summary": "Step-by-step guide to pasting the 1-line install command, using \u26a1 Turbo during setup vs. \ud83d\udd12 Default for daily work, and setting your role and writing voice.",
-      "url": "https://www.youtube.com/watch?v=JMNn19uuJCo",
+      "title": "West Virginia Antigravity Suite \u2014 60-Second Install & Turbo Mode Guide",
+      "summary": "Step-by-step WV guide to pasting the wv-antigravity-suite command, using \u26a1 Turbo during setup vs. \ud83d\udd12 Default daily, and linking @wv.gov GE search.",
+      "url": "https://www.youtube.com/watch?v=OjdnOHKMfNA",
       "tryLabel": "Run 60s Setup \u2192",
       "tryPrompt": "/memory Check my role profile, writing voice, and personal memory setup and confirm Default review safety best practices."
     },
