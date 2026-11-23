@@ -585,3 +585,82 @@ html, body {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
   50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
 }
+
+.coord-starters-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--coord-border);
+}
+
+.coord-starters-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--coord-muted);
+  margin-right: 2px;
+}
+
+.coord-starter-chip {
+  appearance: none;
+  border: 1px solid var(--coord-border);
+  background: var(--coord-bg);
+  color: var(--coord-fg);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.coord-starter-chip:hover {
+  border-color: var(--coord-primary);
+  color: var(--coord-primary);
+}
+
+.coord-starter-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--coord-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: auto;
+}
+
+.coord-starter-toggle:hover {
+  color: var(--coord-fg);
+  text-decoration: underline;
+}
+
+.coord-onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.coord-onboarding-step {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--coord-border);
+  background: var(--coord-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.coord-onboarding-step strong {
+  font-size: 12px;
+  color: var(--coord-fg);
+}
+
+.coord-onboarding-step span {
+  font-size: 11.5px;
+  color: var(--coord-muted);
+}

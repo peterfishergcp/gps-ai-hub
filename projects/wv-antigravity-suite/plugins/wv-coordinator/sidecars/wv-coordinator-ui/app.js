@@ -1165,11 +1165,43 @@
 
     var chatCard = el('div', 'coord-card');
     chatCard.appendChild(el('div', 'coord-card-title', 'Coordinator Conversation'));
-    chatCard.appendChild(el('div', 'coord-card-sub', 'Say or type naturally (e.g., "Create goal: Ship v1.8", "spawn: ...", or "relay <idPrefix>: ...").'));
+    chatCard.appendChild(el('div', 'coord-card-sub', 'Talk or type in plain English — ask Clawy for a status check, create sprint goals/tasks, or launch a background worker.'));
 
     var list = el('div', 'coord-chat-list');
     if (chatLog.length === 0) {
-      list.appendChild(el('div', 'coord-card-sub', 'No messages yet. Hold the mic button or type in the perch bar above!'));
+      var guideWrap = el('div', 'coord-onboarding-grid');
+      [
+        {
+          title: '1. Check Active Conversations',
+          desc: 'See which Antigravity chats are running, idle, or waiting on you.',
+          btn: 'Summarize my chats →',
+          prompt: 'Summarize my active Antigravity conversations and open priorities.'
+        },
+        {
+          title: '2. Track Goals & Checklists',
+          desc: 'Organize agency work into 2-level Group → Goal → Task sprints.',
+          btn: 'Create sample goal →',
+          prompt: 'Create goal: Q4 Agency Program & FOIA Readiness'
+        },
+        {
+          title: '3. Talk Hands-Free',
+          desc: 'Hold the mic button above to talk with Clawy via Gemini Live.',
+          btn: 'What can Clawy do? →',
+          prompt: 'What can Clawy do? Give me a quick tour of how to use Clawy.'
+        }
+      ].forEach(function (g) {
+        var box = el('div', 'coord-onboarding-step');
+        box.appendChild(el('strong', '', g.title));
+        box.appendChild(el('span', '', g.desc));
+        var tryBtn = el('button', 'btn btn-secondary btn-sm', g.btn);
+        tryBtn.type = 'button';
+        tryBtn.addEventListener('click', function () {
+          submitCoordinatorPrompt(g.prompt, 'starter');
+        });
+        box.appendChild(tryBtn);
+        guideWrap.appendChild(box);
+      });
+      list.appendChild(guideWrap);
     } else {
       chatLog.slice(-30).forEach(function (m) {
         var msgBox = el('div', 'coord-chat-msg ' + (m.role === 'user' ? 'user' : 'assistant'));
@@ -1495,6 +1527,55 @@
         quickInput.value = '';
         submitCoordinatorPrompt(val, 'text');
       });
+    }
+
+    var startersBar = document.getElementById('starterPromptsBar');
+    if (startersBar) {
+      var startersCollapsed = false;
+      var STARTER_ITEMS = [
+        { label: '👋 What can Clawy do?', mode: 'run', prompt: 'What can Clawy do? Give me a quick tour of how to use Clawy.' },
+        { label: '📊 Summarize my chats', mode: 'run', prompt: 'Summarize my active Antigravity conversations and open priorities.' },
+        { label: '🎯 Create a sprint goal', mode: 'run', prompt: 'Create goal: Q4 Agency Program & FOIA Readiness' },
+        { label: '✅ Add a follow-up task', mode: 'run', prompt: 'Add task: Review open FOIA redactions & 2 CFR Part 200 grant ledger' },
+        { label: '🚀 Draft a background worker', mode: 'prefill', prompt: 'spawn: /daily-brief Summarize my top agency priorities and open Action Items' }
+      ];
+      var renderStarters = function () {
+        startersBar.replaceChildren();
+        if (startersCollapsed) {
+          var showBtn = el('button', 'coord-starter-toggle', '💡 Show Clawy starter examples');
+          showBtn.type = 'button';
+          showBtn.addEventListener('click', function () {
+            startersCollapsed = false;
+            renderStarters();
+          });
+          startersBar.appendChild(showBtn);
+          return;
+        }
+        startersBar.appendChild(el('span', 'coord-starters-label', 'Try:'));
+        STARTER_ITEMS.forEach(function (item) {
+          var chip = el('button', 'coord-starter-chip', item.label);
+          chip.type = 'button';
+          chip.title = item.prompt;
+          chip.addEventListener('click', function () {
+            if (item.mode === 'prefill' && quickInput) {
+              quickInput.value = item.prompt;
+              quickInput.focus();
+              setPerchBubble('Review or customize that worker task in the box below, then click Send to launch it!', false);
+              return;
+            }
+            submitCoordinatorPrompt(item.prompt, 'starter');
+          });
+          startersBar.appendChild(chip);
+        });
+        var hideBtn = el('button', 'coord-starter-toggle', 'Hide');
+        hideBtn.type = 'button';
+        hideBtn.addEventListener('click', function () {
+          startersCollapsed = true;
+          renderStarters();
+        });
+        startersBar.appendChild(hideBtn);
+      };
+      renderStarters();
     }
 
     refreshAll(false);

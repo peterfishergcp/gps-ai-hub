@@ -1480,7 +1480,12 @@ function buildLocalActionOrReply(prompt, { identity, state, workers }) {
   const runningWorkers = (workers || []).filter((w) => w.status === 'WORKING');
 
   let reply = '';
-  if (/\b(status|summary|overview|what('?s| is) happening|workers?)\b/.test(lower)) {
+  if (/\b(what can (you|clawy) do|how (do i|to) use|help|quickstart|tour|get started)\b/.test(lower)) {
+    reply =
+      `Hi! I'm ${name}, your West Virginia multi-agent coordinator. ` +
+      `I can summarize all your open Antigravity conversations, organize priorities into Group -> Goal -> Task checklists, ` +
+      `send follow-up instructions to any worker chat, or talk hands-free with Gemini Live.`;
+  } else if (/\b(status|summary|overview|what('?s| is) happening|workers?|chats?|conversations?)\b/.test(lower)) {
     reply =
       `${name} reporting: you have ${(workers || []).length} worker conversation(s) ` +
       `(${runningWorkers.length} working), ${state.groups.length} group(s), ` +

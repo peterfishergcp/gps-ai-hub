@@ -58,15 +58,16 @@
               <option value="browser">Browser Instant Voice</option>
             </select>
           </div>
-          <div class="coord-perch-bubble" id="perchBubble">Ready to coordinate Workers, Groups, and Goals.</div>
+          <div class="coord-perch-bubble" id="perchBubble">Hi! I'm Clawy — click a starter prompt below, hold the mic to talk, or type a question.</div>
           <div class="coord-voice-row">
             <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button" title="Hold >= 250ms to talk and release to send, or quick-tap to toggle">🎙️ Hold / Click to Talk</button>
             <button class="btn btn-secondary btn-sm" id="btnVoiceTts" type="button" title="Toggle spoken voice replies">🔊 TTS On</button>
             <form class="coord-quick-form" id="quickCmdForm">
-              <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy, 'Create goal: ...', 'spawn: ...', or 'relay <id>: ...'" autocomplete="off" />
+              <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy anything, 'Create goal: ...', or pick a starter below..." autocomplete="off" />
               <button class="btn btn-secondary btn-sm" type="submit">Send</button>
             </form>
           </div>
+          <div class="coord-starters-bar" id="starterPromptsBar" aria-label="Starter prompts to try with Clawy"></div>
         </div>
       </div>
     </section>

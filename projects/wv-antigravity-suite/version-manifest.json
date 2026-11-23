@@ -366,13 +366,13 @@
       "plugin": "wv-coordinator",
       "sidecar": "wv-coordinator-ui",
       "files": {
-        "app.js": "47885539a0cb65c9546348e1c0fcc092d5e7926ec6c56e9cf2dc384ad2a7de90",
-        "index.html": "ac58a887b341477e22d834b610be7f143aabe8c8a0722a2568be7d5849fdbf4c",
+        "app.js": "76838140f312db7ee65d3ed6ac0c1d56ab2200e7eeb251b836ff705b8c546c31",
+        "index.html": "6572fb870ea503faefb48cf29b3ba2aa3b39ec5d096f2d1954fe5f89a2e33485",
         "main.mjs": "00e38c94794337f71b4d37025f3d9761a6bb5e7be1d272f24cb84d6640f38805",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
         "sidecar.json": "80df5157b9f1bd47dddc83da87c664bf390b9acdb0a56d78536f8ec923c59ded",
         "sidecar_html_inliner.mjs": "f0abe996f6bb4fd39db3d3b8f3a9cd2134d7d8e8f13601a534e896d0b994c058",
-        "styles.css": "ff75d8789c4b0041835d7d535813341d7898125ae2b5d1c98432ba511a72a5ec",
+        "styles.css": "582f6a9d07ccc569a7bcbad9015fa797429fbd31af03608634b54b45499688fa",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
