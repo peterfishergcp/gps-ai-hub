@@ -29,6 +29,11 @@
 
   const QUICK_WORKFLOWS = [
     {
+      cmd: '/agy-coordinator',
+      desc: 'Open Clawy 🐻: Multi-Agent Command Center, Kore Voice & Sprints',
+      prompt: '/agy-coordinator Help me set up Clawy, verify my GCP Project & Kore Gemini Live voice connection, and summarize my active agent conversations.',
+    },
+    {
       cmd: '/daily-brief',
       desc: 'Morning kickoff: top action items, calendar & >21d check-ins',
       prompt: '/daily-brief Give me my workday kickoff brief, top 3 actions, and any stale stakeholder check-ins.',
@@ -82,6 +87,9 @@
       if (opts.title !== undefined) node.title = String(opts.title);
       if (opts.src !== undefined) node.src = String(opts.src);
       if (opts.alt !== undefined) node.alt = String(opts.alt);
+      if (opts.href !== undefined) node.href = String(opts.href);
+      if (opts.target !== undefined) node.target = String(opts.target);
+      if (opts.rel !== undefined) node.rel = String(opts.rel);
       if (opts.checked !== undefined) node.checked = Boolean(opts.checked);
       if (opts.readOnly !== undefined) node.readOnly = Boolean(opts.readOnly);
       if (opts.style) {
@@ -130,6 +138,13 @@
   function openDedicatedSkillsHub() {
     try {
       if (window.sidecar && window.sidecar.ui) {
+        if (typeof window.sidecar.ui.toggleAuxPane === 'function') {
+          window.sidecar.ui.toggleAuxPane({
+            tabType: 'sidecarView',
+            uri: 'sidecar://agy-onboarding/agy-skill-manager/',
+          });
+          return;
+        }
         if (typeof window.sidecar.ui.openSidecar === 'function') {
           window.sidecar.ui.openSidecar('agy-onboarding', 'agy-skill-manager');
           return;
@@ -141,6 +156,30 @@
       }
     } catch {}
     showToast('Click "Skills" (Sparkles icon) in the left Extensions sidebar to browse all skills & Personal Skills!');
+  }
+
+  function openClawyCoordinator() {
+    try {
+      if (window.sidecar && window.sidecar.ui) {
+        if (typeof window.sidecar.ui.toggleAuxPane === 'function') {
+          window.sidecar.ui.toggleAuxPane({
+            tabType: 'sidecarView',
+            uri: 'sidecar://agy-coordinator/coordinator-ui/',
+          });
+          showToast('Opened Clawy 🐻 in Auxiliary Pane');
+          return;
+        }
+        if (typeof window.sidecar.ui.openSidecar === 'function') {
+          window.sidecar.ui.openSidecar('agy-coordinator', 'coordinator-ui');
+          return;
+        }
+        if (typeof window.sidecar.ui.toggleSidecar === 'function') {
+          window.sidecar.ui.toggleSidecar('agy-coordinator', 'coordinator-ui');
+          return;
+        }
+      }
+    } catch {}
+    showToast('Click "Clawy" (Brown Bear icon) in the left Extensions sidebar to open your Multi-Agent Command Center & Kore Voice!');
   }
 
   function markMasteryStep(stepId) {
@@ -158,6 +197,7 @@
       apiPost,
       dispatchPrompt,
       openSkillsExtension: openDedicatedSkillsHub,
+      openClawyExtension: openClawyCoordinator,
       markMasteryStep,
       reloadState: loadState,
       rerender: render,
@@ -2562,6 +2602,14 @@
       .then(() => showToast('Refreshed action items, skills & token meter'))
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
+
+  const openClawyBtn = document.getElementById('btn-open-clawy-ext');
+  if (openClawyBtn) {
+    openClawyBtn.addEventListener('click', () => {
+      markMasteryStep('setup-clawy');
+      openClawyCoordinator();
+    });
+  }
 
   const openSkillsBtn = document.getElementById('btn-open-skills-ext');
   if (openSkillsBtn) {

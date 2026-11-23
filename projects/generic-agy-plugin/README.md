@@ -11,17 +11,17 @@ Designed specifically for **strict government corporate laptop policies**:
   - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
 - **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
   - Ships as a `< 550 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 9 plugins and 40 skills in seconds—with or without `git` installed.
-- **100% Zero-Footprint Architecture (`~/.gemini/config/` Only — `v1.8.0`):**
+- **100% Zero-Footprint Architecture (`~/.gemini/config/` Only — `v1.9.1`):**
   - All Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`), Coordinator sprints (`plugin_data/agy-coordinator/`), toggles, and sidecar state live strictly inside `~/.gemini/config/`—leaving zero extra folders in `$HOME`.
-- **4 Left-Sidebar `Extensions` with Distinct Custom Icons, Dedicated `Skills` (`★ My Personal Skills`), `Clawy` Voice Coordinator, `TokenEconomics`, & Antigravity Updates Hub (`v1.8.0`):**
-  1. **`My Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 5-step Quick Adoption Checklist, **`Stay in sync with Google Antigravity`** blog/video updates & subscribe hub), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, `5h`/`24h`/`7d`/`30d` telemetry, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
-  2. **`AGY Coordinator` (`Clawy`)** *(**3D Mascot** Icon)* — Multi-agent command & **Gemini Live** neural voice hub featuring an animated 3D Clawy mascot perch, Hold-to-Talk microphone rings, strict 2-level `Group -> Goal -> Task` sprint tracking, and instant worker discovery & relay across active conversations.
+- **4 Left-Sidebar `Extensions` with Distinct Custom Icons, Dedicated `Skills` (`★ My Personal Skills`), `Clawy` Bear Coordinator, `TokenEconomics`, & Antigravity Updates Hub (`v1.9.1`):**
+  1. **`My Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 6-step Quick Adoption Checklist featuring **`2. Set Up Clawy 🐻`**, **`Stay in sync with Google Antigravity`** blog/video updates & 4 Unlisted 3–4 min walkthroughs), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, `5h`/`24h`/`7d`/`30d` telemetry, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
+  2. **`Clawy`** *(**Warm Brown Bear** Icon)* — Multi-Agent Command Center & **Gemini Live (`Kore`)** neural voice hub featuring an animated 3D Brown Bear perch, Antigravity GCP Project auto-discovery, side-by-side agent pop-outs, 5-state attention triage, and strict 2-level `Group -> Goal -> Task` sprint tracking.
   3. **`Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid skill & connector hub displaying all 40 curated suite skills **plus** automatic discovery of all user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), `+ New Skill` wizard, `Save My Copy`, per-skill toggles, Safe Export secret scanner, and `<1s` `Sync Updates`.
   4. **`Preview`** *(**Magnifying Glass** Icon)* — Serverless visual preview of Dashboards, 16:9 Slide Decks, and Branded Flyers with Print-to-PDF, 1-click HTML download, and a live hoverable **`in | out | thinking` Token Consumption Pill** (with `/compact` context-bloat alert) across all panels.
 
 ---
 
-## Visual Tour — `My Antigravity`, `Clawy`, Dedicated `Skills` & `TokenEconomics` (`v1.8.0`)
+## Visual Tour — `My Antigravity`, `Clawy`, Dedicated `Skills` & `TokenEconomics` (`v1.9.1`)
 
 ### 1. `Overview` — Instant Search, `⚡ Orchestrator` Optimizer & Antigravity Updates + Video Walkthroughs (`😎`)
 Search across Action Items, Initiatives, Stakeholders, and all 40 skills, toggle **`⚡ Orchestrator`** prompt optimization, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates:
@@ -40,9 +40,9 @@ See where you stand against your monthly pooled `$` quota (`Standard $30`, `Plus
 
 ![My Antigravity — TokenEconomics & Spend Optimization](./docs/screenshots/my-antigravity-tokeneconomics.png)
 
-### 4. `Clawy` (`🤖`), `Action Items` (`🍪`), `Initiatives` (`🚦`) & `Stakeholders` (`🌊`)
+### 4. `Clawy` (`🐻`), `Action Items` (`🍪`), `Initiatives` (`🚦`) & `Stakeholders` (`🌊`)
 
-![Clawy — 3D Multi-Agent & Gemini Live Voice Coordinator](./docs/screenshots/clawy-coordinator.png)
+![Clawy — Brown Bear Multi-Agent Command Center & Kore Gemini Live Voice](./docs/screenshots/clawy-coordinator.png)
 
 ![My Antigravity — AI Inbox Action Items & Topics](./docs/screenshots/my-antigravity-action-items.png)
 
