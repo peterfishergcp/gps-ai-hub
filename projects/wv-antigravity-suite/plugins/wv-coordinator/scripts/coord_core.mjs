@@ -540,12 +540,72 @@ export function getBrainRoots() {
 
 function cleanSnippet(raw, maxLen) {
   return String(raw || '')
+    .replace(/<AGENTS_DASH_SNAPSHOT[\s\S]*?<\/AGENTS_DASH_SNAPSHOT>/gi, ' ')
+    .replace(/<ADDITIONAL_METADATA[\s\S]*?<\/ADDITIONAL_METADATA>/gi, ' ')
+    .replace(/<voice_instructions[\s\S]*?<\/voice_instructions>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/[#*_`>\[\]]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLen);
+}
+
+function formatSlugWords(slug) {
+  return String(slug || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b(wv|agy|gps|ge|foia|iam|sql|ui|ai|pdf)\b/gi, (m) => m.toUpperCase())
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase())
+    .trim();
+}
+
+export function deriveSmartAgentTitle(rawTitle, convId = '') {
+  let s = String(rawTitle || '')
+    .replace(/^\(\[marker:[^\]]*\]\s*/i, '')
+    .replace(/^\[AGENTS_DASH_SYS:[^\]]*\]\s*/i, '')
+    .trim();
+
+  if (!s || /^(Conversation|Worker|Cascade)\s+[0-9a-f]{6,}/i.test(s)) {
+    return 'Agent Conversation';
+  }
+
+  // Friendly title for plugin or script install commands
+  const pluginMatch = s.match(/(?:agy\s+plugin\s+install|install)\s+https?:\/\/[^\s]+\/(?:projects|plugins)\/([a-zA-Z0-9_-]+)/i);
+  if (pluginMatch && pluginMatch[1]) {
+    return `Install ${formatSlugWords(pluginMatch[1])}`;
+  }
+  const scriptMatch = s.match(/install-([a-zA-Z0-9_-]+)\.(?:sh|ps1)/i);
+  if (scriptMatch && scriptMatch[1]) {
+    return `Install ${formatSlugWords(scriptMatch[1])}`;
+  }
+
+  // Friendly title for slash skill invocations
+  const slashMatch = s.match(/^\/([a-z0-9_-]+)\s*(.*)$/i);
+  if (slashMatch) {
+    const skillLabel = formatSlugWords(slashMatch[1]);
+    const rest = slashMatch[2]
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return rest ? `${skillLabel}: ${rest.slice(0, 54)}` : skillLabel;
+  }
+
+  // Strip long raw URLs inside titles while keeping surrounding words
+  s = s.replace(/https?:\/\/([^\s/]+)\/[^\s]*/gi, '$1').replace(/\s+/g, ' ').trim();
+  if (!s) return 'Agent Conversation';
+  return s.length > 74 ? s.slice(0, 72).trimEnd() + '…' : s;
+}
+
+function detectQuestionOrBlocker(text) {
+  const tail = String(text || '').trim().slice(-320);
+  if (!tail) return '';
+  if (/\b(error|failed|blocked|permission denied|unauthorized|cannot proceed)\b/i.test(tail)) {
+    return 'Reported an issue or blocker';
+  }
+  if (/\?\s*$/.test(tail) || /\b(would you like|should i|want me to|do you want|please confirm|approve|which option)\b/i.test(tail)) {
+    return 'Waiting on your answer';
+  }
+  return '';
 }
 
 async function parseBrainTranscriptCached(txPath, convId, st) {
@@ -557,9 +617,14 @@ async function parseBrainTranscriptCached(txPath, convId, st) {
   let firstUserTitle = '';
   let latestUserPrompt = '';
   let latestPlannerSnippet = '';
+  let latestPlannerTail = '';
   let firstTime = null;
   let lastTime = null;
   let lastType = '';
+  let lastStatus = '';
+  let stepCount = 0;
+  let isSystemBookkeeper = false;
+  const recentTurns = [];
 
   const stream = fs.createReadStream(txPath, { encoding: 'utf-8' });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
@@ -573,31 +638,59 @@ async function parseBrainTranscriptCached(txPath, convId, st) {
       continue;
     }
 
+    stepCount += 1;
     const typ = String(obj.type || '');
     if (typ) lastType = typ;
+    if (typeof obj.status === 'string' && obj.status) lastStatus = obj.status;
     if (typeof obj.created_at === 'string' && obj.created_at) {
       if (!firstTime) firstTime = obj.created_at;
       lastTime = obj.created_at;
     }
 
     if (typ === 'USER_INPUT' && typeof obj.content === 'string') {
-      const cleaned = cleanSnippet(obj.content, 76);
+      if (obj.content.includes('[AGENTS_DASH_SYS:bookkeeper]')) {
+        isSystemBookkeeper = true;
+      }
+      const cleaned = cleanSnippet(obj.content, 160);
       if (cleaned) {
         if (!firstUserTitle) firstUserTitle = cleaned;
         latestUserPrompt = cleaned;
+        recentTurns.push({
+          role: 'user',
+          text: cleaned,
+          createdAt: obj.created_at || lastTime || null,
+        });
+        if (recentTurns.length > 6) recentTurns.shift();
       }
-    } else if (typ === 'PLANNER_RESPONSE' && typeof obj.content === 'string') {
-      const cleaned = cleanSnippet(obj.content, 120);
-      if (cleaned) latestPlannerSnippet = cleaned;
+    } else if (typ === 'PLANNER_RESPONSE' && typeof obj.content === 'string' && obj.content.trim()) {
+      const cleaned = cleanSnippet(obj.content, 180);
+      if (cleaned) {
+        latestPlannerSnippet = cleaned;
+        latestPlannerTail = cleanSnippet(obj.content.slice(-400), 320);
+        recentTurns.push({
+          role: 'agent',
+          text: cleaned,
+          createdAt: obj.created_at || lastTime || null,
+        });
+        if (recentTurns.length > 6) recentTurns.shift();
+      }
     }
   }
 
+  const rawTitle = firstUserTitle || latestUserPrompt || '';
   const entry = {
     id: convId,
     mtimeMs: st.mtimeMs,
     size: st.size,
-    title: firstUserTitle || latestUserPrompt || `Conversation ${convId.slice(0, 8)}`,
+    rawTitle,
+    title: deriveSmartAgentTitle(rawTitle, convId),
     summary: latestPlannerSnippet || latestUserPrompt || '',
+    latestUserPrompt,
+    needsInputReason: lastType === 'PLANNER_RESPONSE' ? detectQuestionOrBlocker(latestPlannerTail || latestPlannerSnippet) : '',
+    recentTurns: recentTurns.slice(-4),
+    stepCount,
+    lastStatus,
+    isSystemBookkeeper,
     createTime: firstTime || new Date(st.birthtimeMs || st.mtimeMs).toISOString(),
     updateTime: lastTime || new Date(st.mtimeMs).toISOString(),
     lastType,
@@ -611,7 +704,7 @@ async function parseBrainTranscriptCached(txPath, convId, st) {
   return entry;
 }
 
-export async function discoverBrainConversations(limit = 40) {
+export async function discoverBrainConversations(limit = 45) {
   const roots = getBrainRoots();
   const candidates = [];
 
@@ -646,13 +739,25 @@ export async function discoverBrainConversations(limit = 40) {
   for (const item of sliced) {
     try {
       const parsed = await parseBrainTranscriptCached(item.txPath, item.convId, item.st);
+      if (parsed.isSystemBookkeeper) continue;
       const ageMs = Math.max(0, nowMs - (parsed.mtimeMs || 0));
-      const isWorking = ageMs < 90_000 && parsed.lastType === 'USER_INPUT';
+      const isRunningStep =
+        parsed.lastStatus === 'RUNNING' ||
+        parsed.lastStatus === 'IN_PROGRESS' ||
+        (ageMs < 90_000 && parsed.lastType === 'USER_INPUT');
       out.push({
         id: parsed.id,
         title: parsed.title,
+        rawTitle: parsed.rawTitle,
         summary: parsed.summary,
-        runState: isWorking ? 'RUN_STATE_RUNNING' : 'RUN_STATE_IDLE',
+        latestUserPrompt: parsed.latestUserPrompt,
+        needsInputReason: parsed.needsInputReason,
+        recentTurns: parsed.recentTurns,
+        stepCount: parsed.stepCount,
+        lastType: parsed.lastType,
+        lastStatus: parsed.lastStatus,
+        ageMs,
+        runState: isRunningStep ? 'RUN_STATE_RUNNING' : 'RUN_STATE_IDLE',
         createTime: parsed.createTime,
         updateTime: parsed.updateTime,
         projectId: '',
@@ -793,82 +898,209 @@ export async function listLsConversations({ includeArchived = false } = {}) {
   }
 }
 
+const STATUS_PRIORITY = {
+  NEEDS_YOU: 1,
+  STALLED: 2,
+  WORKING: 3,
+  AWAITING_REPLY: 4,
+  IDLE: 5,
+  READ_LATER: 6,
+  CLOSED: 7,
+};
+
 export async function getMergedWorkers({ includeArchived = false } = {}) {
   const state = loadState();
   const [ls, brainConvs] = await Promise.all([
     listLsConversations({ includeArchived }),
-    discoverBrainConversations(40),
+    discoverBrainConversations(45),
   ]);
   const workerMeta = state.workers || {};
   const byId = new Map();
+  const nowMs = Date.now();
+  const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-  function upsertConversation(conv) {
-    const existing = byId.get(conv.id);
-    const meta = workerMeta[conv.id] || {};
-    if (meta.removed) return;
-    const runState = conv.runState || (existing ? existing.runState : '');
-    const derivedStatus =
-      meta.customStatus ||
-      (runState.includes('RUNNING')
-        ? 'WORKING'
-        : runState.includes('WAITING')
-          ? 'NEEDS_YOU'
-          : runState.includes('IDLE') || runState.includes('DONE')
-            ? 'IDLE'
-            : 'ACTIVE');
-    byId.set(conv.id, {
-      ...(existing || {}),
-      ...conv,
-      title: conv.title || (existing && existing.title) || meta.title || `Worker ${conv.id.slice(0, 8)}`,
-      summary: conv.summary || (existing && existing.summary) || meta.note || '',
+  // Index brain transcripts first so we have stepCount, recentTurns & smart titles
+  const brainById = new Map();
+  for (const b of brainConvs) brainById.set(b.id, b);
+
+  function buildMergedAgent(baseConv) {
+    const b = brainById.get(baseConv.id);
+    const mergedRaw = {
+      ...baseConv,
+      ...(b || {}),
+      runState:
+        baseConv.runState && baseConv.runState !== 'RUN_STATE_UNSPECIFIED'
+          ? baseConv.runState
+          : b?.runState || 'RUN_STATE_IDLE',
+      source: baseConv.source || b?.source || 'brain-transcript',
+    };
+
+    const meta = workerMeta[mergedRaw.id] || {};
+    if (meta.removed) return null;
+
+    const rawCandidateTitle =
+      (baseConv.title && !/^(Conversation|Cascade|Worker)\s+[0-9a-f]{6,}/i.test(baseConv.title) ? baseConv.title : '') ||
+      b?.rawTitle ||
+      b?.title ||
+      meta.title ||
+      '';
+    if (/\[AGENTS_DASH_SYS:bookkeeper\]/i.test(rawCandidateTitle)) return null;
+
+    const cleanTitle = (meta.customTitle && String(meta.customTitle).trim()) || deriveSmartAgentTitle(rawCandidateTitle, mergedRaw.id);
+    const stepCount = Number(mergedRaw.stepCount || 0);
+    const updateMs = Date.parse(mergedRaw.updateTime || '') || 0;
+    const ageMs = updateMs > 0 ? Math.max(0, nowMs - updateMs) : Number(mergedRaw.ageMs || 0);
+
+    // If user closed this agent at step N, keep it closed unless a newer step arrived (> closedAtStep)
+    const explicitlyClosed =
+      Boolean(meta.closed) && (stepCount === 0 || !meta.closedAtStep || stepCount <= Number(meta.closedAtStep));
+    const explicitlyReopened = meta.reopened === true;
+    const isSnoozed = Boolean(meta.snoozed) && !explicitlyClosed;
+    const isAcked = Boolean(meta.ackedAtStep && stepCount > 0 && Number(meta.ackedAtStep) >= stepCount) || Boolean(meta.ackedAtMs && updateMs > 0 && Number(meta.ackedAtMs) >= updateMs);
+
+    const runState = String(mergedRaw.runState || '');
+    const isRunning = runState.includes('RUNNING');
+    const isStalled = isRunning && ageMs > 10 * 60 * 1000;
+
+    let status = 'IDLE';
+    let attentionReason = '';
+
+    if (explicitlyClosed) {
+      status = 'CLOSED';
+    } else if (isSnoozed) {
+      status = 'READ_LATER';
+    } else if (isStalled) {
+      status = 'STALLED';
+      attentionReason = 'Running for over 10 minutes without new output';
+    } else if (isRunning) {
+      status = 'WORKING';
+      attentionReason = 'Actively executing steps';
+    } else if ((runState.includes('WAITING') || mergedRaw.lastStatus === 'ERROR' || mergedRaw.needsInputReason) && !isAcked && ageMs < 7 * ACTIVE_WINDOW_MS) {
+      status = 'NEEDS_YOU';
+      attentionReason = mergedRaw.needsInputReason || (mergedRaw.lastStatus === 'ERROR' ? 'Encountered an error' : 'Waiting on your input');
+    } else if (mergedRaw.lastType === 'PLANNER_RESPONSE' && !isAcked && ageMs < ACTIVE_WINDOW_MS) {
+      status = 'AWAITING_REPLY';
+      attentionReason = 'Finished latest response — ready for your review';
+    } else if (!meta.pinned && !explicitlyReopened && ageMs > ACTIVE_WINDOW_MS) {
+      status = 'CLOSED';
+    } else {
+      status = meta.customStatus || 'IDLE';
+    }
+
+    const isArchived = status === 'CLOSED';
+    const needsAttention = status === 'NEEDS_YOU' || status === 'STALLED' || status === 'AWAITING_REPLY';
+
+    return {
+      id: mergedRaw.id,
+      title: cleanTitle,
+      customTitle: meta.customTitle || '',
+      summary: mergedRaw.summary || meta.note || '',
+      latestUserPrompt: mergedRaw.latestUserPrompt || '',
+      recentTurns: Array.isArray(mergedRaw.recentTurns) ? mergedRaw.recentTurns : [],
+      stepCount,
+      runState,
+      createTime: mergedRaw.createTime || null,
+      updateTime: mergedRaw.updateTime || null,
+      ageMs,
       groupId: meta.groupId || 'group-default',
+      goalId: meta.goalId || '',
       pinned: Boolean(meta.pinned),
+      snoozed: isSnoozed,
+      closed: isArchived,
+      explicitlyClosed,
       labels: Array.isArray(meta.labels) ? meta.labels : [],
-      customStatus: meta.customStatus || '',
-      status: derivedStatus,
+      status,
+      attentionReason,
+      needsAttention,
       note: meta.note || '',
-      source: existing ? existing.source : conv.source,
-    });
+      source: mergedRaw.source,
+    };
   }
 
-  for (const conv of ls.conversations) upsertConversation(conv);
+  for (const conv of ls.conversations) {
+    const built = buildMergedAgent(conv);
+    if (built) byId.set(built.id, built);
+  }
   for (const conv of brainConvs) {
     if (!byId.has(conv.id)) {
-      upsertConversation(conv);
-    } else {
-      // Enrich LS entry if brain has a richer summary
-      const cur = byId.get(conv.id);
-      if (!cur.summary && conv.summary) cur.summary = conv.summary;
+      const built = buildMergedAgent(conv);
+      if (built) byId.set(built.id, built);
     }
   }
 
   for (const [id, meta] of Object.entries(workerMeta)) {
     if (byId.has(id) || meta?.removed) continue;
+    const isClosed = Boolean(meta.closed);
     byId.set(id, {
       id,
-      title: meta.title || `Worker ${id.slice(0, 8)}`,
+      title: meta.customTitle || deriveSmartAgentTitle(meta.title || '', id),
+      customTitle: meta.customTitle || '',
       summary: meta.note || '',
+      latestUserPrompt: '',
+      recentTurns: [],
+      stepCount: 0,
       runState: 'RUN_STATE_UNSPECIFIED',
       createTime: meta.updatedAt || null,
       updateTime: meta.updatedAt || null,
-      projectId: '',
-      archived: false,
+      ageMs: 0,
       groupId: meta.groupId || 'group-default',
+      goalId: meta.goalId || '',
       pinned: Boolean(meta.pinned),
+      snoozed: Boolean(meta.snoozed),
+      closed: isClosed,
+      explicitlyClosed: isClosed,
       labels: Array.isArray(meta.labels) ? meta.labels : [],
-      customStatus: meta.customStatus || '',
-      status: meta.customStatus || 'TRACKED',
+      status: isClosed ? 'CLOSED' : meta.snoozed ? 'READ_LATER' : meta.customStatus || 'IDLE',
+      attentionReason: '',
+      needsAttention: false,
       note: meta.note || '',
       source: 'local-meta',
     });
   }
 
   const workers = Array.from(byId.values()).sort((a, b) => {
+    if (a.closed !== b.closed) return a.closed ? 1 : -1;
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    const pa = STATUS_PRIORITY[a.status] || 9;
+    const pb = STATUS_PRIORITY[b.status] || 9;
+    if (pa !== pb) return pa - pb;
     const ta = Date.parse(a.updateTime || '') || 0;
     const tb = Date.parse(b.updateTime || '') || 0;
     return tb - ta;
   });
+
+  // Safety net: if all conversations are older than 24h so activeCount would be 0, surface the 3 most recent non-explicitly-closed ones
+  const activeNonClosed = workers.filter((w) => !w.closed);
+  if (activeNonClosed.length === 0) {
+    let rescued = 0;
+    for (const w of workers) {
+      if (!w.explicitlyClosed && rescued < 3) {
+        w.closed = false;
+        w.status = 'IDLE';
+        rescued += 1;
+      }
+    }
+  }
+
+  const needsYouCount = workers.filter((w) => !w.closed && (w.status === 'NEEDS_YOU' || w.status === 'STALLED')).length;
+  const workingCount = workers.filter((w) => !w.closed && w.status === 'WORKING').length;
+  const awaitingCount = workers.filter((w) => !w.closed && w.status === 'AWAITING_REPLY').length;
+  const readLaterCount = workers.filter((w) => w.status === 'READ_LATER').length;
+  const activeCount = workers.filter((w) => !w.closed && w.status !== 'READ_LATER').length;
+  const closedCount = workers.filter((w) => w.closed).length;
+
+  const notifications = workers
+    .filter((w) => !w.closed && (w.status === 'NEEDS_YOU' || w.status === 'STALLED' || w.status === 'AWAITING_REPLY'))
+    .slice(0, 15)
+    .map((w) => ({
+      convId: w.id,
+      title: w.title,
+      status: w.status,
+      reason: w.attentionReason,
+      summary: w.summary,
+      updateTime: w.updateTime,
+      stepCount: w.stepCount,
+    }));
 
   return {
     lsStatus: {
@@ -876,7 +1108,17 @@ export async function getMergedWorkers({ includeArchived = false } = {}) {
       available: ls.available || brainConvs.length > 0,
       lsLive: ls.ok,
       brainCount: brainConvs.length,
-      reason: ls.ok ? '' : brainConvs.length > 0 ? `Synced ${brainConvs.length} local brain transcripts` : ls.reason,
+      reason: ls.ok ? '' : brainConvs.length > 0 ? `Synced ${brainConvs.length} agent conversations` : ls.reason,
+    },
+    attentionSummary: {
+      needsYouCount,
+      workingCount,
+      awaitingCount,
+      totalUnreadCount: needsYouCount + awaitingCount,
+      readLaterCount,
+      activeCount,
+      closedCount,
+      notifications,
     },
     workers,
   };
@@ -1012,16 +1254,54 @@ export async function relayToWorker({ convId, message, title = '' }) {
   };
 }
 
-export function updateWorkerMeta({ convId, groupId, pinned, addLabel, removeLabel, customStatus, note, remove }) {
+export function updateWorkerMeta({
+  convId,
+  groupId,
+  goalId,
+  customTitle,
+  pinned,
+  snoozed,
+  closed,
+  stepCount,
+  ack,
+  addLabel,
+  removeLabel,
+  customStatus,
+  note,
+  remove,
+}) {
   const cleanId = String(convId || '').trim();
   if (!SAFE_ID_RE.test(cleanId)) {
-    throw new Error('Invalid worker conversation ID.');
+    throw new Error('Invalid agent conversation ID.');
   }
   const state = loadState();
   const cur = state.workers[cleanId] || { groupId: 'group-default', pinned: false, labels: [] };
   cur.removed = remove === true;
   if (typeof groupId === 'string' && groupId.trim()) cur.groupId = groupId.trim();
+  if (typeof goalId === 'string') cur.goalId = goalId.trim();
+  if (typeof customTitle === 'string') {
+    cur.customTitle = customTitle.trim().slice(0, 90);
+  }
   if (typeof pinned === 'boolean') cur.pinned = pinned;
+  if (typeof snoozed === 'boolean') {
+    cur.snoozed = snoozed;
+    if (snoozed) cur.closed = false;
+  }
+  if (typeof closed === 'boolean') {
+    cur.closed = closed;
+    if (closed) {
+      cur.closedAtStep = Number(stepCount || cur.closedAtStep || 999999);
+      cur.reopened = false;
+      cur.snoozed = false;
+    } else {
+      cur.closedAtStep = 0;
+      cur.reopened = true;
+    }
+  }
+  if (ack === true) {
+    if (Number(stepCount) > 0) cur.ackedAtStep = Number(stepCount);
+    cur.ackedAtMs = Date.now();
+  }
   if (typeof customStatus === 'string') cur.customStatus = customStatus.trim().slice(0, 32);
   if (typeof note === 'string') cur.note = note.trim().slice(0, 280);
   const labelSet = new Set(Array.isArray(cur.labels) ? cur.labels : []);
@@ -1039,6 +1319,25 @@ export function updateWorkerMeta({ convId, groupId, pinned, addLabel, removeLabe
   state.workers[cleanId] = cur;
   saveState(state);
   return cur;
+}
+
+export async function sweepIdleWorkers() {
+  const { workers } = await getMergedWorkers();
+  const state = loadState();
+  let closedCount = 0;
+  for (const w of workers) {
+    if (!w.closed && !w.pinned && (w.status === 'IDLE' || w.status === 'AWAITING_REPLY')) {
+      const cur = state.workers[w.id] || { groupId: w.groupId || 'group-default', pinned: false, labels: [] };
+      cur.closed = true;
+      cur.closedAtStep = Number(w.stepCount || 999999);
+      cur.reopened = false;
+      cur.updatedAt = new Date().toISOString();
+      state.workers[w.id] = cur;
+      closedCount += 1;
+    }
+  }
+  saveState(state);
+  return { closedCount };
 }
 
 export function mutateGroups({ action, id, title, color }) {
@@ -1477,19 +1776,22 @@ function buildLocalActionOrReply(prompt, { identity, state, workers }) {
   const name = identity.name || 'Clawy';
   const activeGoals = state.goals.filter((g) => g.status !== 'done');
   const openTasks = state.tasks.filter((t) => !t.done);
-  const runningWorkers = (workers || []).filter((w) => w.status === 'WORKING');
+  const activeAgents = (workers || []).filter((w) => !w.closed);
+  const needsYouAgents = activeAgents.filter((w) => w.status === 'NEEDS_YOU' || w.status === 'STALLED');
+  const awaitingAgents = activeAgents.filter((w) => w.status === 'AWAITING_REPLY');
+  const runningAgents = activeAgents.filter((w) => w.status === 'WORKING');
 
   let reply = '';
   if (/\b(what can (you|clawy) do|how (do i|to) use|help|quickstart|tour|get started)\b/.test(lower)) {
     reply =
-      `Hi! I'm ${name}, your West Virginia multi-agent coordinator. ` +
-      `I can summarize all your open Antigravity conversations, organize priorities into Group -> Goal -> Task checklists, ` +
-      `send follow-up instructions to any worker chat, or talk hands-free with Gemini Live.`;
-  } else if (/\b(status|summary|overview|what('?s| is) happening|workers?|chats?|conversations?)\b/.test(lower)) {
+      `Hi! I'm ${name}, your Chief of Staff for Antigravity. ` +
+      `I monitor all your active Agents, alert you when one needs an answer, pop conversations open side-by-side when clicked, ` +
+      `and organize your sprints into Group -> Goal -> Task checklists.`;
+  } else if (/\b(status|summary|overview|what('?s| is) happening|agents?|workers?|chats?|conversations?)\b/.test(lower)) {
     reply =
-      `${name} reporting: you have ${(workers || []).length} worker conversation(s) ` +
-      `(${runningWorkers.length} working), ${state.groups.length} group(s), ` +
-      `${activeGoals.length} active goal(s), and ${openTasks.length} open task(s).`;
+      `${name} reporting: ${activeAgents.length} active agent(s) — ` +
+      `${needsYouAgents.length} needing your attention, ${runningAgents.length} working, and ${awaitingAgents.length} ready for review, ` +
+      `plus ${activeGoals.length} active goal(s) and ${openTasks.length} open task(s).`;
   } else if (/\b(goal|goals|task|tasks)\b/.test(lower)) {
     if (activeGoals.length === 0) {
       reply = `${name} here: no active goals yet. Say "Create goal: <title>" or use the Goals tab.`;
@@ -1501,7 +1803,7 @@ function buildLocalActionOrReply(prompt, { identity, state, workers }) {
   } else {
     reply =
       `${name} received: "${text.slice(0, 120)}". ` +
-      `Tracking ${(workers || []).length} worker(s) and ${activeGoals.length} active goal(s).`;
+      `Monitoring ${activeAgents.length} active agent(s) and ${activeGoals.length} active goal(s).`;
   }
 
   return { transcript: text, reply, action: null };

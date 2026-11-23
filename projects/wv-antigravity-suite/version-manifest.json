@@ -40,9 +40,9 @@
     "wv-coordinator": {
       "plugin": "wv-coordinator",
       "skill": "wv-coordinator",
-      "treeSha256": "1385c7c7edd3e8d5",
+      "treeSha256": "7dc15143587b4c78",
       "files": {
-        "SKILL.md": "38d24ed46c9e6cb821c495ac12a961f604b280d5f28670b4d0cdcd6a18af7f19"
+        "SKILL.md": "cb2e913b3d77e6f79a8ceaf936664d7a4497d7389547d8a210554c3ff318bbee"
       }
     },
     "doc-design": {
@@ -366,13 +366,13 @@
       "plugin": "wv-coordinator",
       "sidecar": "wv-coordinator-ui",
       "files": {
-        "app.js": "76838140f312db7ee65d3ed6ac0c1d56ab2200e7eeb251b836ff705b8c546c31",
-        "index.html": "6572fb870ea503faefb48cf29b3ba2aa3b39ec5d096f2d1954fe5f89a2e33485",
-        "main.mjs": "00e38c94794337f71b4d37025f3d9761a6bb5e7be1d272f24cb84d6640f38805",
+        "app.js": "4b9e43baf1e8a032b7a571ccf864d47496082bb64b4ac5fccd8aba08d8e759ef",
+        "index.html": "c23a50bbbe4b4f2a06a866d04d9e6881d188b1729c35bdebe4de19686af71969",
+        "main.mjs": "1d5912e427e3a66f5f122baef4ba132ddf92507163804cf742581e455bb4cf4a",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
         "sidecar.json": "80df5157b9f1bd47dddc83da87c664bf390b9acdb0a56d78536f8ec923c59ded",
-        "sidecar_html_inliner.mjs": "f0abe996f6bb4fd39db3d3b8f3a9cd2134d7d8e8f13601a534e896d0b994c058",
-        "styles.css": "582f6a9d07ccc569a7bcbad9015fa797429fbd31af03608634b54b45499688fa",
+        "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
+        "styles.css": "932ff36dd001b48ff6cbcf9aad4340302d420fda98d5fa08fe14b9109829e38a",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }

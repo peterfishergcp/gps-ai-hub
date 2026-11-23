@@ -27,19 +27,27 @@
         </svg>
         <div>
           <div class="brand-title" id="header-title">WV Coordinator</div>
-          <div class="brand-sub" id="header-sub">Clawy · Multi-Agent Hub</div>
+          <div class="brand-sub" id="header-sub">Clawy · Agent Command Center</div>
+        </div>
+        <div class="hdr-search-wrap">
+          <input class="hdr-search-input" id="agentSearchInput" type="search" placeholder="Search agents... (/)" autocomplete="off" aria-label="Search agents" />
         </div>
       </div>
       <div class="topbar-center" id="topbar-token-slot"></div>
       <div class="topbar-actions">
-        <button class="btn btn-secondary btn-sm" id="btn-refresh" type="button" title="Refresh live workers, goals, and token telemetry">Refresh</button>
+        <button class="hdr-updates-pill" id="btn-updates-pill" type="button" title="View agents needing your attention or review">
+          <span>🔔 Updates</span>
+          <span class="hdr-notif-count" id="hdrNotifCount" hidden>0</span>
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-new-agent" type="button" title="Start a new Agent conversation">+ New Agent</button>
+        <button class="btn btn-secondary btn-sm" id="btn-refresh" type="button" title="Refresh live agents, goals, and notifications">↻</button>
         <button class="theme-toggle-btn" id="btn-theme-toggle" type="button" title="Toggle Light / Dark theme">☾</button>
       </div>
     </header>
 
-    <section class="coord-perch" id="mascotPerch" data-mood="idle" aria-label="Mascot Perch and Voice Controls">
+    <section class="coord-perch compact-perch" id="mascotPerch" data-mood="idle" aria-label="Clawy Perch and Voice Controls">
       <div class="coord-perch-stage">
-        <div class="coord-mascot-wrap" id="mascotWrap" title="Click Clawy for a quick voice check">
+        <div class="coord-mascot-wrap" id="mascotWrap" title="Click Clawy for a spoken status check">
           <canvas id="clawyCanvas" class="coord-mascot-canvas" width="176" height="176" aria-label="Clawy animated mascot"></canvas>
         </div>
 
@@ -58,9 +66,9 @@
               <option value="browser">Browser Instant Voice</option>
             </select>
           </div>
-          <div class="coord-perch-bubble" id="perchBubble">Hi! I'm Clawy — click a starter prompt below, hold the mic to talk, or type a question.</div>
+          <div class="coord-perch-bubble" id="perchBubble">Scanning your active agents...</div>
           <div class="coord-voice-row">
-            <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button" title="Hold >= 250ms to talk and release to send, or quick-tap to toggle">🎙️ Hold / Click to Talk</button>
+            <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button" title="Hold >= 250ms to talk and release to send, or quick-tap to toggle">🎙️ Live</button>
             <button class="btn btn-secondary btn-sm" id="btnVoiceTts" type="button" title="Toggle spoken voice replies">🔊 TTS On</button>
             <form class="coord-quick-form" id="quickCmdForm">
               <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy anything, 'Create goal: ...', or pick a starter below..." autocomplete="off" />
@@ -73,13 +81,28 @@
     </section>
 
     <nav class="tabs" role="tablist">
-      <button class="tab-btn active" data-tab="workers" type="button">Workers</button>
-      <button class="tab-btn" data-tab="goals" type="button">Goals</button>
-      <button class="tab-btn" data-tab="chat" type="button">Chat</button>
-      <button class="tab-btn" data-tab="identity" type="button">Identity &amp; Voice</button>
+      <button class="tab-btn active" data-tab="agents" type="button">
+        <span>🤖 Agents</span>
+        <span class="tab-pill-count" id="tabAgentsCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="notifications" type="button">
+        <span>🔔 Notifications</span>
+        <span class="tab-pill-count alert" id="tabNotifCount" hidden>0</span>
+      </button>
+      <button class="tab-btn" data-tab="goals" type="button">
+        <span>☑️ Goals</span>
+        <span class="tab-pill-count" id="tabGoalsCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="chat" type="button">💬 Clawy Chat</button>
+      <button class="tab-btn" data-tab="identity" type="button">⚙️ Voice &amp; Identity</button>
     </nav>
 
     <main class="content" id="view-root"></main>
+
+    <footer class="coord-statusbar">
+      <span id="footerSummaryText">0 Active Agents</span>
+      <span id="footerSyncTime">Synced just now</span>
+    </footer>
   </div>
 
   <div class="toast" id="toast"></div>

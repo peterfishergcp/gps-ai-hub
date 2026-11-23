@@ -14,8 +14,13 @@
   'use strict';
 
   var state = {
-    tab: 'workers',
-    groupFilter: 'all',
+    tab: 'agents',
+    agentFilter: 'active',
+    searchQuery: '',
+    expandedAgents: {},
+    renamingAgentId: '',
+    selectedAgentId: '',
+    customBubbleUntil: 0,
     snapshot: null,
     speaking: false,
     listening: false,
@@ -28,7 +33,7 @@
     pointerX: 0,
     pointerY: 0,
     blinkFactor: 1,
-    lastBubbleText: 'Ready to coordinate Workers, Groups, and Goals.',
+    lastBubbleText: 'Scanning your active agents...',
   };
 
   var tokenMeter = null;
@@ -527,7 +532,10 @@
 
   async function speakText(text, preloadedTtsAudio, voiceOverride) {
     var clean = String(text || '').trim();
-    if (clean) setPerchBubble(clean, true);
+    if (clean) {
+      state.customBubbleUntil = Date.now() + 14000;
+      setPerchBubble(clean, true);
+    }
     if (!clean || !state.ttsEnabled) return;
 
     if (preloadedTtsAudio && preloadedTtsAudio.audioBase64) {
@@ -604,7 +612,7 @@
     var micBtn = document.getElementById('btnVoiceMic');
     if (micBtn) {
       micBtn.classList.remove('btn-active-mic');
-      micBtn.textContent = '🎙️ Hold / Click to Talk';
+      micBtn.textContent = '🎙️ Live';
     }
     var waveWrap = document.getElementById('voiceWaveWrap');
     if (waveWrap) waveWrap.hidden = true;
@@ -778,11 +786,69 @@
 
   /* ---------- Render Header & Perch ---------- */
 
+  function formatRelativeTime(iso) {
+    if (!iso) return '';
+    var ms = Date.parse(iso);
+    if (!ms) return '';
+    var diffSec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+    if (diffSec < 45) return 'just now';
+    if (diffSec < 3600) return Math.floor(diffSec / 60) + 'm ago';
+    if (diffSec < 86400) return Math.floor(diffSec / 3600) + 'h ago';
+    return Math.floor(diffSec / 86400) + 'd ago';
+  }
+
+  function statusMeta(status) {
+    if (status === 'NEEDS_YOU') return { cls: 'needs', label: 'Needs You' };
+    if (status === 'STALLED') return { cls: 'stalled', label: 'Stalled >10m' };
+    if (status === 'WORKING') return { cls: 'working', label: 'Working' };
+    if (status === 'AWAITING_REPLY') return { cls: 'awaiting', label: 'Ready for Review' };
+    if (status === 'READ_LATER') return { cls: 'snoozed', label: 'Read Later' };
+    if (status === 'CLOSED') return { cls: 'closed', label: 'Closed' };
+    return { cls: 'idle', label: 'Idle' };
+  }
+
+  async function openAgentSideBySide(agent) {
+    if (!agent || !agent.id) return;
+    state.selectedAgentId = agent.id;
+
+    if (agent.needsAttention) {
+      apiPost('/api/workers/meta', { convId: agent.id, ack: true, stepCount: agent.stepCount }).then(function (res) {
+        if (res && res.snapshot) {
+          state.snapshot = res.snapshot;
+          renderHeaderAndPerch();
+          renderActiveTab();
+        }
+      });
+    }
+
+    if (window.sidecar && window.sidecar.ui && typeof window.sidecar.ui.toggleConversation === 'function') {
+      try {
+        window.sidecar.ui.toggleConversation(agent.id, { split: true, replace: true });
+        renderActiveTab();
+        return;
+      } catch (e) {
+        try {
+          window.sidecar.ui.toggleConversation(agent.id);
+          return;
+        } catch (_) {}
+      }
+    }
+
+    state.expandedAgents[agent.id] = !state.expandedAgents[agent.id];
+    renderActiveTab();
+  }
+
+  function syncTabHighlight() {
+    document.querySelectorAll('.tab-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-tab') === state.tab);
+    });
+  }
+
   function renderHeaderAndPerch() {
     var snap = state.snapshot;
     if (!snap) return;
     var assistantName = (snap.identity && snap.identity.name) || 'Clawy';
-    var assistantRole = (snap.identity && snap.identity.role) || 'Multi-Agent Coordinator';
+    var assistantRole = (snap.identity && snap.identity.role) || 'Agent Command Center';
     var sub = document.getElementById('header-sub');
     if (sub) sub.textContent = assistantName + ' · ' + assistantRole;
 
@@ -796,222 +862,603 @@
 
     var ttsBtn = document.getElementById('btnVoiceTts');
     if (ttsBtn) ttsBtn.textContent = state.ttsEnabled ? '🔊 TTS On' : '🔇 Muted';
+
+    var att = snap.attentionSummary || {};
+    var unreadTotal = Number(att.totalUnreadCount || 0);
+    var activeCount = Number(att.activeCount || 0);
+    var activeGoals = (snap.goals || []).filter(function (g) { return g.status !== 'done'; }).length;
+
+    var hdrPill = document.getElementById('btn-updates-pill');
+    var hdrCnt = document.getElementById('hdrNotifCount');
+    if (hdrPill && hdrCnt) {
+      hdrPill.classList.toggle('has-alerts', unreadTotal > 0);
+      hdrCnt.hidden = unreadTotal <= 0;
+      hdrCnt.textContent = String(unreadTotal);
+    }
+
+    var tabAgCnt = document.getElementById('tabAgentsCount');
+    if (tabAgCnt) tabAgCnt.textContent = String(activeCount);
+
+    var tabNotifCnt = document.getElementById('tabNotifCount');
+    if (tabNotifCnt) {
+      tabNotifCnt.hidden = unreadTotal <= 0;
+      tabNotifCnt.textContent = String(unreadTotal);
+    }
+
+    var tabGoalsCnt = document.getElementById('tabGoalsCount');
+    if (tabGoalsCnt) tabGoalsCnt.textContent = String(activeGoals);
+
+    if (!state.listening && !state.thinking && !state.speaking && Date.now() > state.customBubbleUntil) {
+      var triageMsg = '';
+      if (att.needsYouCount > 0) {
+        triageMsg = '🔴 ' + att.needsYouCount + ' agent' + (att.needsYouCount === 1 ? ' needs' : 's need') + ' your input right now — click its card below to pop the chat open side-by-side.';
+      } else if (att.workingCount > 0) {
+        triageMsg = '🔵 ' + att.workingCount + ' agent' + (att.workingCount === 1 ? ' is' : 's are') + ' actively working. Click any card to inspect live progress side-by-side.';
+      } else if (att.awaitingCount > 0) {
+        triageMsg = '🟡 ' + att.awaitingCount + ' agent' + (att.awaitingCount === 1 ? ' finished and is' : 's finished and are') + ' ready for review — click to pop open or ✕ to close.';
+      } else {
+        triageMsg = 'All caught up! ' + activeCount + ' active agent' + (activeCount === 1 ? '' : 's') + ' — click any card to pop it open side-by-side, or click + New Agent.';
+      }
+      setPerchBubble(triageMsg, true);
+    }
+
+    var footSum = document.getElementById('footerSummaryText');
+    if (footSum) {
+      footSum.textContent =
+        activeCount + ' Active Agent' + (activeCount === 1 ? '' : 's') +
+        (att.needsYouCount ? ' · ' + att.needsYouCount + ' Needs You' : '') +
+        (att.workingCount ? ' · ' + att.workingCount + ' Working' : '') +
+        (att.closedCount ? ' · ' + att.closedCount + ' Closed/History' : '');
+    }
+    var footTime = document.getElementById('footerSyncTime');
+    if (footTime) {
+      footTime.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    }
   }
 
-  /* ---------- Tab 1: Workers (Desktop Brain Discovery + Sidecar Agent Fallback) ---------- */
+  /* ---------- New Agent Composer ---------- */
 
-  function renderWorkersTab(root) {
-    var snap = state.snapshot;
-    var ls = snap.lsStatus || {};
-    var groups = snap.groups || [];
-    var workers = snap.workers || [];
-
-    if (workers.length === 0 && !ls.available) {
-      root.appendChild(
-        el(
-          'div',
-          'coord-banner',
-          'No active conversations discovered yet. Click "+ Spawn Worker" to start one.'
-        )
-      );
-    }
-
-    var topRow = el('div', 'coord-row-between');
-    var filterBar = el('div', 'coord-row');
-    var allBtn = el('button', 'coord-pill-filter' + (state.groupFilter === 'all' ? ' active' : ''), 'All (' + workers.length + ')');
-    allBtn.type = 'button';
-    allBtn.addEventListener('click', function () { state.groupFilter = 'all'; renderActiveTab(); });
-    filterBar.appendChild(allBtn);
-
-    groups.forEach(function (g) {
-      var cnt = workers.filter(function (w) { return w.groupId === g.id; }).length;
-      var gb = el('button', 'coord-pill-filter' + (state.groupFilter === g.id ? ' active' : ''), g.title + ' (' + cnt + ')');
-      gb.type = 'button';
-      gb.addEventListener('click', function () { state.groupFilter = g.id; renderActiveTab(); });
-      filterBar.appendChild(gb);
-    });
-    topRow.appendChild(filterBar);
-
-    var spawnToggle = el('button', 'btn btn-primary btn-sm', state.showSpawnForm ? 'Cancel' : '+ Spawn Worker');
-    spawnToggle.type = 'button';
-    spawnToggle.addEventListener('click', function () {
-      state.showSpawnForm = !state.showSpawnForm;
+  function renderNewAgentComposer(root, groups) {
+    if (!state.showSpawnForm) return;
+    var formCard = el('form', 'coord-card');
+    var headRow = el('div', 'coord-row-between');
+    headRow.appendChild(el('div', 'coord-card-title', '🚀 Start New Agent Conversation'));
+    var cancelBtn = el('button', 'btn btn-secondary btn-sm', 'Cancel');
+    cancelBtn.type = 'button';
+    cancelBtn.addEventListener('click', function () {
+      state.showSpawnForm = false;
       renderActiveTab();
     });
-    topRow.appendChild(spawnToggle);
-    root.appendChild(topRow);
+    headRow.appendChild(cancelBtn);
+    formCard.appendChild(headRow);
 
-    if (state.showSpawnForm) {
-      var formCard = el('form', 'coord-card');
-      formCard.appendChild(el('div', 'coord-card-title', 'Spawn New Worker Conversation'));
-      var titleIn = el('input', 'coord-input coord-input-sm');
-      titleIn.placeholder = 'Optional title (e.g., Auth Security Audit)';
-      var grpSel = el('select', 'coord-select');
-      groups.forEach(function (g) {
-        var opt = el('option', '', 'Group: ' + g.title);
-        opt.value = g.id;
-        grpSel.appendChild(opt);
+    var row1 = el('div', 'coord-row');
+    var titleIn = el('input', 'coord-input coord-input-sm');
+    titleIn.style.flex = '2 1 200px';
+    titleIn.placeholder = 'Agent title (e.g., FOIA Discovery Check)';
+    var grpSel = el('select', 'coord-select');
+    grpSel.style.flex = '1 1 140px';
+    groups.forEach(function (g) {
+      var opt = el('option', '', 'Group: ' + g.title);
+      opt.value = g.id;
+      grpSel.appendChild(opt);
+    });
+    row1.appendChild(titleIn);
+    row1.appendChild(grpSel);
+    formCard.appendChild(row1);
+
+    var promptIn = el('textarea', 'coord-textarea');
+    promptIn.style.minHeight = '64px';
+    promptIn.placeholder = 'What should this new agent work on? (e.g., /daily-brief Summarize my priorities and open action items)';
+    formCard.appendChild(promptIn);
+
+    var submitRow = el('div', 'coord-row');
+    var goBtn = el('button', 'btn btn-primary btn-sm', 'Start Agent');
+    goBtn.type = 'submit';
+    submitRow.appendChild(goBtn);
+    formCard.appendChild(submitRow);
+
+    formCard.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var cleanPrompt = promptIn.value.trim();
+      var cleanTitle = titleIn.value.trim();
+      if (!cleanPrompt) return;
+      goBtn.disabled = true;
+      goBtn.textContent = 'Starting...';
+      var res = await apiPost('/api/workers/spawn', {
+        title: cleanTitle,
+        groupId: grpSel.value,
+        prompt: cleanPrompt,
       });
-      var promptIn = el('textarea', 'coord-textarea');
-      promptIn.style.minHeight = '70px';
-      promptIn.placeholder = 'Task prompt for the new worker...';
-      var submitRow = el('div', 'coord-row');
-      var goBtn = el('button', 'btn btn-primary btn-sm', 'Dispatch Worker');
-      goBtn.type = 'submit';
-      submitRow.appendChild(goBtn);
-      formCard.appendChild(titleIn);
-      formCard.appendChild(grpSel);
-      formCard.appendChild(promptIn);
-      formCard.appendChild(submitRow);
-      formCard.addEventListener('submit', async function (ev) {
-        ev.preventDefault();
-        var cleanPrompt = promptIn.value.trim();
-        var cleanTitle = titleIn.value.trim();
-        if (!cleanPrompt) return;
-        goBtn.disabled = true;
-        goBtn.textContent = 'Dispatching...';
-        var res = await apiPost('/api/workers/spawn', {
-          title: cleanTitle,
-          groupId: grpSel.value,
-          prompt: cleanPrompt,
-        });
+      if (res && res.ok && res.snapshot) {
+        state.snapshot = res.snapshot;
+        state.showSpawnForm = false;
+        showToast('Started new agent');
+        renderHeaderAndPerch();
+        renderActiveTab();
+        return;
+      }
+      if (window.sidecar && window.sidecar.agent && window.sidecar.agent.startConversation) {
+        try {
+          var created = await window.sidecar.agent.startConversation(cleanPrompt, cleanTitle || cleanPrompt.slice(0, 48));
+          if (created && created.conversationId) {
+            await apiPost('/api/workers/meta', {
+              convId: created.conversationId,
+              customTitle: cleanTitle,
+              groupId: grpSel.value,
+              customStatus: 'WORKING',
+            });
+          }
+          state.showSpawnForm = false;
+          showToast('Started new agent');
+          refreshAll(false);
+          return;
+        } catch (e) {}
+      }
+      goBtn.disabled = false;
+      goBtn.textContent = 'Start Agent';
+      showToast('Could not start agent: ' + ((res && res.error) || 'error'));
+    });
+
+    root.appendChild(formCard);
+  }
+
+  /* ---------- Tab 1: Agents (Compact Cards + Split Pop-Out + Close/Snooze/Rename) ---------- */
+
+  function renderAgentsTab(root) {
+    var snap = state.snapshot;
+    var groups = snap.groups || [];
+    var goals = snap.goals || [];
+    var workers = snap.workers || [];
+    var att = snap.attentionSummary || {};
+
+    renderNewAgentComposer(root, groups);
+
+    var groupMap = {};
+    groups.forEach(function (g) { groupMap[g.id] = g.title; });
+    var goalMap = {};
+    goals.forEach(function (gl) { goalMap[gl.id] = gl.title; });
+
+    var attentionTotal = Number(att.needsYouCount || 0) + Number(att.awaitingCount || 0);
+    var filterWrap = el('div', 'agent-filter-bar');
+    var pills = el('div', 'agent-filter-pills');
+
+    var addPill = function (id, label, extraCls) {
+      var b = el('button', 'coord-pill-filter' + (extraCls ? ' ' + extraCls : '') + (state.agentFilter === id ? ' active' : ''), label);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        state.agentFilter = id;
+        renderActiveTab();
+      });
+      pills.appendChild(b);
+    };
+
+    addPill('active', 'Active (' + Number(att.activeCount || 0) + ')');
+    if (attentionTotal > 0 || state.agentFilter === 'attention') {
+      addPill('attention', '🔴 Needs Review (' + attentionTotal + ')', attentionTotal > 0 ? 'alert-pill' : '');
+    }
+    if (Number(att.readLaterCount || 0) > 0 || state.agentFilter === 'snoozed') {
+      addPill('snoozed', '⏸ Read Later (' + Number(att.readLaterCount || 0) + ')');
+    }
+    if (groups.length > 1) {
+      groups.forEach(function (g) {
+        var gCnt = workers.filter(function (w) { return !w.closed && w.groupId === g.id; }).length;
+        addPill('group:' + g.id, g.title + ' (' + gCnt + ')');
+      });
+    }
+    addPill('closed', '🗄️ Closed & History (' + Number(att.closedCount || 0) + ')');
+    filterWrap.appendChild(pills);
+
+    var rightActions = el('div', 'coord-row');
+    if (state.agentFilter !== 'closed' && Number(att.activeCount || 0) > 0) {
+      var sweepBtn = el('button', 'btn btn-secondary btn-sm', '✓ Close Idle');
+      sweepBtn.type = 'button';
+      sweepBtn.title = 'Move unpinned Idle and reviewed agents to Closed & History';
+      sweepBtn.addEventListener('click', async function () {
+        var res = await apiPost('/api/workers/sweep', {});
         if (res && res.ok && res.snapshot) {
           state.snapshot = res.snapshot;
-          state.showSpawnForm = false;
-          showToast('Spawned worker');
+          renderHeaderAndPerch();
           renderActiveTab();
-          return;
+          showToast('Closed ' + (res.closedCount || 0) + ' idle agent(s)');
         }
-        // Desktop fallback: window.sidecar.agent.startConversation
-        if (window.sidecar && window.sidecar.agent && window.sidecar.agent.startConversation) {
-          try {
-            var created = await window.sidecar.agent.startConversation(cleanPrompt, cleanTitle || cleanPrompt.slice(0, 48));
-            if (created && created.conversationId) {
-              await apiPost('/api/workers/meta', {
-                convId: created.conversationId,
-                groupId: grpSel.value,
-                customStatus: 'WORKING',
-              });
-            }
-            state.showSpawnForm = false;
-            showToast('Started worker via Antigravity host');
-            refreshAll(false);
-            return;
-          } catch (e) {}
-        }
-        goBtn.disabled = false;
-        goBtn.textContent = 'Dispatch Worker';
-        showToast('Spawn failed: ' + ((res && res.error) || 'error'));
       });
-      root.appendChild(formCard);
+      rightActions.appendChild(sweepBtn);
     }
+    filterWrap.appendChild(rightActions);
+    root.appendChild(filterWrap);
 
-    var filtered = state.groupFilter === 'all'
-      ? workers
-      : workers.filter(function (w) { return w.groupId === state.groupFilter; });
+    var q = (state.searchQuery || '').trim().toLowerCase();
+    var filtered = workers.filter(function (w) {
+      if (state.agentFilter === 'active') {
+        if (w.closed || w.status === 'READ_LATER') return false;
+      } else if (state.agentFilter === 'attention') {
+        if (w.closed || !w.needsAttention) return false;
+      } else if (state.agentFilter === 'snoozed') {
+        if (w.status !== 'READ_LATER') return false;
+      } else if (state.agentFilter === 'closed') {
+        if (!w.closed) return false;
+      } else if (state.agentFilter.indexOf('group:') === 0) {
+        var gid = state.agentFilter.slice(6);
+        if (w.closed || w.groupId !== gid) return false;
+      }
+      if (!q) return true;
+      return (
+        (w.title || '').toLowerCase().indexOf(q) >= 0 ||
+        (w.summary || '').toLowerCase().indexOf(q) >= 0 ||
+        (groupMap[w.groupId] || '').toLowerCase().indexOf(q) >= 0
+      );
+    });
 
     if (filtered.length === 0) {
-      root.appendChild(el('div', 'coord-card', 'No workers in this group yet. Click "+ Spawn Worker" to launch a conversation.'));
+      var emptyCard = el('div', 'coord-card');
+      emptyCard.appendChild(
+        el(
+          'div',
+          'coord-card-sub',
+          state.agentFilter === 'closed'
+            ? 'No closed or older agent conversations yet.'
+            : q
+              ? 'No agents match "' + state.searchQuery + '".'
+              : 'All clear — zero open agents in this filter! Click "+ New Agent" in the top bar or check "Closed & History" to reopen a past chat.'
+        )
+      );
+      root.appendChild(emptyCard);
       return;
     }
 
+    var listEl = el('div', 'agent-list');
     filtered.forEach(function (w) {
-      var card = el('div', 'coord-card');
-      var head = el('div', 'coord-card-head');
-      var left = el('div');
-      left.appendChild(el('div', 'coord-card-title', (w.pinned ? '📌 ' : '') + (w.title || w.id)));
-      left.appendChild(el('div', 'coord-card-sub', w.id.slice(0, 12) + (w.summary ? ' · ' + w.summary.slice(0, 110) : '')));
-      head.appendChild(left);
+      var sm = statusMeta(w.status);
+      var isExpanded = Boolean(state.expandedAgents[w.id]);
+      var isRenaming = state.renamingAgentId === w.id;
+      var card = el(
+        'div',
+        'agent-card status-' + sm.cls + (state.selectedAgentId === w.id ? ' selected' : '')
+      );
 
-      var stCls = w.status === 'WORKING' ? 'working' : w.status === 'NEEDS_YOU' ? 'needs' : 'idle';
-      head.appendChild(el('span', 'coord-badge ' + stCls, w.status || 'ACTIVE'));
-      card.appendChild(head);
+      var top = el('div', 'agent-card-top');
+      var left = el('div', 'agent-title-wrap');
+      left.appendChild(el('span', 'agent-dot ' + sm.cls));
 
-      var metaRow = el('div', 'coord-row');
-      var grpPick = el('select', 'coord-select');
-      grpPick.style.width = 'auto';
-      grpPick.style.padding = '3px 8px';
-      grpPick.style.fontSize = '11px';
-      groups.forEach(function (g) {
-        var opt = el('option', '', g.title);
-        opt.value = g.id;
-        if (g.id === w.groupId) opt.selected = true;
-        grpPick.appendChild(opt);
+      if (isRenaming) {
+        var renForm = el('form', 'coord-row');
+        renForm.style.flex = '1 1 auto';
+        var renIn = el('input', 'coord-input coord-input-sm');
+        renIn.style.flex = '1 1 200px';
+        renIn.value = w.title || '';
+        var saveRen = el('button', 'btn btn-primary btn-sm', 'Save');
+        saveRen.type = 'submit';
+        var cancelRen = el('button', 'btn btn-secondary btn-sm', 'Cancel');
+        cancelRen.type = 'button';
+        cancelRen.addEventListener('click', function () {
+          state.renamingAgentId = '';
+          renderActiveTab();
+        });
+        renForm.appendChild(renIn);
+        renForm.appendChild(saveRen);
+        renForm.appendChild(cancelRen);
+        renForm.addEventListener('submit', async function (ev) {
+          ev.preventDefault();
+          var res = await apiPost('/api/workers/meta', { convId: w.id, customTitle: renIn.value.trim() });
+          state.renamingAgentId = '';
+          if (res && res.snapshot) {
+            state.snapshot = res.snapshot;
+            renderHeaderAndPerch();
+            renderActiveTab();
+          }
+        });
+        left.appendChild(renForm);
+        setTimeout(function () { renIn.focus(); renIn.select(); }, 20);
+      } else {
+        var titleBtn = el('button', 'agent-title-btn', (w.pinned ? '📌 ' : '') + (w.title || 'Agent Conversation'));
+        titleBtn.type = 'button';
+        titleBtn.title = 'Click to pop this conversation open side-by-side';
+        titleBtn.addEventListener('click', function () {
+          openAgentSideBySide(w);
+        });
+        left.appendChild(titleBtn);
+
+        var relTime = formatRelativeTime(w.updateTime);
+        if (relTime) {
+          left.appendChild(el('span', 'agent-time-lbl', '· ' + relTime));
+        }
+        if (w.groupId && w.groupId !== 'group-default' && groupMap[w.groupId]) {
+          left.appendChild(el('span', 'agent-group-chip', groupMap[w.groupId]));
+        }
+        if (w.goalId && goalMap[w.goalId]) {
+          left.appendChild(el('span', 'agent-group-chip', '🎯 ' + goalMap[w.goalId]));
+        }
+      }
+      top.appendChild(left);
+
+      var toolbar = el('div', 'agent-toolbar');
+      toolbar.appendChild(el('span', 'agent-status-pill ' + sm.cls, sm.label));
+
+      var popBtn = el('button', 'agent-icon-btn split-btn', '↗ Pop Out');
+      popBtn.type = 'button';
+      popBtn.title = 'Open live conversation side-by-side next to Clawy';
+      popBtn.addEventListener('click', function () {
+        openAgentSideBySide(w);
       });
-      grpPick.addEventListener('change', async function () {
-        var res = await apiPost('/api/workers/meta', { convId: w.id, groupId: grpPick.value });
-        if (res && res.snapshot) { state.snapshot = res.snapshot; renderActiveTab(); }
-      });
-      metaRow.appendChild(grpPick);
+      toolbar.appendChild(popBtn);
 
-      (w.labels || []).forEach(function (lbl) {
-        var lb = el('span', 'coord-badge label', '#' + lbl + ' ×');
-        lb.style.cursor = 'pointer';
-        lb.title = 'Click to remove label';
-        lb.addEventListener('click', async function () {
-          var res = await apiPost('/api/workers/meta', { convId: w.id, removeLabel: lbl });
+      var peekBtn = el('button', 'agent-icon-btn', isExpanded ? '▴' : '▾');
+      peekBtn.type = 'button';
+      peekBtn.title = isExpanded ? 'Collapse preview & quick reply' : 'Peek at recent turns & quick reply';
+      peekBtn.addEventListener('click', function () {
+        state.expandedAgents[w.id] = !isExpanded;
+        renderActiveTab();
+      });
+      toolbar.appendChild(peekBtn);
+
+      var editBtn = el('button', 'agent-icon-btn', '✏️');
+      editBtn.type = 'button';
+      editBtn.title = 'Rename this agent';
+      editBtn.addEventListener('click', function () {
+        state.renamingAgentId = w.id;
+        renderActiveTab();
+      });
+      toolbar.appendChild(editBtn);
+
+      if (!w.closed) {
+        var snoozeBtn = el('button', 'agent-icon-btn', w.snoozed ? '☀️' : '⏸');
+        snoozeBtn.type = 'button';
+        snoozeBtn.title = w.snoozed ? 'Move back to Active' : 'Snooze / Read Later';
+        snoozeBtn.addEventListener('click', async function () {
+          var res = await apiPost('/api/workers/meta', { convId: w.id, snoozed: !w.snoozed });
+          if (res && res.snapshot) {
+            state.snapshot = res.snapshot;
+            renderHeaderAndPerch();
+            renderActiveTab();
+            showToast(w.snoozed ? 'Moved back to Active' : 'Saved to Read Later');
+          }
+        });
+        toolbar.appendChild(snoozeBtn);
+
+        var pinBtn = el('button', 'agent-icon-btn', w.pinned ? '📍' : '📌');
+        pinBtn.type = 'button';
+        pinBtn.title = w.pinned ? 'Unpin agent' : 'Pin agent to top';
+        pinBtn.addEventListener('click', async function () {
+          var res = await apiPost('/api/workers/meta', { convId: w.id, pinned: !w.pinned });
+          if (res && res.snapshot) {
+            state.snapshot = res.snapshot;
+            renderActiveTab();
+          }
+        });
+        toolbar.appendChild(pinBtn);
+
+        var closeBtn = el('button', 'agent-icon-btn close-btn', '✕');
+        closeBtn.type = 'button';
+        closeBtn.title = 'Close / archive this agent';
+        closeBtn.addEventListener('click', async function () {
+          var res = await apiPost('/api/workers/meta', {
+            convId: w.id,
+            closed: true,
+            stepCount: w.stepCount || 999999,
+          });
+          if (res && res.snapshot) {
+            state.snapshot = res.snapshot;
+            renderHeaderAndPerch();
+            renderActiveTab();
+            showToast('Closed "' + (w.title || 'Agent').slice(0, 32) + '"');
+          }
+        });
+        toolbar.appendChild(closeBtn);
+      } else {
+        var reopenBtn = el('button', 'agent-icon-btn split-btn', '↺ Reopen');
+        reopenBtn.type = 'button';
+        reopenBtn.title = 'Move back to Active Agents';
+        reopenBtn.addEventListener('click', async function () {
+          var res = await apiPost('/api/workers/meta', { convId: w.id, closed: false });
+          if (res && res.snapshot) {
+            state.snapshot = res.snapshot;
+            renderHeaderAndPerch();
+            renderActiveTab();
+            showToast('Reopened agent');
+          }
+        });
+        toolbar.appendChild(reopenBtn);
+      }
+
+      top.appendChild(toolbar);
+      card.appendChild(top);
+
+      if (w.attentionReason && !w.closed) {
+        card.appendChild(el('div', 'agent-reason-callout', w.attentionReason));
+      }
+
+      if (w.summary) {
+        card.appendChild(el('div', 'agent-summary-line', w.summary));
+      }
+
+      if (isExpanded) {
+        var drawer = el('div', 'agent-drawer');
+        var turns = w.recentTurns || [];
+        if (turns.length > 0) {
+          var turnsBox = el('div', 'agent-turns-box');
+          turns.forEach(function (t) {
+            var row = el('div', 'agent-turn-row ' + (t.role === 'user' ? 'user' : 'agent'));
+            row.appendChild(el('span', 'agent-turn-role', t.role === 'user' ? 'You:' : 'Agent:'));
+            row.appendChild(el('span', '', t.text));
+            turnsBox.appendChild(row);
+          });
+          drawer.appendChild(turnsBox);
+        }
+
+        var metaRow = el('div', 'coord-row');
+        var grpPick = el('select', 'coord-select');
+        grpPick.style.width = 'auto';
+        grpPick.style.padding = '3px 8px';
+        grpPick.style.fontSize = '11px';
+        groups.forEach(function (g) {
+          var opt = el('option', '', 'Group: ' + g.title);
+          opt.value = g.id;
+          if (g.id === w.groupId) opt.selected = true;
+          grpPick.appendChild(opt);
+        });
+        grpPick.addEventListener('change', async function () {
+          var res = await apiPost('/api/workers/meta', { convId: w.id, groupId: grpPick.value });
           if (res && res.snapshot) { state.snapshot = res.snapshot; renderActiveTab(); }
         });
-        metaRow.appendChild(lb);
-      });
+        metaRow.appendChild(grpPick);
 
-      var pinBtn = el('button', 'btn btn-secondary btn-sm', w.pinned ? 'Unpin' : 'Pin');
-      pinBtn.type = 'button';
-      pinBtn.addEventListener('click', async function () {
-        var res = await apiPost('/api/workers/meta', { convId: w.id, pinned: !w.pinned });
-        if (res && res.snapshot) { state.snapshot = res.snapshot; renderActiveTab(); }
-      });
-      metaRow.appendChild(pinBtn);
-
-      if (window.sidecar && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
-        var openBtn = el('button', 'btn btn-secondary btn-sm', 'Open Chat');
-        openBtn.type = 'button';
-        openBtn.addEventListener('click', function () {
-          window.sidecar.ui.toggleConversation(w.id);
-        });
-        metaRow.appendChild(openBtn);
-      }
-      card.appendChild(metaRow);
-
-      var relayForm = el('form', 'coord-row');
-      var relayIn = el('input', 'coord-input coord-input-sm');
-      relayIn.style.flex = '1 1 160px';
-      relayIn.placeholder = 'Relay instruction to this worker...';
-      var relayBtn = el('button', 'btn btn-primary btn-sm', 'Relay');
-      relayBtn.type = 'submit';
-      relayForm.appendChild(relayIn);
-      relayForm.appendChild(relayBtn);
-      relayForm.addEventListener('submit', async function (ev) {
-        ev.preventDefault();
-        var msgText = relayIn.value.trim();
-        if (!msgText) return;
-        relayBtn.disabled = true;
-        var res = await apiPost('/api/workers/relay', { convId: w.id, message: msgText });
-        relayBtn.disabled = false;
-        if (res && res.ok && res.snapshot) {
-          state.snapshot = res.snapshot;
-          relayIn.value = '';
-          showToast('Relayed to ' + (w.title || w.id.slice(0, 8)));
-          renderActiveTab();
-          return;
+        if (goals.length > 0) {
+          var glPick = el('select', 'coord-select');
+          glPick.style.width = 'auto';
+          glPick.style.padding = '3px 8px';
+          glPick.style.fontSize = '11px';
+          var noneOpt = el('option', '', 'No linked Goal');
+          noneOpt.value = '';
+          glPick.appendChild(noneOpt);
+          goals.forEach(function (gl) {
+            var gOpt = el('option', '', '🎯 ' + gl.title);
+            gOpt.value = gl.id;
+            if (gl.id === w.goalId) gOpt.selected = true;
+            glPick.appendChild(gOpt);
+          });
+          glPick.addEventListener('change', async function () {
+            var res = await apiPost('/api/workers/meta', { convId: w.id, goalId: glPick.value });
+            if (res && res.snapshot) { state.snapshot = res.snapshot; renderActiveTab(); }
+          });
+          metaRow.appendChild(glPick);
         }
-        // Desktop fallback: window.sidecar.agent.sendMessage
-        if (window.sidecar && window.sidecar.agent && window.sidecar.agent.sendMessage) {
-          try {
-            await window.sidecar.agent.sendMessage(msgText, w.id);
-            relayIn.value = '';
-            showToast('Relayed via Antigravity host');
-            await apiPost('/api/board', { author: 'Coordinator', kind: 'relay', summary: 'Relayed to ' + w.id.slice(0, 8) + ': ' + msgText.slice(0, 100) });
-            refreshAll(false);
+        drawer.appendChild(metaRow);
+
+        var replyForm = el('form', 'coord-row');
+        var replyIn = el('input', 'coord-input coord-input-sm');
+        replyIn.style.flex = '1 1 180px';
+        replyIn.placeholder = 'Send a follow-up message to this agent...';
+        var replyBtn = el('button', 'btn btn-primary btn-sm', 'Send Reply');
+        replyBtn.type = 'submit';
+        replyForm.appendChild(replyIn);
+        replyForm.appendChild(replyBtn);
+        replyForm.addEventListener('submit', async function (ev) {
+          ev.preventDefault();
+          var msgText = replyIn.value.trim();
+          if (!msgText) return;
+          replyBtn.disabled = true;
+          var res = await apiPost('/api/workers/relay', { convId: w.id, message: msgText });
+          replyBtn.disabled = false;
+          if (res && res.ok && res.snapshot) {
+            state.snapshot = res.snapshot;
+            replyIn.value = '';
+            showToast('Sent reply to "' + (w.title || 'Agent').slice(0, 28) + '"');
+            renderHeaderAndPerch();
+            renderActiveTab();
             return;
-          } catch (e) {}
-        }
-        showToast('Relay failed: ' + ((res && res.error) || 'error'));
-      });
-      card.appendChild(relayForm);
+          }
+          if (window.sidecar && window.sidecar.agent && window.sidecar.agent.sendMessage) {
+            try {
+              await window.sidecar.agent.sendMessage(msgText, w.id);
+              replyIn.value = '';
+              showToast('Sent reply to agent');
+              refreshAll(false);
+              return;
+            } catch (e) {}
+          }
+          showToast('Reply failed: ' + ((res && res.error) || 'error'));
+        });
+        drawer.appendChild(replyForm);
 
-      root.appendChild(card);
+        card.appendChild(drawer);
+      }
+
+      listEl.appendChild(card);
     });
+    root.appendChild(listEl);
+  }
+
+  /* ---------- Tab 1B: Notifications & Attention Inbox ---------- */
+
+  function renderNotificationsTab(root) {
+    var snap = state.snapshot;
+    var att = snap.attentionSummary || {};
+    var notifs = att.notifications || [];
+    var workers = snap.workers || [];
+    var workerMap = {};
+    workers.forEach(function (w) { workerMap[w.id] = w; });
+
+    var headCard = el('div', 'coord-card');
+    var hRow = el('div', 'coord-row-between');
+    hRow.appendChild(el('div', 'coord-card-title', '🔔 Agent Attention & Updates (' + notifs.length + ')'));
+    if (notifs.length > 0) {
+      var ackAllBtn = el('button', 'btn btn-secondary btn-sm', '✓ Mark All Reviewed');
+      ackAllBtn.type = 'button';
+      ackAllBtn.addEventListener('click', async function () {
+        for (var i = 0; i < notifs.length; i += 1) {
+          await apiPost('/api/workers/meta', {
+            convId: notifs[i].convId,
+            ack: true,
+            stepCount: notifs[i].stepCount || 999999,
+          });
+        }
+        await refreshAll(false);
+        showToast('Marked all notifications reviewed');
+      });
+      hRow.appendChild(ackAllBtn);
+    }
+    headCard.appendChild(hRow);
+    headCard.appendChild(
+      el(
+        'div',
+        'coord-card-sub',
+        notifs.length > 0
+          ? 'Agents below either asked a question, stalled, or finished a new response. Click "↗ Open Side-by-Side" to jump right in.'
+          : 'Zero unread alerts right now — Clawy will badge the bell whenever an agent finishes or needs an answer.'
+      )
+    );
+    root.appendChild(headCard);
+
+    var nList = el('div', 'agent-list');
+    notifs.forEach(function (n) {
+      var sm = statusMeta(n.status);
+      var card = el('div', 'agent-card status-' + sm.cls);
+      var top = el('div', 'agent-card-top');
+      var left = el('div', 'agent-title-wrap');
+      left.appendChild(el('span', 'agent-dot ' + sm.cls));
+      var tBtn = el('button', 'agent-title-btn', n.title || 'Agent Conversation');
+      tBtn.type = 'button';
+      tBtn.addEventListener('click', function () {
+        openAgentSideBySide(workerMap[n.convId] || { id: n.convId, stepCount: n.stepCount, needsAttention: true });
+      });
+      left.appendChild(tBtn);
+      var rel = formatRelativeTime(n.updateTime);
+      if (rel) left.appendChild(el('span', 'agent-time-lbl', '· ' + rel));
+      top.appendChild(left);
+
+      var bar = el('div', 'agent-toolbar');
+      bar.appendChild(el('span', 'agent-status-pill ' + sm.cls, sm.label));
+      var openSplit = el('button', 'agent-icon-btn split-btn', '↗ Open Side-by-Side');
+      openSplit.type = 'button';
+      openSplit.addEventListener('click', function () {
+        openAgentSideBySide(workerMap[n.convId] || { id: n.convId, stepCount: n.stepCount, needsAttention: true });
+      });
+      bar.appendChild(openSplit);
+
+      var dismissBtn = el('button', 'agent-icon-btn', '✓ Dismiss');
+      dismissBtn.type = 'button';
+      dismissBtn.addEventListener('click', async function () {
+        var res = await apiPost('/api/workers/meta', {
+          convId: n.convId,
+          ack: true,
+          stepCount: n.stepCount || 999999,
+        });
+        if (res && res.snapshot) {
+          state.snapshot = res.snapshot;
+          renderHeaderAndPerch();
+          renderActiveTab();
+        }
+      });
+      bar.appendChild(dismissBtn);
+      top.appendChild(bar);
+      card.appendChild(top);
+
+      if (n.reason) card.appendChild(el('div', 'agent-reason-callout', n.reason));
+      if (n.summary) card.appendChild(el('div', 'agent-summary-line', n.summary));
+      nList.appendChild(card);
+    });
+    root.appendChild(nList);
   }
 
   /* ---------- Tab 2: Goals (Strict 2-Level Group -> Goal -> Task) ---------- */
@@ -1404,21 +1851,33 @@
     var root = document.getElementById('view-root');
     if (!root || !state.snapshot) return;
     root.replaceChildren();
-    if (state.tab === 'workers') renderWorkersTab(root);
+    if (state.tab === 'agents' || state.tab === 'workers') renderAgentsTab(root);
+    else if (state.tab === 'notifications') renderNotificationsTab(root);
     else if (state.tab === 'goals') renderGoalsTab(root);
     else if (state.tab === 'chat') renderChatTab(root);
     else if (state.tab === 'identity') renderIdentityTab(root);
   }
 
-  async function refreshAll(showNotice) {
+  function isUserEditingInsideView() {
+    var active = document.activeElement;
+    if (!active) return false;
+    var root = document.getElementById('view-root');
+    if (!root || !root.contains(active)) return false;
+    var tag = (active.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
+
+  async function refreshAll(showNotice, isBackgroundPoll) {
     try {
       var data = await apiGet('/api/state');
       if (data && data.ok) {
         state.snapshot = data;
         renderHeaderAndPerch();
-        renderActiveTab();
+        if (!isBackgroundPoll || (!isUserEditingInsideView() && !state.renamingAgentId)) {
+          renderActiveTab();
+        }
         if (tokenMeter) tokenMeter.refresh();
-        if (showNotice) showToast('Refreshed coordinator state');
+        if (showNotice) showToast('Refreshed agents & goals');
       }
     } catch (e) {
       if (showNotice) showToast('Refresh failed');
@@ -1443,16 +1902,56 @@
 
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        state.tab = btn.getAttribute('data-tab') || 'workers';
+        state.tab = btn.getAttribute('data-tab') || 'agents';
+        syncTabHighlight();
         renderActiveTab();
       });
     });
 
+    var searchIn = document.getElementById('agentSearchInput');
+    if (searchIn) {
+      searchIn.addEventListener('input', function () {
+        state.searchQuery = searchIn.value || '';
+        if (state.tab !== 'agents') {
+          state.tab = 'agents';
+          syncTabHighlight();
+        }
+        renderActiveTab();
+      });
+    }
+
+    window.addEventListener('keydown', function (ev) {
+      if (ev.key === '/' && searchIn) {
+        var tag = (document.activeElement && document.activeElement.tagName || '').toUpperCase();
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+          ev.preventDefault();
+          searchIn.focus();
+        }
+      }
+    });
+
+    var updatesPill = document.getElementById('btn-updates-pill');
+    if (updatesPill) {
+      updatesPill.addEventListener('click', function () {
+        state.tab = 'notifications';
+        syncTabHighlight();
+        renderActiveTab();
+      });
+    }
+
+    var newAgentBtn = document.getElementById('btn-new-agent');
+    if (newAgentBtn) {
+      newAgentBtn.addEventListener('click', function () {
+        state.tab = 'agents';
+        state.showSpawnForm = !state.showSpawnForm;
+        syncTabHighlight();
+        renderActiveTab();
+      });
+    }
+
     var refreshBtn = document.getElementById('btn-refresh');
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', function () { refreshAll(true); });
+      refreshBtn.addEventListener('click', function () { refreshAll(true, false); });
     }
 
     // Hold-to-Talk (>=250ms) + Click-to-Toggle (<250ms) on #btnVoiceMic
@@ -1534,10 +2033,10 @@
       var startersCollapsed = false;
       var STARTER_ITEMS = [
         { label: '👋 What can Clawy do?', mode: 'run', prompt: 'What can Clawy do? Give me a quick tour of how to use Clawy.' },
-        { label: '📊 Summarize my chats', mode: 'run', prompt: 'Summarize my active Antigravity conversations and open priorities.' },
+        { label: '📊 Summarize my agents', mode: 'run', prompt: 'Summarize my active agents and tell me what needs my attention.' },
         { label: '🎯 Create a sprint goal', mode: 'run', prompt: 'Create goal: Q4 Agency Program & FOIA Readiness' },
         { label: '✅ Add a follow-up task', mode: 'run', prompt: 'Add task: Review open FOIA redactions & 2 CFR Part 200 grant ledger' },
-        { label: '🚀 Draft a background worker', mode: 'prefill', prompt: 'spawn: /daily-brief Summarize my top agency priorities and open Action Items' }
+        { label: '🚀 Draft a new agent', mode: 'prefill', prompt: 'spawn: /daily-brief Summarize my top agency priorities and open Action Items' }
       ];
       var renderStarters = function () {
         startersBar.replaceChildren();
@@ -1578,7 +2077,12 @@
       renderStarters();
     }
 
-    refreshAll(false);
+    refreshAll(false, false);
+    setInterval(function () {
+      if (document.visibilityState !== 'hidden') {
+        refreshAll(false, true);
+      }
+    }, 12000);
   }
 
   if (document.readyState === 'loading') {

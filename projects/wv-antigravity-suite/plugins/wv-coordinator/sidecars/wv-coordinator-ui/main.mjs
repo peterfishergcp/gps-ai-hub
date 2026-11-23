@@ -27,6 +27,7 @@ import {
   saveIdentity,
   saveVoicePrefs,
   spawnWorker,
+  sweepIdleWorkers,
   synthesizeGeminiTtsAudio,
   updateWorkerMeta,
 } from '../../scripts/coord_core.mjs';
@@ -36,12 +37,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function buildSnapshotPayload() {
   const state = loadState();
   const identity = loadIdentity();
-  const { lsStatus, workers } = await getMergedWorkers();
+  const { lsStatus, attentionSummary, workers } = await getMergedWorkers();
   const voiceStatus = getPublicVoiceStatus();
   return {
     ok: true,
     dataDir: getDataDir(),
     lsStatus,
+    attentionSummary,
     workers,
     groups: state.groups,
     goals: state.goals,
@@ -132,7 +134,13 @@ app.api('/api/workers/meta', async (data) => {
     const workerMeta = updateWorkerMeta({
       convId: data?.convId || data?.id || '',
       groupId: data?.groupId,
+      goalId: data?.goalId,
+      customTitle: data?.customTitle,
       pinned: typeof data?.pinned === 'boolean' ? data.pinned : undefined,
+      snoozed: typeof data?.snoozed === 'boolean' ? data.snoozed : undefined,
+      closed: typeof data?.closed === 'boolean' ? data.closed : undefined,
+      stepCount: data?.stepCount,
+      ack: data?.ack === true,
       addLabel: data?.addLabel,
       removeLabel: data?.removeLabel,
       customStatus: data?.customStatus,
@@ -141,6 +149,16 @@ app.api('/api/workers/meta', async (data) => {
     });
     const snapshot = await buildSnapshotPayload();
     return { ok: true, workerMeta, snapshot };
+  } catch (err) {
+    return safeErr(err);
+  }
+}, 'POST');
+
+app.api('/api/workers/sweep', async () => {
+  try {
+    const res = await sweepIdleWorkers();
+    const snapshot = await buildSnapshotPayload();
+    return { ok: true, ...res, snapshot };
   } catch (err) {
     return safeErr(err);
   }
