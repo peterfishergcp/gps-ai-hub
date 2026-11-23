@@ -221,6 +221,13 @@ for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
   INSTALLED+=("${pname}")
 done
 echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins to ${PLUGINS_DEST}: ${INSTALLED[*]}"
+# Restart any running AGY UI sidecar processes so Antigravity's Sidecar Runner ("restart_policy": "always") boots the updated code immediately
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "plugins/agy-coordinator/sidecars/coordinator-ui/main.mjs" 2>/dev/null || true
+  pkill -f "plugins/agy-second-brain/sidecars/twin-vault-ui/main.mjs" 2>/dev/null || true
+  pkill -f "plugins/agy-connectors/sidecars/chatski-ui/main.mjs" 2>/dev/null || true
+  pkill -f "plugins/agy-onboarding/sidecars/agy-skill-manager/main.mjs" 2>/dev/null || true
+fi
 
 if [[ -n "${GE_INSTANCE}" ]]; then
   GE_CFG="${PLUGIN_DATA_DIR}/ge-instance.json"

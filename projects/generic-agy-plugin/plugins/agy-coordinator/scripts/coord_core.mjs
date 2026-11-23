@@ -241,15 +241,21 @@ export function saveIdentity({ name, role, identityMd, soulMd }) {
   return loadIdentity();
 }
 
+export const ALLOWED_GEMINI_VOICES = ['Zephyr', 'Aoede', 'Leda', 'Puck', 'Kore', 'Fenrir', 'Orus', 'Charon'];
+
 export function loadVoicePrefsRaw() {
   const dir = ensureInitialized();
   const voicePath = path.join(dir, 'voice_prefs.json');
   const raw = readJsonSafe(voicePath, {});
+  const isV2 = Number(raw.prefsSchemaVersion || 0) >= 2;
+  const voiceName = ALLOWED_GEMINI_VOICES.includes(raw.voiceName) ? raw.voiceName : 'Zephyr';
   return {
-    mode: raw.mode === 'browser' ? 'browser' : 'gemini-live',
+    prefsSchemaVersion: 2,
+    mode: isV2 && raw.mode === 'browser' ? 'browser' : 'gemini-live',
     model: typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : DEFAULT_VOICE_MODEL,
+    voiceName,
     apiKey: typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '',
-    useGcloudAdc: raw.useGcloudAdc !== false,
+    useGcloudAdc: isV2 ? raw.useGcloudAdc !== false : true,
     ttsEnabled: raw.ttsEnabled !== false,
     voiceRate: Number.isFinite(Number(raw.voiceRate)) ? Math.min(1.6, Math.max(0.6, Number(raw.voiceRate))) : 1.0,
     voicePitch: Number.isFinite(Number(raw.voicePitch)) ? Math.min(1.5, Math.max(0.7, Number(raw.voicePitch))) : 1.05,
@@ -260,9 +266,12 @@ export function loadVoicePrefsRaw() {
 export function saveVoicePrefs(patch) {
   const dir = ensureInitialized();
   const cur = loadVoicePrefsRaw();
+  const nextVoice = ALLOWED_GEMINI_VOICES.includes(patch.voiceName) ? patch.voiceName : cur.voiceName;
   const next = {
+    prefsSchemaVersion: 2,
     mode: patch.mode === 'gemini-live' ? 'gemini-live' : patch.mode === 'browser' ? 'browser' : cur.mode,
     model: typeof patch.model === 'string' && patch.model.trim() ? patch.model.trim().slice(0, 80) : cur.model,
+    voiceName: nextVoice,
     apiKey: typeof patch.apiKey === 'string' ? patch.apiKey.trim() : cur.apiKey,
     useGcloudAdc: typeof patch.useGcloudAdc === 'boolean' ? patch.useGcloudAdc : cur.useGcloudAdc,
     ttsEnabled: typeof patch.ttsEnabled === 'boolean' ? patch.ttsEnabled : cur.ttsEnabled,
@@ -319,6 +328,7 @@ export function getPublicVoiceStatus() {
   return {
     mode: prefs.mode,
     model: prefs.model,
+    voiceName: prefs.voiceName || 'Zephyr',
     hasApiKey: Boolean(effectiveKey),
     hasAdcFile: Boolean(adcFile),
     keySource,
@@ -1598,13 +1608,83 @@ export async function processCoordinatorTurn({
     action: actionResult,
   });
 
+  let ttsAudio = null;
+  if (prefs.ttsEnabled !== false && mode === 'gemini-live') {
+    try {
+      ttsAudio = await synthesizeGeminiTtsAudio({ text: parsed.reply, voiceName: prefs.voiceName });
+    } catch {
+      ttsAudio = null;
+    }
+  }
+
   return {
     ok: true,
     transcript: userText,
     reply: parsed.reply,
+    ttsAudio,
     action: actionResult,
     modeUsed,
     liveError,
     assistantMsg,
   };
+}
+
+export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
+  const cleanText = String(text || '').trim().slice(0, 900);
+  if (!cleanText) return null;
+  const prefs = loadVoicePrefsRaw();
+  if (prefs.ttsEnabled === false) return null;
+  const auth = await resolveGeminiAuth(prefs);
+  if (!auth) return null;
+
+  const chosenVoice = ALLOWED_GEMINI_VOICES.includes(voiceName) ? voiceName : (prefs.voiceName || 'Zephyr');
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth.type === 'apiKey') {
+    headers['x-goog-api-key'] = auth.token;
+  } else {
+    headers.Authorization = `Bearer ${auth.token}`;
+    if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
+  }
+
+  const candidateModels = ['gemini-2.5-flash-preview-tts', 'gemini-3.8-flash-lite-tts'];
+  for (const ttsModel of candidateModels) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(ttsModel)}:generateContent`;
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: cleanText }] }],
+          generationConfig: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: chosenVoice },
+              },
+            },
+          },
+        }),
+        signal: AbortSignal.timeout(9000),
+      });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      for (const p of parts) {
+        if (p?.inlineData?.data) {
+          const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
+          const rateMatch = m.match(/rate=(\d+)/i);
+          return {
+            audioBase64: p.inlineData.data,
+            mimeType: m,
+            sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
+            voiceName: chosenVoice,
+            modelUsed: ttsModel,
+          };
+        }
+      }
+    } catch {
+      // Try next candidate TTS model.
+    }
+  }
+  return null;
 }

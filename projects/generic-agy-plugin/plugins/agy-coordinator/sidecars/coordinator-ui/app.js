@@ -444,10 +444,96 @@
     if (!state.listening && !state.thinking) setMascotMood('idle', 'Idle');
   }
 
-  function speakText(text) {
+  var ttsPlaybackCtx = null;
+  var ttsSourceNode = null;
+  var ttsAnalyserTimer = null;
+
+  function stopTtsAudioPlayback() {
+    if (ttsAnalyserTimer) {
+      clearInterval(ttsAnalyserTimer);
+      ttsAnalyserTimer = null;
+    }
+    if (ttsSourceNode) {
+      try { ttsSourceNode.stop(); } catch (e) {}
+      ttsSourceNode = null;
+    }
+    if (ttsPlaybackCtx) {
+      try { ttsPlaybackCtx.close(); } catch (e) {}
+      ttsPlaybackCtx = null;
+    }
+  }
+
+  function playPcm16Base64(ttsAudio) {
+    var AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor || !ttsAudio || !ttsAudio.audioBase64) return false;
+    try {
+      stopTtsAudioPlayback();
+      if (typeof window.speechSynthesis !== 'undefined') window.speechSynthesis.cancel();
+      var bin = window.atob(ttsAudio.audioBase64);
+      var sampleCount = Math.floor(bin.length / 2);
+      if (sampleCount < 10) return false;
+      var rate = Number(ttsAudio.sampleRate) || 24000;
+      var ctx = new AudioCtor({ sampleRate: rate });
+      ttsPlaybackCtx = ctx;
+      var audioBuf = ctx.createBuffer(1, sampleCount, rate);
+      var ch = audioBuf.getChannelData(0);
+      for (var i = 0; i < sampleCount; i += 1) {
+        var lo = bin.charCodeAt(i * 2);
+        var hi = bin.charCodeAt(i * 2 + 1);
+        var val = (hi << 8) | lo;
+        if (val >= 0x8000) val -= 0x10000;
+        ch[i] = val / 32768;
+      }
+      var src = ctx.createBufferSource();
+      src.buffer = audioBuf;
+      var an = ctx.createAnalyser();
+      an.fftSize = 256;
+      var timeBuf = new Uint8Array(an.fftSize);
+      src.connect(an);
+      an.connect(ctx.destination);
+      ttsSourceNode = src;
+      state.speaking = true;
+      setMascotMood('speaking', 'Speaking');
+      ttsAnalyserTimer = setInterval(function () {
+        an.getByteTimeDomainData(timeBuf);
+        var sq = 0;
+        for (var k = 0; k < timeBuf.length; k += 1) {
+          var dv = (timeBuf[k] - 128) / 128;
+          sq += dv * dv;
+        }
+        var rms = Math.sqrt(sq / timeBuf.length);
+        state.mouthOpenness = Math.min(1, rms * 5.2);
+      }, 45);
+      src.onended = function () {
+        stopTtsAudioPlayback();
+        stopLipSyncPulse();
+      };
+      src.start(0);
+      return true;
+    } catch (e) {
+      stopTtsAudioPlayback();
+      return false;
+    }
+  }
+
+  async function speakText(text, preloadedTtsAudio) {
     var clean = String(text || '').trim();
     if (clean) setPerchBubble(clean, true);
     if (!clean || !state.ttsEnabled) return;
+
+    if (preloadedTtsAudio && preloadedTtsAudio.audioBase64) {
+      if (playPcm16Base64(preloadedTtsAudio)) return;
+    }
+
+    var vPrefs = state.snapshot && state.snapshot.voiceStatus ? state.snapshot.voiceStatus : {};
+    if (vPrefs.readyForGeminiLive && (vPrefs.mode || 'gemini-live') === 'gemini-live') {
+      try {
+        var ttsRes = await apiPost('/api/voice/tts', { text: clean, voiceName: vPrefs.voiceName || 'Zephyr' });
+        if (ttsRes && ttsRes.ok && ttsRes.ttsAudio && playPcm16Base64(ttsRes.ttsAudio)) {
+          return;
+        }
+      } catch (e) {}
+    }
 
     if (typeof window.speechSynthesis === 'undefined' || typeof window.SpeechSynthesisUtterance === 'undefined') {
       startLipSyncPulse();
@@ -458,7 +544,6 @@
     try {
       window.speechSynthesis.cancel();
       var utter = new window.SpeechSynthesisUtterance(clean);
-      var vPrefs = state.snapshot && state.snapshot.voiceStatus ? state.snapshot.voiceStatus : {};
       utter.rate = Number(vPrefs.voiceRate) || 1.0;
       utter.pitch = Number(vPrefs.voicePitch) || 1.05;
       utter.onstart = function () { startLipSyncPulse(); };
@@ -639,7 +724,7 @@
       state.thinking = false;
       if (res && res.snapshot) state.snapshot = res.snapshot;
       var reply = (res && res.reply) || (res && res.error) || 'Done.';
-      speakText(reply);
+      speakText(reply, res && res.ttsAudio);
       renderHeaderAndPerch();
       renderActiveTab();
     } catch (err) {
@@ -668,7 +753,7 @@
       state.thinking = false;
       if (res && res.snapshot) state.snapshot = res.snapshot;
       var reply = (res && res.reply) || (res && res.error) || 'Done.';
-      speakText(reply);
+      speakText(reply, res && res.ttsAudio);
       renderHeaderAndPerch();
       renderActiveTab();
     } catch (err) {
@@ -1184,6 +1269,26 @@
     voiceCard.appendChild(mLbl);
     voiceCard.appendChild(mSel);
 
+    var vNameLbl = el('label', 'coord-field-lbl', 'Gemini Voice Character (Zephyr matches Fola default)');
+    var vNameSel = el('select', 'coord-select');
+    [
+      ['Zephyr', 'Zephyr (Fola — Clear & Friendly · Default)'],
+      ['Aoede', 'Aoede (Lora — Warm & Clear)'],
+      ['Leda', 'Leda (Cleo — Warm & Engaging)'],
+      ['Puck', 'Puck (Gero — Bright & Upbeat)'],
+      ['Kore', 'Kore (Tari — Confident & Crisp)'],
+      ['Fenrir', 'Fenrir (Finn — Approachable)'],
+      ['Orus', 'Orus (Arlo — Steady & Clear)'],
+      ['Charon', 'Charon (Neno — Deep & Velvety)']
+    ].forEach(function (pair) {
+      var vo = el('option', '', pair[1]);
+      vo.value = pair[0];
+      vNameSel.appendChild(vo);
+    });
+    vNameSel.value = vs.voiceName || 'Zephyr';
+    voiceCard.appendChild(vNameLbl);
+    voiceCard.appendChild(vNameSel);
+
     var keyLbl = el('label', 'coord-field-lbl', 'Optional GEMINI_API_KEY (leave blank to auto-use ADC or env)');
     var keyIn = el('input', 'coord-input coord-input-sm');
     keyIn.type = 'password';
@@ -1215,6 +1320,7 @@
       ev.preventDefault();
       var payload = {
         mode: mSel.value,
+        voiceName: vNameSel.value,
         useGcloudAdc: adcChk.checked,
       };
       if (keyIn.value.trim()) payload.apiKey = keyIn.value.trim();

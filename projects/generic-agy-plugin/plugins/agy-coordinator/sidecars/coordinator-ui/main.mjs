@@ -27,6 +27,7 @@ import {
   saveIdentity,
   saveVoicePrefs,
   spawnWorker,
+  synthesizeGeminiTtsAudio,
   updateWorkerMeta,
 } from '../../scripts/coord_core.mjs';
 
@@ -255,5 +256,43 @@ app.api('/api/voice/live-turn', async (data) => {
     return safeErr(err);
   }
 }, 'POST');
+
+app.api('/api/voice/tts', async (data) => {
+  try {
+    const ttsAudio = await synthesizeGeminiTtsAudio({
+      text: data?.text || '',
+      voiceName: data?.voiceName || '',
+    });
+    return { ok: Boolean(ttsAudio), ttsAudio };
+  } catch (err) {
+    return safeErr(err);
+  }
+}, 'POST');
+
+// Auto-reload sidecar when plugin files are updated on disk (`restart_policy: "always"` respawns cleanly)
+const WATCHED_FILES = [
+  fileURLToPath(import.meta.url),
+  path.join(__dirname, 'app.js'),
+  path.join(__dirname, '..', '..', 'scripts', 'coord_core.mjs'),
+];
+const BOOT_MTIMES = new Map(
+  WATCHED_FILES.map((fp) => {
+    try {
+      return [fp, fs.statSync(fp).mtimeMs];
+    } catch {
+      return [fp, 0];
+    }
+  })
+);
+setInterval(() => {
+  for (const [fp, bootMtime] of BOOT_MTIMES.entries()) {
+    try {
+      const cur = fs.statSync(fp).mtimeMs;
+      if (bootMtime > 0 && cur !== bootMtime) {
+        process.exit(0);
+      }
+    } catch {}
+  }
+}, 2500).unref();
 
 app.run();
