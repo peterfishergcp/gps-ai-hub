@@ -1,12 +1,12 @@
 {
   "name": "agy-connectors",
-  "displayName": "Chatski & Gemini Enterprise Connectors",
-  "version": "1.7.4",
-  "description": "Includes the Chatski Google Chat left-sidebar panel (powered out-of-the-box by your Gemini Enterprise Google Chat / Teams Connector or optional Direct Chat REST API) plus the zero-install Gemini Enterprise (GE) federated connector bridge for Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and BigQuery.",
+  "displayName": "Gemini Enterprise Federated Connectors",
+  "version": "1.8.0",
+  "description": "Zero-install Gemini Enterprise (GE) federated connector bridge for Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, GitHub, and cost-capped BigQuery.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "Run /chatski to catch up on unread Google Chat spaces and direct messages via my Gemini Enterprise Chat Connector",
     "Run /connect-ge to link my Public Sector Gemini Enterprise instance and test my federated connectors",
-    "Search my federated SharePoint, OneDrive, and Outlook via Gemini Enterprise for recent program updates"
+    "Search my federated SharePoint, OneDrive, and Outlook via Gemini Enterprise for recent program updates",
+    "Run /connect-github-bigquery to configure read-only BigQuery analytics with a 1 GB scan cap"
   ]
 }

@@ -33,10 +33,15 @@ const GENERIC_CATEGORIES = {
     categoryLabel: 'Onboarding, Token Telemetry & Triage',
     chipLabel: 'Onboarding',
   },
+  'agy-coordinator': {
+    order: 15,
+    categoryLabel: 'Clawy — Multi-Agent Voice & Sprint Coordinator',
+    chipLabel: 'Clawy Coordinator',
+  },
   'agy-connectors': {
     order: 20,
-    categoryLabel: 'Chatski & Gemini Enterprise Connectors',
-    chipLabel: 'Chatski & Connectors',
+    categoryLabel: 'Gemini Enterprise Federated Connectors',
+    chipLabel: 'GE Connectors',
   },
   'agy-design-studio': {
     order: 30,
@@ -221,13 +226,13 @@ export const CURATED_SKILL_SEEDS = {
       '/wv-update Check version-manifest.json and incrementally sync any updated skills or sidecars while preserving my saved settings.',
   },
 
-  // 2. Federated Connectors
-  chatski: {
-    title: 'Chatski — Google Chat & GE Connector Companion',
-    subtitle: 'Summarizes unread Spaces & DMs via GE Chat Connector and stages replies into Chatski',
-    badge: 'Left Panel + GE',
+  // 2. Clawy Coordinator & Federated Connectors
+  'agy-coordinator': {
+    title: 'Clawy — Multi-Agent Voice & Sprint Coordinator',
+    subtitle: '3D mascot perch, Gemini Live voice, Group -> Goal -> Task sprints & worker relay',
+    badge: 'Left Panel + Voice',
     seedPrompt:
-      '/chatski Check my recent Google Chat Spaces and Direct Messages via my Gemini Enterprise Chat Connector, summarize anything needing my attention, and stage [Draft-Only] replies into Chatski.',
+      '/agy-coordinator Summarize my active worker conversations, current Group -> Goal -> Task sprints, and open blockers.',
   },
   'connect-ge': {
     title: 'Gemini Enterprise (GE) Instance Wizard',

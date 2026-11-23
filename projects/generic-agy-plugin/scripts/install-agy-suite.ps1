@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.7.4).
+  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.8.0).
 .DESCRIPTION
   Stages strictly inside $HOME\.gemini\config\.install_stage_<guid> (zero %TEMP% writes, zero
   'agy plugin install' prompts, zero standalone Node/Python/Git required). Installs all 9 AGY plugins,
@@ -26,7 +26,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/agy-coordinator-prototype/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $UserHome = [Environment]::GetFolderPath("UserProfile")

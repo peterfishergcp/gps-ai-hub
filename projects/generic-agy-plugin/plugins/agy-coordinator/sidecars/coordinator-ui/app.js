@@ -470,16 +470,25 @@
       stopTtsAudioPlayback();
       if (typeof window.speechSynthesis !== 'undefined') window.speechSynthesis.cancel();
       var bin = window.atob(ttsAudio.audioBase64);
-      var sampleCount = Math.floor(bin.length / 2);
+      var pcmOffset = 0;
+      if (bin.length > 44 && bin.slice(0, 4) === 'RIFF' && bin.slice(8, 12) === 'WAVE') {
+        pcmOffset = 44;
+      }
+      var sampleCount = Math.floor((bin.length - pcmOffset) / 2);
       if (sampleCount < 10) return false;
       var rate = Number(ttsAudio.sampleRate) || 24000;
-      var ctx = new AudioCtor({ sampleRate: rate });
+      // Run AudioContext at hardware native rate (e.g., 48kHz in Electron) and specify 24kHz on createBuffer
+      var ctx = new AudioCtor();
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+        ctx.resume().catch(function () {});
+      }
       ttsPlaybackCtx = ctx;
       var audioBuf = ctx.createBuffer(1, sampleCount, rate);
       var ch = audioBuf.getChannelData(0);
       for (var i = 0; i < sampleCount; i += 1) {
-        var lo = bin.charCodeAt(i * 2);
-        var hi = bin.charCodeAt(i * 2 + 1);
+        var idx = pcmOffset + i * 2;
+        var lo = bin.charCodeAt(idx);
+        var hi = bin.charCodeAt(idx + 1);
         var val = (hi << 8) | lo;
         if (val >= 0x8000) val -= 0x10000;
         ch[i] = val / 32768;
@@ -516,7 +525,7 @@
     }
   }
 
-  async function speakText(text, preloadedTtsAudio) {
+  async function speakText(text, preloadedTtsAudio, voiceOverride) {
     var clean = String(text || '').trim();
     if (clean) setPerchBubble(clean, true);
     if (!clean || !state.ttsEnabled) return;
@@ -526,9 +535,12 @@
     }
 
     var vPrefs = state.snapshot && state.snapshot.voiceStatus ? state.snapshot.voiceStatus : {};
-    if (vPrefs.readyForGeminiLive && (vPrefs.mode || 'gemini-live') === 'gemini-live') {
+    var modeSel = document.getElementById('voiceModeSelect');
+    var activeMode = modeSel ? modeSel.value : (vPrefs.mode || 'gemini-live');
+    if (vPrefs.readyForGeminiLive && activeMode === 'gemini-live') {
       try {
-        var ttsRes = await apiPost('/api/voice/tts', { text: clean, voiceName: vPrefs.voiceName || 'Zephyr' });
+        var chosenVoice = voiceOverride || vPrefs.voiceName || 'Zephyr';
+        var ttsRes = await apiPost('/api/voice/tts', { text: clean, voiceName: chosenVoice });
         if (ttsRes && ttsRes.ok && ttsRes.ttsAudio && playPcm16Base64(ttsRes.ttsAudio)) {
           return;
         }
@@ -1259,7 +1271,7 @@
 
     var mLbl = el('label', 'coord-field-lbl', 'Default Voice Engine');
     var mSel = el('select', 'coord-select');
-    var o1 = el('option', '', 'Gemini Live (MediaRecorder Audio + Auto-ADC)');
+    var o1 = el('option', '', 'Gemini Live');
     o1.value = 'gemini-live';
     var o2 = el('option', '', 'Browser Instant Voice (Local Fallback)');
     o2.value = 'browser';
@@ -1269,17 +1281,19 @@
     voiceCard.appendChild(mLbl);
     voiceCard.appendChild(mSel);
 
-    var vNameLbl = el('label', 'coord-field-lbl', 'Gemini Voice Character (Zephyr matches Fola default)');
+    var vNameLbl = el('label', 'coord-field-lbl', 'Gemini 3.1 Neural Voice Character');
     var vNameSel = el('select', 'coord-select');
     [
-      ['Zephyr', 'Zephyr (Fola — Clear & Friendly · Default)'],
-      ['Aoede', 'Aoede (Lora — Warm & Clear)'],
-      ['Leda', 'Leda (Cleo — Warm & Engaging)'],
-      ['Puck', 'Puck (Gero — Bright & Upbeat)'],
-      ['Kore', 'Kore (Tari — Confident & Crisp)'],
-      ['Fenrir', 'Fenrir (Finn — Approachable)'],
-      ['Orus', 'Orus (Arlo — Steady & Clear)'],
-      ['Charon', 'Charon (Neno — Deep & Velvety)']
+      ['Zephyr', 'Zephyr — Clear & Friendly (Default)'],
+      ['Aoede', 'Aoede — Warm & Natural'],
+      ['Callirrhoe', 'Callirrhoe — Easy-Going & Smooth'],
+      ['Autonoe', 'Autonoe — Bright & Warm'],
+      ['Leda', 'Leda — Warm & Engaging'],
+      ['Puck', 'Puck — Bright & Upbeat'],
+      ['Kore', 'Kore — Confident & Crisp'],
+      ['Fenrir', 'Fenrir — Approachable'],
+      ['Orus', 'Orus — Steady & Clear'],
+      ['Charon', 'Charon — Deep & Velvety']
     ].forEach(function (pair) {
       var vo = el('option', '', pair[1]);
       vo.value = pair[0];
@@ -1323,7 +1337,11 @@
     var testVoiceBtn = el('button', 'btn btn-secondary btn-sm', 'Test Mascot Voice & Lip-Sync');
     testVoiceBtn.type = 'button';
     testVoiceBtn.addEventListener('click', function () {
-      speakText('Hello! ' + (id.name || 'Clawy') + ' is online and ready to coordinate your workers.');
+      speakText(
+        'Hello! ' + (id.name || 'Clawy') + ' is online and ready to coordinate your workers.',
+        null,
+        vNameSel.value || 'Zephyr'
+      );
     });
     btnRow.appendChild(saveVoiceBtn);
     btnRow.appendChild(testVoiceBtn);

@@ -1,16 +1,8 @@
 {
-  "suiteVersion": "1.7.4",
-  "updatedAt": "2026-11-23T01:12:00Z",
-  "skillCount": 41,
+  "suiteVersion": "1.8.0",
+  "updatedAt": "2026-11-23T04:15:00Z",
+  "skillCount": 40,
   "skillManifest": {
-    "chatski": {
-      "plugin": "agy-connectors",
-      "skill": "chatski",
-      "treeSha256": "80787b9b8c00a049",
-      "files": {
-        "SKILL.md": "9ee256092483332e759f7332b23bb011b54d3131780bab5e44719e23d62d8ccb"
-      }
-    },
     "connect-ge": {
       "plugin": "agy-connectors",
       "skill": "connect-ge",
@@ -126,12 +118,12 @@
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "52b298739efb63d3",
+      "treeSha256": "ed1865da1c6a7b9d",
       "files": {
         "SKILL.md": "9fd7546dfc121913fd8d35d3eace46ed8bca17828b5bbc9f5fc80a5f65ada6ab",
-        "scripts/incremental-sync.mjs": "6d8c9c04c1f33d1eb4965d76e7425cd3e8b96b9ccc3e12d89b7b20fc55cd653c",
-        "scripts/install-agy-suite.ps1": "fb205bd4204c2b9b095fe53f060b6632c034fd787fe27dffb8cc3cce62bb9277",
-        "scripts/install-agy-suite.sh": "f311123624a624cc6c9d64857b0794f8ae5be7ac71404b5f1867db2b536692fc"
+        "scripts/incremental-sync.mjs": "3e2ddd94d9371085ab515c1e2fa51f91647cea0e5216a51b99f29a6d441e682e",
+        "scripts/install-agy-suite.ps1": "1ebce7bb1ee05bc23518714bfae7fa326c80cd6042bb29eda05036e8cd3bef55",
+        "scripts/install-agy-suite.sh": "986cb8e58a5e02aae216dbb4dbf77aa6c340ed088b5f5fd44534baa155643847"
       }
     },
     "daily-brief": {
@@ -370,27 +362,12 @@
     }
   },
   "sidecarManifest": {
-    "chatski-ui": {
-      "plugin": "agy-connectors",
-      "sidecar": "chatski-ui",
-      "files": {
-        "app.js": "49d196c5fca06ca91c4c1be5e52fb137cbc59acc9c90e847aaa34ee81ef0273d",
-        "index.html": "c1ea44869291683db83f50d0a8614168a7823d66040a04c0914ae8e0f4f38d79",
-        "main.mjs": "f26ffb4ec7deaaa976332dad6d32371386177fe7fd3de1db330f87ee58e6bafe",
-        "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
-        "sidecar.json": "3157da7a82b28cd54def6db3ad13bdb2ec28141d50fd070e1c69a0c7269bd58d",
-        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "68d4574e8f624a7845438e4844dcb371db2e8c7674b0130d17ecb8c568854f89",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
-      }
-    },
     "coordinator-ui": {
       "plugin": "agy-coordinator",
       "sidecar": "coordinator-ui",
       "files": {
-        "app.js": "f5e6e213794ae6620c6cc40ab1d708884f761e5e76db8ee83a4431ba18e56684",
-        "index.html": "3159cb5d513e4720c0d220cabb8cc8cb9f241120e610275ee1550768f2aa0e1c",
+        "app.js": "cdd2bf9ea7cb73971cdb55b791a9b22f4075895b1123046edd850e972ee9c3fe",
+        "index.html": "3d9b7d2efd7ce7bb928585a3bcb2f29ee15ba5243f9eda8d0e2b68813d163d9c",
         "main.mjs": "00e38c94794337f71b4d37025f3d9761a6bb5e7be1d272f24cb84d6640f38805",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
         "sidecar.json": "937269eed9ade4cae645e853a39223dd509031df02b2e164dde03c4c333b85b5",
@@ -419,11 +396,11 @@
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "253cfcdcca83beee2f204af8311b7308da8bdc9927daa121d6fa4f51920593ae",
+        "app.js": "830e798b526ec2a2b31318f323044db616688877a8ab7869bef29f8112794bbe",
         "index.html": "6636342d3701c5f4c1dd6c6a992f0cf738bad42cf9d8bcd0a8b10986a8e6ff51",
         "main.mjs": "4eb7b4d9e334d20721923a6b326dcb5232a27d4153a450180bee01d0e337fbef",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "36a9760b76f010a88939467900035c4344e91b919bf3a6672615b64965792fff",
+        "seed_prompts_catalog.mjs": "37c66d7341f08f37a582be31d2b68f9e69b28ab06701890e9abb134a9c0ffc0e",
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
@@ -442,12 +419,12 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "antigravity_updates.mjs": "0e84c64459cd34feae32ed3817a2c9a6aeb0d7423c2cd5eb8496be09ee9b6e54",
+        "antigravity_updates.mjs": "21439965b13fab7faff68c2304fbd2cd5142d308768154c15335b84488d33be7",
         "app.js": "311e770a45ad8327cf99098aa4ad1fef44ceb2247add12155097f779b20eef0e",
         "index.html": "2c9d0106df0f24da5817fb6050e467b0792a34c802baea6adf94a5a061aa46b0",
         "main.mjs": "e0071d12d46c972d1b995b11ff244a1b475d8893bd0395eeb14958c91c25facc",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "36a9760b76f010a88939467900035c4344e91b919bf3a6672615b64965792fff",
+        "seed_prompts_catalog.mjs": "37c66d7341f08f37a582be31d2b68f9e69b28ab06701890e9abb134a9c0ffc0e",
         "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
@@ -473,7 +450,7 @@
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "79788daed301333d03400439b1812a9f4dc314ea6449920e66cc84ef77284cf1"
+      "sha256": "b80a218d18008dc776ec368fc046840d214f730781b4d575aa2d5989bef42616"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",

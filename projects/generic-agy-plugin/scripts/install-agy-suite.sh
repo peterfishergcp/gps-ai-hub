@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.4).
+# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.8.0).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ (zero /tmp or /private/tmp writes,
 # zero 'agy plugin install' /tmp/lsrpc.sh prompts, and zero files outside ~/.gemini/config/).
 
 set -euo pipefail
 
-DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/agy-coordinator-prototype/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
 ZIP_URL=""
 GIT_REPO_URL=""
 GE_INSTANCE=""
@@ -226,7 +226,6 @@ echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins to ${PLUGINS_DEST}: 
 if command -v pkill >/dev/null 2>&1; then
   pkill -f "plugins/agy-coordinator/sidecars/coordinator-ui/main.mjs" 2>/dev/null || true
   pkill -f "plugins/agy-second-brain/sidecars/twin-vault-ui/main.mjs" 2>/dev/null || true
-  pkill -f "plugins/agy-connectors/sidecars/chatski-ui/main.mjs" 2>/dev/null || true
   pkill -f "plugins/agy-onboarding/sidecars/agy-skill-manager/main.mjs" 2>/dev/null || true
 fi
 

@@ -4,7 +4,7 @@
  *
  * Solves the "full re-install" problem:
  * - Runs on Antigravity's built-in Node runtime over HTTPS 443 (ZERO `git`, `python`, or `unzip` required).
- * - Fetches `version-manifest.json` from `https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/agy-coordinator-prototype/projects/generic-agy-plugin/version-manifest.json`.
+ * - Fetches `version-manifest.json` from `https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/version-manifest.json`.
  * - Compares SHA-256 hashes of every local skill file against `skillManifest`.
  * - Downloads ONLY new or modified files (or a single `--skill <id>` target), preserving unchanged plugins,
  *   user skill toggle states (`SKILL.md.disabled` / `skill-toggles.json`), and `ge-instance.json`.
@@ -17,7 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const DEFAULT_RAW_BASE = 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/agy-coordinator-prototype/projects/generic-agy-plugin';
+const DEFAULT_RAW_BASE = 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin';
 const SAFE_SEGMENT_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 function parseArgs(argv) {

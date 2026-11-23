@@ -1,7 +1,8 @@
-# Google Antigravity — Public Sector Skill Suite (`v1.7.3`) Guided Test Prompts
+# Google Antigravity — Public Sector Skill Suite (`v1.8.0`) Guided Test Prompts
 
 > [!TIP]
-> **New in `v1.7.3` — 1-Click `Skills` Hub (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
+> **New in `v1.8.0` — `Clawy` 3D Voice Coordinator, 1-Click `Skills` Hub (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
+> - **`Clawy` Multi-Agent & Gemini Live Voice Hub:** Open **`Extensions → AGY Coordinator`** (`Clawy`) in the left sidebar to coordinate active worker conversations, manage 2-level `Group -> Goal -> Task` sprints, and talk hands-free with Gemini Live voice.
 > - **Zero Copy-Paste Needed:** Open **`Extensions → Skills`** (Sparkles icon) in the left sidebar to browse all `40` suite skills **plus** your auto-discovered **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`) and click **`Run →`** on any card—or paste the full deep-test scripts below!
 > - **`TokenEconomics` & `/compact` Alert:** Open **`Extensions → My Antigravity → TokenEconomics`** to track your monthly pooled quota cap (`Standard $30`, `Plus $45`, `Enterprise $60`, or Custom Cap) and Orchestrator/Workflows playbooks.
 > - **Updates & Video Walkthroughs:** Open **`Extensions → My Antigravity → Overview`** to toggle **`⚡ Orchestrator`**, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates.
@@ -33,7 +34,7 @@ Open the [Google Antigravity Organization Setup Guide](../setup-guide/index.html
    ```
 4. Click inside the **chat box at the bottom of the Antigravity window**, paste (`Ctrl+V` on Windows or `⌘+V` on Mac), and press **Enter**.
 5. Leave the default permission setting on: **you may be asked to click Accept a few times during install—that's normal.** *(If your IT team specifically instructed you to switch **Request Review** at the bottom-right of the chat box to **Turbo** for setup, click **Turbo ▾** afterward and switch it back to **Default** once installation finishes.)*
-6. **You'll know it worked when** you see a chat message confirming installation is complete (or **My Antigravity**, **Skills**, and **Preview** appear under **Extensions** on the left sidebar). This takes about **1–2 minutes**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
+6. **You'll know it worked when** you see a chat message confirming installation is complete (or **My Antigravity**, **AGY Coordinator (Clawy)**, **Skills**, and **Preview** appear under **Extensions** on the left sidebar). This takes under **1 minute**. *(If your agency network blocks GitHub, see the offline `.zip` installer in [`IT_AND_TECHNICAL_APPENDIX.md`](./IT_AND_TECHNICAL_APPENDIX.md).)*
 
 ### Step 3 — Pick the Tests That Match Your Job
 
