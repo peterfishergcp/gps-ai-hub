@@ -170,11 +170,9 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
     var ov = getOverride();
     if (ov === 'dark') return true;
     if (ov === 'light') return false;
+    // Only inspect inline CSS variables pushed by host preload.js (never stylesheet fallbacks)
     var rootStyle = document.documentElement.style;
     var inlineBg = rootStyle.getPropertyValue('--background').trim();
-    if (!inlineBg && window.getComputedStyle) {
-      inlineBg = window.getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
-    }
     var lum = parseColorLuminance(inlineBg);
     if (lum !== null) return lum < 0.45;
     var inlineFg = rootStyle.getPropertyValue('--foreground').trim();
@@ -231,6 +229,7 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
     }
   }
 
+  applyThemeAttr();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', wireToggleBtn);
   } else {

@@ -616,15 +616,56 @@ function buildSeedConversations() {
   ];
 }
 
+function isPoisonedDigestConversation(conv) {
+  if (!conv || typeof conv !== 'object') return true;
+  if (conv.id !== 'ge-chat-digest') return false;
+  const msgs = Array.isArray(conv.messages) ? conv.messages : [];
+  if (msgs.length === 0) return true;
+  return msgs.every((m) => isEmptyJsonOrNoResultText(m && m.text));
+}
+
+function isEmptyJsonOrNoResultText(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return true;
+  const compact = s.replace(/\s+/g, '');
+  if (
+    compact === '{}' ||
+    compact === '[]' ||
+    compact === '{"conversations":[]}' ||
+    compact === '{"messages":[]}' ||
+    compact === '```json{"conversations":[]}```' ||
+    compact === '```{"conversations":[]}```'
+  ) {
+    return true;
+  }
+  const parsed = parseJsonBlockFromAnswer(s);
+  if (parsed && typeof parsed === 'object') {
+    if (Array.isArray(parsed.conversations) && parsed.conversations.length === 0) return true;
+    if (Array.isArray(parsed.messages) && parsed.messages.length === 0) return true;
+  }
+  if (
+    s.length < 220 &&
+    /\b(no recent (?:google )?chat|couldn't find any (?:recent )?(?:chat|messages)|no messages found|i don't have access to your google chat|unable to retrieve)\b/i.test(
+      s
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function loadPersistedChatskiState() {
   const dir = getChatskiStateDir();
   const saved = readJsonSafe(dir, 'chatski-state.json');
   if (saved && typeof saved === 'object') {
+    const cleanedConvs = Array.isArray(saved.conversations)
+      ? saved.conversations.filter((c) => !isPoisonedDigestConversation(c))
+      : [];
     return {
       modePreference: saved.modePreference || 'auto', // 'auto' | 'ge' | 'direct' | 'demo'
-      lastSyncedIso: saved.lastSyncedIso || '',
+      lastSyncedIso: cleanedConvs.length === 0 && Array.isArray(saved.conversations) && saved.conversations.length > 0 ? '' : saved.lastSyncedIso || '',
       geChatStores: Array.isArray(saved.geChatStores) ? saved.geChatStores : [],
-      conversations: Array.isArray(saved.conversations) ? saved.conversations : [],
+      conversations: cleanedConvs,
       drafts: Array.isArray(saved.drafts) ? saved.drafts : [],
     };
   }
@@ -695,29 +736,42 @@ function parseMessageLinesFromProse(rawText) {
   const lines = String(rawText || '').split(/\r?\n/);
   const parsed = [];
   const patTimeFirst =
-    /^(?:[-*•]\s+|\d+[.)]\s+)?\[?(\d{4}-\d{2}-\d{2}[T\s][^\-\]]{2,26}|\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|UTC)?)\]?\s*[-–—]\s*\*{0,2}([^:*\n]{1,64})\*{0,2}\s*:\s*(.+)$/i;
-  const patSenderFirst = /^(?:[-*•]\s+|\d+[.)]\s+)?\*{0,2}([^(*:\n]{1,64})\*{0,2}\s*\(([^)]{2,32})\)\s*:\s*(.+)$/;
+    /^(?:[-*•]\s+|\d+[.)]\s+)?\[?(\d{4}-\d{2}-\d{2}[T\s][^\-\]]{2,28}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,\s*\d{4})?(?:[,\s]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|UTC)?)?|\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|UTC)?)\]?\s*(?:[-–—]|•|\|)?\s*\*{0,2}([^:*\n]{1,64})\*{0,2}\s*:\s*(.+)$/i;
+  const patSenderFirst =
+    /^(?:[-*•]\s+|\d+[.)]\s+)?\*{0,2}([^(*:\n]{1,64})\*{0,2}\s*[\(\[]([^\)\]]{2,36})[\)\]]\s*:\s*(.+)$/;
+  const patBulletSenderPlain =
+    /^(?:[-*•]\s+)\*{1,2}([^*:\n]{2,52})\*{1,2}\s*:\s*(.+)$/;
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const m1 = trimmed.match(patTimeFirst);
-    if (m1) {
+    if (m1 && !/^https?$/i.test(m1[2].trim())) {
       parsed.push({
         id: `prose-m-${parsed.length + 1}`,
         timeLabel: m1[1].trim(),
-        sender: m1[2].trim(),
+        sender: m1[2].replace(/\*+/g, '').trim(),
         text: stripOuterQuotes(m1[3]),
       });
       continue;
     }
     const m2 = trimmed.match(patSenderFirst);
-    if (m2) {
+    if (m2 && !/\bspaces\//i.test(m2[2])) {
       parsed.push({
         id: `prose-m-${parsed.length + 1}`,
-        sender: m2[1].trim(),
+        sender: m2[1].replace(/\*+/g, '').trim(),
         timeLabel: m2[2].trim(),
         text: stripOuterQuotes(m2[3]),
+      });
+      continue;
+    }
+    const m3 = trimmed.match(patBulletSenderPlain);
+    if (m3 && !/^(?:space|dm|direct message|link|url|id|summary|recent messages)$/i.test(m3[1].trim())) {
+      parsed.push({
+        id: `prose-m-${parsed.length + 1}`,
+        sender: m3[1].trim(),
+        timeLabel: 'Recent',
+        text: stripOuterQuotes(m3[2]),
       });
     }
   }
@@ -760,21 +814,137 @@ function extractChatSpaceRef(str) {
   return null;
 }
 
+function cleanSectionHeaderTitle(headerLine, ref, kind) {
+  let t = String(headerLine || '')
+    .replace(/^#+\s*/, '')
+    .replace(/^(?:[-*•]\s+|\d+[.)]\s+)/, '')
+    .replace(/\*+/g, '')
+    .replace(/`/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\(\s*spaces\/[A-Za-z0-9_-]+\s*[-–—]?\s*\)/gi, '')
+    .replace(/\bspaces\/[A-Za-z0-9_-]+\b/gi, '')
+    .replace(/\(\s*[-–—]?\s*\)/g, '')
+    .replace(/^[:\-–—\s]+|[:\-–—\s]+$/g, '')
+    .trim();
+  if (!t || /^(?:direct message|dm|space|chat space|google chat)$/i.test(t)) {
+    return kind === 'dm'
+      ? ref
+        ? `Direct Message (${ref.spaceName})`
+        : 'Direct Message'
+      : ref
+        ? `Space (${ref.spaceName})`
+        : 'Chat Space';
+  }
+  return t.slice(0, 76);
+}
+
+function parseMultiSectionProse(answerText) {
+  const raw = String(answerText || '').trim();
+  if (!raw || isEmptyJsonOrNoResultText(raw)) return [];
+  const lines = raw.split(/\r?\n/);
+  const sections = [];
+  let current = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const isSingleMsg = parseMessageLinesFromProse(trimmed).length > 0;
+    const ref = !isSingleMsg ? extractChatSpaceRef(trimmed) : null;
+    const isHeading =
+      !isSingleMsg &&
+      (/^#{1,4}\s+\S/.test(trimmed) ||
+        /^(?:\d+[.)]\s+)?\*\*[^*]{3,80}\*\*(?:\s*[\(\-–—:].*)?$/.test(trimmed) ||
+        Boolean(ref));
+
+    if (isHeading) {
+      const kind = ref ? ref.kind : /\bdm\b|direct message/i.test(trimmed) ? 'dm' : 'space';
+      current = {
+        ref,
+        kind,
+        headerTitle: cleanSectionHeaderTitle(trimmed, ref, kind),
+        lines: [],
+      };
+      sections.push(current);
+    } else {
+      if (!current) {
+        const fallbackRef = extractChatSpaceRef(raw);
+        const fallbackKind = fallbackRef ? fallbackRef.kind : /\bdm\b|direct message/i.test(raw) ? 'dm' : 'space';
+        current = {
+          ref: fallbackRef,
+          kind: fallbackKind,
+          headerTitle: '',
+          lines: [],
+        };
+        sections.push(current);
+      }
+      current.lines.push(trimmed);
+    }
+  }
+
+  const out = [];
+  for (let i = 0; i < sections.length; i += 1) {
+    const sec = sections[i];
+    const msgs = parseMessageLinesFromProse(sec.lines.join('\n'));
+    if (!sec.ref && msgs.length === 0) continue;
+    let title = sec.headerTitle;
+    if ((!title || /^Direct Message\b/i.test(title)) && sec.kind === 'dm' && msgs.length > 0) {
+      const senders = Array.from(new Set(msgs.map((m) => m.sender).filter(Boolean)));
+      if (senders.length > 0) {
+        title = senders.length === 1 ? `${senders[0]} (Direct Message)` : senders.slice(0, 2).join(', ');
+      }
+    }
+    out.push({
+      key: sec.ref ? sec.ref.spaceName : `prose-sec-${i}-${(title || 'chat').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      id: sec.ref ? `spaces-${sec.ref.spaceId}` : `ge-prose-${i + 1}`,
+      spaceName: sec.ref ? sec.ref.spaceName : '',
+      kind: sec.kind,
+      title: title || (sec.kind === 'dm' ? 'Direct Message' : `Chat Space ${i + 1}`),
+      webUrl: sec.ref ? sec.ref.webUrl : 'https://mail.google.com/chat/u/0/#chat/home',
+      messages: msgs,
+    });
+  }
+  return out;
+}
+
+function mergeUniqueMessages(existing = [], incoming = []) {
+  const seen = new Set();
+  const out = [];
+  for (const m of [...existing, ...incoming]) {
+    if (!m || !String(m.text || '').trim()) continue;
+    const norm = `${String(m.sender || '').toLowerCase()}|${String(m.text || '').trim().toLowerCase().slice(0, 120)}`;
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+    out.push(m);
+  }
+  return out;
+}
+
 function parseConversationsFromGroundedProseAndCitations(answerText, citations = []) {
-  const proseMsgs = parseMessageLinesFromProse(answerText);
   const groups = new Map();
 
   for (let i = 0; i < citations.length; i += 1) {
     const cit = citations[i] || {};
-    const ref = extractChatSpaceRef(`${cit.uri || ''} ${cit.title || ''} ${cit.snippet || ''}`);
+    const sd = cit.structData && typeof cit.structData === 'object' ? cit.structData : null;
+    const ref = extractChatSpaceRef(
+      `${cit.uri || ''} ${cit.title || ''} ${cit.snippet || ''} ${(sd && (sd.space || sd.space_name || sd.url)) || ''}`
+    );
     const key = ref ? ref.spaceName : cit.uri || `cit-${i}`;
     if (!groups.has(key)) {
       const kind = ref ? ref.kind : /\bdm\b|direct/i.test(cit.title || '') ? 'dm' : 'space';
+      const cleanCitTitle = String(cit.title || '').trim();
       groups.set(key, {
         id: ref ? `spaces-${ref.spaceId}` : `ge-cit-${i}`,
         spaceName: ref ? ref.spaceName : '',
         kind,
-        title: cit.title || (kind === 'dm' ? 'Direct Message' : `Chat Space ${groups.size + 1}`),
+        title:
+          cleanCitTitle && cleanCitTitle !== 'Enterprise Source'
+            ? cleanCitTitle
+            : kind === 'dm'
+              ? ref
+                ? `Direct Message (${ref.spaceName})`
+                : 'Direct Message'
+              : `Chat Space ${groups.size + 1}`,
         webUrl: cit.uri || (ref ? ref.webUrl : 'https://mail.google.com/chat/u/0/#chat/home'),
         messages: [],
       });
@@ -782,51 +952,51 @@ function parseConversationsFromGroundedProseAndCitations(answerText, citations =
     const g = groups.get(key);
     const snippetMsgs = parseMessageLinesFromProse(cit.snippet || '');
     if (snippetMsgs.length > 0) {
-      g.messages.push(...snippetMsgs);
-    } else if (cit.snippet) {
-      g.messages.push({
-        id: `cit-m-${i}`,
-        sender: g.kind === 'dm' && g.title !== 'Direct Message' ? g.title : 'Google Chat',
-        timeLabel: 'Recent',
-        text: stripOuterQuotes(cit.snippet),
-      });
+      g.messages = mergeUniqueMessages(g.messages, snippetMsgs);
+    } else if (cit.snippet && !isEmptyJsonOrNoResultText(cit.snippet)) {
+      const sdSender =
+        (sd && (sd.sender_name || sd.sender || sd.author || sd.creator || (sd.sender && sd.sender.displayName))) || '';
+      const sdTime = (sd && (sd.create_time || sd.createTime || sd.timestamp)) || 'Recent';
+      g.messages = mergeUniqueMessages(g.messages, [
+        {
+          id: `cit-m-${i}`,
+          sender:
+            typeof sdSender === 'string' && sdSender.trim()
+              ? sdSender.trim()
+              : g.kind === 'dm' && !/^Direct Message/i.test(g.title)
+                ? g.title
+                : 'Google Chat',
+          timeLabel: String(sdTime),
+          text: stripOuterQuotes(cit.snippet),
+        },
+      ]);
     }
   }
 
-  if (groups.size === 0) {
-    const proseRef = extractChatSpaceRef(answerText);
-    if (proseRef || proseMsgs.length > 0) {
-      const kind = proseRef ? proseRef.kind : /\bdm\b|direct message/i.test(answerText) ? 'dm' : 'space';
-      const defaultTitle =
-        kind === 'dm' && proseMsgs.length > 0
-          ? proseMsgs[proseMsgs.length - 1].sender || 'Direct Message'
-          : proseRef
-            ? `Chat (${proseRef.spaceName})`
-            : 'Recent Google Chat Activity';
-      groups.set(proseRef ? proseRef.spaceName : 'prose-default', {
-        id: proseRef ? `spaces-${proseRef.spaceId}` : 'ge-prose-chat',
-        spaceName: proseRef ? proseRef.spaceName : '',
-        kind,
-        title: defaultTitle,
-        webUrl: proseRef ? proseRef.webUrl : 'https://mail.google.com/chat/u/0/#chat/home',
-        messages: proseMsgs,
-      });
-    }
-  } else if (groups.size === 1 && proseMsgs.length > 0) {
-    const only = groups.values().next().value;
-    if (proseMsgs.length >= only.messages.length) {
-      only.messages = proseMsgs;
-    }
-    if (
-      only.kind === 'dm' &&
-      (only.title === 'Direct Message' || /^spaces\//i.test(only.title)) &&
-      proseMsgs[0]?.sender
-    ) {
-      only.title = proseMsgs[0].sender;
+  const proseSections = parseMultiSectionProse(answerText);
+  for (const sec of proseSections) {
+    if (groups.has(sec.key)) {
+      const g = groups.get(sec.key);
+      if (sec.messages.length >= g.messages.length) {
+        g.messages = mergeUniqueMessages(sec.messages, g.messages);
+      } else {
+        g.messages = mergeUniqueMessages(g.messages, sec.messages);
+      }
+      if ((/^Direct Message/i.test(g.title) || /^Chat Space/i.test(g.title)) && sec.title) {
+        g.title = sec.title;
+      }
+    } else if (groups.size === 1 && !sec.spaceName && sec.messages.length > 0) {
+      const only = groups.values().next().value;
+      only.messages = mergeUniqueMessages(sec.messages, only.messages);
+      if ((/^Direct Message/i.test(only.title) || /^spaces\//i.test(only.title)) && sec.title) {
+        only.title = sec.title;
+      }
+    } else {
+      groups.set(sec.key, sec);
     }
   }
 
-  return normalizeConversationList(Array.from(groups.values()));
+  return normalizeConversationList(Array.from(groups.values()).filter((g) => g.messages.length > 0 || g.spaceName));
 }
 
 async function discoverGeChatDataStores(cfg, auth) {
@@ -952,6 +1122,74 @@ function normalizeConversationList(rawConvs) {
     .filter((c) => c.title);
 }
 
+async function searchGeChatDataStores(cfg, auth, chatStores = []) {
+  if (!Array.isArray(chatStores) || chatStores.length === 0) return [];
+  const base = discoveryEngineBaseUrl(cfg.location);
+  const headers = { Authorization: `Bearer ${auth.accessToken}` };
+  if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
+
+  const parentCol = `projects/${encodeURIComponent(cfg.projectId)}/locations/${encodeURIComponent(cfg.location)}/collections/${encodeURIComponent(cfg.collectionId)}`;
+  const engineSearchUrl = `${base}/v1alpha/${parentCol}/engines/${encodeURIComponent(cfg.engineId)}/servingConfigs/default_search:search`;
+
+  try {
+    const resp = await httpsJsonRequest(engineSearchUrl, {
+      method: 'POST',
+      headers,
+      bodyObj: {
+        query: 'a OR e OR i OR o OR u OR the OR hi OR test',
+        pageSize: 20,
+        dataStoreSpecs: chatStores.map((ds) => ({ dataStore: ds.name })),
+        contentSearchSpec: {
+          snippetSpec: { returnSnippet: true },
+        },
+      },
+      timeoutMs: 18000,
+    });
+    if (resp.status !== 200 || !resp.json || !Array.isArray(resp.json.results)) return [];
+    const syntheticCitations = [];
+    for (const r of resp.json.results) {
+      const doc = (r && r.document) || {};
+      const sd = doc.structData || {};
+      const dsd = doc.derivedStructData || {};
+      const uri = String(dsd.link || dsd.uri || sd.uri || sd.url || sd.link || '').trim();
+      const title = String(dsd.title || sd.title || sd.space_display_name || sd.spaceName || doc.name || '').trim();
+      const snipArr = Array.isArray(dsd.snippets) ? dsd.snippets.map((s) => s && s.snippet).filter(Boolean) : [];
+      const textBody =
+        snipArr.join('\n') ||
+        String(sd.text || sd.message || sd.body || sd.content || dsd.content || '').trim();
+      if (uri || textBody) {
+        syntheticCitations.push({
+          title,
+          uri,
+          snippet: textBody,
+          structData: { ...dsd, ...sd },
+        });
+      }
+    }
+    return parseConversationsFromGroundedProseAndCitations('', syntheticCitations);
+  } catch {
+    return [];
+  }
+}
+
+function mergeConversationLists(primary = [], secondary = []) {
+  const byKey = new Map();
+  for (const c of [...primary, ...secondary]) {
+    if (!c || !c.title) continue;
+    const key = c.spaceResource || c.id;
+    if (!byKey.has(key)) {
+      byKey.set(key, { ...c, messages: [...(c.messages || [])] });
+    } else {
+      const ex = byKey.get(key);
+      ex.messages = mergeUniqueMessages(ex.messages, c.messages || []);
+      if ((/^Direct Message/i.test(ex.title) || /^Chat Space/i.test(ex.title)) && c.title) {
+        ex.title = c.title;
+      }
+    }
+  }
+  return Array.from(byKey.values());
+}
+
 async function syncConversationsFromGe() {
   const cfg = loadGeConfig();
   if (!cfg.configured) {
@@ -959,37 +1197,57 @@ async function syncConversationsFromGe() {
   }
   const auth = await resolveGeAccessToken(cfg);
   const { allEngineStores, chatStores } = await discoverGeChatDataStores(cfg, auth);
-  const targetStores = allEngineStores.length > 0 ? allEngineStores : chatStores;
+  // Scope specifically to Google Chat / Teams federated data stores first so non-Chat stores don't dilute retrieval!
+  const primaryStores = chatStores.length > 0 ? chatStores : allEngineStores;
 
-  const rosterPrompt = [
-    'Retrieve and list only (do NOT send, post, or modify any messages): use the connected Google Chat (or Microsoft Teams) connector to list my most recent Direct Messages and Spaces (up to 12 total) along with the 2–5 most recent messages in each.',
-    'Return ONLY valid JSON matching this exact schema (no extra commentary):',
-    '{"conversations":[{"id":"spaces/AAAA... or slug","spaceName":"spaces/AAAA...","kind":"space|dm","title":"Space or Person Name","unreadCount":0,"updatedAgo":"5m","webUrl":"https://...","messages":[{"id":"m1","sender":"Full Name","timeLabel":"2:15 PM","text":"Message text","mentionsMe":false}]}]}',
-  ].join('\n');
+  // Natural-language retrieval prompt (NO JSON schema braces in query.text so federated Google Chat search hits real messages!)
+  const naturalRosterPrompt =
+    'Search my Google Chat messages, direct messages (DMs), and Spaces using the Google Chat connector. ' +
+    'Show my most recent Google Chat conversations and messages. ' +
+    'For each conversation, include the Space or person name, the spaces/... ID and https://chat.google.com link, ' +
+    'and list the recent messages with timestamp, sender name, and exact message text.';
 
-  const assist = await callGeStreamAssist(cfg, auth, {
-    queryText: rosterPrompt,
-    dataStores: targetStores,
-  });
+  const [searchConvs, firstAssist] = await Promise.all([
+    searchGeChatDataStores(cfg, auth, primaryStores),
+    callGeStreamAssist(cfg, auth, {
+      queryText: naturalRosterPrompt,
+      dataStores: primaryStores,
+    }),
+  ]);
 
-  let convs = [];
-  const parsed = parseJsonBlockFromAnswer(assist.answerText);
-  if (parsed && Array.isArray(parsed.conversations)) {
-    convs = normalizeConversationList(parsed.conversations);
+  let assist = firstAssist;
+  let assistConvs = [];
+  const parsedJson = parseJsonBlockFromAnswer(assist.answerText);
+  if (parsedJson && Array.isArray(parsedJson.conversations) && parsedJson.conversations.length > 0) {
+    assistConvs = normalizeConversationList(parsedJson.conversations);
+  }
+  if (assistConvs.length === 0) {
+    assistConvs = parseConversationsFromGroundedProseAndCitations(assist.answerText, assist.citations || []);
   }
 
-  // Fallback: coalesce grounded Google Chat citations + timestamped prose bullets into DMs/Spaces
-  if (convs.length === 0) {
-    convs = parseConversationsFromGroundedProseAndCitations(assist.answerText, assist.citations || []);
+  // If scoping to chatStores returned 0 and engine has additional stores, retry once across allEngineStores
+  if (
+    assistConvs.length === 0 &&
+    searchConvs.length === 0 &&
+    chatStores.length > 0 &&
+    allEngineStores.length > chatStores.length
+  ) {
+    assist = await callGeStreamAssist(cfg, auth, {
+      queryText: naturalRosterPrompt,
+      dataStores: allEngineStores,
+    });
+    assistConvs = parseConversationsFromGroundedProseAndCitations(assist.answerText, assist.citations || []);
   }
 
-  // If GE answered in plain text with zero citations/structured lines, surface as an Inbox Digest space
-  if (convs.length === 0 && assist.answerText) {
+  let convs = mergeConversationLists(assistConvs, searchConvs);
+
+  // Only create a prose digest if GE returned genuine non-empty prose (NEVER `{"conversations": []}` or empty refusals!)
+  if (convs.length === 0 && assist.answerText && !isEmptyJsonOrNoResultText(assist.answerText)) {
     convs = normalizeConversationList([
       {
         id: 'ge-chat-digest',
         kind: 'space',
-        title: 'Gemini Enterprise Chat Digest',
+        title: 'Gemini Enterprise Chat Summary',
         subtitle: 'Grounded summary from your Gemini Enterprise Chat Connector',
         messages: [
           {
@@ -1005,10 +1263,14 @@ async function syncConversationsFromGe() {
 
   return {
     conversations: convs,
-    chatStoreNames: (chatStores.length > 0 ? chatStores : allEngineStores).map(
-      (d) => d.displayName || String(d.name || '').split('/').pop()
-    ),
+    chatStoreNames: primaryStores.map((d) => d.displayName || String(d.name || '').split('/').pop()),
     authPrompts: assist.authPrompts || [],
+    emptyResultNotice:
+      convs.length === 0
+        ? (assist.authPrompts && assist.authPrompts.length > 0)
+          ? 'Authorize your Google Chat connector once in the Gemini Enterprise Web App, then click ↻ Sync.'
+          : 'No recent Google Chat messages returned yet — verify the Google Chat connector is authorized in your Gemini Enterprise Web App.'
+        : '',
   };
 }
 
@@ -1193,9 +1455,9 @@ app.api('/api/sync', async () => {
       const geRes = await syncConversationsFromGe();
       if (geRes.conversations.length > 0) {
         persisted.conversations = geRes.conversations;
+        persisted.lastSyncedIso = new Date().toISOString();
       }
       persisted.geChatStores = geRes.chatStoreNames;
-      persisted.lastSyncedIso = new Date().toISOString();
       if (persisted.modePreference === 'demo') {
         persisted.modePreference = 'ge';
       }
@@ -1204,6 +1466,7 @@ app.api('/api/sync', async () => {
         ...buildEffectiveState(),
         syncSource: 'ge',
         authPrompts: geRes.authPrompts,
+        notice: geRes.emptyResultNotice || '',
       };
     }
     return {
@@ -1273,19 +1536,24 @@ app.api('/api/messages/refresh', async (data) => {
     const cfg = loadGeConfig();
     const auth = await resolveGeAccessToken(cfg);
     const { allEngineStores, chatStores } = await discoverGeChatDataStores(cfg, auth);
-    const prompt = [
-      `Retrieve and list only (do NOT send, post, or modify any messages): use the Google Chat connector to retrieve the latest 12 messages in "${target.title}"${target.spaceResource ? ` (${target.spaceResource})` : ''}.`,
-      'Return ONLY valid JSON: {"messages":[{"id":"m1","sender":"Full Name","timeLabel":"2:30 PM","text":"Message text","replyCount":0}]}',
-    ].join('\n');
+    const primaryStores = chatStores.length > 0 ? chatStores : allEngineStores;
+    const prompt =
+      `Search Google Chat for the 15 most recent messages in "${target.title}"` +
+      `${target.spaceResource ? ` (${target.spaceResource})` : ''}. ` +
+      `List each message with timestamp, sender name, and exact message text.`;
     const assist = await callGeStreamAssist(cfg, auth, {
       queryText: prompt,
-      dataStores: allEngineStores.length > 0 ? allEngineStores : chatStores,
+      dataStores: primaryStores,
     });
     const parsed = parseJsonBlockFromAnswer(assist.answerText);
-    const candidateMsgs =
-      parsed && Array.isArray(parsed.messages)
+    let candidateMsgs =
+      parsed && Array.isArray(parsed.messages) && parsed.messages.length > 0
         ? parsed.messages
         : parseMessageLinesFromProse(assist.answerText);
+    if (candidateMsgs.length === 0 && Array.isArray(assist.citations) && assist.citations.length > 0) {
+      const fromCit = parseConversationsFromGroundedProseAndCitations('', assist.citations);
+      if (fromCit.length > 0) candidateMsgs = fromCit[0].messages || [];
+    }
     if (candidateMsgs.length > 0) {
       const normalized = normalizeConversationList([{ ...target, messages: candidateMsgs }])[0];
       if (normalized) {
@@ -1417,20 +1685,31 @@ app.api('/api/send', async (data) => {
 
     // Path 2: Gemini Enterprise Google Chat Connector (StreamAssist with Actions enabled)
     if (eff.activeMode === 'ge' && eff.geConfigured) {
+      if (conversationId === 'ge-chat-digest' && !spaceResource) {
+        return {
+          ok: false,
+          readOnlyConnector: true,
+          openChatUrl: (target && target.webUrl) || 'https://mail.google.com/chat/u/0/#chat/home',
+          error:
+            'Select a specific Space or Direct Message first, or click "Copy & Open Chat" to send directly in Google Chat.',
+        };
+      }
       const cfg = loadGeConfig();
       const auth = await resolveGeAccessToken(cfg);
       const { allEngineStores, chatStores } = await discoverGeChatDataStores(cfg, auth);
+      const primaryStores = chatStores.length > 0 ? chatStores : allEngineStores;
       const prompt = geSession
         ? 'Yes, I confirm. Send the Google Chat message now.'
-        : `Use the Google Chat connector send_message tool to send the following exact message to "${spaceTitle}"${spaceResource ? ` (${spaceResource})` : ''}:\n\n${text}`;
+        : `Use the Google Chat connector send_message action to post the following exact message to "${spaceTitle}"${spaceResource ? ` (${spaceResource})` : ''}:\n\n${text}`;
 
       const assist = await callGeStreamAssist(cfg, auth, {
         queryText: prompt,
-        dataStores: allEngineStores.length > 0 ? allEngineStores : chatStores,
+        dataStores: primaryStores,
         session: geSession,
       });
 
-      const ansLower = (assist.answerText || '').toLowerCase();
+      const ansText = String(assist.answerText || '');
+      const ansLower = ansText.toLowerCase();
       const asksConfirm =
         !geSession &&
         Boolean(assist.sessionName) &&
@@ -1441,24 +1720,29 @@ app.api('/api/send', async (data) => {
           ok: true,
           pendingGeConfirmation: true,
           geSession: assist.sessionName,
-          assistantPrompt: assist.answerText,
+          assistantPrompt: ansText,
           state: buildEffectiveState(),
         };
       }
 
-      const readOnlyHint =
-        ansLower.includes('cannot send') ||
-        ansLower.includes("don't have permission to send") ||
-        ansLower.includes('read-only') ||
-        ansLower.includes('unable to send');
+      const explicitSuccess =
+        Boolean(assist.executedConnectorAction) ||
+        /\b(message (?:has been |was )?sent|successfully sent|posted your message)\b/i.test(ansText);
 
-      if (readOnlyHint) {
+      const readOnlyOrDeclined =
+        !explicitSuccess ||
+        /\[draft:/i.test(ansText) ||
+        /\b(cannot send|can't send|don't have permission|do not have permission|read-only|read only|unable to send|don't have (?:a |the )?(?:tool|ability|capability)|cannot post|only search|not supported)\b/i.test(
+          ansLower
+        );
+
+      if (readOnlyOrDeclined) {
         return {
           ok: false,
           readOnlyConnector: true,
           openChatUrl: (target && target.webUrl) || 'https://mail.google.com/chat/u/0/#chat/home',
           error:
-            'Your Gemini Enterprise Chat connector appears to be in Federated Read-Only mode (Send Action disabled by admin). Use "Copy & Open in Google Chat" or connect Direct Chat API in Settings (⚙).',
+            'Your Gemini Enterprise Google Chat connector is in Federated Read-Only mode (Search enabled; outbound Send Action not enabled). Copied your message and opening Google Chat!',
         };
       }
 
@@ -1466,7 +1750,7 @@ app.api('/api/send', async (data) => {
       return {
         ok: true,
         delivery: 'ge-chat-connector',
-        assistantReply: assist.answerText,
+        assistantReply: ansText,
         state: buildEffectiveState(),
       };
     }

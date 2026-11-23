@@ -1,4 +1,4 @@
-# State of West Virginia — Zero-Footprint Antigravity Suite (`v2.1.2`)
+# State of West Virginia — Zero-Footprint Antigravity Suite (`v2.1.3`)
 
 A fast-installing, **100% Zero-Footprint** customization suite for **State of West Virginia** cohorts onboarding onto **Google Antigravity (`AGY`)** under **Gemini Enterprise (`GE`) Subscription** licenses.
 
@@ -8,14 +8,14 @@ Built specifically for **strict State of West Virginia (`WVOT`) corporate Window
   - **Zero `/tmp` or Home-Directory Clutter:** Installer staging (`.install_stage_*`), configuration, Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`), and sidecar state live strictly inside `~/.gemini/config/`—never writing to `/tmp`, `/private/tmp`, `%TEMP%`, or `C:\Users\<user>\`, and supporting 1-command zero-residue removal (`scripts/uninstall-wv-suite.ps1` / `.sh`).
   - **Zero Open Firewall Ports & Zero Unapproved Cron Daemons:** Dashboards (`/wv-dashboard`), decks (`/slides`), and flyers (`/doc-design`) render serverlessly via `srcdoc` inside **`WV Preview`** and standalone `file://` HTML in Chrome/Edge; `wv-automations` ships **disabled (`opt-in`) by default**.
   - **Windows PowerShell 5.1 & State Proxy Hardened:** Writes BOM-free UTF-8 JSON configs, strips `\uFEFF` across all readers, and bundles local SVG icons + offline Noto Emoji PNG fallbacks so SSL-inspected state networks never stall.
-- **3 Left-Sidebar `Extensions` with Distinct Custom Icons + `TokenEconomics`, `★ My Personal Skills`, & Updates Hub (`v2.1.2`):**
+- **3 Left-Sidebar `Extensions` with Distinct Custom Icons + `TokenEconomics`, `★ My Personal Skills`, & Updates Hub (`v2.1.3`):**
   1. **`WV Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** workspace across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 5-step Quick Adoption Checklist, and **`Stay in sync with Google Antigravity`** updates & 3–4 min video walkthroughs), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
   2. **`WV Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid skill & connector hub displaying all **39 curated WV skills** (including **`WV State Skills`**) **plus** automatic discovery of all user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), `+ New Skill` wizard, `Save My Copy`, Safe Export secret scanner, and `<1s` SHA-256 `Sync Updates`.
   3. **`WV Preview`** *(**Magnifying Glass** Icon)* — Serverless visual preview of WV Command Center Dashboards, 16:9 Slide Decks, and Branded Flyers with Print-to-PDF and 1-click HTML download.
 
 ---
 
-## Visual Tour — The 3 West Virginia Extensions (`v2.1.2`)
+## Visual Tour — The 3 West Virginia Extensions (`v2.1.3`)
 
 ### 1. `WV Antigravity` *(Antigravity Rainbow "A" Icon)* — `Overview` (Updates Hub), `TokenEconomics` & `Action Items`
 

@@ -604,17 +604,62 @@ export function extractStreamAssistPayload(parsedJson, rawText) {
   const citations = [];
   const seenUris = new Set();
   const authPrompts = [];
+  const executedActions = [];
   let sessionName = '';
 
-  const recordSource = (title, uri, snippet) => {
-    const key = `${title || ''}|${uri || ''}`;
-    if (!title && !uri) return;
+  const extractSnippetText = (node) => {
+    if (!node || typeof node !== 'object') return '';
+    if (typeof node.snippet === 'string' && node.snippet.trim()) return node.snippet.trim();
+    if (typeof node.content === 'string' && node.content.trim()) return node.content.trim();
+    if (Array.isArray(node.snippetInfo)) {
+      const joined = node.snippetInfo
+        .map((s) => (s && typeof s.snippet === 'string' ? s.snippet.trim() : ''))
+        .filter(Boolean)
+        .join('\n');
+      if (joined) return joined;
+    }
+    if (Array.isArray(node.extractiveAnswers)) {
+      const joined = node.extractiveAnswers
+        .map((a) => (a && typeof a.content === 'string' ? a.content.trim() : ''))
+        .filter(Boolean)
+        .join('\n');
+      if (joined) return joined;
+    }
+    if (Array.isArray(node.extractiveSegments)) {
+      const joined = node.extractiveSegments
+        .map((s) => (s && typeof s.content === 'string' ? s.content.trim() : ''))
+        .filter(Boolean)
+        .join('\n');
+      if (joined) return joined;
+    }
+    const sd = node.structData || node.derivedStructData;
+    if (sd && typeof sd === 'object') {
+      const txt = sd.text || sd.message || sd.body || sd.content || sd.snippet || '';
+      if (typeof txt === 'string' && txt.trim()) return txt.trim();
+    }
+    return '';
+  };
+
+  const recordSource = (title, uri, snippet, structData = null) => {
+    const cleanUri = String(uri || '').trim();
+    let cleanTitle = String(title || '').trim();
+    if (!cleanTitle && cleanUri) {
+      const dmMatch = cleanUri.match(/chat\.google\.com\/dm\/([A-Za-z0-9_-]+)/i);
+      const spMatch = cleanUri.match(/(?:chat\.google\.com\/(?:room|space)|#chat\/space)\/([A-Za-z0-9_-]+)/i);
+      if (dmMatch) cleanTitle = `Direct Message (spaces/${dmMatch[1]})`;
+      else if (spMatch) cleanTitle = `Chat Space (spaces/${spMatch[1]})`;
+      else cleanTitle = 'Enterprise Source';
+    }
+    const cleanSnippet = String(snippet || '').slice(0, 800);
+    const key = `${cleanTitle}|${cleanUri}|${cleanSnippet.slice(0, 80)}`;
+    if (!cleanTitle && !cleanUri && !cleanSnippet) return;
     if (seenUris.has(key)) return;
     seenUris.add(key);
     citations.push({
-      title: String(title || 'Enterprise Source'),
-      uri: String(uri || ''),
-      snippet: String(snippet || '').slice(0, 400),
+      title: cleanTitle || 'Enterprise Source',
+      uri: cleanUri,
+      snippet: cleanSnippet,
+      ...(structData && typeof structData === 'object' ? { structData } : {}),
     });
   };
 
@@ -626,9 +671,17 @@ export function extractStreamAssistPayload(parsedJson, rawText) {
     }
     if (node.documentMetadata || node.chunkInfo) {
       const dm = node.documentMetadata || node.chunkInfo?.documentMetadata || {};
-      recordSource(dm.title || node.title, dm.uri || node.uri, node.content || node.chunkInfo?.content || '');
-    } else if (node.uri && (node.title || node.snippet)) {
-      recordSource(node.title, node.uri, node.snippet);
+      recordSource(
+        dm.title || node.title,
+        dm.uri || node.uri,
+        extractSnippetText(node) || node.chunkInfo?.content || '',
+        node.structData || dm.structData || null
+      );
+    } else if (node.uri || node.document) {
+      const snip = extractSnippetText(node);
+      if (node.uri || node.title || snip) {
+        recordSource(node.title, node.uri || '', snip, node.structData || node.derivedStructData || null);
+      }
     }
     if (node.authorizationUrl || node.oauthUri) {
       authPrompts.push(node.authorizationUrl || node.oauthUri);
@@ -641,6 +694,19 @@ export function extractStreamAssistPayload(parsedJson, rawText) {
   for (const frame of frames) {
     if (frame?.sessionInfo?.session) {
       sessionName = frame.sessionInfo.session;
+    }
+    const steps = frame?.answer?.steps || [];
+    for (const step of steps) {
+      const actions = step?.actions || [];
+      for (const act of actions) {
+        if (act && typeof act === 'object') {
+          for (const k of Object.keys(act)) {
+            if (k !== 'searchAction' && k !== 'observation') {
+              executedActions.push(k);
+            }
+          }
+        }
+      }
     }
     const replies = frame?.answer?.replies || [];
     for (const rep of replies) {
@@ -658,6 +724,8 @@ export function extractStreamAssistPayload(parsedJson, rawText) {
     answerText: textParts.join('').trim(),
     citations,
     authPrompts,
+    executedActions,
+    executedConnectorAction: executedActions.length > 0,
     sessionName,
     frameCount: frames.length,
   };

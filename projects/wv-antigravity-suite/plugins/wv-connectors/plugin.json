@@ -1,7 +1,7 @@
 {
   "name": "wv-connectors",
   "displayName": "WV Gemini Enterprise & Cloud Connectors",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "Zero-footprint West Virginia Gemini Enterprise (GE) & BigQuery connector playbooks for Entra-synced @wv.gov accounts across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, GitHub, and cost-capped BigQuery (zero local MCP subprocesses or open ports).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
