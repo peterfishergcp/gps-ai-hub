@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.1.2",
-  "updatedAt": "2026-11-22T20:00:00Z",
+  "suiteVersion": "2.1.3",
+  "updatedAt": "2026-11-23T00:30:00Z",
   "skillCount": 39,
   "skillManifest": {
     "automations": {
@@ -172,12 +172,12 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "529e1b478933a9ae",
+      "treeSha256": "d1849753a3955745",
       "files": {
         "SKILL.md": "9c7ef3e75e8a3a14734d0a5cc4f8d32ed573cc92369157a284f9f62eb7b8483c",
         "scripts/incremental-sync.mjs": "65de187e9e80eb71ae611308b749302c99ab958bcb4c9844f12714af4c8e5a8f",
-        "scripts/install-wv-suite.ps1": "8b9c979aa17dbc9895c06247c5a523c13e67cb47d4e0e40eeb9451a8e43ef21f",
-        "scripts/install-wv-suite.sh": "7faa853296d8bbad2a6f319fd96c680e453d29d6bb518c2bee438d62a14fc6cf"
+        "scripts/install-wv-suite.ps1": "f3862cc8e803813ba21abc30736fbfd494c333a175fbee90473dbc5e4c9a8278",
+        "scripts/install-wv-suite.sh": "d380f21fd7df035c28b749c50452773905a6bef59eed2c2320f56bfa7a0e3fe8"
       }
     },
     "followup-plan": {
@@ -363,10 +363,10 @@
         "main.mjs": "e043a979eba65b3f551de3e2f10d572f4b6bf698eeb58a8840f297e3c2345b5c",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "d37e183b4bc7bc9350325cc5f060ebec487c1f46b73548a9c77bb7f5bf34341b",
-        "sidecar_html_inliner.mjs": "167378560fc62dcaef9f1509ac371b40db3aeb5c459708efb44555da7e35611b",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6060c879edb5a09185534ca88c8fb1f5892087db7ed012ccfac697811a27245d",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1"
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
     },
     "wv-skill-manager": {
@@ -379,10 +379,10 @@
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "seed_prompts_catalog.mjs": "9c1d7ebcd9ee2a23b772772b8e76d157e51c6b5e75c1024870fb63ce07e5f8d4",
         "sidecar.json": "9432001f8809f2c69aab65eb0e51b20e7e20952c88bb639a294a1709e53755c6",
-        "sidecar_html_inliner.mjs": "167378560fc62dcaef9f1509ac371b40db3aeb5c459708efb44555da7e35611b",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1",
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
@@ -403,10 +403,10 @@
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "9c1d7ebcd9ee2a23b772772b8e76d157e51c6b5e75c1024870fb63ce07e5f8d4",
         "sidecar.json": "30a34ca3bca99f3bb82fbcd528640bb2f9eb6b178361c341d2293e1b194ab942",
-        "sidecar_html_inliner.mjs": "167378560fc62dcaef9f1509ac371b40db3aeb5c459708efb44555da7e35611b",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "851877b93be3ed8c9e3ea2554ae01e31a3e2aca487f05e3774e19720e16272e1",
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
         "tokeneconomics_and_updates_ui.js": "80b28003b3a71255ec90f11dbd9ae6d35634b91bdfd03cd5beeb162a936f6ddc",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",

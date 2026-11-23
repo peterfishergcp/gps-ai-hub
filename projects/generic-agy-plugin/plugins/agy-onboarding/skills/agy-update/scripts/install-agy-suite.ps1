@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.7.3).
+  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.7.4).
 .DESCRIPTION
   Stages strictly inside $HOME\.gemini\config\.install_stage_<guid> (zero %TEMP% writes, zero
   'agy plugin install' prompts, zero standalone Node/Python/Git required). Installs all 8 AGY plugins,
@@ -86,7 +86,7 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "generic-agy-plugin.zip"
-    Write-Host "Downloading Generic AGY Plugin Suite v1.7.3 (<500 KB)..." -ForegroundColor Cyan
+    Write-Host "Downloading Generic AGY Plugin Suite v1.7.4 (<500 KB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null

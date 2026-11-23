@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "1.7.3",
-  "updatedAt": "2026-11-22T20:00:00Z",
+  "suiteVersion": "1.7.4",
+  "updatedAt": "2026-11-23T00:30:00Z",
   "skillCount": 40,
   "skillManifest": {
     "chatski": {
@@ -118,12 +118,12 @@
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "8d0c0b753de3b270",
+      "treeSha256": "520f4f5ada8d07a1",
       "files": {
         "SKILL.md": "9fd7546dfc121913fd8d35d3eace46ed8bca17828b5bbc9f5fc80a5f65ada6ab",
         "scripts/incremental-sync.mjs": "3e2ddd94d9371085ab515c1e2fa51f91647cea0e5216a51b99f29a6d441e682e",
-        "scripts/install-agy-suite.ps1": "2750ee1e4467fbb90de1fce6efa408383ed326a3514feb4ff11a3a76f968a010",
-        "scripts/install-agy-suite.sh": "e45012f4a713e6e6ac142e72f258db8022fa1442c0a6039420b968a0f104b49e"
+        "scripts/install-agy-suite.ps1": "ab681155d3541d0a3a7cc7e3fdf09e910afa55a9050d77fcf3949501552ba884",
+        "scripts/install-agy-suite.sh": "60ede4b332c1d06ad2be99657e7a6705ac3b9bc917c5d672bfe0a833ee185528"
       }
     },
     "daily-brief": {
@@ -366,15 +366,15 @@
       "plugin": "agy-connectors",
       "sidecar": "chatski-ui",
       "files": {
-        "app.js": "f0d2c4b0c6f352405c4d04a63e4d13b6aead70a0c9a1a262f87807f62bb6d273",
-        "index.html": "d3e1c633088085637d86405c4327b551e2b7bbbbf685920eb9ae016e8492875c",
-        "main.mjs": "c2cf2acb547eb600e19e9c736a7dfeb8582c4e981b1181f4a698f49ba8c7c64b",
+        "app.js": "1f961972f07b123b0df231c23c5ee1793940172bc6e94610e353719b39ad180f",
+        "index.html": "c1ea44869291683db83f50d0a8614168a7823d66040a04c0914ae8e0f4f38d79",
+        "main.mjs": "a08eea5b36e2d7e97e02567b94194469b178e13dd78dfba4ba3136e559c0b934",
         "package.json": "36e6e1b4612eb3c4d586ee8421d37f28553ab161e9363aa22aaee65879657bb3",
         "sidecar.json": "3157da7a82b28cd54def6db3ad13bdb2ec28141d50fd070e1c69a0c7269bd58d",
-        "sidecar_html_inliner.mjs": "20c08536add92e91f7d6650757a2a8a6f4d2394d27811f2fba2cfd0f86bd6b5f",
-        "styles.css": "b4d9fb50968f37a7f3fcd657f32bd51424c785a14f9c25768b99265aec93141f",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
+        "styles.css": "68d4574e8f624a7845438e4844dcb371db2e8c7674b0130d17ecb8c568854f89",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "e1e2cbcb7153bb4c05f4c1214f885de705c6844a3080cfcf8060dd5e21bc9790"
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
     },
     "agy-design-preview": {
@@ -386,10 +386,10 @@
         "main.mjs": "7c2d97efd1aae83fc0774eb312407accd4d635e57dfd9430ad37933a6c212227",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "d66417655d46cd5f80d0cdff0dea19b9557ceb835d966ec9b56c079d7c4f7f49",
-        "sidecar_html_inliner.mjs": "20c08536add92e91f7d6650757a2a8a6f4d2394d27811f2fba2cfd0f86bd6b5f",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6060c879edb5a09185534ca88c8fb1f5892087db7ed012ccfac697811a27245d",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "e1e2cbcb7153bb4c05f4c1214f885de705c6844a3080cfcf8060dd5e21bc9790"
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
     },
     "agy-skill-manager": {
@@ -402,10 +402,10 @@
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "seed_prompts_catalog.mjs": "36a9760b76f010a88939467900035c4344e91b919bf3a6672615b64965792fff",
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
-        "sidecar_html_inliner.mjs": "20c08536add92e91f7d6650757a2a8a6f4d2394d27811f2fba2cfd0f86bd6b5f",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "e1e2cbcb7153bb4c05f4c1214f885de705c6844a3080cfcf8060dd5e21bc9790",
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
@@ -426,10 +426,10 @@
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "36a9760b76f010a88939467900035c4344e91b919bf3a6672615b64965792fff",
         "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
-        "sidecar_html_inliner.mjs": "20c08536add92e91f7d6650757a2a8a6f4d2394d27811f2fba2cfd0f86bd6b5f",
+        "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "e1e2cbcb7153bb4c05f4c1214f885de705c6844a3080cfcf8060dd5e21bc9790",
+        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
         "tokeneconomics_and_updates_ui.js": "80b28003b3a71255ec90f11dbd9ae6d35634b91bdfd03cd5beeb162a936f6ddc",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
@@ -445,7 +445,7 @@
     "agy-connectors/scripts/ge_instance_mcp.mjs": {
       "plugin": "agy-connectors",
       "path": "scripts/ge_instance_mcp.mjs",
-      "sha256": "82b26b869c5abf33d53c4d4a0aa835fed93bdf7d785a18f4591f07ac51691b1f"
+      "sha256": "4979c3312f50806e70032a25a87fcff3fe01ec04ff722e866637f3102df2298e"
     },
     "agy-design-studio/scripts/register_deliverable.mjs": {
       "plugin": "agy-design-studio",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.3).
+# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.4).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ (zero /tmp or /private/tmp writes,
 # zero 'agy plugin install' /tmp/lsrpc.sh prompts, and zero files outside ~/.gemini/config/).
 
@@ -118,7 +118,7 @@ if [[ -n "${ZIP_URL}" ]]; then
   ZIP_FILE="${STAGE_DIR}/generic-agy-plugin.zip"
   EXTRACT_DIR="${STAGE_DIR}/extracted"
   mkdir -p -m 700 "${EXTRACT_DIR}"
-  echo "Downloading Generic AGY Plugin Suite v1.7.3 (<500 KB)..."
+  echo "Downloading Generic AGY Plugin Suite v1.7.4 (<500 KB)..."
   curl -fsSL "${ZIP_URL}" -o "${ZIP_FILE}"
   validate_and_extract_zip "${ZIP_FILE}" "${EXTRACT_DIR}"
   if [[ -d "${EXTRACT_DIR}/plugins" ]]; then

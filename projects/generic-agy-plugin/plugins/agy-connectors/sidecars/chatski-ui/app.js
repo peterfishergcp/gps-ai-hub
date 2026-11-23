@@ -63,6 +63,18 @@
     return node;
   }
 
+  function openExternalSafe(url) {
+    const s = String(url || '').trim();
+    if (!s.startsWith('https://')) return;
+    try {
+      if (window.sidecar && window.sidecar.ui && typeof window.sidecar.ui.openExternal === 'function') {
+        window.sidecar.ui.openExternal(s);
+        return;
+      }
+    } catch {}
+    window.open(s, '_blank', 'noopener,noreferrer');
+  }
+
   function showToast(msg) {
     if (!toastEl) return;
     toastEl.textContent = msg;
@@ -318,7 +330,13 @@
     );
 
     const extLink = document.getElementById('link-open-external');
-    if (extLink) extLink.href = conv.webUrl || 'https://mail.google.com/chat/u/0/#chat/home';
+    if (extLink) {
+      extLink.href = conv.webUrl || 'https://mail.google.com/chat/u/0/#chat/home';
+      extLink.onclick = (ev) => {
+        ev.preventDefault();
+        openExternalSafe(extLink.href);
+      };
+    }
 
     // Show staged drafts for this conversation at top of viewport (or all drafts if filter === 'drafts')
     const convDrafts = ((state && state.drafts) || []).filter(
@@ -513,10 +531,11 @@
       return;
     }
     confirmBarEl.classList.remove('hidden');
+    const isGeMode = Boolean(state && state.geConfigured && state.activeMode === 'ge');
     const viaLabel =
       state && state.activeMode === 'direct'
         ? 'Direct Google Chat API'
-        : state && state.geConfigured && state.activeMode === 'ge'
+        : isGeMode
           ? 'Gemini Enterprise Chat Connector'
           : 'Sample Preview';
 
@@ -526,12 +545,16 @@
 
     confirmBarEl.appendChild(el('span', { style: { fontWeight: '600' }, text: promptLabel }));
     confirmBarEl.appendChild(
-      el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, [
+      el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } }, [
         el('button', {
           type: 'button',
           className: 'comp-btn comp-btn-ai',
           id: 'btn-confirm-send-now',
-          text: pendingSendPayload.geSession ? '✓ Confirm GE Send' : '✓ Confirm & Send',
+          text: pendingSendPayload.geSession
+            ? '✓ Confirm GE Send'
+            : isGeMode
+              ? '⚡ Send via GE / Open Chat'
+              : '✓ Confirm & Send',
           onClick: async () => {
             try {
               const res = await apiPost('/api/send', {
@@ -551,8 +574,8 @@
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                   await navigator.clipboard.writeText(pendingSendPayload.text);
                 }
-                showToast('Message copied — opening Google Chat (GE connector is read-only)');
-                if (res.openChatUrl) window.open(res.openChatUrl, '_blank', 'noopener,noreferrer');
+                showToast('Copied message & opening Google Chat (GE connector is search-only)');
+                if (res.openChatUrl) openExternalSafe(res.openChatUrl);
                 pendingSendPayload = null;
                 renderConfirmBar();
                 return;
@@ -573,13 +596,13 @@
         el('button', {
           type: 'button',
           className: 'comp-btn',
-          text: 'Copy & Open Chat ↗',
+          text: '📋 Copy & Open Chat ↗',
           onClick: async () => {
             const conv = getActiveConversation();
             if (navigator.clipboard && navigator.clipboard.writeText) {
               await navigator.clipboard.writeText(pendingSendPayload.text);
             }
-            if (conv && conv.webUrl) window.open(conv.webUrl, '_blank', 'noopener,noreferrer');
+            if (conv && conv.webUrl) openExternalSafe(conv.webUrl);
             pendingSendPayload = null;
             renderConfirmBar();
             showToast('Copied message & opened Google Chat');
@@ -628,7 +651,7 @@
 
     settingsCardEl.appendChild(el('h3', { style: { margin: '0', fontSize: '16px' }, text: 'Chatski Connection Settings' }));
     settingsCardEl.appendChild(
-      el('div', { style: { fontSize: '12.5px', color: 'var(--fg-muted)', lineHeight: '1.5' } }, [
+      el('div', { style: { fontSize: '12.5px', color: 'var(--cs-fg-muted)', lineHeight: '1.5' } }, [
         state && state.geConfigured
           ? '✓ Gemini Enterprise Engine connected: ' + state.geEngineResource
           : '• Gemini Enterprise not configured yet — paste your GE Engine resource path below or run /connect-ge in Antigravity chat.',
@@ -655,7 +678,7 @@
             try {
               const res = await apiPost('/api/direct-oauth/start', { clientId: clientIdInput.value.trim() });
               if (res.authorizeUrl) {
-                window.open(res.authorizeUrl, '_blank', 'noopener,noreferrer');
+                openExternalSafe(res.authorizeUrl);
                 showToast('Complete Google Chat OAuth in browser, then click Sync');
               }
             } catch (err) {
@@ -711,7 +734,14 @@
         selectedConvId = state.conversations[0].id;
       }
       render();
-      showToast('Synced conversations (' + (res.syncSource || 'ready') + ')');
+      if (Array.isArray(res.authPrompts) && res.authPrompts.length > 0) {
+        showToast('Click Authorize in Gemini Enterprise Web App to finish linking Google Chat');
+        openExternalSafe(res.authPrompts[0]);
+      } else if (res.notice) {
+        showToast(res.notice);
+      } else {
+        showToast('Synced conversations (' + (res.syncSource || 'ready') + ')');
+      }
     } catch (err) {
       renderModeAndBanner();
       showToast('Sync error: ' + err.message);
