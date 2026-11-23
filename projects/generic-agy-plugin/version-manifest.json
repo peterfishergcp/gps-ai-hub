@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "1.9.1",
-  "updatedAt": "2026-11-23T17:52:00Z",
+  "suiteVersion": "1.9.2",
+  "updatedAt": "2026-11-23T19:20:00Z",
   "skillCount": 40,
   "skillManifest": {
     "connect-ge": {
@@ -419,7 +419,7 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "antigravity_updates.mjs": "01dcf6fae66c90ff368598b70c6b0a26037677916ed9f6c85a1bb27482e4532a",
+        "antigravity_updates.mjs": "ebc5c13c3d7ee3633d216edd1da13d3f69cb1b087b94ced2a90e5b2f2811eb23",
         "app.js": "57beb2ad78df86a71505f378d28616f6d81291fab800aab89663aaa7b1813bb3",
         "index.html": "a74ce5ba5d8ac88a5cf1e00f51d6a56b84a4e50e1e43e4a0201cc8ecffd14f3c",
         "main.mjs": "e0071d12d46c972d1b995b11ff244a1b475d8893bd0395eeb14958c91c25facc",
