@@ -28,7 +28,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
+$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/wv-clawy-coordinator/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $UserHome = [Environment]::GetFolderPath("UserProfile")
@@ -38,10 +38,12 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
 $PluginDataDir = Join-Path $TargetConfigDir "plugin_data\wv-connectors"
 $MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\wv-antigravity\memory"
+$CoordDataDir = Join-Path $TargetConfigDir "plugin_data\wv-coordinator"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
 New-Item -ItemType Directory -Force -Path $PluginDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
+New-Item -ItemType Directory -Force -Path $CoordDataDir | Out-Null
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)

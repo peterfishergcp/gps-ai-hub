@@ -13,14 +13,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for p in wv-onboarding wv-connectors wv-design-studio wv-state-workflows wv-engineering-cloud wv-security wv-second-brain wv-automations; do
+for p in wv-onboarding wv-coordinator wv-connectors wv-design-studio wv-state-workflows wv-engineering-cloud wv-security wv-second-brain wv-automations; do
   rm -rf "${TARGET_CONFIG_DIR:?}/plugins/${p}"
 done
 
 rm -f "${TARGET_CONFIG_DIR}/rules/wv-voice-profile.md"
 
 if [[ "${PURGE_DATA}" -eq 1 ]]; then
-  for d in wv-onboarding wv-connectors wv-design-studio wv-antigravity; do
+  for d in wv-onboarding wv-coordinator wv-connectors wv-design-studio wv-antigravity; do
     rm -rf "${TARGET_CONFIG_DIR:?}/plugin_data/${d}"
   done
 fi

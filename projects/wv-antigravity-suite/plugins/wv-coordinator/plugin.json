@@ -1,0 +1,12 @@
+{
+  "name": "wv-coordinator",
+  "displayName": "WV Coordinator (Clawy)",
+  "version": "2.2.0",
+  "description": "Zero-footprint State of West Virginia Multi-Agent Coordinator & Gemini Live Voice Hub (Clawy) — animated 3D mascot perch, strict 2-level Group -> Goal -> Task sprints, live worker discovery & relay, and editable IDENTITY.md / SOUL.md inside ~/.gemini/config/plugin_data/wv-coordinator/.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Run /wv-coordinator to summarize my active worker conversations, Group -> Goal -> Task sprints, and blockers",
+    "Create a new WV sprint Goal and Tasks in WV Coordinator",
+    "Customize Clawy's IDENTITY.md and Gemini Live voice settings"
+  ]
+}

@@ -20,6 +20,7 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
 
 $WvPlugins = @(
   "wv-onboarding",
+  "wv-coordinator",
   "wv-connectors",
   "wv-design-studio",
   "wv-state-workflows",
@@ -42,7 +43,7 @@ if (Test-Path $RulePath) {
 }
 
 if ($PurgeMemoryData) {
-  foreach ($d in @("wv-onboarding", "wv-connectors", "wv-design-studio", "wv-antigravity")) {
+  foreach ($d in @("wv-onboarding", "wv-coordinator", "wv-connectors", "wv-design-studio", "wv-antigravity")) {
     $dp = Join-Path $TargetConfigDir ("plugin_data\" + $d)
     if (Test-Path $dp) {
       Remove-Item -Recurse -Force -Path $dp

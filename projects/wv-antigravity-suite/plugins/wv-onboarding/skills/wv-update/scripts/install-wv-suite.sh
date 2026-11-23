@@ -4,7 +4,7 @@
 # zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
 set -euo pipefail
 
-DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
+DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/feat/wv-clawy-coordinator/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 ZIP_URL=""
 GE_INSTANCE=""
 OAUTH_CLIENT_ID=""
@@ -29,9 +29,10 @@ done
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
 CONN_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/wv-connectors"
 MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/wv-antigravity/memory"
+COORD_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/wv-coordinator"
 
-mkdir -p -m 700 "${PLUGINS_DEST}" "${CONN_DATA_DIR}" "${MEM_DATA_DIR}"
-chmod 700 "${CONN_DATA_DIR}" "${MEM_DATA_DIR}" 2>/dev/null || true
+mkdir -p -m 700 "${PLUGINS_DEST}" "${CONN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}"
+chmod 700 "${CONN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}" 2>/dev/null || true
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 SUITE_ROOT=""
@@ -139,4 +140,11 @@ if [[ -n "${GE_INSTANCE}" ]]; then
   chmod 600 "${GE_JSON}"
 fi
 
-echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (3 UI extensions: WV Antigravity, WV Skills, WV Preview)"
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "[n]ode .*wv-coordinator-ui/main.mjs" 2>/dev/null || true
+  pkill -f "[n]ode .*wv-antigravity-ui/main.mjs" 2>/dev/null || true
+  pkill -f "[n]ode .*wv-skill-manager/main.mjs" 2>/dev/null || true
+  pkill -f "[n]ode .*wv-design-preview/main.mjs" 2>/dev/null || true
+fi
+
+echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (4 UI extensions: WV Antigravity, WV Coordinator [Clawy], WV Skills, WV Preview)"
