@@ -250,10 +250,11 @@ export function loadVoicePrefsRaw() {
   const isV2 = Number(raw.prefsSchemaVersion || 0) >= 2;
   const voiceName = ALLOWED_GEMINI_VOICES.includes(raw.voiceName) ? raw.voiceName : 'Zephyr';
   return {
-    prefsSchemaVersion: 2,
+    prefsSchemaVersion: 3,
     mode: isV2 && raw.mode === 'browser' ? 'browser' : 'gemini-live',
     model: typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : DEFAULT_VOICE_MODEL,
     voiceName,
+    projectId: typeof raw.projectId === 'string' ? raw.projectId.trim() : '',
     apiKey: typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '',
     useGcloudAdc: isV2 ? raw.useGcloudAdc !== false : true,
     ttsEnabled: raw.ttsEnabled !== false,
@@ -268,10 +269,11 @@ export function saveVoicePrefs(patch) {
   const cur = loadVoicePrefsRaw();
   const nextVoice = ALLOWED_GEMINI_VOICES.includes(patch.voiceName) ? patch.voiceName : cur.voiceName;
   const next = {
-    prefsSchemaVersion: 2,
+    prefsSchemaVersion: 3,
     mode: patch.mode === 'gemini-live' ? 'gemini-live' : patch.mode === 'browser' ? 'browser' : cur.mode,
     model: typeof patch.model === 'string' && patch.model.trim() ? patch.model.trim().slice(0, 80) : cur.model,
     voiceName: nextVoice,
+    projectId: typeof patch.projectId === 'string' ? patch.projectId.trim().slice(0, 80) : (cur.projectId || ''),
     apiKey: typeof patch.apiKey === 'string' ? patch.apiKey.trim() : cur.apiKey,
     useGcloudAdc: typeof patch.useGcloudAdc === 'boolean' ? patch.useGcloudAdc : cur.useGcloudAdc,
     ttsEnabled: typeof patch.ttsEnabled === 'boolean' ? patch.ttsEnabled : cur.ttsEnabled,
@@ -311,6 +313,88 @@ export function findAdcCredentialsFile() {
   return null;
 }
 
+
+let cachedGcloudCliProject = null;
+
+export function detectGcpProjectSync(prefs = null, adcCreds = null) {
+  const p = prefs || loadVoicePrefsRaw();
+  const VALID_PROJ_RE = /^[a-z][a-z0-9-]{4,61}[a-z0-9]$/i;
+
+  if (p.projectId && VALID_PROJ_RE.test(p.projectId.trim())) {
+    return { projectId: p.projectId.trim(), projectSource: 'prefs' };
+  }
+
+  for (const envVar of ['GOOGLE_CLOUD_PROJECT', 'GCLOUD_PROJECT', 'CLOUDSDK_CORE_PROJECT']) {
+    const val = (process.env[envVar] || '').trim();
+    if (val && VALID_PROJ_RE.test(val)) {
+      return { projectId: val, projectSource: envVar };
+    }
+  }
+
+  // Check Generic AGY's configured Gemini Enterprise instance (ge-instance.json)
+  const home = os.homedir();
+  const geCandidates = [
+    process.env.ANTIGRAVITY_APP_DATA_DIR
+      ? path.join(path.resolve(process.env.ANTIGRAVITY_APP_DATA_DIR), 'plugin_data', 'agy-connectors', 'ge-instance.json')
+      : '',
+    path.join(home, '.gemini', 'antigravity', 'plugin_data', 'agy-connectors', 'ge-instance.json'),
+    path.join(home, '.gemini', 'config', 'plugin_data', 'agy-connectors', 'ge-instance.json'),
+  ].filter(Boolean);
+
+  for (const gpPath of geCandidates) {
+    try {
+      if (!fs.existsSync(gpPath) || fs.lstatSync(gpPath).isSymbolicLink()) continue;
+      const ge = readJsonSafe(gpPath, null);
+      if (!ge) continue;
+      if (ge.projectId && VALID_PROJ_RE.test(String(ge.projectId).trim())) {
+        return { projectId: String(ge.projectId).trim(), projectSource: 'ge-instance' };
+      }
+      const m = String(ge.rawInput || '').match(/projects\/([a-z][a-z0-9-]{4,61}[a-z0-9])/i);
+      if (m && m[1]) {
+        return { projectId: m[1], projectSource: 'ge-instance' };
+      }
+    } catch {}
+  }
+
+  // Check ADC quota_project_id
+  const adcObj = adcCreds || findAdcCredentialsFile()?.creds;
+  if (adcObj && adcObj.quota_project_id && VALID_PROJ_RE.test(String(adcObj.quota_project_id).trim())) {
+    return { projectId: String(adcObj.quota_project_id).trim(), projectSource: 'adc-quota-project' };
+  }
+
+  // Check gcloud active configuration file on disk (<1ms, 0 subprocesses)
+  const gcloudRoots = [];
+  if (process.platform === 'win32' && process.env.APPDATA) {
+    gcloudRoots.push(path.join(process.env.APPDATA, 'gcloud'));
+  }
+  gcloudRoots.push(path.join(home, '.config', 'gcloud'));
+
+  for (const groot of gcloudRoots) {
+    try {
+      let activeName = 'default';
+      const activeFile = path.join(groot, 'active_config');
+      if (fs.existsSync(activeFile) && !fs.lstatSync(activeFile).isSymbolicLink()) {
+        const rawName = fs.readFileSync(activeFile, 'utf-8').trim();
+        if (/^[a-zA-Z0-9_-]{1,64}$/.test(rawName)) activeName = rawName;
+      }
+      const cfgFile = path.join(groot, 'configurations', `config_${activeName}`);
+      if (fs.existsSync(cfgFile) && !fs.lstatSync(cfgFile).isSymbolicLink()) {
+        const ini = fs.readFileSync(cfgFile, 'utf-8');
+        const pm = ini.match(/^\s*project\s*=\s*([a-z][a-z0-9-]{4,61}[a-z0-9])\s*$/im);
+        if (pm && pm[1]) {
+          return { projectId: pm[1].trim(), projectSource: `gcloud-config(${activeName})` };
+        }
+      }
+    } catch {}
+  }
+
+  if (cachedGcloudCliProject && VALID_PROJ_RE.test(cachedGcloudCliProject)) {
+    return { projectId: cachedGcloudCliProject, projectSource: 'gcloud-cli' };
+  }
+
+  return { projectId: '', projectSource: 'none' };
+}
+
 export function getPublicVoiceStatus() {
   const prefs = loadVoicePrefsRaw();
   const envKey = (process.env.GEMINI_API_KEY || '').trim();
@@ -325,13 +409,17 @@ export function getPublicVoiceStatus() {
         : prefs.useGcloudAdc
           ? 'gcloud-adc'
           : 'none';
+  const projInfo = detectGcpProjectSync(prefs, adcFile?.creds);
   return {
     mode: prefs.mode,
     model: prefs.model,
     voiceName: prefs.voiceName || 'Zephyr',
+    projectId: prefs.projectId || '',
+    effectiveProjectId: projInfo.projectId,
+    projectSource: projInfo.projectSource,
     hasApiKey: Boolean(effectiveKey),
     hasAdcFile: Boolean(adcFile),
-    keySource,
+    keySource: (adcFile || prefs.useGcloudAdc) && projInfo.projectId ? `vertex-ai(${projInfo.projectId})` : keySource,
     useGcloudAdc: prefs.useGcloudAdc,
     ttsEnabled: prefs.ttsEnabled,
     voiceRate: prefs.voiceRate,
@@ -1076,63 +1164,97 @@ function httpsFormPost(urlString, formParams, timeoutMs = 12000) {
   });
 }
 
+async function resolveEffectiveProjectId(prefs, adcCreds = null) {
+  const syncDet = detectGcpProjectSync(prefs, adcCreds);
+  if (syncDet.projectId) return syncDet.projectId;
+  try {
+    const gcloudBin = process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud';
+    const { stdout } = await execFileAsync(gcloudBin, ['config', 'get-value', 'project'], { timeout: 4000 });
+    const val = String(stdout || '').trim();
+    if (/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/i.test(val) && val !== '(unset)') {
+      cachedGcloudCliProject = val;
+      return val;
+    }
+  } catch {}
+  return '';
+}
+
 async function resolveGeminiAuth(prefs) {
+  const adc = findAdcCredentialsFile();
+
+  // 1. Default: Google Cloud Project + ADC (Vertex AI — works natively with cloud-platform scope!)
+  if (prefs.useGcloudAdc !== false) {
+    const projectId = await resolveEffectiveProjectId(prefs, adc?.creds);
+
+    if (cachedAdcToken && cachedAdcToken.expiresAt > Date.now() && projectId) {
+      return {
+        type: 'bearer',
+        token: cachedAdcToken.accessToken,
+        projectId,
+        quotaProjectId: cachedAdcToken.quotaProjectId || projectId,
+        source: `vertex-adc(${projectId})`,
+      };
+    }
+
+    if (adc && adc.creds && projectId) {
+      try {
+        const form = {
+          client_id: adc.creds.client_id,
+          refresh_token: adc.creds.refresh_token,
+          grant_type: 'refresh_token',
+        };
+        if (adc.creds.client_secret) form.client_secret = adc.creds.client_secret;
+        const resp = await httpsFormPost('https://oauth2.googleapis.com/token', form, 10000);
+        if (resp.status === 200 && resp.json && resp.json.access_token) {
+          cachedAdcToken = {
+            accessToken: resp.json.access_token,
+            expiresAt: Date.now() + Math.max(60, Number(resp.json.expires_in || 3500) - 60) * 1000,
+            quotaProjectId: String(adc.creds.quota_project_id || projectId),
+          };
+          return {
+            type: 'bearer',
+            token: cachedAdcToken.accessToken,
+            projectId,
+            quotaProjectId: cachedAdcToken.quotaProjectId,
+            source: `vertex-adc(${projectId})`,
+          };
+        }
+      } catch {
+        // Fall through to gcloud CLI token fallback.
+      }
+    }
+
+    if (projectId) {
+      for (const bin of process.platform === 'win32' ? ['gcloud.cmd', 'gcloud'] : ['gcloud']) {
+        try {
+          const { stdout } = await execFileAsync(bin, ['auth', 'print-access-token'], { timeout: 5000 });
+          const tok = String(stdout || '').trim();
+          if (tok) {
+            cachedAdcToken = {
+              accessToken: tok,
+              expiresAt: Date.now() + 240_000,
+              quotaProjectId: projectId,
+            };
+            return {
+              type: 'bearer',
+              token: tok,
+              projectId,
+              quotaProjectId: projectId,
+              source: `vertex-gcloud(${projectId})`,
+            };
+          }
+        } catch {}
+      }
+    }
+  }
+
+  // 2. Fallback: Explicit GEMINI_API_KEY (AI Studio / generativelanguage.googleapis.com)
   const envKey = (process.env.GEMINI_API_KEY || '').trim();
   const apiKey = envKey || prefs.apiKey || '';
   if (apiKey) {
-    return { type: 'apiKey', token: apiKey, source: envKey ? 'env' : 'prefs' };
+    return { type: 'apiKey', token: apiKey, projectId: '', quotaProjectId: '', source: envKey ? 'env-key' : 'prefs-key' };
   }
 
-  // 1. Keyless ADC file refresh via pure HTTPS POST (0 subprocesses needed)
-  if (cachedAdcToken && cachedAdcToken.expiresAt > Date.now()) {
-    return {
-      type: 'bearer',
-      token: cachedAdcToken.accessToken,
-      quotaProjectId: cachedAdcToken.quotaProjectId || '',
-      source: 'adc-file',
-    };
-  }
-
-  const adc = findAdcCredentialsFile();
-  if (adc && adc.creds) {
-    try {
-      const form = {
-        client_id: adc.creds.client_id,
-        refresh_token: adc.creds.refresh_token,
-        grant_type: 'refresh_token',
-      };
-      if (adc.creds.client_secret) form.client_secret = adc.creds.client_secret;
-      const resp = await httpsFormPost('https://oauth2.googleapis.com/token', form, 10000);
-      if (resp.status === 200 && resp.json && resp.json.access_token) {
-        cachedAdcToken = {
-          accessToken: resp.json.access_token,
-          expiresAt: Date.now() + Math.max(60, Number(resp.json.expires_in || 3500) - 60) * 1000,
-          quotaProjectId: String(adc.creds.quota_project_id || ''),
-        };
-        return {
-          type: 'bearer',
-          token: cachedAdcToken.accessToken,
-          quotaProjectId: cachedAdcToken.quotaProjectId,
-          source: 'adc-file',
-        };
-      }
-    } catch {
-      // Fall through to gcloud CLI fallback if enabled.
-    }
-  }
-
-  // 2. Optional gcloud CLI fallback
-  if (prefs.useGcloudAdc) {
-    try {
-      const { stdout } = await execFileAsync('gcloud', ['auth', 'print-access-token'], {
-        timeout: 5000,
-      });
-      const tok = String(stdout || '').trim();
-      if (tok) return { type: 'bearer', token: tok, quotaProjectId: '', source: 'gcloud-adc' };
-    } catch {
-      return null;
-    }
-  }
   return null;
 }
 
@@ -1402,16 +1524,6 @@ async function runGeminiLiveBidi({ auth, model, systemPrompt, userPrompt }) {
 }
 
 async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, audioBase64 = '', mimeType = '' }) {
-  const cleanModel = (model || DEFAULT_MULTIMODAL_MODEL).replace(/^models\//, '');
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`;
-  const headers = { 'Content-Type': 'application/json' };
-  if (auth.type === 'apiKey') {
-    headers['x-goog-api-key'] = auth.token;
-  } else {
-    headers.Authorization = `Bearer ${auth.token}`;
-    if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
-  }
-
   const userParts = [];
   if (audioBase64) {
     userParts.push({
@@ -1427,22 +1539,63 @@ async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, au
     userParts.push({ text: userPrompt });
   }
 
+  const reqBody = JSON.stringify({
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts: userParts }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.3,
+    },
+  });
+
+  if (auth.type === 'bearer') {
+    if (!auth.projectId) {
+      throw new Error('No Google Cloud Project ID detected for Vertex AI. Set your GCP Project ID in Identity & Voice or run /connect-ge.');
+    }
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${auth.token}`,
+      'x-goog-user-project': auth.quotaProjectId || auth.projectId,
+    };
+    const pid = encodeURIComponent(auth.projectId);
+    const vertexTargets = [
+      `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent`,
+      `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-2.5-flash:generateContent`,
+      `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent`,
+    ];
+    let lastErr = '';
+    for (const endpoint of vertexTargets) {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: reqBody,
+        signal: AbortSignal.timeout(14000),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        lastErr = `Vertex AI HTTP ${resp.status}${errText ? ': ' + errText.slice(0, 140) : ''}`;
+        if (resp.status === 404 || resp.status === 429) continue;
+        throw new Error(lastErr);
+      }
+      const data = await resp.json();
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const text = parts.map((p) => p?.text || '').join('').trim();
+      if (text) return text;
+    }
+    throw new Error(lastErr || 'Empty response from Vertex AI');
+  }
+
+  const cleanModel = (model || DEFAULT_MULTIMODAL_MODEL).replace(/^models\//, '');
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`;
   const resp = await fetch(endpoint, {
     method: 'POST',
-    headers,
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: userParts }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.3,
-      },
-    }),
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
+    body: reqBody,
     signal: AbortSignal.timeout(14000),
   });
   if (!resp.ok) {
     const errText = await resp.text().catch(() => '');
-    throw new Error(`Gemini REST HTTP ${resp.status}${errText ? ': ' + errText.slice(0, 140) : ''}`);
+    throw new Error(`Gemini API HTTP ${resp.status}${errText ? ': ' + errText.slice(0, 140) : ''}`);
   }
   const data = await resp.json();
   const parts = data?.candidates?.[0]?.content?.parts || [];
@@ -1546,6 +1699,19 @@ export async function processCoordinatorTurn({
         } catch (err) {
           liveError = err instanceof Error ? err.message : String(err);
         }
+      } else if (auth.type === 'bearer') {
+        try {
+          const rawRest = await runGeminiRestGenerate({
+            auth,
+            model: DEFAULT_MULTIMODAL_MODEL,
+            systemPrompt,
+            userPrompt: cleanPrompt,
+          });
+          parsed = parseStructuredCoordinatorJson(rawRest, cleanPrompt);
+          modeUsed = `vertex-ai(${auth.source})`;
+        } catch (restErr) {
+          liveError = restErr instanceof Error ? restErr.message : String(restErr);
+        }
       } else {
         try {
           const rawWs = await runGeminiLiveBidi({
@@ -1638,52 +1804,86 @@ export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
   if (!auth) return null;
 
   const chosenVoice = ALLOWED_GEMINI_VOICES.includes(voiceName) ? voiceName : (prefs.voiceName || 'Zephyr');
-  const headers = { 'Content-Type': 'application/json' };
-  if (auth.type === 'apiKey') {
-    headers['x-goog-api-key'] = auth.token;
-  } else {
-    headers.Authorization = `Bearer ${auth.token}`;
-    if (auth.quotaProjectId) headers['x-goog-user-project'] = auth.quotaProjectId;
+  const ttsPayload = JSON.stringify({
+    contents: [{ role: 'user', parts: [{ text: cleanText }] }],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: chosenVoice },
+        },
+      },
+    },
+  });
+
+  if (auth.type === 'bearer' && auth.projectId) {
+    const pid = encodeURIComponent(auth.projectId);
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${auth.token}`,
+      'x-goog-user-project': auth.quotaProjectId || auth.projectId,
+    };
+    const vertexTtsUrls = [
+      `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-2.5-flash-tts:generateContent`,
+      `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-2.5-flash-preview-tts:generateContent`,
+      `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/us-central1/publishers/google/models/gemini-2.5-flash-tts:generateContent`,
+    ];
+    for (const endpoint of vertexTtsUrls) {
+      try {
+        const resp = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: ttsPayload,
+          signal: AbortSignal.timeout(9000),
+        });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        for (const p of parts) {
+          if (p?.inlineData?.data) {
+            const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
+            const rateMatch = m.match(/rate=(\d+)/i);
+            return {
+              audioBase64: p.inlineData.data,
+              mimeType: m,
+              sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
+              voiceName: chosenVoice,
+              modelUsed: 'vertex-gemini-tts',
+            };
+          }
+        }
+      } catch {}
+    }
+    return null;
   }
 
-  const candidateModels = ['gemini-2.5-flash-preview-tts', 'gemini-3.8-flash-lite-tts'];
-  for (const ttsModel of candidateModels) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(ttsModel)}:generateContent`;
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: cleanText }] }],
-          generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: chosenVoice },
-              },
-            },
-          },
-        }),
-        signal: AbortSignal.timeout(9000),
-      });
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      for (const p of parts) {
-        if (p?.inlineData?.data) {
-          const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
-          const rateMatch = m.match(/rate=(\d+)/i);
-          return {
-            audioBase64: p.inlineData.data,
-            mimeType: m,
-            sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
-            voiceName: chosenVoice,
-            modelUsed: ttsModel,
-          };
+  if (auth.type === 'apiKey') {
+    for (const ttsModel of ['gemini-2.5-flash-preview-tts', 'gemini-3.8-flash-lite-tts']) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(ttsModel)}:generateContent`;
+        const resp = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
+          body: ttsPayload,
+          signal: AbortSignal.timeout(9000),
+        });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        for (const p of parts) {
+          if (p?.inlineData?.data) {
+            const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
+            const rateMatch = m.match(/rate=(\d+)/i);
+            return {
+              audioBase64: p.inlineData.data,
+              mimeType: m,
+              sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
+              voiceName: chosenVoice,
+              modelUsed: ttsModel,
+            };
+          }
         }
-      }
-    } catch {
-      // Try next candidate TTS model.
+      } catch {}
     }
   }
   return null;

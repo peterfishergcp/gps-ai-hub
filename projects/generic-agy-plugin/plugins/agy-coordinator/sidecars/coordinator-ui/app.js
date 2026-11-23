@@ -1289,7 +1289,20 @@
     voiceCard.appendChild(vNameLbl);
     voiceCard.appendChild(vNameSel);
 
-    var keyLbl = el('label', 'coord-field-lbl', 'Optional GEMINI_API_KEY (leave blank to auto-use ADC or env)');
+    var projLbl = el(
+      'label',
+      'coord-field-lbl',
+      'Google Cloud Project ID (Default Vertex AI · Auto-detected: ' +
+        (vs.effectiveProjectId ? vs.effectiveProjectId + ' via ' + vs.projectSource : 'none yet — enter project or run /connect-ge') +
+        ')'
+    );
+    var projIn = el('input', 'coord-input coord-input-sm');
+    projIn.placeholder = vs.effectiveProjectId || 'YOUR_PROJECT_ID (auto-detected from GE / gcloud)';
+    projIn.value = vs.projectId || '';
+    voiceCard.appendChild(projLbl);
+    voiceCard.appendChild(projIn);
+
+    var keyLbl = el('label', 'coord-field-lbl', 'Optional AI Studio GEMINI_API_KEY (only needed if not using Google Cloud Project / ADC)');
     var keyIn = el('input', 'coord-input coord-input-sm');
     keyIn.type = 'password';
     keyIn.placeholder = vs.hasApiKey ? '•••••••• (key saved — type to replace)' : 'AIza... (optional)';
@@ -1321,6 +1334,7 @@
       var payload = {
         mode: mSel.value,
         voiceName: vNameSel.value,
+        projectId: projIn.value.trim(),
         useGcloudAdc: adcChk.checked,
       };
       if (keyIn.value.trim()) payload.apiKey = keyIn.value.trim();

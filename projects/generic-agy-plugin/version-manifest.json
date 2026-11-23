@@ -389,7 +389,7 @@
       "plugin": "agy-coordinator",
       "sidecar": "coordinator-ui",
       "files": {
-        "app.js": "16f3aa2ee0bc80956e1b740861bb755475aa49bf09cb43c7d1d4fd37bfee188c",
+        "app.js": "f5e6e213794ae6620c6cc40ab1d708884f761e5e76db8ee83a4431ba18e56684",
         "index.html": "3159cb5d513e4720c0d220cabb8cc8cb9f241120e610275ee1550768f2aa0e1c",
         "main.mjs": "00e38c94794337f71b4d37025f3d9761a6bb5e7be1d272f24cb84d6640f38805",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
@@ -473,7 +473,7 @@
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "4a4b90315d3513cd1a9aed700e767d947a84f68c9a6d74c7f62619a8f97ae82a"
+      "sha256": "79788daed301333d03400439b1812a9f4dc314ea6449920e66cc84ef77284cf1"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",
