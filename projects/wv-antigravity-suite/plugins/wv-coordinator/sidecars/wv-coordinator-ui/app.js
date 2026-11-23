@@ -547,7 +547,7 @@
     var activeMode = modeSel ? modeSel.value : (vPrefs.mode || 'gemini-live');
     if (vPrefs.readyForGeminiLive && activeMode === 'gemini-live') {
       try {
-        var chosenVoice = voiceOverride || vPrefs.voiceName || 'Zephyr';
+        var chosenVoice = voiceOverride || vPrefs.voiceName || 'Kore';
         var ttsRes = await apiPost('/api/voice/tts', { text: clean, voiceName: chosenVoice });
         if (ttsRes && ttsRes.ok && ttsRes.ttsAudio && playPcm16Base64(ttsRes.ttsAudio)) {
           return;
@@ -1840,13 +1840,13 @@
     var vNameLbl = el('label', 'coord-field-lbl', 'Gemini Neural Voice Character');
     var vNameSel = el('select', 'coord-select');
     [
-      ['Zephyr', 'Zephyr — Clear & Friendly (Default)'],
+      ['Kore', 'Kore — Confident & Crisp (Default)'],
+      ['Zephyr', 'Zephyr — Clear & Friendly'],
       ['Aoede', 'Aoede — Warm & Natural'],
       ['Callirrhoe', 'Callirrhoe — Easy-Going & Smooth'],
       ['Autonoe', 'Autonoe — Bright & Warm'],
       ['Leda', 'Leda — Warm & Engaging'],
       ['Puck', 'Puck — Bright & Upbeat'],
-      ['Kore', 'Kore — Confident & Crisp'],
       ['Fenrir', 'Fenrir — Approachable'],
       ['Orus', 'Orus — Steady & Clear'],
       ['Charon', 'Charon — Deep & Velvety']
@@ -1855,7 +1855,7 @@
       vo.value = pair[0];
       vNameSel.appendChild(vo);
     });
-    vNameSel.value = vs.voiceName || 'Zephyr';
+    vNameSel.value = vs.voiceName || 'Kore';
     voiceCard.appendChild(vNameLbl);
     voiceCard.appendChild(vNameSel);
 
@@ -1911,7 +1911,7 @@
       speakText(
         'Hello! ' + (id.name || 'Clawy') + ' is connected and ready to coordinate your agents.',
         null,
-        vNameSel.value || 'Zephyr'
+        vNameSel.value || 'Kore'
       );
     });
     btnRow.appendChild(saveVoiceBtn);
@@ -2125,7 +2125,6 @@
       var STARTER_ITEMS = [
         { label: '👋 What can Clawy do?', mode: 'run', prompt: 'What can Clawy do? Give me a quick tour of how to use Clawy.' },
         { label: '📊 Summarize my agents', mode: 'run', prompt: 'Summarize my active agents and tell me what needs my attention.' },
-        { label: '🎯 Create a sprint goal', mode: 'run', prompt: 'Create goal: Q4 Agency Program & FOIA Readiness' },
         { label: '✅ Add a follow-up task', mode: 'run', prompt: 'Add task: Review open FOIA redactions & 2 CFR Part 200 grant ledger' },
         { label: '🚀 Draft a new agent', mode: 'prefill', prompt: 'spawn: /daily-brief Summarize my top agency priorities and open Action Items' }
       ];

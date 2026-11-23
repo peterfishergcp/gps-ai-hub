@@ -1,8 +1,8 @@
 {
   "name": "wv-coordinator",
-  "displayName": "🐻 WV Clawy",
-  "version": "2.3.0",
-  "description": "Zero-footprint State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub (WV Clawy) — animated 3D WV Black Bear perch, side-by-side agent pop-out, 5-state attention triage, and Group -> Goal -> Task sprints inside ~/.gemini/config/plugin_data/wv-coordinator/.",
+  "displayName": "WV Clawy",
+  "version": "2.4.0",
+  "description": "Zero-footprint State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub (WV Clawy) — animated 3D Brown Bear perch, Kore voice, side-by-side agent pop-out, 5-state attention triage, and Group -> Goal -> Task sprints inside ~/.gemini/config/plugin_data/wv-coordinator/.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /wv-coordinator to summarize my active agent conversations, Group -> Goal -> Task sprints, and blockers",

@@ -27,17 +27,19 @@ let cachedAdcToken = null; // { accessToken, expiresAt, quotaProjectId }
 const DEFAULT_IDENTITY_MD = `# Coordinator Identity
 
 - **Name:** Clawy
-- **Role:** Multi-Agent Coordinator
-- **Style:** Crisp, encouraging, action-oriented, zero fluff
-- **Focus:** Keep parallel agent workers aligned to Groups, Goals, and Tasks
+- **Role:** Friendly Agent Command Center & Setup Guide
+- **Style:** Warm, reassuring, practical, and genuinely helpful — never cold or dismissive
+- **Focus:** Help users coordinate active agents, organize sprints, and troubleshoot Google Cloud Project / ADC voice setup with ease
 `;
 
 const DEFAULT_SOUL_MD = `# Coordinator Operating Principles (SOUL)
 
-1. Always organize work strictly in 2 levels: **Group -> Goal -> Task**.
-2. Keep worker prompts concrete: state what the worker owns, constraints, and what "done" looks like.
-3. Never invent statuses or tool results; verify live worker state before relaying.
-4. Keep spoken responses concise (1-3 sentences) so voice updates are easy to scan between tasks.
+1. **Warm & Helpful Always:** Never brush off a user's question or say "My role is not X." Always offer a clear, friendly, actionable answer.
+2. **Authentication & Setup Helpfulness:** Authentication and Google Cloud Project / ADC expiration are the most common setup hurdles. Whenever a user asks about auth, ADC, gcloud, GCP Project IDs, API keys, or voice issues:
+   - Check the live Voice & Auth Status provided in your snapshot (and trigger \`"action": { "type": "verify_auth" }\` when they ask to test or verify auth).
+   - Explain clearly and kindly: (a) whether Gemini Live is currently connected and which GCP Project is active, and (b) the 2 quick steps if they ever hit an auth issue: open **⚙️ Voice & Identity** -> verify **Google Cloud Project ID** -> click **🔌 Save & Verify GCP Connection**, or run \`gcloud auth application-default login\` in Terminal when a 20-hour ADC session expires.
+3. **2-Level Sprint Organization:** Organize goals and checklists cleanly in 2 levels: **Group -> Goal -> Task**.
+4. **Honest & Concise:** Verify live agent state before summarizing, and keep spoken answers friendly and easy to follow (2-3 sentences).
 `;
 
 export function getDataDir() {
@@ -123,17 +125,33 @@ export function ensureInitialized() {
   }
   if (!fs.existsSync(idPath)) {
     atomicWriteText(idPath, DEFAULT_IDENTITY_MD, 0o600);
+  } else {
+    try {
+      const curId = fs.readFileSync(idPath, 'utf-8');
+      if (curId.includes('zero fluff') && curId.includes('Keep parallel agent workers aligned')) {
+        atomicWriteText(idPath, DEFAULT_IDENTITY_MD, 0o600);
+      }
+    } catch {}
   }
   if (!fs.existsSync(soulPath)) {
     atomicWriteText(soulPath, DEFAULT_SOUL_MD, 0o600);
+  } else {
+    try {
+      const curSoul = fs.readFileSync(soulPath, 'utf-8');
+      if (curSoul.includes('Keep worker prompts concrete') && !curSoul.includes('Authentication & Setup Helpfulness')) {
+        atomicWriteText(soulPath, DEFAULT_SOUL_MD, 0o600);
+      }
+    } catch {}
   }
   if (!fs.existsSync(voicePath)) {
     atomicWriteText(
       voicePath,
       JSON.stringify(
         {
+          prefsSchemaVersion: 4,
           mode: 'gemini-live',
           model: DEFAULT_VOICE_MODEL,
+          voiceName: 'Kore',
           apiKey: '',
           useGcloudAdc: true,
           ttsEnabled: true,
@@ -242,13 +260,13 @@ export function saveIdentity({ name, role, identityMd, soulMd }) {
 }
 
 export const ALLOWED_GEMINI_VOICES = [
+  'Kore',
   'Zephyr',
   'Aoede',
   'Callirrhoe',
   'Autonoe',
   'Leda',
   'Puck',
-  'Kore',
   'Fenrir',
   'Orus',
   'Charon',
@@ -269,18 +287,20 @@ export function loadVoicePrefsRaw() {
   const voicePath = path.join(dir, 'voice_prefs.json');
   const raw = readJsonSafe(voicePath, {});
   const sib = loadSiblingCoordinatorPrefs();
-  const isV2 = Number(raw.prefsSchemaVersion || 0) >= 2;
-  const voiceName = ALLOWED_GEMINI_VOICES.includes(raw.voiceName)
-    ? raw.voiceName
-    : ALLOWED_GEMINI_VOICES.includes(sib.voiceName)
-      ? sib.voiceName
-      : 'Zephyr';
+  const schemaVer = Number(raw.prefsSchemaVersion || 0);
+  const isV2 = schemaVer >= 2;
+  const voiceName =
+    schemaVer >= 4 && ALLOWED_GEMINI_VOICES.includes(raw.voiceName)
+      ? raw.voiceName
+      : raw.voiceName && raw.voiceName !== 'Zephyr' && ALLOWED_GEMINI_VOICES.includes(raw.voiceName)
+        ? raw.voiceName
+        : 'Kore';
   const ownProject = typeof raw.projectId === 'string' ? raw.projectId.trim() : '';
   const sibProject = typeof sib.projectId === 'string' ? sib.projectId.trim() : '';
   const ownKey = typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '';
   const sibKey = raw.clearedApiKey ? '' : typeof sib.apiKey === 'string' ? sib.apiKey.trim() : '';
   return {
-    prefsSchemaVersion: 3,
+    prefsSchemaVersion: 4,
     mode: isV2 && raw.mode === 'browser' ? 'browser' : 'gemini-live',
     model: typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : DEFAULT_VOICE_MODEL,
     voiceName,
@@ -302,7 +322,7 @@ export function saveVoicePrefs(patch) {
   const cur = loadVoicePrefsRaw();
   const nextVoice = ALLOWED_GEMINI_VOICES.includes(patch.voiceName) ? patch.voiceName : cur.voiceName;
   const next = {
-    prefsSchemaVersion: 3,
+    prefsSchemaVersion: 4,
     mode: patch.mode === 'gemini-live' ? 'gemini-live' : patch.mode === 'browser' ? 'browser' : cur.mode,
     model: typeof patch.model === 'string' && patch.model.trim() ? patch.model.trim().slice(0, 80) : cur.model,
     voiceName: nextVoice,
@@ -641,7 +661,7 @@ export function getPublicVoiceStatus() {
   return {
     mode: prefs.mode,
     model: prefs.model,
-    voiceName: prefs.voiceName || 'Zephyr',
+    voiceName: prefs.voiceName || 'Kore',
     projectId: prefs.ownProjectId || '',
     effectiveProjectId: projInfo.projectId,
     projectSource: projInfo.projectSource,
@@ -1879,27 +1899,36 @@ async function resolveGeminiAuth(prefs) {
   return candidates[0] || null;
 }
 
-function buildCoordinatorSystemContext({ identity, state, workers }) {
+function buildCoordinatorSystemContext({ identity, state, workers, voiceStatus = null, authSource = '' }) {
   const activeGoals = state.goals.filter((g) => g.status !== 'done');
   const openTasks = state.tasks.filter((t) => !t.done);
+  const vs = voiceStatus || getPublicVoiceStatus();
   const groupLines = state.groups.map((g) => `- ${g.title} (groupId: ${g.id})`);
-  const workerLines = (workers || []).slice(0, 10).map((w) => `- [${w.status}] ${w.title} (id: ${w.id.slice(0, 8)})`);
+  const workerLines = (workers || []).filter((w) => !w.closed).slice(0, 10).map((w) => `- [${w.status}] ${w.title} (id: ${w.id.slice(0, 8)})`);
   const goalLines = activeGoals.slice(0, 10).map((g) => `- [${g.status}] ${g.title} (goalId: ${g.id}, groupId: ${g.groupId})`);
+  const authSummaryLine = authSource
+    ? `CONNECTED & VERIFIED right now via ${authSource} (GCP Project: ${vs.effectiveProjectId || 'active'}, Voice: ${vs.voiceName || 'Kore'})`
+    : vs.lastDiagnostic
+      ? `NEEDS ATTENTION: ${vs.lastDiagnostic}`
+      : `GCP Project: ${vs.effectiveProjectId || 'not set yet'} (${vs.projectSource || 'none'}), ADC File: ${vs.hasAdcFile ? 'present' : 'not found'}, Voice: ${vs.voiceName || 'Kore'}`;
+
   return [
     identity.identityMd.trim(),
     identity.soulMd.trim(),
-    `Current Coordinator Snapshot (${new Date().toISOString()}):`,
-    `- Groups: ${state.groups.length}, Active Goals: ${activeGoals.length}, Open Tasks: ${openTasks.length}, Tracked Workers: ${(workers || []).length}`,
+    `Current Coordinator & Auth Snapshot (${new Date().toISOString()}):`,
+    `- Live Voice & Auth Status: ${authSummaryLine}`,
+    `- How users fix auth issues in WV Clawy: (1) Open the "⚙️ Voice & Identity" tab, verify "Google Cloud Project ID", and click "🔌 Save & Verify GCP Connection". (2) If their 20-hour Google ADC login expired, click "📋 Copy: gcloud auth application-default login" and run it in Terminal.`,
+    `- Groups: ${state.groups.length}, Active Goals: ${activeGoals.length}, Open Tasks: ${openTasks.length}, Active Agents: ${workerLines.length}`,
     `Groups:\n${groupLines.join('\n')}`,
-    workerLines.length ? `Workers:\n${workerLines.join('\n')}` : 'Workers: none active yet.',
+    workerLines.length ? `Active Agents:\n${workerLines.join('\n')}` : 'Active Agents: none active right now.',
     goalLines.length ? `Goals:\n${goalLines.join('\n')}` : 'Goals: none created yet.',
     [
       'Return ONLY valid JSON with this exact shape:',
       '{',
       '  "transcript": "<exact user utterance if audio was provided, else user text>",',
-      '  "reply": "<1-3 crisp spoken sentences from the coordinator>",',
+      '  "reply": "<warm, helpful 1-3 spoken sentences from Clawy — never say your role is not auth; always help kindly>",',
       '  "action": {',
-      '    "type": "none | create_group | create_goal | add_task | spawn | relay",',
+      '    "type": "none | verify_auth | create_group | create_goal | add_task | spawn | relay",',
       '    "groupTitle": "<if create_group>",',
       '    "groupId": "<optional existing groupId for create_goal>",',
       '    "goalTitle": "<if create_goal>",',
@@ -1939,6 +1968,11 @@ function parseStructuredCoordinatorJson(rawText, fallbackTranscript = '') {
 async function executeCoordinatorAction(action, { workers, state }) {
   if (!action || !action.type || action.type === 'none') return null;
   const typ = String(action.type).toLowerCase();
+
+  if (typ === 'verify_auth') {
+    const diag = await diagnoseVoiceConnection();
+    return { type: 'verify_auth', ok: diag.ok, summary: diag.summary, authSource: diag.authSource };
+  }
 
   if (typ === 'create_group' && action.groupTitle) {
     const res = mutateGroups({ action: 'add', title: String(action.groupTitle) });
@@ -2026,11 +2060,20 @@ function buildLocalActionOrReply(prompt, { identity, state, workers }) {
   const runningAgents = activeAgents.filter((w) => w.status === 'WORKING');
 
   let reply = '';
-  if (/\b(what can (you|clawy) do|how (do i|to) use|help|quickstart|tour|get started)\b/.test(lower)) {
+  if (/\b(auth|authenticate|authentication|adc|gcloud|credential|credentials|reauth|login|api\s*key|gcp\s*project|vertex|connection)\b/.test(lower)) {
+    const vs = getPublicVoiceStatus();
+    const projPart = vs.effectiveProjectId
+      ? `I currently see GCP Project "${vs.effectiveProjectId}" (${vs.projectSource}). `
+      : 'No GCP Project ID is set yet. ';
     reply =
-      `Hi! I'm ${name}, your Chief of Staff for Antigravity. ` +
-      `I monitor all your active Agents, alert you when one needs an answer, pop conversations open side-by-side when clicked, ` +
-      `and organize your sprints into Group -> Goal -> Task checklists.`;
+      `Happy to help check your authentication! ${projPart}` +
+      `To verify or fix your connection in two quick steps: open the ⚙️ Voice & Identity tab and click "🔌 Save & Verify GCP Connection" — ` +
+      `and if your 20-hour Google ADC login expired, click "📋 Copy: gcloud auth application-default login" and run it once in Terminal.`;
+  } else if (/\b(what can (you|clawy) do|how (do i|to) use|help|quickstart|tour|get started)\b/.test(lower)) {
+    reply =
+      `Hi! I'm ${name}, your friendly Agent Command Center for West Virginia Antigravity. ` +
+      `I keep track of your active Agents, alert you when one needs an answer, pop chats open side-by-side when clicked, ` +
+      `and can also help you verify your Google Cloud Project & Gemini Live voice setup anytime.`;
   } else if (/\b(status|summary|overview|what('?s| is) happening|agents?|workers?|chats?|conversations?)\b/.test(lower)) {
     reply =
       `${name} reporting: ${activeAgents.length} active agent(s) — ` +
@@ -2374,10 +2417,17 @@ export async function processCoordinatorTurn({
     if (candidates.length === 0) {
       liveError = diagnostics.join('; ') || 'No GEMINI_API_KEY or ADC credentials configured in ⚙️ Voice & Identity';
     } else {
-      const systemPrompt = buildCoordinatorSystemContext({ identity, state, workers });
+      const voiceStatus = getPublicVoiceStatus();
       const attemptErrors = [];
       for (const auth of candidates) {
         try {
+          const systemPrompt = buildCoordinatorSystemContext({
+            identity,
+            state,
+            workers,
+            voiceStatus,
+            authSource: auth.source,
+          });
           const rawResp = await runGeminiRestGenerate({
             auth,
             model: 'gemini-2.5-flash',
@@ -2408,19 +2458,19 @@ export async function processCoordinatorTurn({
       parsed = buildLocalActionOrReply(cleanBrowserSpeech, { identity, state, workers });
       modeUsed = 'browser-voice-fallback';
       if (liveError) {
-        parsed.reply += ` (Local voice fallback — ${liveError})`;
+        parsed.reply += ` (Tip: to reconnect Gemini Live neural voice, open ⚙️ Voice & Identity and click Save & Verify GCP Connection, or run "gcloud auth application-default login".)`;
       }
     } else if (cleanAudio) {
-      const msg = liveError
-        ? `Gemini voice auth issue: ${liveError}`
-        : 'Open ⚙️ Voice & Identity to connect a GEMINI_API_KEY or refresh gcloud ADC.';
+      const msg =
+        `I couldn't reach Gemini Live right now${liveError ? ` (${liveError})` : ''}. ` +
+        `No worries — open the ⚙️ Voice & Identity tab and click "🔌 Save & Verify GCP Connection", or run "gcloud auth application-default login" in Terminal if your 20-hour ADC login expired!`;
       appendChatTurn({ role: 'user', text: '(Voice audio clip)', source });
       const assistantMsg = appendChatTurn({ role: 'assistant', text: msg, source: 'voice-notice' });
       return { ok: false, transcript: '', reply: msg, liveError, modeUsed: 'none', assistantMsg };
     } else {
       parsed = buildLocalActionOrReply(cleanPrompt, { identity, state, workers });
-      if (liveError && mode === 'gemini-live') {
-        parsed.reply += ` (Local mode — ${liveError})`;
+      if (liveError && mode === 'gemini-live' && !/⚙️ Voice & Identity/.test(parsed.reply)) {
+        parsed.reply += ` (Tip: open ⚙️ Voice & Identity -> Save & Verify GCP Connection if you'd like to reconnect Gemini Live.)`;
       }
     }
   }
@@ -2473,7 +2523,7 @@ export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
   const { candidates } = await resolveGeminiAuthCandidates(prefs);
   if (!candidates.length) return null;
 
-  const chosenVoice = ALLOWED_GEMINI_VOICES.includes(voiceName) ? voiceName : (prefs.voiceName || 'Zephyr');
+  const chosenVoice = ALLOWED_GEMINI_VOICES.includes(voiceName) ? voiceName : (prefs.voiceName || 'Kore');
   const ttsPayload = JSON.stringify({
     contents: [{ role: 'user', parts: [{ text: cleanText }] }],
     generationConfig: {
