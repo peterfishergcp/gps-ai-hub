@@ -130,8 +130,27 @@
         },
       },
       {
+        id: 'setup-clawy',
+        label: ctx.isWv ? '2. Set Up WV Clawy \uD83D\uDC3B' : '2. Set Up Clawy \uD83D\uDC3B',
+        onSelect: function () {
+          ctx.markMasteryStep('setup-clawy');
+          if (typeof ctx.openClawyExtension === 'function') {
+            ctx.openClawyExtension();
+          }
+          var clawyCmd = ctx.isWv ? '/wv-coordinator' : '/agy-coordinator';
+          var clawyName = ctx.isWv ? 'WV Clawy' : 'Clawy';
+          ctx.dispatchPrompt(
+            clawyCmd +
+              ' Help me set up ' +
+              clawyName +
+              ', verify my GCP Project & Kore Gemini Live voice connection, and summarize my active agent conversations.',
+            clawyCmd
+          );
+        },
+      },
+      {
         id: 'preview-dash',
-        label: '2. Preview a Dashboard',
+        label: '3. Preview a Dashboard',
         onSelect: function () {
           ctx.markMasteryStep('preview-dash');
           var dashCmd = ctx.isWv ? '/wv-dashboard' : '/agy-dashboard';
@@ -143,7 +162,7 @@
       },
       {
         id: 'personal-skill',
-        label: '3. Explore Personal Skills',
+        label: '4. Explore Personal Skills',
         onSelect: function () {
           ctx.markMasteryStep('personal-skill');
           ctx.openSkillsExtension();
@@ -151,7 +170,7 @@
       },
       {
         id: 'check-tokens',
-        label: '4. Check TokenEconomics Cap',
+        label: '5. Check TokenEconomics Cap',
         onSelect: function () {
           ctx.markMasteryStep('check-tokens');
           ctx.switchTab('tokens');
@@ -159,7 +178,7 @@
       },
       {
         id: 'watch-guide',
-        label: '5. Watch a 3-Min Walkthrough',
+        label: '6. Watch a 3-Min Walkthrough',
         onSelect: function () {
           ctx.markMasteryStep('watch-guide');
           activeUpdateTopic = 'videos';
@@ -178,7 +197,7 @@
       el('div', { className: 'mastery-top' }, [
         el('div', { className: 'topbar-actions' }, [
           el('strong', { style: { fontSize: '12.5px' }, text: 'Quick Adoption Checklist' }),
-          el('span', { className: 'badge badge-blue', text: doneCount + '/5 Unlocked' }),
+          el('span', { className: 'badge badge-blue', text: doneCount + '/6 Unlocked' }),
         ]),
         el('button', {
           type: 'button',
@@ -233,6 +252,15 @@
         }),
       ]),
       el('div', { className: 'topbar-actions' }, [
+        el('button', {
+          type: 'button',
+          className: 'btn btn-secondary btn-sm',
+          text: ctx.isWv ? 'Open WV Clawy \uD83D\uDC3B' : 'Open Clawy \uD83D\uDC3B',
+          onClick: function () {
+            ctx.markMasteryStep('setup-clawy');
+            if (typeof ctx.openClawyExtension === 'function') ctx.openClawyExtension();
+          },
+        }),
         el('button', {
           type: 'button',
           className: 'btn btn-secondary btn-sm',
@@ -297,6 +325,10 @@
       { className: 'ai-topics-grid' },
       filtered.slice(0, 9).map(function (item) {
         var isVideo = item.kind === 'video';
+        var safeItemUrl =
+          typeof item.url === 'string' && item.url.startsWith('https://')
+            ? item.url
+            : 'https://www.youtube.com/@PeterFisher-gps-google';
         return el('div', { className: 'ai-topic-card' }, [
           el('div', { className: 'ai-topic-top' }, [
             el('span', {
@@ -308,13 +340,19 @@
           el('h4', { className: 'ai-topic-title', text: item.title }),
           el('p', { className: 'ai-topic-body', text: item.summary }),
           el('div', { className: 'ai-topic-foot' }, [
-            el('button', {
-              type: 'button',
+            el('a', {
+              href: safeItemUrl,
+              target: '_blank',
+              rel: 'noopener noreferrer',
               className: 'btn btn-secondary btn-sm',
+              style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center' },
               text: isVideo ? '\u25B6 Watch Video \u2197' : 'Read Post \u2197',
-              onClick: function () {
+              onClick: function (ev) {
                 if (isVideo) ctx.markMasteryStep('watch-guide');
-                openExternalSafe(item.url);
+                if (window.sidecar && window.sidecar.ui && typeof window.sidecar.ui.openExternal === 'function') {
+                  ev.preventDefault();
+                  window.sidecar.ui.openExternal(safeItemUrl);
+                }
               },
             }),
             item.tryPrompt
@@ -413,13 +451,26 @@
           termsCheck,
           el('span', { text: 'I accept Google Terms & Privacy Policy. Unsubscribe anytime.' }),
         ]),
-        el('button', {
-          type: 'button',
+        el('a', {
+          href:
+            typeof updates.youtubeChannelUrl === 'string' && updates.youtubeChannelUrl.startsWith('https://')
+              ? updates.youtubeChannelUrl
+              : 'https://www.youtube.com/@PeterFisher-gps-google',
+          target: '_blank',
+          rel: 'noopener noreferrer',
           className: 'btn btn-secondary btn-sm',
+          style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center' },
           text: '\u25B6 Subscribe to 3–4 Min Video Channel (@PeterFisher-gps-google) \u2197',
-          onClick: async function () {
-            await ctx.apiPost('/api/updates/prefs', { subscribedYoutube: true });
-            openExternalSafe(updates.youtubeChannelUrl || 'https://www.youtube.com/@PeterFisher-gps-google');
+          onClick: function (ev) {
+            ctx.apiPost('/api/updates/prefs', { subscribedYoutube: true }).catch(function () {});
+            var chUrl =
+              typeof updates.youtubeChannelUrl === 'string' && updates.youtubeChannelUrl.startsWith('https://')
+                ? updates.youtubeChannelUrl
+                : 'https://www.youtube.com/@PeterFisher-gps-google';
+            if (window.sidecar && window.sidecar.ui && typeof window.sidecar.ui.openExternal === 'function') {
+              ev.preventDefault();
+              window.sidecar.ui.openExternal(chUrl);
+            }
           },
         }),
       ]),
