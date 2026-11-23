@@ -130,14 +130,11 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
   window.__agyAuthedFetch = authedFetch;
 
   // 2. Host CSS Variable + OS + Manual Dark-Mode Synchronizer
-  var STORAGE_KEY = 'agy-sidecar-theme-override';
+  var manualThemeOverride = 'auto';
   function getOverride() {
     var qTheme = params.get('theme');
     if (qTheme === 'dark' || qTheme === 'light') return qTheme;
-    try {
-      var v = window.localStorage.getItem(STORAGE_KEY);
-      if (v === 'dark' || v === 'light') return v;
-    } catch (e) {}
+    if (manualThemeOverride === 'dark' || manualThemeOverride === 'light') return manualThemeOverride;
     return 'auto';
   }
 
@@ -201,10 +198,7 @@ export const HOST_DARK_THEME_BRIDGE_JS = `
 
   window.__toggleAgyTheme = function () {
     var curDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var next = curDark ? 'light' : 'dark';
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch (e) {}
+    manualThemeOverride = curDark ? 'light' : 'dark';
     applyThemeAttr();
   };
 

@@ -1,12 +1,12 @@
 {
   "name": "agy-coordinator",
-  "displayName": "Clawy \u2014 Multi-Agent Coordinator & Live Voice",
-  "version": "1.7.4",
-  "description": "Zero-dependency multi-agent coordinator with an animated Clawy mascot perch, live Antigravity Worker board, 2-level Group -> Goal -> Task tracker, editable IDENTITY.md/SOUL.md persona, and Dual-Mode Voice (Browser Web Speech + Gemini Live API).",
+  "displayName": "Clawy",
+  "version": "1.9.0",
+  "description": "Zero-dependency Multi-Agent Command Center & Gemini Live Voice Hub (Clawy) \u2014 animated 3D Brown Bear perch, Kore voice, side-by-side agent pop-out, 5-state attention triage, and Group -> Goal -> Task sprints inside ~/.gemini/config/plugin_data/agy-coordinator/.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "/agy-coordinator Summarize my active Workers, Groups, and Goal progress",
-    "/agy-coordinator Create a new Group and Goal for today's multi-agent sprint",
-    "/agy-coordinator Relay a status check to my active worker conversations"
+    "Run /agy-coordinator to summarize my active agent conversations, Group -> Goal -> Task sprints, and blockers",
+    "Check which active agents need my attention in Clawy",
+    "Customize Clawy's IDENTITY.md and Google Cloud Project / Gemini Live voice settings"
   ]
 }

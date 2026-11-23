@@ -5,13 +5,13 @@
   ],
   "restart_policy": "always",
   "display_name": "Clawy",
-  "description": "Multi-agent coordinator with an animated Clawy mascot perch, live Worker board, 2-level Group -> Goal -> Task tracker, editable IDENTITY.md/SOUL.md, and Dual-Mode Voice (Browser Web Speech + Gemini Live).",
+  "description": "Multi-Agent Command Center & Gemini Live Voice Hub (Clawy) \u2014 animated 3D Brown Bear perch, Kore voice, side-by-side agent pop-outs, and Group -> Goal -> Task sprints.",
   "has_web_ui": true,
   "agent_permissions": {
     "allows_user_interactions": true
   },
   "ui_config": {
-    "display_name": "Clawy \u00b7 AGY Coordinator",
+    "display_name": "Clawy",
     "views": [
       {
         "path": "/?entrypoint=sidebar",

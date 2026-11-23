@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "1.8.0",
-  "updatedAt": "2026-11-23T04:15:00Z",
+  "suiteVersion": "1.9.0",
+  "updatedAt": "2026-11-23T17:12:37Z",
   "skillCount": 40,
   "skillManifest": {
     "connect-ge": {
@@ -32,9 +32,9 @@
     "agy-coordinator": {
       "plugin": "agy-coordinator",
       "skill": "agy-coordinator",
-      "treeSha256": "a826f8856b6a6e82",
+      "treeSha256": "56d9ba568cdce2eb",
       "files": {
-        "SKILL.md": "d162a0ba96fcdecd3a98460463eaad18666e522a6c7e3a681e7430ab9be8e42d"
+        "SKILL.md": "6eb21b2785fb2c7fa5f67fa30a3a395ae80d98926db7a3ea72ba24545f191b42"
       }
     },
     "agy-dashboard": {
@@ -366,13 +366,13 @@
       "plugin": "agy-coordinator",
       "sidecar": "coordinator-ui",
       "files": {
-        "app.js": "cdd2bf9ea7cb73971cdb55b791a9b22f4075895b1123046edd850e972ee9c3fe",
-        "index.html": "3d9b7d2efd7ce7bb928585a3bcb2f29ee15ba5243f9eda8d0e2b68813d163d9c",
-        "main.mjs": "00e38c94794337f71b4d37025f3d9761a6bb5e7be1d272f24cb84d6640f38805",
+        "app.js": "7a13216a3335b09d809abe3669a3a67f7f33c8ec15756380ca005386e86b1440",
+        "index.html": "cdf30ba532bc6d0a84db4f86f72876d0b97aabfa1a01ca1581f78e7787537be4",
+        "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
-        "sidecar.json": "937269eed9ade4cae645e853a39223dd509031df02b2e164dde03c4c333b85b5",
-        "sidecar_html_inliner.mjs": "f0abe996f6bb4fd39db3d3b8f3a9cd2134d7d8e8f13601a534e896d0b994c058",
-        "styles.css": "d750d9d49a015624b335e5119659ecd100b1b48c276248f60200c544399593e3",
+        "sidecar.json": "b95da8710ead2e36aa7dd185977ceda87eaa178e141ae48ac1b94dbcc23a7e67",
+        "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
+        "styles.css": "932ff36dd001b48ff6cbcf9aad4340302d420fda98d5fa08fe14b9109829e38a",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
@@ -450,7 +450,7 @@
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "b80a218d18008dc776ec368fc046840d214f730781b4d575aa2d5989bef42616"
+      "sha256": "808c656f0f07c186dcfe70a8cab58f0ad5f4ceced2e43080d9075fa23c355963"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",
