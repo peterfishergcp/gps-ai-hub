@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.2.2",
-  "updatedAt": "2026-11-23T19:20:00Z",
+  "suiteVersion": "2.2.3",
+  "updatedAt": "2026-11-23T20:26:00Z",
   "skillCount": 40,
   "skillManifest": {
     "automations": {
@@ -419,7 +419,7 @@
       "plugin": "wv-second-brain",
       "sidecar": "wv-antigravity-ui",
       "files": {
-        "antigravity_updates.mjs": "a82b30ac5a0ee9a1d7b884c27dd25bea6df5457849aa38aa83ffa9bcd3a82811",
+        "antigravity_updates.mjs": "bace471ef8cdefc5270833d75016a00bc214635cc7735d221735f3899801a5e2",
         "app.js": "cdadeeffeb473bab03ccf245c36148add2cfc078557acdd6c2012cd566ff3fc6",
         "index.html": "de9b1d2e453b9f6620299754a60a6a00922f759eeeca66be34bb1b1baca03db0",
         "main.mjs": "950a30a84f849a82ae2244128e99cf91ae72444e507fc479804baef7eac28b0d",

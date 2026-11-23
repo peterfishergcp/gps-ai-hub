@@ -56,12 +56,12 @@ export const BUNDLED_VIDEO_GUIDES = [
     id: 'vid-getting-started-turbo',
     kind: 'video',
     topic: 'videos',
-    badge: '3 Min · How-To Video',
+    badge: '2.5 Min · WV How-To Video',
     dateLabel: 'Nov 2026',
-    title: 'Getting Started in 60 Seconds & Using Turbo Mode',
+    title: 'West Virginia Antigravity Suite — 60-Second Install & Turbo Mode Guide',
     summary:
-      'Step-by-step guide to pasting the 1-line install command, using ⚡ Turbo during setup vs. 🔒 Default for daily work, and setting your role and writing voice.',
-    url: 'https://www.youtube.com/watch?v=JMNn19uuJCo',
+      'Step-by-step WV guide to pasting the wv-antigravity-suite command, using ⚡ Turbo during setup vs. 🔒 Default daily, and linking @wv.gov GE search.',
+    url: 'https://www.youtube.com/watch?v=OjdnOHKMfNA',
     tryLabel: 'Run 60s Setup →',
     tryPrompt:
       '/memory Check my role profile, writing voice, and personal memory setup and confirm Default review safety best practices.',
@@ -116,6 +116,7 @@ const LEGACY_VIDEO_URLS = new Set([
   'https://www.youtube.com/watch?v=g5bVwFgt-xU',
   'https://www.youtube.com/watch?v=jLuitwvpwaY',
   'https://www.youtube.com/watch?v=qw43eb33nzA',
+  'https://www.youtube.com/watch?v=JMNn19uuJCo',
 ]);
 
 export const BUNDLED_BLOG_UPDATES = [
