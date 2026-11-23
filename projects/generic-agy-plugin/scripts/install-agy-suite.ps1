@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.7.4).
+  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.8.0).
 .DESCRIPTION
   Stages strictly inside $HOME\.gemini\config\.install_stage_<guid> (zero %TEMP% writes, zero
-  'agy plugin install' prompts, zero standalone Node/Python/Git required). Installs all 8 AGY plugins,
+  'agy plugin install' prompts, zero standalone Node/Python/Git required). Installs all 9 AGY plugins,
   writes BOM-free UTF-8 JSON configs, and preserves user skill toggles, personal skills, and GE settings.
 #>
 [CmdletBinding()]
@@ -36,10 +36,12 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
 $PluginDataDir = Join-Path $TargetConfigDir "plugin_data\agy-connectors"
 $MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\my-antigravity\memory"
+$CoordDataDir = Join-Path $TargetConfigDir "plugin_data\agy-coordinator"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
 New-Item -ItemType Directory -Force -Path $PluginDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
+New-Item -ItemType Directory -Force -Path $CoordDataDir | Out-Null
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)

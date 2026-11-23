@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.7.4).
+# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.8.0).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ (zero /tmp or /private/tmp writes,
 # zero 'agy plugin install' /tmp/lsrpc.sh prompts, and zero files outside ~/.gemini/config/).
 
@@ -60,9 +60,10 @@ fi
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
 PLUGIN_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-connectors"
 MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/my-antigravity/memory"
+COORD_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-coordinator"
 
-mkdir -p -m 700 "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}"
-chmod 700 "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" 2>/dev/null || true
+mkdir -p -m 700 "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}"
+chmod 700 "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}" 2>/dev/null || true
 
 STAGE_DIR=""
 cleanup() {
@@ -221,6 +222,12 @@ for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
   INSTALLED+=("${pname}")
 done
 echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins to ${PLUGINS_DEST}: ${INSTALLED[*]}"
+# Restart any running AGY UI sidecar processes so Antigravity's Sidecar Runner ("restart_policy": "always") boots the updated code immediately
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "plugins/agy-coordinator/sidecars/coordinator-ui/main.mjs" 2>/dev/null || true
+  pkill -f "plugins/agy-second-brain/sidecars/twin-vault-ui/main.mjs" 2>/dev/null || true
+  pkill -f "plugins/agy-onboarding/sidecars/agy-skill-manager/main.mjs" 2>/dev/null || true
+fi
 
 if [[ -n "${GE_INSTANCE}" ]]; then
   GE_CFG="${PLUGIN_DATA_DIR}/ge-instance.json"

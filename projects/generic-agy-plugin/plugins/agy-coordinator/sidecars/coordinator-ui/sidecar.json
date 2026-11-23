@@ -4,24 +4,24 @@
     "main.mjs"
   ],
   "restart_policy": "always",
-  "display_name": "Chatski",
-  "description": "Google Chat & Gemini Enterprise Chat Connector workspace: browse Direct Messages and Spaces, filter Unread/Mentions/Drafts, stage voice-calibrated replies with Antigravity, and send with explicit human confirmation.",
+  "display_name": "Clawy",
+  "description": "Multi-agent coordinator with an animated Clawy mascot perch, live Worker board, 2-level Group -> Goal -> Task tracker, editable IDENTITY.md/SOUL.md, and Dual-Mode Voice (Browser Web Speech + Gemini Live).",
   "has_web_ui": true,
   "agent_permissions": {
     "allows_user_interactions": true
   },
   "ui_config": {
-    "display_name": "Chatski",
+    "display_name": "Clawy \u00b7 AGY Coordinator",
     "views": [
       {
         "path": "/?entrypoint=sidebar",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
-        "title": "Chatski"
+        "title": "Clawy"
       },
       {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
-        "title": "Chatski"
+        "title": "Clawy"
       }
     ]
   }
