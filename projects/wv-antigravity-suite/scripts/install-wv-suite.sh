@@ -147,4 +147,4 @@ if command -v pkill >/dev/null 2>&1; then
   pkill -f "[n]ode .*wv-design-preview/main.mjs" 2>/dev/null || true
 fi
 
-echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (4 UI extensions: WV Antigravity, WV Coordinator [Clawy], WV Skills, WV Preview)"
+echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (4 UI extensions: WV Antigravity, WV Clawy [Clawy], WV Skills, WV Preview)"

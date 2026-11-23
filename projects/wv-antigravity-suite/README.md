@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-wv-suite.ps1 `
 | Plugin (`WV Skills` Category) | Sidebar Extension & Icon | Included `/skills` & Capabilities |
 | :--- | :--- | :--- |
 | **`wv-second-brain`** | **`WV Antigravity`** *(Antigravity Rainbow **"A"**)* | `/memory` · `/meeting-notes` *(4-Tier Compaction)* · `/meeting-prep` *(Minto SCQA)* · `/followup-plan` · `/swarm-prep` *(4 parallel subagents)* · `/weekly-impact` · `/no-ai-slop` · `/outbound-scrub` |
-| **`wv-coordinator`** | **`WV Coordinator`** *(`Clawy` 3D Mascot)* | **`/wv-coordinator`** — 3D Clawy mascot perch, `Gemini Live` neural voice, Hold-to-Talk mic rings, 2-level `Group -> Goal -> Task` sprints, and parallel worker relay |
+| **`wv-coordinator`** | **`WV Clawy`** *(`Clawy` 3D Mascot)* | **`/wv-coordinator`** — 3D Clawy mascot perch, `Gemini Live` neural voice, Hold-to-Talk mic rings, 2-level `Group -> Goal -> Task` sprints, and parallel worker relay |
 | **`wv-onboarding`** | **`WV Skills`** *(Skills Sparkle Icon)* | `/wv-onboard` · **`/model-guide`** · **`/orchestrator-guide`** · **`/token-usage`** · `/daily-brief` · **`/my-voice`** · `/inbox-triage` · `/wv-update` |
 | **`wv-design-studio`** | **`WV Preview`** *(Magnifying Glass Icon)* | `/wv-dashboard` *(WV Official `#002855` & `#EAAA00` Command Center UI)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers & memos)* + `wv-design-architect` |
 | **`wv-connectors`** | — *(Managed in `WV Skills -> GE Hub`)* | `/connect-ge` · `/connect-m365-workspace` · `/connect-github-bigquery` *(Zero local MCP subprocesses; optional remote HTTPS `deploy/cloudrun-ge-gateway`)* |

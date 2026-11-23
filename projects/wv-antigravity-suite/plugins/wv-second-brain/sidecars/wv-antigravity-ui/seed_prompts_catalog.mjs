@@ -94,7 +94,7 @@ const WV_CATEGORIES = {
   'wv-coordinator': {
     order: 15,
     categoryLabel: 'WV Clawy — Multi-Agent Voice & Sprint Coordinator',
-    chipLabel: 'WV Coordinator',
+    chipLabel: 'WV Clawy',
   },
   'wv-connectors': {
     order: 20,
@@ -226,7 +226,7 @@ export const CURATED_SKILL_SEEDS = {
       '/wv-update Check version-manifest.json and incrementally sync any updated skills or sidecars while preserving my saved settings.',
   },
 
-  // 2. WV Coordinator & Federated Connectors
+  // 2. WV Clawy & Federated Connectors
   'wv-coordinator': {
     title: 'WV Clawy — Multi-Agent Voice & Sprint Coordinator',
     subtitle: '3D mascot perch, Gemini Live voice, Group -> Goal -> Task sprints & worker relay',

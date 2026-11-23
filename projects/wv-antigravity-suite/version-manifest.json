@@ -40,9 +40,9 @@
     "wv-coordinator": {
       "plugin": "wv-coordinator",
       "skill": "wv-coordinator",
-      "treeSha256": "7dc15143587b4c78",
+      "treeSha256": "9a50c03463831b8e",
       "files": {
-        "SKILL.md": "cb2e913b3d77e6f79a8ceaf936664d7a4497d7389547d8a210554c3ff318bbee"
+        "SKILL.md": "fdeb9cb7458dbe00cdb7449f8ebae18f9da630f8892340d57abed0fa8a8fade6"
       }
     },
     "doc-design": {
@@ -180,12 +180,12 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "c9965a87fc2b8d1a",
+      "treeSha256": "76ad2d5ff8170c8e",
       "files": {
         "SKILL.md": "9c7ef3e75e8a3a14734d0a5cc4f8d32ed573cc92369157a284f9f62eb7b8483c",
         "scripts/incremental-sync.mjs": "1a853f7d847f240a7b24bdfac2dce0348372ae62e2c58811928001e40cfd2ea7",
         "scripts/install-wv-suite.ps1": "e9bb72a1813a7dfae357ff5bbb4992e06ce7e83e9654eb21f3f47c827cba2bde",
-        "scripts/install-wv-suite.sh": "0d98912d2ed84c7eb6c8a79826e38f001873762ae55c44d897ac728b248d0a72"
+        "scripts/install-wv-suite.sh": "9757d89caebe3e6bdab2739720edf152798ac05afc6b303a7371b0755e5c1f92"
       }
     },
     "followup-plan": {
@@ -366,11 +366,11 @@
       "plugin": "wv-coordinator",
       "sidecar": "wv-coordinator-ui",
       "files": {
-        "app.js": "4b9e43baf1e8a032b7a571ccf864d47496082bb64b4ac5fccd8aba08d8e759ef",
-        "index.html": "c23a50bbbe4b4f2a06a866d04d9e6881d188b1729c35bdebe4de19686af71969",
-        "main.mjs": "1d5912e427e3a66f5f122baef4ba132ddf92507163804cf742581e455bb4cf4a",
+        "app.js": "ffd0e0a4ae510bcd48a1c6ef5626f6bf96a93a920003956f6466272757c602ea",
+        "index.html": "f187d62218ee2ba86f7831545377ac50a6315c4a20c33661d7c7ab0208491e3a",
+        "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
-        "sidecar.json": "80df5157b9f1bd47dddc83da87c664bf390b9acdb0a56d78536f8ec923c59ded",
+        "sidecar.json": "67bd03c3ea5a2c9ae7160216a9976fda3d9b316300753372d27047e79e6f0887",
         "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
         "styles.css": "932ff36dd001b48ff6cbcf9aad4340302d420fda98d5fa08fe14b9109829e38a",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
@@ -400,7 +400,7 @@
         "index.html": "1946dde740cf0d362f4e6c3748a0041b13f97b256b2b26318cff2a1d446a333b",
         "main.mjs": "3f8b448b602a0e85418f23ab355193466beb3808df8e78478f016a59196e9811",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "390fa90961f716a622b1fcc8f889b5bfca06c53deb41d275b5637e672ba516ea",
+        "seed_prompts_catalog.mjs": "52a6db867ba5aa3eae6296de3a1c1f0fca84c1d1dcbd65e25531a5ac56fb8791",
         "sidecar.json": "9432001f8809f2c69aab65eb0e51b20e7e20952c88bb639a294a1709e53755c6",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
@@ -424,7 +424,7 @@
         "index.html": "6164d9f2ac5f1bbea6a6977a5230ce827266f59159ec965e0c70ff5e0acd0591",
         "main.mjs": "950a30a84f849a82ae2244128e99cf91ae72444e507fc479804baef7eac28b0d",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "390fa90961f716a622b1fcc8f889b5bfca06c53deb41d275b5637e672ba516ea",
+        "seed_prompts_catalog.mjs": "52a6db867ba5aa3eae6296de3a1c1f0fca84c1d1dcbd65e25531a5ac56fb8791",
         "sidecar.json": "30a34ca3bca99f3bb82fbcd528640bb2f9eb6b178361c341d2293e1b194ab942",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",

@@ -23,6 +23,7 @@ import {
   mutateTasks,
   postBoardItem,
   processCoordinatorTurn,
+  diagnoseVoiceConnection,
   relayToWorker,
   saveIdentity,
   saveVoicePrefs,
@@ -259,12 +260,23 @@ app.api('/api/voice/prefs', async (data) => {
   }
 }, 'POST');
 
+app.api('/api/voice/diagnose', async (data) => {
+  try {
+    const diagnosis = await diagnoseVoiceConnection(data || {});
+    const snapshot = await buildSnapshotPayload();
+    return { ok: diagnosis.ok, diagnosis, snapshot };
+  } catch (err) {
+    return safeErr(err);
+  }
+}, 'POST');
+
 app.api('/api/voice/live-turn', async (data) => {
   try {
     const res = await processCoordinatorTurn({
       prompt: data?.prompt || '',
       audioBase64: data?.audioBase64 || '',
       mimeType: data?.mimeType || '',
+      browserTranscript: data?.browserTranscript || '',
       source: data?.source || 'text',
       requestedMode: data?.mode || '',
     });

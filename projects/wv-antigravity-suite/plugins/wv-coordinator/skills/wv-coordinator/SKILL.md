@@ -1,9 +1,9 @@
 ---
 name: wv-coordinator
-description: State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub ("Clawy") for triaging active Antigravity agent conversations (Needs You, Working, Ready for Review, Idle), popping conversations open side-by-side, closing idle chats, organizing 2-level Group -> Goal -> Task sprints, and customizing IDENTITY.md / SOUL.md + Gemini Live Voice inside ~/.gemini/config/plugin_data/wv-coordinator/. Use when a user says /wv-coordinator, asks to coordinate multiple agents, check which agent needs attention, track Group -> Goal -> Task progress, or open the WV Coordinator panel.
+description: State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub ("Clawy") for triaging active Antigravity agent conversations (Needs You, Working, Ready for Review, Idle), popping conversations open side-by-side, closing idle chats, organizing 2-level Group -> Goal -> Task sprints, and customizing IDENTITY.md / SOUL.md + Gemini Live Voice inside ~/.gemini/config/plugin_data/wv-coordinator/. Use when a user says /wv-coordinator, asks to coordinate multiple agents, check which agent needs attention, track Group -> Goal -> Task progress, or open the WV Clawy panel.
 ---
 
-# WV Coordinator (`Clawy`) — Multi-Agent Command Center & Gemini Live Voice Hub
+# WV Clawy (`Clawy`) — Multi-Agent Command Center & Gemini Live Voice Hub
 
 Coordinates parallel Antigravity agent conversations (`🤖 Agents`), side-by-side split pop-outs (`↗ Pop Out`), live attention triage (`🔔 Updates` / `Notifications`), strict 2-level `Group -> Goal -> Task` sprints, and `Gemini Live` voice commands with **100% zero footprint** inside `~/.gemini/config/plugin_data/wv-coordinator/`.
 
@@ -26,4 +26,4 @@ node ~/.gemini/config/plugins/wv-coordinator/scripts/coord_ctl.mjs task add --go
 ```
 
 ## Opening the Panel
-Direct the user to click **`WV Coordinator`** (`Clawy` 3D Mascot icon) in the Antigravity left sidebar (`Extensions -> WV Coordinator`).
+Direct the user to click **`WV Clawy`** (`Clawy` 3D Mascot icon) in the Antigravity left sidebar (`Extensions -> WV Clawy`).

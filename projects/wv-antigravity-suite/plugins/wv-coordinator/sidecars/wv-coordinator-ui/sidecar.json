@@ -4,24 +4,24 @@
     "main.mjs"
   ],
   "restart_policy": "always",
-  "display_name": "WV Coordinator",
-  "description": "Zero-footprint State of West Virginia Multi-Agent Coordinator & Gemini Live Voice Hub (Clawy) — animated 3D mascot perch, Group -> Goal -> Task sprints, and parallel worker relay.",
+  "display_name": "🐻 WV Clawy",
+  "description": "Zero-footprint State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub (WV Clawy) — animated 3D WV Black Bear perch, side-by-side agent pop-outs, and Group -> Goal -> Task sprints.",
   "has_web_ui": true,
   "agent_permissions": {
     "allows_user_interactions": true
   },
   "ui_config": {
-    "display_name": "WV Coordinator",
+    "display_name": "🐻 WV Clawy",
     "views": [
       {
         "path": "/?entrypoint=sidebar",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
-        "title": "WV Coordinator"
+        "title": "🐻 WV Clawy"
       },
       {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
-        "title": "WV Coordinator"
+        "title": "🐻 WV Clawy"
       }
     ]
   }

@@ -388,20 +388,20 @@
 
       // Smooth mouth-seam lip-sync overlay anchored at (mouthCenterU: 0.5, mouthSeamV: 0.57)
       var mx = (0.5 - 0.5) * drawW;
-      var my = (0.57 - 0.5) * drawH;
+      var my = (0.58 - 0.5) * drawH;
       var openAmt = state.speaking ? state.mouthOpenness : 0;
       if (openAmt > 0.04) {
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = '#27120b';
         ctx.beginPath();
-        ctx.ellipse(mx, my, 9 + openAmt * 4, 2.5 + openAmt * 7.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(mx, my, 8 + openAmt * 3.8, 2.2 + openAmt * 6.8, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#34d399';
+        ctx.fillStyle = '#fb7185';
         ctx.beginPath();
-        ctx.ellipse(mx, my + openAmt * 1.5, 6.5 + openAmt * 2.5, 1.5 + openAmt * 4.0, 0, 0, Math.PI * 2);
+        ctx.ellipse(mx, my + openAmt * 1.6, 5.2 + openAmt * 2.2, 1.3 + openAmt * 3.4, 0, 0, Math.PI * 2);
         ctx.fill();
       } else if (!window.__CLAWY_MASCOT_DATA_URL) {
-        ctx.strokeStyle = '#34d399';
-        ctx.lineWidth = 3.2;
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 3.0;
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(mx - 8, my - 1);
@@ -633,6 +633,41 @@
     });
   }
 
+  var browserSpeechRec = null;
+  var latestBrowserSpeech = '';
+
+  function startBrowserSpeechParallel() {
+    latestBrowserSpeech = '';
+    var SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechCtor) return;
+    try {
+      var rec = new SpeechCtor();
+      rec.lang = 'en-US';
+      rec.interimResults = true;
+      rec.continuous = true;
+      rec.onresult = function (ev) {
+        var parts = [];
+        for (var i = 0; i < ev.results.length; i += 1) {
+          if (ev.results[i] && ev.results[i][0]) {
+            parts.push(ev.results[i][0].transcript);
+          }
+        }
+        latestBrowserSpeech = parts.join(' ').trim();
+      };
+      rec.onerror = function () {};
+      rec.start();
+      browserSpeechRec = rec;
+    } catch (e) {
+      browserSpeechRec = null;
+    }
+  }
+
+  function stopBrowserSpeechParallel() {
+    if (!browserSpeechRec) return;
+    try { browserSpeechRec.stop(); } catch (e) {}
+    browserSpeechRec = null;
+  }
+
   async function startMediaRecording() {
     if (state.listening) return;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -645,6 +680,7 @@
     cancelPendingCapture = false;
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      startBrowserSpeechParallel();
       // Wire WebAudio AnalyserNode for live RMS listening rings & waveform
       var AudioCtor = window.AudioContext || window.webkitAudioContext;
       if (AudioCtor) {
@@ -666,9 +702,11 @@
       };
 
       mediaRecorder.onstop = async function () {
+        stopBrowserSpeechParallel();
         var durationMs = Date.now() - recordStartedAt;
         var chunksCopy = recordedChunks.slice();
         var mimeCopy = (mediaRecorder && mediaRecorder.mimeType) || recordMimeType;
+        var capturedSpeech = latestBrowserSpeech;
         cleanupAudioStream();
         mediaRecorder = null;
 
@@ -686,7 +724,7 @@
         resetMicUi(false);
         try {
           var b64 = await blobToBase64(blob);
-          await submitCoordinatorAudio(b64, blob.type || 'audio/webm');
+          await submitCoordinatorAudio(b64, blob.type || 'audio/webm', capturedSpeech);
         } catch (err) {
           setPerchBubble(state.lastBubbleText, false);
           showToast('Audio encode failed');
@@ -727,17 +765,18 @@
     resetMicUi(true);
   }
 
-  async function submitCoordinatorAudio(audioBase64, mimeType) {
+  async function submitCoordinatorAudio(audioBase64, mimeType, browserTranscript) {
     var modeSel = document.getElementById('voiceModeSelect');
     var mode = modeSel ? modeSel.value : 'gemini-live';
     state.thinking = true;
     setMascotMood('thinking', 'Transcribing...');
-    setPerchBubble('Processing voice with Gemini...', false);
+    setPerchBubble('Processing voice...', false);
 
     try {
       var res = await apiPost('/api/voice/live-turn', {
         audioBase64: audioBase64,
         mimeType: mimeType,
+        browserTranscript: browserTranscript || '',
         source: 'voice',
         mode: mode,
       });
@@ -1738,21 +1777,59 @@
     root.appendChild(idCard);
 
     var voiceCard = el('form', 'coord-card');
-    voiceCard.appendChild(el('div', 'coord-card-title', 'Dual-Mode Voice & Auto-ADC Settings'));
-    voiceCard.appendChild(
-      el(
-        'div',
-        'coord-card-sub',
-        'Auth detected: ' + (vs.readyForGeminiLive ? 'Gemini Ready (' + vs.keySource + ')' : 'Local fallback (no API key or ADC file detected)') +
-        ' · Stored with 0600 permissions in plugin_data/wv-coordinator/voice_prefs.json'
-      )
+    voiceCard.appendChild(el('div', 'coord-card-title', 'Google Cloud Project (Vertex AI ADC) & Voice Settings'));
+    var statusBanner = el(
+      'div',
+      'coord-card-sub',
+      vs.lastDiagnostic
+        ? '⚠️ ' + vs.lastDiagnostic
+        : 'Active Auth: ' + (vs.effectiveProjectId ? 'GCP Project "' + vs.effectiveProjectId + '" (' + vs.projectSource + ')' : vs.keySource || 'Auto-detecting GCP Project') +
+          ' · Stored with 0600 permissions in plugin_data/wv-coordinator/voice_prefs.json'
     );
+    voiceCard.appendChild(statusBanner);
+
+    var projLbl = el(
+      'label',
+      'coord-field-lbl',
+      'Google Cloud Project ID (Vertex AI · Auto-detected: ' +
+        (vs.effectiveProjectId ? vs.effectiveProjectId + ' via ' + vs.projectSource : 'none yet — enter your GCP Project ID below') +
+        ')'
+    );
+    var projIn = el('input', 'coord-input coord-input-sm');
+    projIn.placeholder = vs.effectiveProjectId || 'YOUR_PROJECT_ID (auto-detected from Antigravity / gcloud / ADC)';
+    projIn.value = vs.projectId || '';
+    voiceCard.appendChild(projLbl);
+    voiceCard.appendChild(projIn);
+
+    var adcRow = el('label', 'coord-row');
+    var adcChk = el('input');
+    adcChk.type = 'checkbox';
+    adcChk.checked = vs.useGcloudAdc !== false;
+    adcRow.appendChild(adcChk);
+    adcRow.appendChild(el('span', '', 'Use Google Cloud ADC / gcloud login with your GCP Project (Vertex AI)'));
+    voiceCard.appendChild(adcRow);
+
+    var adcHelpRow = el('div', 'coord-row');
+    var copyAdcBtn = el('button', 'btn btn-secondary btn-sm', '📋 Copy: gcloud auth application-default login');
+    copyAdcBtn.type = 'button';
+    copyAdcBtn.addEventListener('click', function () {
+      var cmd = 'gcloud auth application-default login';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cmd).then(function () {
+          showToast('Copied "' + cmd + '" — run in Terminal to refresh ADC');
+        });
+      } else {
+        showToast('Run in Terminal: ' + cmd);
+      }
+    });
+    adcHelpRow.appendChild(copyAdcBtn);
+    voiceCard.appendChild(adcHelpRow);
 
     var mLbl = el('label', 'coord-field-lbl', 'Default Voice Engine');
     var mSel = el('select', 'coord-select');
-    var o1 = el('option', '', 'Gemini Live');
+    var o1 = el('option', '', 'Gemini Live (Vertex AI GCP Project)');
     o1.value = 'gemini-live';
-    var o2 = el('option', '', 'Browser Instant Voice (Local Fallback)');
+    var o2 = el('option', '', 'Browser Instant Voice (Offline Local)');
     o2.value = 'browser';
     mSel.appendChild(o1);
     mSel.appendChild(o2);
@@ -1760,7 +1837,7 @@
     voiceCard.appendChild(mLbl);
     voiceCard.appendChild(mSel);
 
-    var vNameLbl = el('label', 'coord-field-lbl', 'Gemini 3.1 Neural Voice Character');
+    var vNameLbl = el('label', 'coord-field-lbl', 'Gemini Neural Voice Character');
     var vNameSel = el('select', 'coord-select');
     [
       ['Zephyr', 'Zephyr — Clear & Friendly (Default)'],
@@ -1782,42 +1859,57 @@
     voiceCard.appendChild(vNameLbl);
     voiceCard.appendChild(vNameSel);
 
-    var projLbl = el(
-      'label',
-      'coord-field-lbl',
-      'Google Cloud Project ID (Default Vertex AI · Auto-detected: ' +
-        (vs.effectiveProjectId ? vs.effectiveProjectId + ' via ' + vs.projectSource : 'none yet — enter project or run /connect-ge') +
-        ')'
-    );
-    var projIn = el('input', 'coord-input coord-input-sm');
-    projIn.placeholder = vs.effectiveProjectId || 'YOUR_PROJECT_ID (auto-detected from GE / gcloud)';
-    projIn.value = vs.projectId || '';
-    voiceCard.appendChild(projLbl);
-    voiceCard.appendChild(projIn);
-
-    var keyLbl = el('label', 'coord-field-lbl', 'Optional AI Studio GEMINI_API_KEY (only needed if not using Google Cloud Project / ADC)');
+    var advDetails = el('details', '');
+    var advSummary = el('summary', 'coord-field-lbl', 'Advanced: Optional API Key Override' + (vs.hasApiKey ? ' (Saved ✓)' : ''));
+    advSummary.style.cursor = 'pointer';
+    advDetails.appendChild(advSummary);
     var keyIn = el('input', 'coord-input coord-input-sm');
     keyIn.type = 'password';
-    keyIn.placeholder = vs.hasApiKey ? '•••••••• (key saved — type to replace)' : 'AIza... (optional)';
-    voiceCard.appendChild(keyLbl);
-    voiceCard.appendChild(keyIn);
+    keyIn.style.marginTop = '6px';
+    keyIn.placeholder = vs.hasApiKey ? '•••••••• (saved — type to replace)' : 'Optional Vertex Express (AQ...) or AI Studio (AIza...) key';
+    advDetails.appendChild(keyIn);
+    if (vs.hasApiKey) {
+      var clrBtn = el('button', 'btn btn-secondary btn-sm', 'Clear Saved API Key (Use GCP Project ADC Only)');
+      clrBtn.type = 'button';
+      clrBtn.style.marginTop = '6px';
+      clrBtn.addEventListener('click', async function () {
+        var r = await apiPost('/api/voice/prefs', { clearApiKey: true });
+        if (r && r.snapshot) {
+          state.snapshot = r.snapshot;
+          showToast('Cleared API key — using GCP Project ADC');
+          renderHeaderAndPerch();
+          renderActiveTab();
+        }
+      });
+      advDetails.appendChild(clrBtn);
+    }
+    voiceCard.appendChild(advDetails);
 
-    var adcRow = el('label', 'coord-row');
-    var adcChk = el('input');
-    adcChk.type = 'checkbox';
-    adcChk.checked = vs.useGcloudAdc !== false;
-    adcRow.appendChild(adcChk);
-    adcRow.appendChild(el('span', '', 'Auto-use keyless gcloud ADC (application_default_credentials.json / gcloud CLI)'));
-    voiceCard.appendChild(adcRow);
+    var collectPrefsPayload = function () {
+      var payload = {
+        mode: mSel.value,
+        voiceName: vNameSel.value,
+        projectId: projIn.value.trim(),
+        useGcloudAdc: adcChk.checked,
+      };
+      if (keyIn.value.trim()) payload.apiKey = keyIn.value.trim();
+      return payload;
+    };
 
     var btnRow = el('div', 'coord-row');
-    var saveVoiceBtn = el('button', 'btn btn-primary btn-sm', 'Save Voice Prefs');
+    var saveVoiceBtn = el('button', 'btn btn-primary btn-sm', '🔌 Save & Verify GCP Connection');
     saveVoiceBtn.type = 'submit';
-    var testVoiceBtn = el('button', 'btn btn-secondary btn-sm', 'Test Mascot Voice & Lip-Sync');
+    var testVoiceBtn = el('button', 'btn btn-secondary btn-sm', '🔊 Save & Test Bear Voice');
     testVoiceBtn.type = 'button';
-    testVoiceBtn.addEventListener('click', function () {
+    testVoiceBtn.addEventListener('click', async function () {
+      var saved = await apiPost('/api/voice/prefs', collectPrefsPayload());
+      if (saved && saved.snapshot) {
+        state.snapshot = saved.snapshot;
+        keyIn.value = '';
+        renderHeaderAndPerch();
+      }
       speakText(
-        'Hello! ' + (id.name || 'Clawy') + ' is online and ready to coordinate your workers.',
+        'Hello! ' + (id.name || 'Clawy') + ' is connected and ready to coordinate your agents.',
         null,
         vNameSel.value || 'Zephyr'
       );
@@ -1828,21 +1920,20 @@
 
     voiceCard.addEventListener('submit', async function (ev) {
       ev.preventDefault();
-      var payload = {
-        mode: mSel.value,
-        voiceName: vNameSel.value,
-        projectId: projIn.value.trim(),
-        useGcloudAdc: adcChk.checked,
-      };
-      if (keyIn.value.trim()) payload.apiKey = keyIn.value.trim();
-      var res = await apiPost('/api/voice/prefs', payload);
-      if (res && res.ok && res.snapshot) {
+      saveVoiceBtn.disabled = true;
+      saveVoiceBtn.textContent = 'Verifying GCP Project...';
+      var res = await apiPost('/api/voice/diagnose', collectPrefsPayload());
+      saveVoiceBtn.disabled = false;
+      saveVoiceBtn.textContent = '🔌 Save & Verify GCP Connection';
+      if (res && res.snapshot) {
         state.snapshot = res.snapshot;
         keyIn.value = '';
         renderHeaderAndPerch();
-        showToast('Saved voice preferences');
         renderActiveTab();
       }
+      var diagMsg = (res && res.diagnosis && res.diagnosis.summary) || (res && res.error) || 'Saved preferences';
+      showToast(diagMsg);
+      setPerchBubble(diagMsg, true);
     });
     root.appendChild(voiceCard);
   }

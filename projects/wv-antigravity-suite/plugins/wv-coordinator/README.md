@@ -1,4 +1,4 @@
-# WV Coordinator (`Clawy`) — Zero-Footprint Multi-Agent & Gemini Live Voice Hub (`wv-coordinator`)
+# WV Clawy (`Clawy`) — Zero-Footprint Multi-Agent & Gemini Live Voice Hub (`wv-coordinator`)
 
 Brings the **3D Clawy Mascot Perch**, **Gemini Live** neural voice, **Workers** discovery & relay, and **2-Level `Group -> Goal -> Task` Sprints** into the **State of West Virginia Antigravity Suite** with **100% zero footprint**:
 
