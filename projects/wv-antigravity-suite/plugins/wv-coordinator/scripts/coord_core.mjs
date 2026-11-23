@@ -2515,8 +2515,18 @@ export async function processCoordinatorTurn({
   };
 }
 
+function sanitizeTextForSpokenTts(raw) {
+  return String(raw || '')
+    .replace(/[`*_#~]+/g, ' ')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, ' ')
+    .replace(/\s*->\s*/g, ' to ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 900);
+}
+
 export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
-  const cleanText = String(text || '').trim().slice(0, 900);
+  const cleanText = sanitizeTextForSpokenTts(text);
   if (!cleanText) return null;
   const prefs = loadVoicePrefsRaw();
   if (prefs.ttsEnabled === false) return null;
@@ -2602,11 +2612,9 @@ export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
           if (cResp.ok) {
             const cData = await cResp.json();
             if (cData?.audioContent) {
-              const wavBuf = Buffer.from(cData.audioContent, 'base64');
-              const pcmBuf = wavBuf.length > 44 && wavBuf.subarray(0, 4).toString('ascii') === 'RIFF' ? wavBuf.subarray(44) : wavBuf;
               return {
-                audioBase64: pcmBuf.toString('base64'),
-                mimeType: 'audio/L16;rate=24000',
+                audioBase64: cData.audioContent,
+                mimeType: 'audio/wav;rate=24000',
                 sampleRate: 24000,
                 voiceName: chosenVoice,
                 modelUsed: 'cloud-tts:chirp3-hd',

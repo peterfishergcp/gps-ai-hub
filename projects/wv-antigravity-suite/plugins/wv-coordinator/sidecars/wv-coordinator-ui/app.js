@@ -449,63 +449,132 @@
     if (!state.listening && !state.thinking) setMascotMood('idle', 'Idle');
   }
 
-  var ttsPlaybackCtx = null;
+  var sharedTtsCtx = null;
   var ttsSourceNode = null;
+  var ttsGainNode = null;
   var ttsAnalyserTimer = null;
+
+  function getSharedAudioContext() {
+    var AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return null;
+    if (!sharedTtsCtx || sharedTtsCtx.state === 'closed') {
+      sharedTtsCtx = new AudioCtor();
+    }
+    if (sharedTtsCtx.state === 'suspended' && typeof sharedTtsCtx.resume === 'function') {
+      sharedTtsCtx.resume().catch(function () {});
+    }
+    return sharedTtsCtx;
+  }
 
   function stopTtsAudioPlayback() {
     if (ttsAnalyserTimer) {
       clearInterval(ttsAnalyserTimer);
       ttsAnalyserTimer = null;
     }
-    if (ttsSourceNode) {
-      try { ttsSourceNode.stop(); } catch (e) {}
-      ttsSourceNode = null;
+    if (ttsGainNode && sharedTtsCtx) {
+      try {
+        var now = sharedTtsCtx.currentTime;
+        ttsGainNode.gain.cancelScheduledValues(now);
+        ttsGainNode.gain.setValueAtTime(ttsGainNode.gain.value, now);
+        ttsGainNode.gain.linearRampToValueAtTime(0.0001, now + 0.025);
+      } catch (e) {}
     }
-    if (ttsPlaybackCtx) {
-      try { ttsPlaybackCtx.close(); } catch (e) {}
-      ttsPlaybackCtx = null;
+    var oldSrc = ttsSourceNode;
+    var oldGain = ttsGainNode;
+    ttsSourceNode = null;
+    ttsGainNode = null;
+    if (oldSrc) {
+      setTimeout(function () {
+        try { oldSrc.stop(); } catch (e) {}
+        try { oldSrc.disconnect(); } catch (e) {}
+        if (oldGain) {
+          try { oldGain.disconnect(); } catch (e) {}
+        }
+      }, 35);
     }
   }
 
+  function extractPcmSliceFromBinaryString(bin) {
+    if (bin.length > 44 && bin.slice(0, 4) === 'RIFF' && bin.slice(8, 12) === 'WAVE') {
+      var pos = 12;
+      while (pos + 8 <= bin.length) {
+        var chunkId = bin.slice(pos, pos + 4);
+        var chunkSize =
+          (bin.charCodeAt(pos + 4) & 0xff) |
+          ((bin.charCodeAt(pos + 5) & 0xff) << 8) |
+          ((bin.charCodeAt(pos + 6) & 0xff) << 16) |
+          ((bin.charCodeAt(pos + 7) & 0xff) << 24);
+        if (chunkSize < 0) chunkSize = bin.length - (pos + 8);
+        if (chunkId === 'data') {
+          var start = pos + 8;
+          var end = Math.min(bin.length, start + chunkSize);
+          return { offset: start, byteLength: Math.max(0, end - start) };
+        }
+        pos += 8 + chunkSize + (chunkSize % 2);
+      }
+      return { offset: 44, byteLength: bin.length - 44 };
+    }
+    return { offset: 0, byteLength: bin.length };
+  }
+
   function playPcm16Base64(ttsAudio) {
-    var AudioCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtor || !ttsAudio || !ttsAudio.audioBase64) return false;
+    if (!ttsAudio || !ttsAudio.audioBase64) return false;
+    var ctx = getSharedAudioContext();
+    if (!ctx) return false;
     try {
       stopTtsAudioPlayback();
       if (typeof window.speechSynthesis !== 'undefined') window.speechSynthesis.cancel();
       var bin = window.atob(ttsAudio.audioBase64);
-      var pcmOffset = 0;
-      if (bin.length > 44 && bin.slice(0, 4) === 'RIFF' && bin.slice(8, 12) === 'WAVE') {
-        pcmOffset = 44;
-      }
-      var sampleCount = Math.floor((bin.length - pcmOffset) / 2);
-      if (sampleCount < 10) return false;
+      var slice = extractPcmSliceFromBinaryString(bin);
+      var pcmOffset = slice.offset;
+      var rawSamples = Math.floor(slice.byteLength / 2);
+      if (rawSamples < 20) return false;
       var rate = Number(ttsAudio.sampleRate) || 24000;
-      // Run AudioContext at hardware native rate (e.g., 48kHz in Electron) and specify 24kHz on createBuffer
-      var ctx = new AudioCtor();
-      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
-        ctx.resume().catch(function () {});
-      }
-      ttsPlaybackCtx = ctx;
-      var audioBuf = ctx.createBuffer(1, sampleCount, rate);
+
+      // Trim the last ~18ms of raw codec tail (where Gemini TTS sometimes emits an EOS static burst)
+      // when clip is longer than 350ms, then apply smooth cosine fade-in/out + 80ms zero-silence pad.
+      var trimTailSamples = rawSamples > Math.floor(rate * 0.35) ? Math.floor(rate * 0.018) : 0;
+      var activeSamples = Math.max(16, rawSamples - trimTailSamples);
+      var padSilentSamples = Math.floor(rate * 0.08); // 80ms clean silence before onended
+      var totalSamples = activeSamples + padSilentSamples;
+
+      var audioBuf = ctx.createBuffer(1, totalSamples, rate);
       var ch = audioBuf.getChannelData(0);
-      for (var i = 0; i < sampleCount; i += 1) {
+      for (var i = 0; i < activeSamples; i += 1) {
         var idx = pcmOffset + i * 2;
-        var lo = bin.charCodeAt(idx);
-        var hi = bin.charCodeAt(idx + 1);
+        var lo = bin.charCodeAt(idx) & 0xff;
+        var hi = bin.charCodeAt(idx + 1) & 0xff;
         var val = (hi << 8) | lo;
         if (val >= 0x8000) val -= 0x10000;
         ch[i] = val / 32768;
       }
+
+      // Remove any residual DC offset on the tail & apply 8ms fade-in + 45ms raised-cosine fade-out
+      var fadeInLen = Math.min(Math.floor(rate * 0.008), Math.floor(activeSamples * 0.2));
+      for (var fi = 0; fi < fadeInLen; fi += 1) {
+        var wIn = 0.5 * (1 - Math.cos((Math.PI * fi) / fadeInLen));
+        ch[fi] *= wIn;
+      }
+      var fadeOutLen = Math.min(Math.floor(rate * 0.045), Math.floor(activeSamples * 0.35));
+      var fadeStart = activeSamples - fadeOutLen;
+      for (var fo = 0; fo < fadeOutLen; fo += 1) {
+        var wOut = 0.5 * (1 + Math.cos((Math.PI * fo) / fadeOutLen));
+        ch[fadeStart + fo] *= wOut;
+      }
+      // Trailing padSilentSamples are already 0.0 in Float32Array
+
       var src = ctx.createBufferSource();
       src.buffer = audioBuf;
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(1.0, ctx.currentTime);
       var an = ctx.createAnalyser();
       an.fftSize = 256;
       var timeBuf = new Uint8Array(an.fftSize);
-      src.connect(an);
+      src.connect(gain);
+      gain.connect(an);
       an.connect(ctx.destination);
       ttsSourceNode = src;
+      ttsGainNode = gain;
       state.speaking = true;
       setMascotMood('speaking', 'Speaking');
       ttsAnalyserTimer = setInterval(function () {
@@ -519,8 +588,18 @@
         state.mouthOpenness = Math.min(1, rms * 5.2);
       }, 45);
       src.onended = function () {
-        stopTtsAudioPlayback();
-        stopLipSyncPulse();
+        if (ttsSourceNode === src) {
+          if (ttsAnalyserTimer) {
+            clearInterval(ttsAnalyserTimer);
+            ttsAnalyserTimer = null;
+          }
+          ttsSourceNode = null;
+          ttsGainNode = null;
+          try { src.disconnect(); } catch (e) {}
+          try { gain.disconnect(); } catch (e) {}
+          try { an.disconnect(); } catch (e) {}
+          stopLipSyncPulse();
+        }
       };
       src.start(0);
       return true;
