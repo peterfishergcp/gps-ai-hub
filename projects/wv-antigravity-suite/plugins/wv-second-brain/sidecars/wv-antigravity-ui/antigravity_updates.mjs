@@ -46,8 +46,8 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Google Antigravity Plugin Suite — Complete Tour',
     summary:
-      'Two-host walkthrough of WV Antigravity Overview, AI Inbox Action Items, Dedicated WV Skills Hub (with Personal Skills), TokenEconomics, and serverless WV Preview.',
-    url: YOUTUBE_CHANNEL_URL,
+      'Two-host walkthrough of WV Antigravity Overview, WV Clawy (Brown Bear Multi-Agent & Voice Hub), AI Inbox Action Items, WV Skills Hub, TokenEconomics, and WV Preview.',
+    url: 'https://www.youtube.com/watch?v=Qk6TZEhROmo',
     tryLabel: 'Tour My Workspace →',
     tryPrompt:
       '/daily-brief Walk me through my workspace Overview, open Action Items, Personal Skills, and TokenEconomics health.',
@@ -61,7 +61,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     title: 'Getting Started in 60 Seconds & Using Turbo Mode Safely',
     summary:
       'How to install the plugin suite in one command, when to toggle Request Review to Turbo for trusted setup and back to Default for daily safety, and running onboarding.',
-    url: YOUTUBE_CHANNEL_URL,
+    url: 'https://www.youtube.com/watch?v=g5bVwFgt-xU',
     tryLabel: 'Run 60s Setup →',
     tryPrompt:
       '/memory Check my role profile, writing voice, and personal memory setup and confirm Default review safety best practices.',
@@ -75,8 +75,8 @@ export const BUNDLED_VIDEO_GUIDES = [
     title: 'Using 1-Click Skills, Personal Skills & Visual Previews (Dashboard & Slides)',
     summary:
       'Explore suite & personal skills in the dedicated Skills panel, spin up an interactive KPI Dashboard and 16:9 Slide Deck, customize layout, and view serverless in Preview.',
-    url: YOUTUBE_CHANNEL_URL,
-    tryLabel: 'Build Sample Dashboard →',
+    url: 'https://www.youtube.com/watch?v=jLuitwvpwaY',
+    tryLabel: 'Build Sample Deck →',
     tryPrompt:
       '/slides Create a crisp 5-slide executive readiness briefing deck with speaker notes and open the rendered visual preview in the Side Pane.',
   },
@@ -89,7 +89,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     title: 'Mastering Orchestrator, Workflows & TokenEconomics',
     summary:
       'Pair Gemini 4 Argon/Neon planning with fast Hydrogen execution, offload repetitive work to deterministic Workflows vs Swarm, and manage your monthly pooled spend cap.',
-    url: YOUTUBE_CHANNEL_URL,
+    url: 'https://www.youtube.com/watch?v=qw43eb33nzA',
     tryLabel: 'Master Orchestrator →',
     tryPrompt:
       '/orchestrator-guide Show me how to combine Orchestrator (Argon/Neon + Hydrogen) with deterministic Workflows to maximize quality and stretch my pooled quota.',
@@ -317,6 +317,7 @@ export function getUpdatesState(stateDir = '', videoManifestOverride = null) {
   const subPath = path.join(dir, 'updates-subscription.json');
 
   let cachedBlog = null;
+  let cachedVideos = null;
   let lastSyncedIso = null;
   try {
     if (fs.existsSync(cachePath) && fs.lstatSync(cachePath).isFile()) {
@@ -324,6 +325,15 @@ export function getUpdatesState(stateDir = '', videoManifestOverride = null) {
       if (Array.isArray(c.items) && c.items.length > 0) {
         cachedBlog = c.items;
         lastSyncedIso = c.lastSyncedIso || null;
+      }
+      if (Array.isArray(c.videos) && c.videos.length > 0) {
+        cachedVideos = c.videos.map((v) => {
+          if (!v || !v.url || v.url === YOUTUBE_CHANNEL_URL) {
+            const bundled = BUNDLED_VIDEO_GUIDES.find((b) => b.id === v?.id || b.title === v?.title);
+            return bundled ? { ...v, url: bundled.url } : v;
+          }
+          return v;
+        });
       }
     }
   } catch {}
@@ -350,7 +360,7 @@ export function getUpdatesState(stateDir = '', videoManifestOverride = null) {
 
   const videos = Array.isArray(videoManifestOverride) && videoManifestOverride.length > 0
     ? videoManifestOverride
-    : BUNDLED_VIDEO_GUIDES;
+    : cachedVideos || BUNDLED_VIDEO_GUIDES;
   const blogItems = cachedBlog || BUNDLED_BLOG_UPDATES;
 
   return {
@@ -430,6 +440,7 @@ export async function syncAntigravityUpdates(stateDir = '', videoJsonUrl = '') {
     lastSyncedIso,
     syncedLive,
     items,
+    videos: remoteVideos || BUNDLED_VIDEO_GUIDES,
   };
   const tmp = `${cachePath}.tmp-${process.pid}`;
   fs.writeFileSync(tmp, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });

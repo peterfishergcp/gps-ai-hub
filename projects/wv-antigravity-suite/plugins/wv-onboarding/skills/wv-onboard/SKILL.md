@@ -34,10 +34,12 @@ Ask the user (allowing rough or 1-line answers):
 
 ---
 
-## Step 3: Recommend Personalized Day-1 Starter Commands
+## Step 3: Highlight WV Clawy (`🐻`) & Personalized Day-1 Starter Commands
 
-Based on their role in Question 1 & 3, give them **3 tailored slash commands** they can try immediately (plus **`/model-guide`** anytime they want to switch between Google Gemini and Anthropic Claude):
-- **Executives, Chiefs of Staff & Program Managers:** `/daily-brief`, `/inbox-triage`, `/wv-dashboard`, `/model-guide`
-- **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`, `/model-guide`
-- **Communications & Operations Leads:** `/my-voice`, `/slides`, `/doc-design`, `/model-guide`
-- **Application, Data & Cloud Engineers:** `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`, `/model-guide`
+Always point out **`WV Clawy`** (the warm Brown Bear icon in the left Extensions sidebar, or `/wv-coordinator`) so the user knows they can view and pop out active agent conversations side-by-side, connect their Google Cloud Project (`Settings -> General -> GCP Project ID`) for `Kore` Gemini Live neural voice, and track `Group -> Goal -> Task` sprints.
+
+Then, based on their role in Question 1 & 3, give them **3 tailored slash commands** they can try immediately (plus **`/wv-coordinator`** and **`/model-guide`**):
+- **Executives, Chiefs of Staff & Program Managers:** `/wv-coordinator`, `/daily-brief`, `/inbox-triage`, `/wv-dashboard`, `/model-guide`
+- **FOIA Officers, Counsel, Procurement & Policy Staff:** `/foia-expert`, `/legal-procurement-review`, `/policy-program-audit`, `/wv-coordinator`
+- **Communications & Operations Leads:** `/my-voice`, `/slides`, `/doc-design`, `/wv-coordinator`
+- **Application, Data & Cloud Engineers:** `/wv-coordinator`, `/modernize-refactor`, `/deploy-cloudrun`, `/bigquery-architect`, `/security-audit`
