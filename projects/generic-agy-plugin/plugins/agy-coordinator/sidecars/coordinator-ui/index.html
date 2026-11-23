@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AGY Coordinator</title>
+  <title>Clawy — Google Antigravity</title>
   <link rel="stylesheet" href="/styles.css" />
   <script src="/preload.js"></script>
 </head>
@@ -11,34 +11,45 @@
   <div class="shell">
     <header class="topbar">
       <div class="brand">
-        <svg class="brand-logo" width="26" height="26" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="hdrClawyBody" x1="18" y1="20" x2="82" y2="86" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#38BDF8"/>
-              <stop offset="55%" stop-color="#2563EB"/>
-              <stop offset="100%" stop-color="#4F46E5"/>
-            </linearGradient>
-          </defs>
-          <rect x="21" y="24" width="58" height="54" rx="22" fill="url(#hdrClawyBody)"/>
-          <rect x="28" y="34" width="44" height="30" rx="13" fill="#0F172A"/>
-          <circle cx="40" cy="47" r="4.8" fill="#38BDF8"/>
-          <circle cx="60" cy="47" r="4.8" fill="#38BDF8"/>
-          <path d="M44 55.5C46.5 58.2 53.5 58.2 56 55.5" stroke="#34D399" stroke-width="2.8" stroke-linecap="round"/>
+        <svg class="brand-logo" width="28" height="28" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <circle cx="24" cy="26" r="14" fill="#8B5A2B"/>
+          <circle cx="76" cy="26" r="14" fill="#8B5A2B"/>
+          <circle cx="24" cy="26" r="7.5" fill="#F3C89B"/>
+          <circle cx="76" cy="26" r="7.5" fill="#F3C89B"/>
+          <ellipse cx="50" cy="54" rx="34" ry="32" fill="#8B5A2B"/>
+          <ellipse cx="50" cy="61" rx="16" ry="13" fill="#FADEC0"/>
+          <ellipse cx="50" cy="55" rx="6.2" ry="4.4" fill="#27120B"/>
+          <circle cx="37" cy="46" r="4.5" fill="#FFFFFF"/>
+          <circle cx="63" cy="46" r="4.5" fill="#FFFFFF"/>
+          <circle cx="37.8" cy="46.2" r="2.7" fill="#1E1B18"/>
+          <circle cx="63.8" cy="46.2" r="2.7" fill="#1E1B18"/>
+          <path d="M44 65.5C46.8 68.2 53.2 68.2 56 65.5" stroke="#451A03" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M26 78C33 85 67 85 74 78L70 88C62 92 38 92 30 88Z" fill="#053254"/>
+          <circle cx="50" cy="85" r="4.2" fill="#D5A245"/>
         </svg>
         <div>
-          <div class="brand-title" id="header-title">AGY Coordinator</div>
-          <div class="brand-sub" id="header-sub">Clawy · Multi-Agent Hub</div>
+          <div class="brand-title" id="header-title">Clawy</div>
+          <div class="brand-sub" id="header-sub">Agent Command Center</div>
+        </div>
+        <div class="hdr-search-wrap">
+          <input class="hdr-search-input" id="agentSearchInput" type="search" placeholder="Search agents... (/)" autocomplete="off" aria-label="Search agents" />
         </div>
       </div>
+      <div class="topbar-center" id="topbar-token-slot"></div>
       <div class="topbar-actions">
-        <button class="btn btn-secondary btn-sm" id="btn-refresh" type="button" title="Refresh live workers, goals, and token telemetry">Refresh</button>
+        <button class="hdr-updates-pill" id="btn-updates-pill" type="button" title="View agents needing your attention or review">
+          <span>🔔 Updates</span>
+          <span class="hdr-notif-count" id="hdrNotifCount" hidden>0</span>
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-new-agent" type="button" title="Start a new Agent conversation">+ New Agent</button>
+        <button class="btn btn-secondary btn-sm" id="btn-refresh" type="button" title="Refresh live agents, goals, and notifications">↻</button>
         <button class="theme-toggle-btn" id="btn-theme-toggle" type="button" title="Toggle Light / Dark theme">☾</button>
       </div>
     </header>
 
-    <section class="coord-perch" id="mascotPerch" data-mood="idle" aria-label="Mascot Perch and Voice Controls">
+    <section class="coord-perch compact-perch" id="mascotPerch" data-mood="idle" aria-label="Clawy Perch and Voice Controls">
       <div class="coord-perch-stage">
-        <div class="coord-mascot-wrap" id="mascotWrap" title="Click Clawy for a quick voice check">
+        <div class="coord-mascot-wrap" id="mascotWrap" title="Click Clawy for a spoken status check">
           <canvas id="clawyCanvas" class="coord-mascot-canvas" width="176" height="176" aria-label="Clawy animated mascot"></canvas>
         </div>
 
@@ -57,27 +68,43 @@
               <option value="browser">Browser Instant Voice</option>
             </select>
           </div>
-          <div class="coord-perch-bubble" id="perchBubble">Ready to coordinate Workers, Groups, and Goals.</div>
+          <div class="coord-perch-bubble" id="perchBubble">Scanning your active agents...</div>
           <div class="coord-voice-row">
-            <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button" title="Hold >= 250ms to talk and release to send, or quick-tap to toggle">🎙️ Hold / Click to Talk</button>
+            <button class="btn btn-primary btn-sm" id="btnVoiceMic" type="button" title="Hold >= 250ms to talk and release to send, or quick-tap to toggle">🎙️ Live</button>
             <button class="btn btn-secondary btn-sm" id="btnVoiceTts" type="button" title="Toggle spoken voice replies">🔊 TTS On</button>
             <form class="coord-quick-form" id="quickCmdForm">
-              <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy, 'Create goal: ...', 'spawn: ...', or 'relay <id>: ...'" autocomplete="off" />
+              <input class="coord-input coord-input-sm" id="quickCmdInput" type="text" placeholder="Ask Clawy anything — check agents, test auth, or pick a starter below..." autocomplete="off" />
               <button class="btn btn-secondary btn-sm" type="submit">Send</button>
             </form>
           </div>
+          <div class="coord-starters-bar" id="starterPromptsBar" aria-label="Starter prompts to try with Clawy"></div>
         </div>
       </div>
     </section>
 
     <nav class="tabs" role="tablist">
-      <button class="tab-btn active" data-tab="workers" type="button">Workers</button>
-      <button class="tab-btn" data-tab="goals" type="button">Goals</button>
-      <button class="tab-btn" data-tab="chat" type="button">Chat</button>
-      <button class="tab-btn" data-tab="identity" type="button">Identity &amp; Voice</button>
+      <button class="tab-btn active" data-tab="agents" type="button">
+        <span>🤖 Agents</span>
+        <span class="tab-pill-count" id="tabAgentsCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="notifications" type="button">
+        <span>🔔 Notifications</span>
+        <span class="tab-pill-count alert" id="tabNotifCount" hidden>0</span>
+      </button>
+      <button class="tab-btn" data-tab="goals" type="button">
+        <span>☑️ Goals</span>
+        <span class="tab-pill-count" id="tabGoalsCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="chat" type="button">💬 Clawy Chat</button>
+      <button class="tab-btn" data-tab="identity" type="button">⚙️ Voice &amp; Identity</button>
     </nav>
 
     <main class="content" id="view-root"></main>
+
+    <footer class="coord-statusbar">
+      <span id="footerSummaryText">0 Active Agents</span>
+      <span id="footerSyncTime">Synced just now</span>
+    </footer>
   </div>
 
   <div class="toast" id="toast"></div>

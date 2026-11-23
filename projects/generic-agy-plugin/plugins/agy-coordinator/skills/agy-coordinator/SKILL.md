@@ -1,13 +1,11 @@
 ---
 name: agy-coordinator
-description: Multi-agent Coordinator & Voice Hub ("Clawy") for listing active Antigravity Workers, organizing 2-level Group -> Goal -> Task sprints, dispatching or relaying worker instructions via agentapi, and customizing IDENTITY.md / SOUL.md + Dual-Mode Voice. Use when a user says /agy-coordinator, asks to coordinate multiple agents, track Group -> Goal -> Task progress, relay instructions to another conversation, or open the AGY Coordinator panel.
+description: Multi-Agent Command Center & Gemini Live Voice Hub ("Clawy") for triaging active Antigravity agent conversations (Needs You, Working, Ready for Review, Idle), popping conversations open side-by-side, closing idle chats, organizing 2-level Group -> Goal -> Task sprints, and customizing IDENTITY.md / SOUL.md + Kore Gemini Live Voice inside ~/.gemini/config/plugin_data/agy-coordinator/. Use when a user says /agy-coordinator, asks to coordinate multiple agents, check which agent needs attention, track Group -> Goal -> Task progress, or open the Clawy panel.
 ---
 
-# AGY Coordinator (`/agy-coordinator`)
+# Clawy — Multi-Agent Command Center (`/agy-coordinator`)
 
-Use this skill to coordinate multiple Antigravity conversations, organize goals strictly in 2 levels (**Group -> Goal -> Task**), post concise board updates, and customize your coordinator persona (`IDENTITY.md` / `SOUL.md`).
-
-All persistent state lives strictly inside `~/.gemini/config/plugin_data/agy-coordinator/`.
+Coordinates parallel Antigravity agent conversations (`🤖 Agents`), side-by-side split pop-outs (`↗ Pop Out`), live attention triage (`🔔 Updates` / `Notifications`), strict 2-level **Group -> Goal -> Task** sprints, and `Kore` Gemini Live voice commands inside `~/.gemini/config/plugin_data/agy-coordinator/`.
 
 ## Quick CLI Reference (`coord_ctl.mjs`)
 

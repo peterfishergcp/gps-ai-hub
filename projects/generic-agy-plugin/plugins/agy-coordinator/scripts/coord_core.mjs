@@ -27,17 +27,19 @@ let cachedAdcToken = null; // { accessToken, expiresAt, quotaProjectId }
 const DEFAULT_IDENTITY_MD = `# Coordinator Identity
 
 - **Name:** Clawy
-- **Role:** Multi-Agent Coordinator
-- **Style:** Crisp, encouraging, action-oriented, zero fluff
-- **Focus:** Keep parallel agent workers aligned to Groups, Goals, and Tasks
+- **Role:** Friendly Agent Command Center & Setup Guide
+- **Style:** Warm, reassuring, practical, and genuinely helpful — never cold or dismissive
+- **Focus:** Help users coordinate active agents, organize sprints, and troubleshoot Google Cloud Project / ADC voice setup with ease
 `;
 
 const DEFAULT_SOUL_MD = `# Coordinator Operating Principles (SOUL)
 
-1. Always organize work strictly in 2 levels: **Group -> Goal -> Task**.
-2. Keep worker prompts concrete: state what the worker owns, constraints, and what "done" looks like.
-3. Never invent statuses or tool results; verify live worker state before relaying.
-4. Keep spoken responses concise (1-3 sentences) so voice updates are easy to scan between tasks.
+1. **Warm & Helpful Always:** Never brush off a user's question or say "My role is not X." Always offer a clear, friendly, actionable answer.
+2. **Authentication & Setup Helpfulness:** Authentication and Google Cloud Project / ADC expiration are the most common setup hurdles. Whenever a user asks about auth, ADC, gcloud, GCP Project IDs, API keys, or voice issues:
+   - Check the live Voice & Auth Status provided in your snapshot (and trigger \`"action": { "type": "verify_auth" }\` when they ask to test or verify auth).
+   - Explain clearly and kindly: (a) whether Gemini Live is currently connected and which GCP Project is active, and (b) the 2 quick steps if they ever hit an auth issue: open **⚙️ Voice & Identity** -> verify **Google Cloud Project ID** -> click **🔌 Save & Verify GCP Connection**, or run \`gcloud auth application-default login\` in Terminal when a 20-hour ADC session expires.
+3. **2-Level Sprint Organization:** Organize goals and checklists cleanly in 2 levels: **Group -> Goal -> Task**.
+4. **Honest & Concise:** Verify live agent state before summarizing, and keep spoken answers friendly and easy to follow (2-3 sentences).
 `;
 
 export function getDataDir() {
@@ -123,17 +125,33 @@ export function ensureInitialized() {
   }
   if (!fs.existsSync(idPath)) {
     atomicWriteText(idPath, DEFAULT_IDENTITY_MD, 0o600);
+  } else {
+    try {
+      const curId = fs.readFileSync(idPath, 'utf-8');
+      if (curId.includes('zero fluff') && curId.includes('Keep parallel agent workers aligned')) {
+        atomicWriteText(idPath, DEFAULT_IDENTITY_MD, 0o600);
+      }
+    } catch {}
   }
   if (!fs.existsSync(soulPath)) {
     atomicWriteText(soulPath, DEFAULT_SOUL_MD, 0o600);
+  } else {
+    try {
+      const curSoul = fs.readFileSync(soulPath, 'utf-8');
+      if (curSoul.includes('Keep worker prompts concrete') && !curSoul.includes('Authentication & Setup Helpfulness')) {
+        atomicWriteText(soulPath, DEFAULT_SOUL_MD, 0o600);
+      }
+    } catch {}
   }
   if (!fs.existsSync(voicePath)) {
     atomicWriteText(
       voicePath,
       JSON.stringify(
         {
+          prefsSchemaVersion: 4,
           mode: 'gemini-live',
           model: DEFAULT_VOICE_MODEL,
+          voiceName: 'Kore',
           apiKey: '',
           useGcloudAdc: true,
           ttsEnabled: true,
@@ -242,31 +260,55 @@ export function saveIdentity({ name, role, identityMd, soulMd }) {
 }
 
 export const ALLOWED_GEMINI_VOICES = [
+  'Kore',
   'Zephyr',
   'Aoede',
   'Callirrhoe',
   'Autonoe',
   'Leda',
   'Puck',
-  'Kore',
   'Fenrir',
   'Orus',
   'Charon',
 ];
 
+function loadSiblingCoordinatorPrefs() {
+  try {
+    const sibPath = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'wv-coordinator', 'voice_prefs.json');
+    if (!fs.existsSync(sibPath) || fs.lstatSync(sibPath).isSymbolicLink()) return {};
+    return readJsonSafe(sibPath, {});
+  } catch {
+    return {};
+  }
+}
+
 export function loadVoicePrefsRaw() {
   const dir = ensureInitialized();
   const voicePath = path.join(dir, 'voice_prefs.json');
   const raw = readJsonSafe(voicePath, {});
-  const isV2 = Number(raw.prefsSchemaVersion || 0) >= 2;
-  const voiceName = ALLOWED_GEMINI_VOICES.includes(raw.voiceName) ? raw.voiceName : 'Zephyr';
+  const sib = loadSiblingCoordinatorPrefs();
+  const schemaVer = Number(raw.prefsSchemaVersion || 0);
+  const isV2 = schemaVer >= 2;
+  const voiceName =
+    schemaVer >= 4 && ALLOWED_GEMINI_VOICES.includes(raw.voiceName)
+      ? raw.voiceName
+      : raw.voiceName && raw.voiceName !== 'Zephyr' && ALLOWED_GEMINI_VOICES.includes(raw.voiceName)
+        ? raw.voiceName
+        : 'Kore';
+  const ownProject = typeof raw.projectId === 'string' ? raw.projectId.trim() : '';
+  const sibProject = typeof sib.projectId === 'string' ? sib.projectId.trim() : '';
+  const ownKey = typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '';
+  const sibKey = raw.clearedApiKey ? '' : typeof sib.apiKey === 'string' ? sib.apiKey.trim() : '';
   return {
-    prefsSchemaVersion: 3,
+    prefsSchemaVersion: 4,
     mode: isV2 && raw.mode === 'browser' ? 'browser' : 'gemini-live',
     model: typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : DEFAULT_VOICE_MODEL,
     voiceName,
-    projectId: typeof raw.projectId === 'string' ? raw.projectId.trim() : '',
-    apiKey: typeof raw.apiKey === 'string' ? raw.apiKey.trim() : '',
+    projectId: ownProject || sibProject,
+    ownProjectId: ownProject,
+    apiKey: ownKey || sibKey,
+    apiKeySource: ownKey ? 'prefs' : sibKey ? 'agy-coordinator-prefs' : '',
+    clearedApiKey: Boolean(raw.clearedApiKey),
     useGcloudAdc: isV2 ? raw.useGcloudAdc !== false : true,
     ttsEnabled: raw.ttsEnabled !== false,
     voiceRate: Number.isFinite(Number(raw.voiceRate)) ? Math.min(1.6, Math.max(0.6, Number(raw.voiceRate))) : 1.0,
@@ -280,12 +322,13 @@ export function saveVoicePrefs(patch) {
   const cur = loadVoicePrefsRaw();
   const nextVoice = ALLOWED_GEMINI_VOICES.includes(patch.voiceName) ? patch.voiceName : cur.voiceName;
   const next = {
-    prefsSchemaVersion: 3,
+    prefsSchemaVersion: 4,
     mode: patch.mode === 'gemini-live' ? 'gemini-live' : patch.mode === 'browser' ? 'browser' : cur.mode,
     model: typeof patch.model === 'string' && patch.model.trim() ? patch.model.trim().slice(0, 80) : cur.model,
     voiceName: nextVoice,
-    projectId: typeof patch.projectId === 'string' ? patch.projectId.trim().slice(0, 80) : (cur.projectId || ''),
-    apiKey: typeof patch.apiKey === 'string' ? patch.apiKey.trim() : cur.apiKey,
+    projectId: typeof patch.projectId === 'string' ? patch.projectId.trim().slice(0, 80) : (cur.ownProjectId || ''),
+    apiKey: typeof patch.apiKey === 'string' && patch.apiKey.trim() ? patch.apiKey.trim() : (cur.apiKeySource === 'prefs' ? cur.apiKey : ''),
+    clearedApiKey: patch.clearApiKey === true ? true : Boolean(patch.apiKey && patch.apiKey.trim()) ? false : cur.clearedApiKey,
     useGcloudAdc: typeof patch.useGcloudAdc === 'boolean' ? patch.useGcloudAdc : cur.useGcloudAdc,
     ttsEnabled: typeof patch.ttsEnabled === 'boolean' ? patch.ttsEnabled : cur.ttsEnabled,
     voiceRate: patch.voiceRate !== undefined ? Math.min(1.6, Math.max(0.6, Number(patch.voiceRate) || 1.0)) : cur.voiceRate,
@@ -295,6 +338,7 @@ export function saveVoicePrefs(patch) {
   if (patch.clearApiKey === true) {
     next.apiKey = '';
   }
+  cachedAdcToken = null;
   atomicWriteText(path.join(dir, 'voice_prefs.json'), JSON.stringify(next, null, 2) + '\n', 0o600);
   return getPublicVoiceStatus();
 }
@@ -314,7 +358,7 @@ export function findAdcCredentialsFile() {
       const st = fs.lstatSync(p);
       if (!st.isFile() || st.isSymbolicLink()) continue;
       const parsed = readJsonSafe(p, null);
-      if (parsed && parsed.refresh_token && parsed.client_id) {
+      if (parsed && (parsed.refresh_token || parsed.type === 'service_account')) {
         return { path: p, creds: parsed };
       }
     } catch {
@@ -324,8 +368,9 @@ export function findAdcCredentialsFile() {
   return null;
 }
 
-
 let cachedGcloudCliProject = null;
+let cachedDiscoveredCrmProject = null;
+let lastAuthDiagnosticNote = '';
 
 const PLACEHOLDER_PROJECT_IDS = new Set([
   'agency-sandbox-01',
@@ -340,24 +385,86 @@ export function getGcloudBinCandidates() {
   const home = os.homedir();
   if (process.platform === 'win32') {
     const localApp = process.env.LOCALAPPDATA || '';
-    const progFiles = process.env['ProgramFiles(x86)'] || process.env.ProgramFiles || '';
+    const userProf = process.env.USERPROFILE || home;
+    const progFiles86 = process.env['ProgramFiles(x86)'] || '';
+    const progFiles = process.env.ProgramFiles || '';
     return [
+      localApp ? path.join(localApp, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd') : '',
+      progFiles86 ? path.join(progFiles86, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd') : '',
+      progFiles ? path.join(progFiles, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd') : '',
+      path.join(userProf, 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
       'gcloud.cmd',
       'gcloud',
-      localApp ? path.join(localApp, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd') : '',
-      progFiles ? path.join(progFiles, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd') : '',
     ].filter(Boolean);
   }
   return [
-    'gcloud',
     path.join(home, 'google-cloud-sdk', 'bin', 'gcloud'),
     '/opt/homebrew/bin/gcloud',
+    '/opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin/gcloud',
     '/opt/homebrew/share/google-cloud-sdk/bin/gcloud',
     '/usr/local/bin/gcloud',
     '/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin/gcloud',
+    path.join(home, 'Downloads', 'google-cloud-sdk', 'bin', 'gcloud'),
+    path.join(home, 'Desktop', 'google-cloud-sdk', 'bin', 'gcloud'),
+    path.join(home, '.local', 'bin', 'gcloud'),
     '/usr/bin/gcloud',
     '/snap/bin/gcloud',
+    'gcloud',
   ];
+}
+
+function buildGcloudExecEnv() {
+  const home = os.homedir();
+  const extraDirs =
+    process.platform === 'win32'
+      ? []
+      : [
+          '/opt/homebrew/bin',
+          '/usr/local/bin',
+          path.join(home, 'google-cloud-sdk', 'bin'),
+          '/usr/bin',
+          '/bin',
+        ];
+  const curPath = process.env.PATH || '';
+  const mergedPath = extraDirs.length ? `${curPath}${curPath ? path.delimiter : ''}${extraDirs.join(path.delimiter)}` : curPath;
+  return {
+    ...process.env,
+    PATH: mergedPath,
+    CLOUDSDK_CORE_DISABLE_PROMPTS: '1',
+  };
+}
+
+async function runGcloudNonInteractive(subArgs, timeoutMs = 3500) {
+  const safeSubArgs = [...subArgs, '--quiet'];
+  const env = buildGcloudExecEnv();
+  let lastStderr = '';
+  for (const bin of getGcloudBinCandidates()) {
+    if (bin.includes(path.sep) && !fs.existsSync(bin)) continue;
+    try {
+      let stdout = '';
+      if (process.platform === 'win32' && /\.cmd$/i.test(bin)) {
+        const res = await execFileAsync('cmd.exe', ['/d', '/s', '/c', bin, ...safeSubArgs], {
+          env,
+          timeout: timeoutMs,
+          windowsHide: true,
+        });
+        stdout = res.stdout;
+      } else {
+        const res = await execFileAsync(bin, safeSubArgs, {
+          env,
+          timeout: timeoutMs,
+          windowsHide: true,
+        });
+        stdout = res.stdout;
+      }
+      const trimmed = String(stdout || '').trim();
+      if (trimmed) return { ok: true, stdout: trimmed, error: '' };
+    } catch (err) {
+      const stderr = String(err?.stderr || err?.message || '').trim();
+      if (stderr) lastStderr = stderr;
+    }
+  }
+  return { ok: false, stdout: '', error: lastStderr };
 }
 
 export function listCandidateGcpProjectsSync(prefs = null, adcCreds = null) {
@@ -380,15 +487,61 @@ export function listCandidateGcpProjectsSync(prefs = null, adcCreds = null) {
   };
 
   if (p.projectId) {
-    addCandidate(p.projectId, 'prefs');
+    addCandidate(p.projectId, p.ownProjectId ? 'prefs' : 'agy-coordinator-prefs');
   }
 
-  for (const envVar of ['GOOGLE_CLOUD_PROJECT', 'GCLOUD_PROJECT', 'CLOUDSDK_CORE_PROJECT']) {
+  for (const envVar of ['GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_QUOTA_PROJECT', 'GCLOUD_PROJECT', 'CLOUDSDK_CORE_PROJECT']) {
     if (process.env[envVar]) addCandidate(process.env[envVar], envVar);
   }
 
-  // Check gcloud active configuration file on disk (<1ms, 0 subprocesses) BEFORE ge-instance placeholders
   const home = os.homedir();
+
+  // Check Antigravity IDE's built-in GCP Project setting (Settings -> General -> GCP Project ID)
+  const agyUserDirs = [];
+  if (process.platform === 'darwin') {
+    agyUserDirs.push(path.join(home, 'Library', 'Application Support', 'Antigravity', 'User'));
+  } else if (process.platform === 'win32' && process.env.APPDATA) {
+    agyUserDirs.push(path.join(process.env.APPDATA, 'Antigravity', 'User'));
+  } else {
+    agyUserDirs.push(path.join(home, '.config', 'Antigravity', 'User'));
+  }
+
+  for (const uDir of agyUserDirs) {
+    try {
+      const settingsFile = path.join(uDir, 'settings.json');
+      if (fs.existsSync(settingsFile) && !fs.lstatSync(settingsFile).isSymbolicLink()) {
+        const sObj = readJsonSafe(settingsFile, null);
+        if (sObj) {
+          for (const k of [
+            'geminicodeassist.project',
+            'cloudcode.project',
+            'antigravity.enterpriseGcpProjectId',
+            'antigravity.gcpProjectId',
+            'cloudaicompanionProject',
+            'google.cloudProject',
+          ]) {
+            if (typeof sObj[k] === 'string' && sObj[k].trim()) {
+              addCandidate(sObj[k].trim(), 'antigravity-gcp-setting');
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Check ~/.gemini/config/cloud_project.json if configured
+  try {
+    const cpFile = path.join(home, '.gemini', 'config', 'cloud_project.json');
+    if (fs.existsSync(cpFile) && !fs.lstatSync(cpFile).isSymbolicLink()) {
+      const pj = readJsonSafe(cpFile, null);
+      const val = pj?.cloud_project || pj?.project_id || pj?.projectId || pj?.gcpProjectId;
+      if (typeof val === 'string' && val.trim()) {
+        addCandidate(val.trim(), 'cloud-project-config');
+      }
+    }
+  } catch {}
+
+  // Check gcloud active configuration + properties + secondary configs on disk (<1ms, 0 subprocesses)
   const gcloudRoots = [];
   if (process.platform === 'win32' && process.env.APPDATA) {
     gcloudRoots.push(path.join(process.env.APPDATA, 'gcloud'));
@@ -403,7 +556,8 @@ export function listCandidateGcpProjectsSync(prefs = null, adcCreds = null) {
         const rawName = fs.readFileSync(activeFile, 'utf-8').trim();
         if (/^[a-zA-Z0-9_-]{1,64}$/.test(rawName)) activeName = rawName;
       }
-      const cfgFile = path.join(groot, 'configurations', `config_${activeName}`);
+      const cfgDir = path.join(groot, 'configurations');
+      const cfgFile = path.join(cfgDir, `config_${activeName}`);
       if (fs.existsSync(cfgFile) && !fs.lstatSync(cfgFile).isSymbolicLink()) {
         const ini = fs.readFileSync(cfgFile, 'utf-8');
         const pm = ini.match(/^\s*project\s*=\s*([a-z][a-z0-9-]{4,61}[a-z0-9])\s*$/im);
@@ -411,25 +565,52 @@ export function listCandidateGcpProjectsSync(prefs = null, adcCreds = null) {
           addCandidate(pm[1], `gcloud-config(${activeName})`);
         }
       }
+      const propsFile = path.join(groot, 'properties');
+      if (fs.existsSync(propsFile) && !fs.lstatSync(propsFile).isSymbolicLink()) {
+        const ini = fs.readFileSync(propsFile, 'utf-8');
+        const pm = ini.match(/^\s*project\s*=\s*([a-z][a-z0-9-]{4,61}[a-z0-9])\s*$/im);
+        if (pm && pm[1]) {
+          addCandidate(pm[1], 'gcloud-properties');
+        }
+      }
+      if (fs.existsSync(cfgDir) && !fs.lstatSync(cfgDir).isSymbolicLink()) {
+        for (const f of fs.readdirSync(cfgDir)) {
+          if (!f.startsWith('config_') || f === `config_${activeName}`) continue;
+          const p2 = path.join(cfgDir, f);
+          if (!fs.lstatSync(p2).isFile()) continue;
+          const ini = fs.readFileSync(p2, 'utf-8');
+          const pm = ini.match(/^\s*project\s*=\s*([a-z][a-z0-9-]{4,61}[a-z0-9])\s*$/im);
+          if (pm && pm[1]) {
+            addCandidate(pm[1], `gcloud-config(${f.slice(7)})`);
+          }
+        }
+      }
     } catch {}
   }
 
-  // Check ADC quota_project_id
+  // Check ADC quota_project_id / project_id
   const adcObj = adcCreds || findAdcCredentialsFile()?.creds;
   if (adcObj && adcObj.quota_project_id) {
     addCandidate(adcObj.quota_project_id, 'adc-quota-project');
+  }
+  if (adcObj && adcObj.project_id) {
+    addCandidate(adcObj.project_id, 'adc-project');
   }
 
   if (cachedGcloudCliProject) {
     addCandidate(cachedGcloudCliProject, 'gcloud-cli');
   }
+  if (cachedDiscoveredCrmProject) {
+    addCandidate(cachedDiscoveredCrmProject, 'cloud-resource-manager');
+  }
 
-  // Check Generic AGY's configured Gemini Enterprise instance (ge-instance.json)
+  // Check WV & Generic AGY configured Gemini Enterprise instance (ge-instance.json)
   const geCandidates = [
     process.env.ANTIGRAVITY_APP_DATA_DIR
-      ? path.join(path.resolve(process.env.ANTIGRAVITY_APP_DATA_DIR), 'plugin_data', 'agy-connectors', 'ge-instance.json')
+      ? path.join(path.resolve(process.env.ANTIGRAVITY_APP_DATA_DIR), 'plugin_data', 'wv-connectors', 'ge-instance.json')
       : '',
-    path.join(home, '.gemini', 'antigravity', 'plugin_data', 'agy-connectors', 'ge-instance.json'),
+    path.join(home, '.gemini', 'antigravity', 'plugin_data', 'wv-connectors', 'ge-instance.json'),
+    path.join(home, '.gemini', 'config', 'plugin_data', 'wv-connectors', 'ge-instance.json'),
     path.join(home, '.gemini', 'config', 'plugin_data', 'agy-connectors', 'ge-instance.json'),
   ].filter(Boolean);
 
@@ -448,7 +629,6 @@ export function listCandidateGcpProjectsSync(prefs = null, adcCreds = null) {
     } catch {}
   }
 
-  // Sort non-placeholder projects ahead of sample/placeholder IDs
   found.sort((a, b) => Number(a.isPlaceholder) - Number(b.isPlaceholder));
   return found;
 }
@@ -466,26 +646,31 @@ export function getPublicVoiceStatus() {
   const envKey = (process.env.GEMINI_API_KEY || '').trim();
   const effectiveKey = envKey || prefs.apiKey || '';
   const adcFile = findAdcCredentialsFile();
-  const keySource = envKey
-    ? 'env'
-    : prefs.apiKey
-      ? 'prefs'
-      : adcFile
-        ? 'adc-file'
-        : prefs.useGcloudAdc
-          ? 'gcloud-adc'
-          : 'none';
   const projInfo = detectGcpProjectSync(prefs, adcFile?.creds);
+  const keySource = envKey
+    ? 'env-api-key'
+    : prefs.apiKey
+      ? `api-key(${prefs.apiKeySource || 'prefs'})`
+      : (adcFile || prefs.useGcloudAdc) && projInfo.projectId
+        ? `vertex-ai(${projInfo.projectId})`
+        : adcFile
+          ? 'adc-file(needs-project)'
+          : prefs.useGcloudAdc
+            ? 'gcloud-adc'
+            : 'none';
   return {
     mode: prefs.mode,
     model: prefs.model,
-    voiceName: prefs.voiceName || 'Zephyr',
-    projectId: prefs.projectId || '',
+    voiceName: prefs.voiceName || 'Kore',
+    projectId: prefs.ownProjectId || '',
     effectiveProjectId: projInfo.projectId,
     projectSource: projInfo.projectSource,
     hasApiKey: Boolean(effectiveKey),
+    apiKeySource: envKey ? 'env' : (prefs.apiKeySource || ''),
     hasAdcFile: Boolean(adcFile),
-    keySource: (adcFile || prefs.useGcloudAdc) && projInfo.projectId ? `vertex-ai(${projInfo.projectId})` : keySource,
+    adcPath: adcFile ? adcFile.path : '',
+    keySource,
+    lastDiagnostic: lastAuthDiagnosticNote,
     useGcloudAdc: prefs.useGcloudAdc,
     ttsEnabled: prefs.ttsEnabled,
     voiceRate: prefs.voiceRate,
@@ -539,12 +724,72 @@ export function getBrainRoots() {
 
 function cleanSnippet(raw, maxLen) {
   return String(raw || '')
+    .replace(/<AGENTS_DASH_SNAPSHOT[\s\S]*?<\/AGENTS_DASH_SNAPSHOT>/gi, ' ')
+    .replace(/<ADDITIONAL_METADATA[\s\S]*?<\/ADDITIONAL_METADATA>/gi, ' ')
+    .replace(/<voice_instructions[\s\S]*?<\/voice_instructions>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/[#*_`>\[\]]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLen);
+}
+
+function formatSlugWords(slug) {
+  return String(slug || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b(wv|agy|gps|ge|foia|iam|sql|ui|ai|pdf)\b/gi, (m) => m.toUpperCase())
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase())
+    .trim();
+}
+
+export function deriveSmartAgentTitle(rawTitle, convId = '') {
+  let s = String(rawTitle || '')
+    .replace(/^\(\[marker:[^\]]*\]\s*/i, '')
+    .replace(/^\[AGENTS_DASH_SYS:[^\]]*\]\s*/i, '')
+    .trim();
+
+  if (!s || /^(Conversation|Worker|Cascade)\s+[0-9a-f]{6,}/i.test(s)) {
+    return 'Agent Conversation';
+  }
+
+  // Friendly title for plugin or script install commands
+  const pluginMatch = s.match(/(?:agy\s+plugin\s+install|install)\s+https?:\/\/[^\s]+\/(?:projects|plugins)\/([a-zA-Z0-9_-]+)/i);
+  if (pluginMatch && pluginMatch[1]) {
+    return `Install ${formatSlugWords(pluginMatch[1])}`;
+  }
+  const scriptMatch = s.match(/install-([a-zA-Z0-9_-]+)\.(?:sh|ps1)/i);
+  if (scriptMatch && scriptMatch[1]) {
+    return `Install ${formatSlugWords(scriptMatch[1])}`;
+  }
+
+  // Friendly title for slash skill invocations
+  const slashMatch = s.match(/^\/([a-z0-9_-]+)\s*(.*)$/i);
+  if (slashMatch) {
+    const skillLabel = formatSlugWords(slashMatch[1]);
+    const rest = slashMatch[2]
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return rest ? `${skillLabel}: ${rest.slice(0, 54)}` : skillLabel;
+  }
+
+  // Strip long raw URLs inside titles while keeping surrounding words
+  s = s.replace(/https?:\/\/([^\s/]+)\/[^\s]*/gi, '$1').replace(/\s+/g, ' ').trim();
+  if (!s) return 'Agent Conversation';
+  return s.length > 74 ? s.slice(0, 72).trimEnd() + '…' : s;
+}
+
+function detectQuestionOrBlocker(text) {
+  const tail = String(text || '').trim().slice(-320);
+  if (!tail) return '';
+  if (/\b(error|failed|blocked|permission denied|unauthorized|cannot proceed)\b/i.test(tail)) {
+    return 'Reported an issue or blocker';
+  }
+  if (/\?\s*$/.test(tail) || /\b(would you like|should i|want me to|do you want|please confirm|approve|which option)\b/i.test(tail)) {
+    return 'Waiting on your answer';
+  }
+  return '';
 }
 
 async function parseBrainTranscriptCached(txPath, convId, st) {
@@ -556,9 +801,14 @@ async function parseBrainTranscriptCached(txPath, convId, st) {
   let firstUserTitle = '';
   let latestUserPrompt = '';
   let latestPlannerSnippet = '';
+  let latestPlannerTail = '';
   let firstTime = null;
   let lastTime = null;
   let lastType = '';
+  let lastStatus = '';
+  let stepCount = 0;
+  let isSystemBookkeeper = false;
+  const recentTurns = [];
 
   const stream = fs.createReadStream(txPath, { encoding: 'utf-8' });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
@@ -572,31 +822,59 @@ async function parseBrainTranscriptCached(txPath, convId, st) {
       continue;
     }
 
+    stepCount += 1;
     const typ = String(obj.type || '');
     if (typ) lastType = typ;
+    if (typeof obj.status === 'string' && obj.status) lastStatus = obj.status;
     if (typeof obj.created_at === 'string' && obj.created_at) {
       if (!firstTime) firstTime = obj.created_at;
       lastTime = obj.created_at;
     }
 
     if (typ === 'USER_INPUT' && typeof obj.content === 'string') {
-      const cleaned = cleanSnippet(obj.content, 76);
+      if (obj.content.includes('[AGENTS_DASH_SYS:bookkeeper]')) {
+        isSystemBookkeeper = true;
+      }
+      const cleaned = cleanSnippet(obj.content, 160);
       if (cleaned) {
         if (!firstUserTitle) firstUserTitle = cleaned;
         latestUserPrompt = cleaned;
+        recentTurns.push({
+          role: 'user',
+          text: cleaned,
+          createdAt: obj.created_at || lastTime || null,
+        });
+        if (recentTurns.length > 6) recentTurns.shift();
       }
-    } else if (typ === 'PLANNER_RESPONSE' && typeof obj.content === 'string') {
-      const cleaned = cleanSnippet(obj.content, 120);
-      if (cleaned) latestPlannerSnippet = cleaned;
+    } else if (typ === 'PLANNER_RESPONSE' && typeof obj.content === 'string' && obj.content.trim()) {
+      const cleaned = cleanSnippet(obj.content, 180);
+      if (cleaned) {
+        latestPlannerSnippet = cleaned;
+        latestPlannerTail = cleanSnippet(obj.content.slice(-400), 320);
+        recentTurns.push({
+          role: 'agent',
+          text: cleaned,
+          createdAt: obj.created_at || lastTime || null,
+        });
+        if (recentTurns.length > 6) recentTurns.shift();
+      }
     }
   }
 
+  const rawTitle = firstUserTitle || latestUserPrompt || '';
   const entry = {
     id: convId,
     mtimeMs: st.mtimeMs,
     size: st.size,
-    title: firstUserTitle || latestUserPrompt || `Conversation ${convId.slice(0, 8)}`,
+    rawTitle,
+    title: deriveSmartAgentTitle(rawTitle, convId),
     summary: latestPlannerSnippet || latestUserPrompt || '',
+    latestUserPrompt,
+    needsInputReason: lastType === 'PLANNER_RESPONSE' ? detectQuestionOrBlocker(latestPlannerTail || latestPlannerSnippet) : '',
+    recentTurns: recentTurns.slice(-4),
+    stepCount,
+    lastStatus,
+    isSystemBookkeeper,
     createTime: firstTime || new Date(st.birthtimeMs || st.mtimeMs).toISOString(),
     updateTime: lastTime || new Date(st.mtimeMs).toISOString(),
     lastType,
@@ -610,7 +888,7 @@ async function parseBrainTranscriptCached(txPath, convId, st) {
   return entry;
 }
 
-export async function discoverBrainConversations(limit = 40) {
+export async function discoverBrainConversations(limit = 45) {
   const roots = getBrainRoots();
   const candidates = [];
 
@@ -645,13 +923,25 @@ export async function discoverBrainConversations(limit = 40) {
   for (const item of sliced) {
     try {
       const parsed = await parseBrainTranscriptCached(item.txPath, item.convId, item.st);
+      if (parsed.isSystemBookkeeper) continue;
       const ageMs = Math.max(0, nowMs - (parsed.mtimeMs || 0));
-      const isWorking = ageMs < 90_000 && parsed.lastType === 'USER_INPUT';
+      const isRunningStep =
+        parsed.lastStatus === 'RUNNING' ||
+        parsed.lastStatus === 'IN_PROGRESS' ||
+        (ageMs < 90_000 && parsed.lastType === 'USER_INPUT');
       out.push({
         id: parsed.id,
         title: parsed.title,
+        rawTitle: parsed.rawTitle,
         summary: parsed.summary,
-        runState: isWorking ? 'RUN_STATE_RUNNING' : 'RUN_STATE_IDLE',
+        latestUserPrompt: parsed.latestUserPrompt,
+        needsInputReason: parsed.needsInputReason,
+        recentTurns: parsed.recentTurns,
+        stepCount: parsed.stepCount,
+        lastType: parsed.lastType,
+        lastStatus: parsed.lastStatus,
+        ageMs,
+        runState: isRunningStep ? 'RUN_STATE_RUNNING' : 'RUN_STATE_IDLE',
         createTime: parsed.createTime,
         updateTime: parsed.updateTime,
         projectId: '',
@@ -792,82 +1082,211 @@ export async function listLsConversations({ includeArchived = false } = {}) {
   }
 }
 
+const STATUS_PRIORITY = {
+  NEEDS_YOU: 1,
+  STALLED: 2,
+  WORKING: 3,
+  AWAITING_REPLY: 4,
+  IDLE: 5,
+  READ_LATER: 6,
+  CLOSED: 7,
+};
+
 export async function getMergedWorkers({ includeArchived = false } = {}) {
   const state = loadState();
   const [ls, brainConvs] = await Promise.all([
     listLsConversations({ includeArchived }),
-    discoverBrainConversations(40),
+    discoverBrainConversations(45),
   ]);
   const workerMeta = state.workers || {};
   const byId = new Map();
+  const nowMs = Date.now();
+  const ACTIVE_WINDOW_MS = 8 * 60 * 60 * 1000; // 8 hours active window
+  const READY_REVIEW_WINDOW_MS = 45 * 60 * 1000; // 45 minutes for unread review badge
+  const NEEDS_YOU_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours for unanswered questions/errors
 
-  function upsertConversation(conv) {
-    const existing = byId.get(conv.id);
-    const meta = workerMeta[conv.id] || {};
-    if (meta.removed) return;
-    const runState = conv.runState || (existing ? existing.runState : '');
-    const derivedStatus =
-      meta.customStatus ||
-      (runState.includes('RUNNING')
-        ? 'WORKING'
-        : runState.includes('WAITING')
-          ? 'NEEDS_YOU'
-          : runState.includes('IDLE') || runState.includes('DONE')
-            ? 'IDLE'
-            : 'ACTIVE');
-    byId.set(conv.id, {
-      ...(existing || {}),
-      ...conv,
-      title: conv.title || (existing && existing.title) || meta.title || `Worker ${conv.id.slice(0, 8)}`,
-      summary: conv.summary || (existing && existing.summary) || meta.note || '',
+  // Index brain transcripts first so we have stepCount, recentTurns & smart titles
+  const brainById = new Map();
+  for (const b of brainConvs) brainById.set(b.id, b);
+
+  function buildMergedAgent(baseConv) {
+    const b = brainById.get(baseConv.id);
+    const mergedRaw = {
+      ...baseConv,
+      ...(b || {}),
+      runState:
+        baseConv.runState && baseConv.runState !== 'RUN_STATE_UNSPECIFIED'
+          ? baseConv.runState
+          : b?.runState || 'RUN_STATE_IDLE',
+      source: baseConv.source || b?.source || 'brain-transcript',
+    };
+
+    const meta = workerMeta[mergedRaw.id] || {};
+    if (meta.removed) return null;
+
+    const rawCandidateTitle =
+      (baseConv.title && !/^(Conversation|Cascade|Worker)\s+[0-9a-f]{6,}/i.test(baseConv.title) ? baseConv.title : '') ||
+      b?.rawTitle ||
+      b?.title ||
+      meta.title ||
+      '';
+    if (/\[AGENTS_DASH_SYS:bookkeeper\]/i.test(rawCandidateTitle)) return null;
+
+    const cleanTitle = (meta.customTitle && String(meta.customTitle).trim()) || deriveSmartAgentTitle(rawCandidateTitle, mergedRaw.id);
+    const stepCount = Number(mergedRaw.stepCount || 0);
+    const updateMs = Date.parse(mergedRaw.updateTime || '') || 0;
+    const ageMs = updateMs > 0 ? Math.max(0, nowMs - updateMs) : Number(mergedRaw.ageMs || 0);
+
+    // If user closed this agent at step N, keep it closed unless a newer step arrived (> closedAtStep)
+    const explicitlyClosed =
+      Boolean(meta.closed) && (stepCount === 0 || !meta.closedAtStep || stepCount <= Number(meta.closedAtStep));
+    const explicitlyReopened = meta.reopened === true;
+    const isSnoozed = Boolean(meta.snoozed) && !explicitlyClosed;
+    const isAcked = Boolean(meta.ackedAtStep && stepCount > 0 && Number(meta.ackedAtStep) >= stepCount) || Boolean(meta.ackedAtMs && updateMs > 0 && Number(meta.ackedAtMs) >= updateMs);
+
+    const runState = String(mergedRaw.runState || '');
+    const isRunning = runState.includes('RUNNING');
+    const isStalled = isRunning && ageMs > 10 * 60 * 1000;
+
+    let status = 'IDLE';
+    let attentionReason = '';
+
+    if (explicitlyClosed) {
+      status = 'CLOSED';
+    } else if (isSnoozed) {
+      status = 'READ_LATER';
+    } else if (isStalled) {
+      status = 'STALLED';
+      attentionReason = 'Running for over 10 minutes without new output';
+    } else if (isRunning) {
+      status = 'WORKING';
+      attentionReason = 'Actively executing steps';
+    } else if ((runState.includes('WAITING') || mergedRaw.lastStatus === 'ERROR' || mergedRaw.needsInputReason) && !isAcked && ageMs < NEEDS_YOU_WINDOW_MS) {
+      status = 'NEEDS_YOU';
+      attentionReason = mergedRaw.needsInputReason || (mergedRaw.lastStatus === 'ERROR' ? 'Encountered an error' : 'Waiting on your input');
+    } else if (mergedRaw.lastType === 'PLANNER_RESPONSE' && !isAcked && ageMs < READY_REVIEW_WINDOW_MS) {
+      status = 'AWAITING_REPLY';
+      attentionReason = 'Finished latest response — ready for your review';
+    } else if (!meta.pinned && !explicitlyReopened && ageMs > ACTIVE_WINDOW_MS) {
+      status = 'CLOSED';
+    } else {
+      status = meta.customStatus || 'IDLE';
+    }
+
+    const isArchived = status === 'CLOSED';
+    const needsAttention = status === 'NEEDS_YOU' || status === 'STALLED' || status === 'AWAITING_REPLY';
+
+    return {
+      id: mergedRaw.id,
+      title: cleanTitle,
+      customTitle: meta.customTitle || '',
+      summary: mergedRaw.summary || meta.note || '',
+      latestUserPrompt: mergedRaw.latestUserPrompt || '',
+      recentTurns: Array.isArray(mergedRaw.recentTurns) ? mergedRaw.recentTurns : [],
+      stepCount,
+      runState,
+      createTime: mergedRaw.createTime || null,
+      updateTime: mergedRaw.updateTime || null,
+      ageMs,
       groupId: meta.groupId || 'group-default',
+      goalId: meta.goalId || '',
       pinned: Boolean(meta.pinned),
+      snoozed: isSnoozed,
+      closed: isArchived,
+      explicitlyClosed,
       labels: Array.isArray(meta.labels) ? meta.labels : [],
-      customStatus: meta.customStatus || '',
-      status: derivedStatus,
+      status,
+      attentionReason,
+      needsAttention,
       note: meta.note || '',
-      source: existing ? existing.source : conv.source,
-    });
+      source: mergedRaw.source,
+    };
   }
 
-  for (const conv of ls.conversations) upsertConversation(conv);
+  for (const conv of ls.conversations) {
+    const built = buildMergedAgent(conv);
+    if (built) byId.set(built.id, built);
+  }
   for (const conv of brainConvs) {
     if (!byId.has(conv.id)) {
-      upsertConversation(conv);
-    } else {
-      // Enrich LS entry if brain has a richer summary
-      const cur = byId.get(conv.id);
-      if (!cur.summary && conv.summary) cur.summary = conv.summary;
+      const built = buildMergedAgent(conv);
+      if (built) byId.set(built.id, built);
     }
   }
 
   for (const [id, meta] of Object.entries(workerMeta)) {
     if (byId.has(id) || meta?.removed) continue;
+    const isClosed = Boolean(meta.closed);
     byId.set(id, {
       id,
-      title: meta.title || `Worker ${id.slice(0, 8)}`,
+      title: meta.customTitle || deriveSmartAgentTitle(meta.title || '', id),
+      customTitle: meta.customTitle || '',
       summary: meta.note || '',
+      latestUserPrompt: '',
+      recentTurns: [],
+      stepCount: 0,
       runState: 'RUN_STATE_UNSPECIFIED',
       createTime: meta.updatedAt || null,
       updateTime: meta.updatedAt || null,
-      projectId: '',
-      archived: false,
+      ageMs: 0,
       groupId: meta.groupId || 'group-default',
+      goalId: meta.goalId || '',
       pinned: Boolean(meta.pinned),
+      snoozed: Boolean(meta.snoozed),
+      closed: isClosed,
+      explicitlyClosed: isClosed,
       labels: Array.isArray(meta.labels) ? meta.labels : [],
-      customStatus: meta.customStatus || '',
-      status: meta.customStatus || 'TRACKED',
+      status: isClosed ? 'CLOSED' : meta.snoozed ? 'READ_LATER' : meta.customStatus || 'IDLE',
+      attentionReason: '',
+      needsAttention: false,
       note: meta.note || '',
       source: 'local-meta',
     });
   }
 
   const workers = Array.from(byId.values()).sort((a, b) => {
+    if (a.closed !== b.closed) return a.closed ? 1 : -1;
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    const pa = STATUS_PRIORITY[a.status] || 9;
+    const pb = STATUS_PRIORITY[b.status] || 9;
+    if (pa !== pb) return pa - pb;
     const ta = Date.parse(a.updateTime || '') || 0;
     const tb = Date.parse(b.updateTime || '') || 0;
     return tb - ta;
   });
+
+  // Safety net: if all conversations are older than 24h so activeCount would be 0, surface the 3 most recent non-explicitly-closed ones
+  const activeNonClosed = workers.filter((w) => !w.closed);
+  if (activeNonClosed.length === 0) {
+    let rescued = 0;
+    for (const w of workers) {
+      if (!w.explicitlyClosed && rescued < 3) {
+        w.closed = false;
+        w.status = 'IDLE';
+        rescued += 1;
+      }
+    }
+  }
+
+  const needsYouCount = workers.filter((w) => !w.closed && (w.status === 'NEEDS_YOU' || w.status === 'STALLED')).length;
+  const workingCount = workers.filter((w) => !w.closed && w.status === 'WORKING').length;
+  const awaitingCount = workers.filter((w) => !w.closed && w.status === 'AWAITING_REPLY').length;
+  const readLaterCount = workers.filter((w) => w.status === 'READ_LATER').length;
+  const activeCount = workers.filter((w) => !w.closed && w.status !== 'READ_LATER').length;
+  const closedCount = workers.filter((w) => w.closed).length;
+
+  const notifications = workers
+    .filter((w) => !w.closed && (w.status === 'NEEDS_YOU' || w.status === 'STALLED' || w.status === 'AWAITING_REPLY'))
+    .slice(0, 15)
+    .map((w) => ({
+      convId: w.id,
+      title: w.title,
+      status: w.status,
+      reason: w.attentionReason,
+      summary: w.summary,
+      updateTime: w.updateTime,
+      stepCount: w.stepCount,
+    }));
 
   return {
     lsStatus: {
@@ -875,7 +1294,17 @@ export async function getMergedWorkers({ includeArchived = false } = {}) {
       available: ls.available || brainConvs.length > 0,
       lsLive: ls.ok,
       brainCount: brainConvs.length,
-      reason: ls.ok ? '' : brainConvs.length > 0 ? `Synced ${brainConvs.length} local brain transcripts` : ls.reason,
+      reason: ls.ok ? '' : brainConvs.length > 0 ? `Synced ${brainConvs.length} agent conversations` : ls.reason,
+    },
+    attentionSummary: {
+      needsYouCount,
+      workingCount,
+      awaitingCount,
+      totalUnreadCount: needsYouCount + awaitingCount,
+      readLaterCount,
+      activeCount,
+      closedCount,
+      notifications,
     },
     workers,
   };
@@ -1011,16 +1440,54 @@ export async function relayToWorker({ convId, message, title = '' }) {
   };
 }
 
-export function updateWorkerMeta({ convId, groupId, pinned, addLabel, removeLabel, customStatus, note, remove }) {
+export function updateWorkerMeta({
+  convId,
+  groupId,
+  goalId,
+  customTitle,
+  pinned,
+  snoozed,
+  closed,
+  stepCount,
+  ack,
+  addLabel,
+  removeLabel,
+  customStatus,
+  note,
+  remove,
+}) {
   const cleanId = String(convId || '').trim();
   if (!SAFE_ID_RE.test(cleanId)) {
-    throw new Error('Invalid worker conversation ID.');
+    throw new Error('Invalid agent conversation ID.');
   }
   const state = loadState();
   const cur = state.workers[cleanId] || { groupId: 'group-default', pinned: false, labels: [] };
   cur.removed = remove === true;
   if (typeof groupId === 'string' && groupId.trim()) cur.groupId = groupId.trim();
+  if (typeof goalId === 'string') cur.goalId = goalId.trim();
+  if (typeof customTitle === 'string') {
+    cur.customTitle = customTitle.trim().slice(0, 90);
+  }
   if (typeof pinned === 'boolean') cur.pinned = pinned;
+  if (typeof snoozed === 'boolean') {
+    cur.snoozed = snoozed;
+    if (snoozed) cur.closed = false;
+  }
+  if (typeof closed === 'boolean') {
+    cur.closed = closed;
+    if (closed) {
+      cur.closedAtStep = Number(stepCount || cur.closedAtStep || 999999);
+      cur.reopened = false;
+      cur.snoozed = false;
+    } else {
+      cur.closedAtStep = 0;
+      cur.reopened = true;
+    }
+  }
+  if (ack === true) {
+    if (Number(stepCount) > 0) cur.ackedAtStep = Number(stepCount);
+    cur.ackedAtMs = Date.now();
+  }
   if (typeof customStatus === 'string') cur.customStatus = customStatus.trim().slice(0, 32);
   if (typeof note === 'string') cur.note = note.trim().slice(0, 280);
   const labelSet = new Set(Array.isArray(cur.labels) ? cur.labels : []);
@@ -1038,6 +1505,25 @@ export function updateWorkerMeta({ convId, groupId, pinned, addLabel, removeLabe
   state.workers[cleanId] = cur;
   saveState(state);
   return cur;
+}
+
+export async function sweepIdleWorkers() {
+  const { workers } = await getMergedWorkers();
+  const state = loadState();
+  let closedCount = 0;
+  for (const w of workers) {
+    if (!w.closed && !w.pinned && (w.status === 'IDLE' || w.status === 'AWAITING_REPLY')) {
+      const cur = state.workers[w.id] || { groupId: w.groupId || 'group-default', pinned: false, labels: [] };
+      cur.closed = true;
+      cur.closedAtStep = Number(w.stepCount || 999999);
+      cur.reopened = false;
+      cur.updatedAt = new Date().toISOString();
+      state.workers[w.id] = cur;
+      closedCount += 1;
+    }
+  }
+  saveState(state);
+  return { closedCount };
 }
 
 export function mutateGroups({ action, id, title, color }) {
@@ -1230,48 +1716,85 @@ function httpsFormPost(urlString, formParams, timeoutMs = 12000) {
   });
 }
 
-async function resolveEffectiveProjectId(prefs, adcCreds = null) {
+async function discoverProjectViaCrm(accessToken) {
+  if (cachedDiscoveredCrmProject) return cachedDiscoveredCrmProject;
+  try {
+    const resp = await fetch(
+      'https://cloudresourcemanager.googleapis.com/v1/projects?pageSize=20&filter=lifecycleState%3AACTIVE',
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(3500),
+      }
+    );
+    if (!resp.ok) return '';
+    const data = await resp.json();
+    const list = Array.isArray(data?.projects) ? data.projects : [];
+    const nonSys = list.find((p) => p?.projectId && !String(p.projectId).startsWith('sys-') && !PLACEHOLDER_PROJECT_IDS.has(String(p.projectId).toLowerCase()));
+    const chosen = nonSys?.projectId || list[0]?.projectId || '';
+    if (chosen) cachedDiscoveredCrmProject = chosen;
+    return chosen;
+  } catch {
+    return '';
+  }
+}
+
+async function resolveEffectiveProjectId(prefs, adcCreds = null, accessToken = '') {
   const candidates = listCandidateGcpProjectsSync(prefs, adcCreds);
   if (candidates.length > 0 && !candidates[0].isPlaceholder) {
     return candidates[0].projectId;
   }
-  for (const gcloudBin of getGcloudBinCandidates()) {
-    try {
-      const { stdout } = await execFileAsync(gcloudBin, ['config', 'get-value', 'project'], { timeout: 4000 });
-      const val = String(stdout || '').trim();
-      if (/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/i.test(val) && val !== '(unset)') {
-        cachedGcloudCliProject = val;
-        return val;
-      }
-    } catch {}
+  const gcProj = await runGcloudNonInteractive(['config', 'get-value', 'project'], 3000);
+  if (gcProj.ok && /^[a-z][a-z0-9-]{4,61}[a-z0-9]$/i.test(gcProj.stdout) && gcProj.stdout !== '(unset)') {
+    cachedGcloudCliProject = gcProj.stdout;
+    return gcProj.stdout;
+  }
+  if (accessToken) {
+    const crmProj = await discoverProjectViaCrm(accessToken);
+    if (crmProj) return crmProj;
   }
   return candidates[0]?.projectId || '';
 }
 
-async function resolveGeminiAuth(prefs) {
+function summarizeFriendlyApiError(rawErrText, status, channel) {
+  const txt = String(rawErrText || '').replace(/\s+/g, ' ').trim();
+  if (/API_KEY_INVALID|API key not valid/i.test(txt)) {
+    return 'API key not valid — check the key in ⚙️ Voice & Identity.';
+  }
+  if (/SERVICE_DISABLED|has not been used in project|API_KEY_SERVICE_BLOCKED/i.test(txt)) {
+    return `${channel} API is disabled on that key/project — enable Vertex AI / Generative Language API or use an AI Studio key (aistudio.google.com/apikey).`;
+  }
+  if (/invalid_rapt|reauth related error|Reauthentication required/i.test(txt)) {
+    return 'ADC session expired (Google 20h reauth) — run "gcloud auth application-default login" in Terminal, or add an API key in ⚙️ Voice & Identity.';
+  }
+  if (/BILLING_DISABLED/i.test(txt)) {
+    return `Billing is disabled on the selected GCP project — pick an active project in ⚙️ Voice & Identity.`;
+  }
+  return `${channel} HTTP ${status}${txt ? ': ' + txt.slice(0, 140) : ''}`;
+}
+
+async function resolveGeminiAuthCandidates(prefs) {
+  const candidates = [];
+  const diagnostics = [];
+
+  const envKey = (process.env.GEMINI_API_KEY || '').trim();
+  const apiKey = envKey || prefs.apiKey || '';
   const adc = findAdcCredentialsFile();
 
-  // 1. Default: Google Cloud Project + ADC (Vertex AI — works natively with cloud-platform scope!)
-  if (prefs.useGcloudAdc !== false) {
-    const projectId = await resolveEffectiveProjectId(prefs, adc?.creds);
-    const candidateProjects = Array.from(
-      new Set(
-        [projectId, ...listCandidateGcpProjectsSync(prefs, adc?.creds).map((c) => c.projectId)].filter(Boolean)
-      )
-    );
+  // Helper to resolve ADC / gcloud Bearer candidate (never hangs on interactive reauth prompts)
+  const buildBearerCandidate = async () => {
+    if (prefs.useGcloudAdc === false) return null;
 
-    if (cachedAdcToken && cachedAdcToken.expiresAt > Date.now() && projectId) {
-      return {
-        type: 'bearer',
-        token: cachedAdcToken.accessToken,
-        projectId,
-        candidateProjects,
-        quotaProjectId: cachedAdcToken.quotaProjectId || projectId,
-        source: `vertex-adc(${projectId})`,
-      };
+    let accessToken = '';
+    let tokenOrigin = '';
+    let quotaProjectHint = '';
+
+    if (cachedAdcToken && cachedAdcToken.expiresAt > Date.now()) {
+      accessToken = cachedAdcToken.accessToken;
+      quotaProjectHint = cachedAdcToken.quotaProjectId || '';
+      tokenOrigin = 'vertex-adc';
     }
 
-    if (adc && adc.creds && projectId) {
+    if (!accessToken && adc && adc.creds && adc.creds.refresh_token && adc.creds.client_id) {
       try {
         const form = {
           client_id: adc.creds.client_id,
@@ -1279,83 +1802,133 @@ async function resolveGeminiAuth(prefs) {
           grant_type: 'refresh_token',
         };
         if (adc.creds.client_secret) form.client_secret = adc.creds.client_secret;
-        const resp = await httpsFormPost('https://oauth2.googleapis.com/token', form, 10000);
+        const resp = await httpsFormPost('https://oauth2.googleapis.com/token', form, 6000);
         if (resp.status === 200 && resp.json && resp.json.access_token) {
+          accessToken = resp.json.access_token;
+          quotaProjectHint = String(adc.creds.quota_project_id || '');
           cachedAdcToken = {
-            accessToken: resp.json.access_token,
+            accessToken,
             expiresAt: Date.now() + Math.max(60, Number(resp.json.expires_in || 3500) - 60) * 1000,
-            quotaProjectId: String(adc.creds.quota_project_id || projectId),
+            quotaProjectId: quotaProjectHint,
           };
-          return {
-            type: 'bearer',
-            token: cachedAdcToken.accessToken,
-            projectId,
-            candidateProjects,
-            quotaProjectId: cachedAdcToken.quotaProjectId,
-            source: `vertex-adc(${projectId})`,
-          };
-        }
-      } catch {
-        // Fall through to gcloud CLI token fallback.
-      }
-    }
-
-    if (projectId) {
-      for (const bin of getGcloudBinCandidates()) {
-        try {
-          const { stdout } = await execFileAsync(bin, ['auth', 'print-access-token'], { timeout: 5000 });
-          const tok = String(stdout || '').trim();
-          if (tok) {
-            cachedAdcToken = {
-              accessToken: tok,
-              expiresAt: Date.now() + 240_000,
-              quotaProjectId: projectId,
-            };
-            return {
-              type: 'bearer',
-              token: tok,
-              projectId,
-              candidateProjects,
-              quotaProjectId: projectId,
-              source: `vertex-gcloud(${projectId})`,
-            };
+          tokenOrigin = 'vertex-adc';
+        } else {
+          const errDesc = String(resp.json?.error_description || resp.json?.error || '').trim();
+          if (/invalid_rapt|reauth/i.test(errDesc)) {
+            diagnostics.push('ADC session expired (Google reauth) — run "gcloud auth application-default login"');
+          } else if (errDesc) {
+            diagnostics.push(`ADC refresh failed (${errDesc.slice(0, 90)})`);
           }
-        } catch {}
+        }
+      } catch (err) {
+        diagnostics.push(`ADC token exchange error (${err instanceof Error ? err.message : 'network'})`);
       }
     }
-  }
 
-  // 2. Fallback: Explicit GEMINI_API_KEY (AI Studio / generativelanguage.googleapis.com)
-  const envKey = (process.env.GEMINI_API_KEY || '').trim();
-  const apiKey = envKey || prefs.apiKey || '';
+    if (!accessToken) {
+      const gcTok = await runGcloudNonInteractive(['auth', 'print-access-token'], 3500);
+      if (gcTok.ok && gcTok.stdout && !/\s/.test(gcTok.stdout)) {
+        accessToken = gcTok.stdout;
+        cachedAdcToken = {
+          accessToken,
+          expiresAt: Date.now() + 240_000,
+          quotaProjectId: '',
+        };
+        tokenOrigin = 'vertex-gcloud';
+      } else if (gcTok.error && /reauth|login|password|account/i.test(gcTok.error)) {
+        if (!diagnostics.some((d) => d.includes('ADC session expired'))) {
+          diagnostics.push('gcloud login expired — run "gcloud auth application-default login"');
+        }
+      }
+    }
+
+    if (!accessToken) {
+      if (!adc && diagnostics.length === 0) {
+        diagnostics.push('No ADC credentials found (~/.config/gcloud/application_default_credentials.json)');
+      }
+      return null;
+    }
+
+    const projectId = await resolveEffectiveProjectId(prefs, adc?.creds, accessToken);
+    const candidateProjects = Array.from(
+      new Set(
+        [projectId, ...listCandidateGcpProjectsSync(prefs, adc?.creds).map((c) => c.projectId)].filter(Boolean)
+      )
+    );
+    if (!projectId && candidateProjects.length === 0) {
+      diagnostics.push('ADC is signed in, needs a GCP Project ID in ⚙️ Voice & Identity');
+      return null;
+    }
+    const primaryProj = projectId || candidateProjects[0];
+    return {
+      type: 'bearer',
+      token: accessToken,
+      projectId: primaryProj,
+      candidateProjects,
+      quotaProjectId: quotaProjectHint || primaryProj,
+      source: `${tokenOrigin}(${primaryProj})`,
+    };
+  };
+
+  // If the user explicitly configured a GEMINI_API_KEY, prioritize it FIRST so an expired ADC never blocks it!
   if (apiKey) {
-    return { type: 'apiKey', token: apiKey, projectId: '', quotaProjectId: '', source: envKey ? 'env-key' : 'prefs-key' };
+    const syncProj = detectGcpProjectSync(prefs, adc?.creds).projectId;
+    candidates.push({
+      type: 'apiKey',
+      token: apiKey,
+      projectId: syncProj || '',
+      quotaProjectId: '',
+      source: envKey ? 'env-key' : prefs.apiKeySource === 'agy-coordinator-prefs' ? 'agy-prefs-key' : 'prefs-key',
+    });
   }
 
-  return null;
+  const bearer = await buildBearerCandidate();
+  if (bearer) {
+    candidates.push(bearer);
+  }
+
+  if (candidates.length === 0 && diagnostics.length === 0) {
+    diagnostics.push('No GEMINI_API_KEY or ADC credentials configured in ⚙️ Voice & Identity');
+  }
+  lastAuthDiagnosticNote = candidates.length > 0 ? '' : diagnostics.join('; ');
+  return { candidates, diagnostics };
 }
 
-function buildCoordinatorSystemContext({ identity, state, workers }) {
+async function resolveGeminiAuth(prefs) {
+  const { candidates } = await resolveGeminiAuthCandidates(prefs);
+  return candidates[0] || null;
+}
+
+function buildCoordinatorSystemContext({ identity, state, workers, voiceStatus = null, authSource = '' }) {
   const activeGoals = state.goals.filter((g) => g.status !== 'done');
   const openTasks = state.tasks.filter((t) => !t.done);
+  const vs = voiceStatus || getPublicVoiceStatus();
   const groupLines = state.groups.map((g) => `- ${g.title} (groupId: ${g.id})`);
-  const workerLines = (workers || []).slice(0, 10).map((w) => `- [${w.status}] ${w.title} (id: ${w.id.slice(0, 8)})`);
+  const workerLines = (workers || []).filter((w) => !w.closed).slice(0, 10).map((w) => `- [${w.status}] ${w.title} (id: ${w.id.slice(0, 8)})`);
   const goalLines = activeGoals.slice(0, 10).map((g) => `- [${g.status}] ${g.title} (goalId: ${g.id}, groupId: ${g.groupId})`);
+  const authSummaryLine = authSource
+    ? `CONNECTED & VERIFIED right now via ${authSource} (GCP Project: ${vs.effectiveProjectId || 'active'}, Voice: ${vs.voiceName || 'Kore'})`
+    : vs.lastDiagnostic
+      ? `NEEDS ATTENTION: ${vs.lastDiagnostic}`
+      : `GCP Project: ${vs.effectiveProjectId || 'not set yet'} (${vs.projectSource || 'none'}), ADC File: ${vs.hasAdcFile ? 'present' : 'not found'}, Voice: ${vs.voiceName || 'Kore'}`;
+
   return [
     identity.identityMd.trim(),
     identity.soulMd.trim(),
-    `Current Coordinator Snapshot (${new Date().toISOString()}):`,
-    `- Groups: ${state.groups.length}, Active Goals: ${activeGoals.length}, Open Tasks: ${openTasks.length}, Tracked Workers: ${(workers || []).length}`,
+    `Current Coordinator & Auth Snapshot (${new Date().toISOString()}):`,
+    `- Live Voice & Auth Status: ${authSummaryLine}`,
+    `- How users fix auth issues in Clawy: (1) Open the "⚙️ Voice & Identity" tab, verify "Google Cloud Project ID", and click "🔌 Save & Verify GCP Connection". (2) If their 20-hour Google ADC login expired, click "📋 Copy: gcloud auth application-default login" and run it in Terminal.`,
+    `- Groups: ${state.groups.length}, Active Goals: ${activeGoals.length}, Open Tasks: ${openTasks.length}, Active Agents: ${workerLines.length}`,
     `Groups:\n${groupLines.join('\n')}`,
-    workerLines.length ? `Workers:\n${workerLines.join('\n')}` : 'Workers: none active yet.',
+    workerLines.length ? `Active Agents:\n${workerLines.join('\n')}` : 'Active Agents: none active right now.',
     goalLines.length ? `Goals:\n${goalLines.join('\n')}` : 'Goals: none created yet.',
     [
       'Return ONLY valid JSON with this exact shape:',
       '{',
       '  "transcript": "<exact user utterance if audio was provided, else user text>",',
-      '  "reply": "<1-3 crisp spoken sentences from the coordinator>",',
+      '  "reply": "<warm, helpful 1-3 spoken sentences from Clawy — never say your role is not auth; always help kindly>",',
       '  "action": {',
-      '    "type": "none | create_group | create_goal | add_task | spawn | relay",',
+      '    "type": "none | verify_auth | create_group | create_goal | add_task | spawn | relay",',
       '    "groupTitle": "<if create_group>",',
       '    "groupId": "<optional existing groupId for create_goal>",',
       '    "goalTitle": "<if create_goal>",',
@@ -1395,6 +1968,11 @@ function parseStructuredCoordinatorJson(rawText, fallbackTranscript = '') {
 async function executeCoordinatorAction(action, { workers, state }) {
   if (!action || !action.type || action.type === 'none') return null;
   const typ = String(action.type).toLowerCase();
+
+  if (typ === 'verify_auth') {
+    const diag = await diagnoseVoiceConnection();
+    return { type: 'verify_auth', ok: diag.ok, summary: diag.summary, authSource: diag.authSource };
+  }
 
   if (typ === 'create_group' && action.groupTitle) {
     const res = mutateGroups({ action: 'add', title: String(action.groupTitle) });
@@ -1476,14 +2054,31 @@ function buildLocalActionOrReply(prompt, { identity, state, workers }) {
   const name = identity.name || 'Clawy';
   const activeGoals = state.goals.filter((g) => g.status !== 'done');
   const openTasks = state.tasks.filter((t) => !t.done);
-  const runningWorkers = (workers || []).filter((w) => w.status === 'WORKING');
+  const activeAgents = (workers || []).filter((w) => !w.closed);
+  const needsYouAgents = activeAgents.filter((w) => w.status === 'NEEDS_YOU' || w.status === 'STALLED');
+  const awaitingAgents = activeAgents.filter((w) => w.status === 'AWAITING_REPLY');
+  const runningAgents = activeAgents.filter((w) => w.status === 'WORKING');
 
   let reply = '';
-  if (/\b(status|summary|overview|what('?s| is) happening|workers?)\b/.test(lower)) {
+  if (/\b(auth|authenticate|authentication|adc|gcloud|credential|credentials|reauth|login|api\s*key|gcp\s*project|vertex|connection)\b/.test(lower)) {
+    const vs = getPublicVoiceStatus();
+    const projPart = vs.effectiveProjectId
+      ? `I currently see GCP Project "${vs.effectiveProjectId}" (${vs.projectSource}). `
+      : 'No GCP Project ID is set yet. ';
     reply =
-      `${name} reporting: you have ${(workers || []).length} worker conversation(s) ` +
-      `(${runningWorkers.length} working), ${state.groups.length} group(s), ` +
-      `${activeGoals.length} active goal(s), and ${openTasks.length} open task(s).`;
+      `Happy to help check your authentication! ${projPart}` +
+      `To verify or fix your connection in two quick steps: open the ⚙️ Voice & Identity tab and click "🔌 Save & Verify GCP Connection" — ` +
+      `and if your 20-hour Google ADC login expired, click "📋 Copy: gcloud auth application-default login" and run it once in Terminal.`;
+  } else if (/\b(what can (you|clawy) do|how (do i|to) use|help|quickstart|tour|get started)\b/.test(lower)) {
+    reply =
+      `Hi! I'm ${name}, your friendly Agent Command Center for Google Antigravity. ` +
+      `I keep track of your active Agents, alert you when one needs an answer, pop chats open side-by-side when clicked, ` +
+      `and can also help you verify your Google Cloud Project & Gemini Live voice setup anytime.`;
+  } else if (/\b(status|summary|overview|what('?s| is) happening|agents?|workers?|chats?|conversations?)\b/.test(lower)) {
+    reply =
+      `${name} reporting: ${activeAgents.length} active agent(s) — ` +
+      `${needsYouAgents.length} needing your attention, ${runningAgents.length} working, and ${awaitingAgents.length} ready for review, ` +
+      `plus ${activeGoals.length} active goal(s) and ${openTasks.length} open task(s).`;
   } else if (/\b(goal|goals|task|tasks)\b/.test(lower)) {
     if (activeGoals.length === 0) {
       reply = `${name} here: no active goals yet. Say "Create goal: <title>" or use the Goals tab.`;
@@ -1495,7 +2090,7 @@ function buildLocalActionOrReply(prompt, { identity, state, workers }) {
   } else {
     reply =
       `${name} received: "${text.slice(0, 120)}". ` +
-      `Tracking ${(workers || []).length} worker(s) and ${activeGoals.length} active goal(s).`;
+      `Monitoring ${activeAgents.length} active agent(s) and ${activeGoals.length} active goal(s).`;
   }
 
   return { transcript: text, reply, action: null };
@@ -1633,7 +2228,7 @@ async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, au
           ? [auth.projectId]
           : [];
     if (!projectList.length) {
-      throw new Error('No Google Cloud Project ID detected for Vertex AI. Set your GCP Project ID in Identity & Voice or run /connect-ge.');
+      throw new Error('No Google Cloud Project ID detected for Vertex AI — enter your Project ID in ⚙️ Voice & Identity.');
     }
     let lastErr = '';
     for (const proj of projectList) {
@@ -1644,8 +2239,8 @@ async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, au
         'x-goog-user-project': proj,
       };
       const vertexTargets = [
-        `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent`,
         `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-2.5-flash:generateContent`,
+        `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent`,
         `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent`,
       ];
       for (const endpoint of vertexTargets) {
@@ -1657,7 +2252,7 @@ async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, au
         });
         if (!resp.ok) {
           const errText = await resp.text().catch(() => '');
-          lastErr = `Vertex AI HTTP ${resp.status}${errText ? ': ' + errText.slice(0, 140) : ''}`;
+          lastErr = summarizeFriendlyApiError(errText, resp.status, 'Vertex AI');
           if (resp.status === 403 || resp.status === 404 || resp.status === 429) continue;
           break;
         }
@@ -1670,35 +2265,90 @@ async function runGeminiRestGenerate({ auth, model, systemPrompt, userPrompt, au
     throw new Error(lastErr || 'Empty response from Vertex AI');
   }
 
-  const cleanModel = (model || DEFAULT_MULTIMODAL_MODEL).replace(/^models\//, '');
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`;
-  const resp = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
-    body: reqBody,
-    signal: AbortSignal.timeout(14000),
-  });
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => '');
-    throw new Error(`Gemini API HTTP ${resp.status}${errText ? ': ' + errText.slice(0, 140) : ''}`);
+  // API Key mode: supports BOTH AI Studio keys (AIza...) AND Vertex AI Express / GCP project keys (AQ... or AIza...)
+  const requestedClean = (model || '').replace(/^models\//, '').trim();
+  const apiKeyModels = Array.from(
+    new Set([requestedClean, 'gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-2.0-flash'].filter((m) => m && !m.includes('live')))
+  );
+  const isVertexExpressKey = /^AQ\./i.test(auth.token);
+  const endpoints = [];
+
+  const addAiStudioEndpoints = () => {
+    for (const m of apiKeyModels) {
+      endpoints.push({
+        channel: 'Gemini API',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`,
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
+      });
+    }
+  };
+  const addVertexKeyEndpoints = () => {
+    for (const m of ['gemini-2.5-flash', 'gemini-3.8-flash']) {
+      endpoints.push({
+        channel: 'Vertex AI Express',
+        url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(auth.token)}`,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (auth.projectId) {
+        const pid = encodeURIComponent(auth.projectId);
+        endpoints.push({
+          channel: 'Vertex AI Key',
+          url: `https://aiplatform.googleapis.com/v1beta1/projects/${pid}/locations/global/publishers/google/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(auth.token)}`,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+  };
+
+  if (isVertexExpressKey) {
+    addVertexKeyEndpoints();
+    addAiStudioEndpoints();
+  } else {
+    addAiStudioEndpoints();
+    addVertexKeyEndpoints();
   }
-  const data = await resp.json();
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  const text = parts.map((p) => p?.text || '').join('').trim();
-  if (!text) throw new Error('Empty response from Gemini API');
-  return text;
+
+  let lastKeyErr = '';
+  for (const ep of endpoints) {
+    try {
+      const resp = await fetch(ep.url, {
+        method: 'POST',
+        headers: ep.headers,
+        body: reqBody,
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        lastKeyErr = summarizeFriendlyApiError(errText, resp.status, ep.channel);
+        if (resp.status === 400 && /API_KEY_INVALID|API key not valid/i.test(errText) && !isVertexExpressKey && ep.channel === 'Gemini API') {
+          // Still allow Vertex Express check once in case key is Vertex-scoped, else continue
+          continue;
+        }
+        continue;
+      }
+      const data = await resp.json();
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const text = parts.map((p) => p?.text || '').join('').trim();
+      if (text) return text;
+    } catch (err) {
+      lastKeyErr = err instanceof Error ? err.message : String(err);
+    }
+  }
+  throw new Error(lastKeyErr || 'Gemini API key request failed');
 }
 
 export async function processCoordinatorTurn({
   prompt = '',
   audioBase64 = '',
   mimeType = '',
+  browserTranscript = '',
   source = 'text',
   requestedMode = '',
 }) {
   const cleanPrompt = String(prompt || '').trim();
   const cleanAudio = String(audioBase64 || '').trim();
-  if (!cleanPrompt && !cleanAudio) {
+  const cleanBrowserSpeech = String(browserTranscript || '').trim();
+  if (!cleanPrompt && !cleanAudio && !cleanBrowserSpeech) {
     throw new Error('Prompt or audio payload is required.');
   }
 
@@ -1715,7 +2365,7 @@ export async function processCoordinatorTurn({
       appendChatTurn({ role: 'user', text: cleanPrompt, source });
       try {
         const spawned = await spawnWorker({ prompt: spawnMatch[1].trim() });
-        const replyText = `${identity.name} dispatched a new worker${spawned.conversationId ? ` (${spawned.conversationId.slice(0, 8)})` : ''}.`;
+        const replyText = `${identity.name} started a new agent conversation.`;
         const assistantMsg = appendChatTurn({
           role: 'assistant',
           text: replyText,
@@ -1724,7 +2374,7 @@ export async function processCoordinatorTurn({
         });
         return { ok: true, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
       } catch (err) {
-        const replyText = `Could not spawn worker via agentapi: ${err instanceof Error ? err.message : String(err)}`;
+        const replyText = `Could not start agent via agentapi: ${err instanceof Error ? err.message : String(err)}`;
         const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
         return { ok: false, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
       }
@@ -1736,7 +2386,7 @@ export async function processCoordinatorTurn({
       const idQuery = relayMatch[1].toLowerCase();
       const matchWorker = workers.find((w) => w.id.toLowerCase().startsWith(idQuery));
       if (!matchWorker) {
-        const replyText = `No worker found matching prefix "${relayMatch[1]}".`;
+        const replyText = `No agent found matching "${relayMatch[1]}".`;
         const assistantMsg = appendChatTurn({ role: 'assistant', text: replyText, source });
         return { ok: false, transcript: cleanPrompt, modeUsed: 'local-dispatch', reply: replyText, assistantMsg };
       }
@@ -1763,84 +2413,69 @@ export async function processCoordinatorTurn({
   let liveError = '';
 
   if (mode === 'gemini-live' || cleanAudio) {
-    const auth = await resolveGeminiAuth(prefs);
-    if (!auth) {
-      liveError = 'No GEMINI_API_KEY or ADC credentials detected';
+    const { candidates, diagnostics } = await resolveGeminiAuthCandidates(prefs);
+    if (candidates.length === 0) {
+      liveError = diagnostics.join('; ') || 'No GEMINI_API_KEY or ADC credentials configured in ⚙️ Voice & Identity';
     } else {
-      const systemPrompt = buildCoordinatorSystemContext({ identity, state, workers });
-      if (cleanAudio) {
-        // Multimodal audio input via fast Gemini Flash REST endpoint
+      const voiceStatus = getPublicVoiceStatus();
+      const attemptErrors = [];
+      for (const auth of candidates) {
         try {
+          const systemPrompt = buildCoordinatorSystemContext({
+            identity,
+            state,
+            workers,
+            voiceStatus,
+            authSource: auth.source,
+          });
           const rawResp = await runGeminiRestGenerate({
             auth,
-            model: DEFAULT_MULTIMODAL_MODEL,
+            model: 'gemini-2.5-flash',
             systemPrompt,
-            userPrompt: cleanPrompt,
+            userPrompt: cleanPrompt || cleanBrowserSpeech,
             audioBase64: cleanAudio,
             mimeType: mimeType || 'audio/webm',
           });
-          parsed = parseStructuredCoordinatorJson(rawResp, '(Voice Command)');
-          modeUsed = `gemini-audio:${DEFAULT_MULTIMODAL_MODEL}(${auth.source})`;
+          parsed = parseStructuredCoordinatorJson(rawResp, cleanBrowserSpeech || cleanPrompt || '(Voice Command)');
+          modeUsed = cleanAudio ? `gemini-audio(${auth.source})` : `gemini-live(${auth.source})`;
+          liveError = '';
+          lastAuthDiagnosticNote = '';
+          break;
         } catch (err) {
-          liveError = err instanceof Error ? err.message : String(err);
+          attemptErrors.push(err instanceof Error ? err.message : String(err));
         }
-      } else if (auth.type === 'bearer') {
-        try {
-          const rawRest = await runGeminiRestGenerate({
-            auth,
-            model: DEFAULT_MULTIMODAL_MODEL,
-            systemPrompt,
-            userPrompt: cleanPrompt,
-          });
-          parsed = parseStructuredCoordinatorJson(rawRest, cleanPrompt);
-          modeUsed = `vertex-ai(${auth.source})`;
-        } catch (restErr) {
-          liveError = restErr instanceof Error ? restErr.message : String(restErr);
-        }
-      } else {
-        try {
-          const rawWs = await runGeminiLiveBidi({
-            auth,
-            model: prefs.model || DEFAULT_VOICE_MODEL,
-            systemPrompt,
-            userPrompt: cleanPrompt,
-          });
-          parsed = parseStructuredCoordinatorJson(rawWs, cleanPrompt);
-          modeUsed = `gemini-live-ws:${prefs.model || DEFAULT_VOICE_MODEL}(${auth.source})`;
-        } catch (wsErr) {
-          try {
-            const rawRest = await runGeminiRestGenerate({
-              auth,
-              model: DEFAULT_MULTIMODAL_MODEL,
-              systemPrompt,
-              userPrompt: cleanPrompt,
-            });
-            parsed = parseStructuredCoordinatorJson(rawRest, cleanPrompt);
-            modeUsed = `gemini-rest:${DEFAULT_MULTIMODAL_MODEL}(${auth.source})`;
-          } catch (restErr) {
-            liveError = `${wsErr.message}; ${restErr.message}`;
-          }
-        }
+      }
+      if (!parsed && attemptErrors.length > 0) {
+        liveError = attemptErrors[0];
+        lastAuthDiagnosticNote = liveError;
       }
     }
   }
 
   if (!parsed) {
-    if (cleanAudio) {
-      const msg = liveError
-        ? `Voice audio could not reach Gemini (${liveError}). Add a GEMINI_API_KEY or ADC credentials in Identity & Voice, or type your command.`
-        : 'Voice audio requires Gemini credentials (GEMINI_API_KEY or ADC).';
+    // If browser speech recognition captured the user's words locally, fulfill the voice request cleanly instead of failing!
+    if (cleanAudio && cleanBrowserSpeech) {
+      parsed = buildLocalActionOrReply(cleanBrowserSpeech, { identity, state, workers });
+      modeUsed = 'browser-voice-fallback';
+      if (liveError) {
+        parsed.reply += ` (Tip: to reconnect Gemini Live neural voice, open ⚙️ Voice & Identity and click Save & Verify GCP Connection, or run "gcloud auth application-default login".)`;
+      }
+    } else if (cleanAudio) {
+      const msg =
+        `I couldn't reach Gemini Live right now${liveError ? ` (${liveError})` : ''}. ` +
+        `No worries — open the ⚙️ Voice & Identity tab and click "🔌 Save & Verify GCP Connection", or run "gcloud auth application-default login" in Terminal if your 20-hour ADC login expired!`;
       appendChatTurn({ role: 'user', text: '(Voice audio clip)', source });
       const assistantMsg = appendChatTurn({ role: 'assistant', text: msg, source: 'voice-notice' });
       return { ok: false, transcript: '', reply: msg, liveError, modeUsed: 'none', assistantMsg };
-    }
-    parsed = buildLocalActionOrReply(cleanPrompt, { identity, state, workers });
-    if (liveError) {
-      parsed.reply += ` (Local fallback: ${liveError})`;
+    } else {
+      parsed = buildLocalActionOrReply(cleanPrompt, { identity, state, workers });
+      if (liveError && mode === 'gemini-live' && !/⚙️ Voice & Identity/.test(parsed.reply)) {
+        parsed.reply += ` (Tip: open ⚙️ Voice & Identity -> Save & Verify GCP Connection if you'd like to reconnect Gemini Live.)`;
+      }
     }
   }
 
-  const userText = parsed.transcript || cleanPrompt || '(Voice command)';
+  const userText = parsed.transcript || cleanBrowserSpeech || cleanPrompt || '(Voice command)';
   appendChatTurn({ role: 'user', text: userText, source });
 
   let actionResult = null;
@@ -1880,15 +2515,25 @@ export async function processCoordinatorTurn({
   };
 }
 
+function sanitizeTextForSpokenTts(raw) {
+  return String(raw || '')
+    .replace(/[`*_#~]+/g, ' ')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, ' ')
+    .replace(/\s*->\s*/g, ' to ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 900);
+}
+
 export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
-  const cleanText = String(text || '').trim().slice(0, 900);
+  const cleanText = sanitizeTextForSpokenTts(text);
   if (!cleanText) return null;
   const prefs = loadVoicePrefsRaw();
   if (prefs.ttsEnabled === false) return null;
-  const auth = await resolveGeminiAuth(prefs);
-  if (!auth) return null;
+  const { candidates } = await resolveGeminiAuthCandidates(prefs);
+  if (!candidates.length) return null;
 
-  const chosenVoice = ALLOWED_GEMINI_VOICES.includes(voiceName) ? voiceName : (prefs.voiceName || 'Zephyr');
+  const chosenVoice = ALLOWED_GEMINI_VOICES.includes(voiceName) ? voiceName : (prefs.voiceName || 'Kore');
   const ttsPayload = JSON.stringify({
     contents: [{ role: 'user', parts: [{ text: cleanText }] }],
     generationConfig: {
@@ -1901,113 +2546,194 @@ export async function synthesizeGeminiTtsAudio({ text, voiceName = '' } = {}) {
     },
   });
 
-  if (auth.type === 'bearer' && auth.projectId) {
-    const projectList =
-      Array.isArray(auth.candidateProjects) && auth.candidateProjects.length
-        ? auth.candidateProjects
-        : [auth.projectId];
+  for (const auth of candidates) {
+    if (auth.type === 'bearer' && auth.projectId) {
+      const projectList =
+        Array.isArray(auth.candidateProjects) && auth.candidateProjects.length
+          ? auth.candidateProjects
+          : [auth.projectId];
 
-    for (const proj of projectList) {
-      const pid = encodeURIComponent(proj);
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${auth.token}`,
-        'x-goog-user-project': proj,
-      };
-      const vertexTtsModels = [
-        ['global', 'gemini-3.1-flash-tts-preview'],
-        ['global', 'gemini-2.5-flash-tts'],
-        ['global', 'gemini-2.5-flash-preview-tts'],
-        ['us-central1', 'gemini-2.5-flash-tts'],
-      ];
-      for (const [loc, modelId] of vertexTtsModels) {
-        const host = loc === 'global' ? 'aiplatform.googleapis.com' : `${loc}-aiplatform.googleapis.com`;
-        const endpoint = `https://${host}/v1beta1/projects/${pid}/locations/${loc}/publishers/google/models/${modelId}:generateContent`;
+      for (const proj of projectList) {
+        const pid = encodeURIComponent(proj);
+        const headers = {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`,
+          'x-goog-user-project': proj,
+        };
+        const vertexTtsModels = [
+          ['global', 'gemini-3.8-flash-tts'],
+          ['global', 'gemini-3.8-flash-lite-tts'],
+          ['global', 'gemini-3.1-flash-tts-preview'],
+          ['global', 'gemini-2.5-flash-tts'],
+          ['global', 'gemini-2.5-flash-preview-tts'],
+          ['us-central1', 'gemini-2.5-flash-tts'],
+        ];
+        for (const [loc, modelId] of vertexTtsModels) {
+          const host = loc === 'global' ? 'aiplatform.googleapis.com' : `${loc}-aiplatform.googleapis.com`;
+          const endpoint = `https://${host}/v1beta1/projects/${pid}/locations/${loc}/publishers/google/models/${modelId}:generateContent`;
+          try {
+            const resp = await fetch(endpoint, {
+              method: 'POST',
+              headers,
+              body: ttsPayload,
+              signal: AbortSignal.timeout(8500),
+            });
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            for (const p of parts) {
+              if (p?.inlineData?.data) {
+                const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
+                const rateMatch = m.match(/rate=(\d+)/i);
+                return {
+                  audioBase64: p.inlineData.data,
+                  mimeType: m,
+                  sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
+                  voiceName: chosenVoice,
+                  modelUsed: `vertex:${modelId}`,
+                };
+              }
+            }
+          } catch {}
+        }
+
+        // Cloud Text-to-Speech Chirp3-HD fallback on the same GCP project
         try {
-          const resp = await fetch(endpoint, {
+          const cResp = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
             method: 'POST',
             headers,
-            body: ttsPayload,
-            signal: AbortSignal.timeout(9000),
+            body: JSON.stringify({
+              input: { text: cleanText },
+              voice: { languageCode: 'en-US', name: `en-US-Chirp3-HD-${chosenVoice}` },
+              audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: 24000 },
+            }),
+            signal: AbortSignal.timeout(7500),
           });
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          const parts = data?.candidates?.[0]?.content?.parts || [];
-          for (const p of parts) {
-            if (p?.inlineData?.data) {
-              const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
-              const rateMatch = m.match(/rate=(\d+)/i);
+          if (cResp.ok) {
+            const cData = await cResp.json();
+            if (cData?.audioContent) {
               return {
-                audioBase64: p.inlineData.data,
-                mimeType: m,
-                sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
+                audioBase64: cData.audioContent,
+                mimeType: 'audio/wav;rate=24000',
+                sampleRate: 24000,
                 voiceName: chosenVoice,
-                modelUsed: `vertex:${modelId}`,
+                modelUsed: 'cloud-tts:chirp3-hd',
               };
             }
           }
         } catch {}
       }
-
-      // Cloud Text-to-Speech Chirp3-HD fallback on the same GCP project
-      try {
-        const cResp = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            input: { text: cleanText },
-            voice: { languageCode: 'en-US', name: `en-US-Chirp3-HD-${chosenVoice}` },
-            audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: 24000 },
-          }),
-          signal: AbortSignal.timeout(8000),
-        });
-        if (cResp.ok) {
-          const cData = await cResp.json();
-          if (cData?.audioContent) {
-            const wavBuf = Buffer.from(cData.audioContent, 'base64');
-            const pcmBuf = wavBuf.length > 44 && wavBuf.subarray(0, 4).toString('ascii') === 'RIFF' ? wavBuf.subarray(44) : wavBuf;
-            return {
-              audioBase64: pcmBuf.toString('base64'),
-              mimeType: 'audio/L16;rate=24000',
-              sampleRate: 24000,
-              voiceName: chosenVoice,
-              modelUsed: 'cloud-tts:chirp3-hd',
-            };
-          }
-        }
-      } catch {}
+      continue;
     }
-    return null;
-  }
 
-  if (auth.type === 'apiKey') {
-    for (const ttsModel of ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts', 'gemini-2.5-flash-tts']) {
-      try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(ttsModel)}:generateContent`;
-        const resp = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
-          body: ttsPayload,
-          signal: AbortSignal.timeout(9000),
-        });
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        const parts = data?.candidates?.[0]?.content?.parts || [];
-        for (const p of parts) {
-          if (p?.inlineData?.data) {
-            const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
-            const rateMatch = m.match(/rate=(\d+)/i);
-            return {
-              audioBase64: p.inlineData.data,
-              mimeType: m,
-              sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
-              voiceName: chosenVoice,
-              modelUsed: ttsModel,
-            };
-          }
+    if (auth.type === 'apiKey') {
+      const ttsModels = [
+        'gemini-3.8-flash-tts',
+        'gemini-3.8-flash-lite-tts',
+        'gemini-3.1-flash-tts-preview',
+        'gemini-2.5-flash-preview-tts',
+        'gemini-2.5-flash-tts',
+      ];
+      for (const ttsModel of ttsModels) {
+        const urls = /^AQ\./i.test(auth.token)
+          ? [
+              {
+                url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodeURIComponent(ttsModel)}:generateContent?key=${encodeURIComponent(auth.token)}`,
+                headers: { 'Content-Type': 'application/json' },
+              },
+              {
+                url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(ttsModel)}:generateContent`,
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
+              },
+            ]
+          : [
+              {
+                url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(ttsModel)}:generateContent`,
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': auth.token },
+              },
+              {
+                url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodeURIComponent(ttsModel)}:generateContent?key=${encodeURIComponent(auth.token)}`,
+                headers: { 'Content-Type': 'application/json' },
+              },
+            ];
+        for (const target of urls) {
+          try {
+            const resp = await fetch(target.url, {
+              method: 'POST',
+              headers: target.headers,
+              body: ttsPayload,
+              signal: AbortSignal.timeout(8500),
+            });
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            for (const p of parts) {
+              if (p?.inlineData?.data) {
+                const m = String(p.inlineData.mimeType || 'audio/L16;rate=24000');
+                const rateMatch = m.match(/rate=(\d+)/i);
+                return {
+                  audioBase64: p.inlineData.data,
+                  mimeType: m,
+                  sampleRate: rateMatch ? Number(rateMatch[1]) : 24000,
+                  voiceName: chosenVoice,
+                  modelUsed: ttsModel,
+                };
+              }
+            }
+          } catch {}
         }
-      } catch {}
+      }
     }
   }
   return null;
+}
+
+export async function diagnoseVoiceConnection(patch = null) {
+  if (patch && typeof patch === 'object' && Object.keys(patch).length > 0) {
+    saveVoicePrefs(patch);
+  }
+  const prefs = loadVoicePrefsRaw();
+  const { candidates, diagnostics } = await resolveGeminiAuthCandidates(prefs);
+  if (candidates.length === 0) {
+    const msg = diagnostics.join(' · ') || 'No GEMINI_API_KEY or ADC credentials detected.';
+    lastAuthDiagnosticNote = msg;
+    return {
+      ok: false,
+      summary: msg,
+      authSource: 'none',
+      voiceStatus: getPublicVoiceStatus(),
+    };
+  }
+
+  const errors = [];
+  for (const auth of candidates) {
+    try {
+      const reply = await runGeminiRestGenerate({
+        auth,
+        model: 'gemini-2.5-flash',
+        systemPrompt: 'Return JSON: {"reply":"OK"}',
+        userPrompt: 'Ping',
+      });
+      if (reply) {
+        lastAuthDiagnosticNote = '';
+        return {
+          ok: true,
+          summary: `Connected via ${auth.source}! Gemini Live voice & audio are ready.`,
+          authSource: auth.source,
+          voiceStatus: getPublicVoiceStatus(),
+        };
+      }
+    } catch (err) {
+      errors.push(`${auth.source}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  const errMsg = errors.join(' | ') || 'Gemini test call failed.';
+  lastAuthDiagnosticNote = errMsg;
+  return {
+    ok: false,
+    summary: errMsg,
+    authSource: candidates[0]?.source || 'failed',
+    voiceStatus: getPublicVoiceStatus(),
+  };
 }
