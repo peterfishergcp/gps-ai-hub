@@ -98,7 +98,11 @@
       '.agy-tm-btn.pri { background: #0f172a !important; color: #ffffff !important; border-color: #0f172a !important; }',
       'html[data-theme="dark"] .agy-tm-btn.pri { background: #93c5fd !important; color: #062e6f !important; border-color: #93c5fd !important; }',
       '.agy-tm-btn.amber { background: #fef3c7 !important; color: #92400e !important; border-color: #f59e0b !important; font-weight: 700; }',
-      'html[data-theme="dark"] .agy-tm-btn.amber { background: rgba(245, 158, 11, 0.24) !important; color: #fde68a !important; border-color: rgba(251, 191, 36, 0.5) !important; }'
+      'html[data-theme="dark"] .agy-tm-btn.amber { background: rgba(245, 158, 11, 0.24) !important; color: #fde68a !important; border-color: rgba(251, 191, 36, 0.5) !important; }',
+      '.agy-dock-sidepanel-btn { display: inline-flex; align-items: center; gap: 5px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-family: "Google Sans", Inter, -apple-system, sans-serif; font-size: 11.5px; font-weight: 600; padding: 5px 10px; cursor: pointer; white-space: nowrap; transition: border-color 0.14s ease, background 0.14s ease; }',
+      '.agy-dock-sidepanel-btn:hover { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }',
+      'html[data-theme="dark"] .agy-dock-sidepanel-btn { background: #1e2330 !important; color: #e2e8f0 !important; border-color: #333b4d !important; }',
+      'html[data-theme="dark"] .agy-dock-sidepanel-btn:hover { border-color: #60a5fa !important; background: rgba(59, 130, 246, 0.18) !important; color: #bfdbfe !important; }'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -206,6 +210,45 @@
       containerEl.appendChild(wrap);
     }
 
+    var latestKnownConvId = '';
+    var isFullPageSidebarView =
+      !(window.sidecar && window.sidecar.conversationId) ||
+      window.location.search.indexOf('entrypoint=sidebar') !== -1 ||
+      window.location.search.indexOf('view=sidebar') !== -1;
+
+    var headerActionsHost =
+      document.querySelector('header .topbar-actions') ||
+      document.querySelector('header .header-actions') ||
+      containerEl;
+
+    if (isFullPageSidebarView && headerActionsHost && !document.getElementById('agyDockSidePanelBtn')) {
+      var dockBtn = makeEl('button', 'agy-dock-sidepanel-btn', '◫ Side Panel');
+      dockBtn.id = 'agyDockSidePanelBtn';
+      dockBtn.type = 'button';
+      dockBtn.title = 'Open your chat and dock this plugin in the Right-Hand Side Panel (⇧⌘B)';
+      dockBtn.addEventListener('click', async function () {
+        try {
+          if (window.sidecar && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
+            if (latestKnownConvId) {
+              window.sidecar.ui.toggleConversation(latestKnownConvId, { openSidePanel: true });
+              return;
+            }
+            if (window.sidecar.agent && window.sidecar.agent.startConversation) {
+              var created = await window.sidecar.agent.startConversation(
+                'Ready — docked panel in the Right-Hand Side Panel.',
+                'Workspace Session'
+              );
+              if (created && created.conversationId) {
+                latestKnownConvId = String(created.conversationId);
+                window.sidecar.ui.toggleConversation(latestKnownConvId, { openSidePanel: true });
+              }
+            }
+          }
+        } catch (e) {}
+      });
+      headerActionsHost.appendChild(dockBtn);
+    }
+
     function renderData(data) {
       if (!data || !data.ok || !data.windows) return;
       var w5 = data.windows.last5h || {};
@@ -215,6 +258,9 @@
       var cap = data.spendingCap || null;
       var focusConv = data.activeConversation || null;
       var thread = focusConv || data.newestConversation;
+      if (thread && thread.convId) {
+        latestKnownConvId = String(thread.convId);
+      }
       var pillSrc = focusConv || (w5.turns > 0 ? w5 : w7);
       var prefix = focusConv ? '' : (w5.turns > 0 ? '5h: ' : '7d: ');
 

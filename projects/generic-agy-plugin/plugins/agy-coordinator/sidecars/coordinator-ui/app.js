@@ -97,7 +97,20 @@
     var bubble = document.getElementById('perchBubble');
     var clean = String(text || '').trim();
     if (persistAsIdle && clean) state.lastBubbleText = clean;
-    if (bubble) bubble.textContent = clean || state.lastBubbleText;
+    var displayed = clean || state.lastBubbleText;
+    if (bubble) bubble.textContent = displayed;
+
+    var guideRow = document.getElementById('perchAuthGuideRow');
+    if (guideRow) {
+      var modeSel = document.getElementById('voiceModeSelect');
+      var isLiveMode = !modeSel || modeSel.value === 'gemini-live';
+      var vs = state.snapshot && state.snapshot.voiceStatus ? state.snapshot.voiceStatus : {};
+      var hasAuthIssue =
+        isLiveMode &&
+        (/isn't signed in|session expired|reauth|No ADC credentials|API key not valid|needs sign-in/i.test(displayed) ||
+          /expired|reauth|No ADC credentials|API key not valid/i.test(String(vs.lastDiagnostic || '')));
+      guideRow.hidden = !hasAuthIssue;
+    }
   }
 
   function setMascotMood(mood, labelText) {
@@ -1855,6 +1868,34 @@
     });
     root.appendChild(idCard);
 
+    var authGuideCard = el('div', 'coord-auth-guide-card');
+    authGuideCard.id = 'authGuideCard';
+    authGuideCard.appendChild(el('strong', '', '🔑 Zero-Footprint Sign-In, Voice & Account Logout Guide (No Extra Installs Required)'));
+    var guideList = el('ul', '');
+    guideList.appendChild(
+      el(
+        'li',
+        '',
+        '1. Talk Right Now (Zero Login / Zero Install): Select "Browser Instant Voice" below — works out of the box on every laptop with zero keys or CLI tools.'
+      )
+    );
+    guideList.appendChild(
+      el(
+        'li',
+        '',
+        '2. Antigravity App Logout / Re-Auth (Chat & IDE Account): Click ⚙️ Settings (bottom-left corner of Antigravity) -> Account -> Sign Out, then sign back in.'
+      )
+    );
+    guideList.appendChild(
+      el(
+        'li',
+        '',
+        '3. Gemini Live Neural Voice (Kore): Paste an optional Gemini API Key below (zero CLI install, never expires every 20h) — or if you already use Google Cloud SDK, refresh your 20h ADC token with "gcloud auth application-default login".'
+      )
+    );
+    authGuideCard.appendChild(guideList);
+    root.appendChild(authGuideCard);
+
     var voiceCard = el('form', 'coord-card');
     voiceCard.appendChild(el('div', 'coord-card-title', 'Google Cloud Project (Vertex AI ADC) & Voice Settings'));
     var statusBanner = el(
@@ -2174,7 +2215,34 @@
       modeSel.addEventListener('change', async function () {
         var res = await apiPost('/api/voice/prefs', { mode: modeSel.value });
         if (res && res.snapshot) state.snapshot = res.snapshot;
+        var guideRow = document.getElementById('perchAuthGuideRow');
+        if (guideRow && modeSel.value === 'browser') guideRow.hidden = true;
         showToast('Voice mode saved: ' + modeSel.value);
+      });
+    }
+
+    var switchInstantBtn = document.getElementById('btnSwitchInstantVoice');
+    if (switchInstantBtn) {
+      switchInstantBtn.addEventListener('click', async function () {
+        if (modeSel) modeSel.value = 'browser';
+        var res = await apiPost('/api/voice/prefs', { mode: 'browser' });
+        if (res && res.snapshot) state.snapshot = res.snapshot;
+        var guideRow = document.getElementById('perchAuthGuideRow');
+        if (guideRow) guideRow.hidden = true;
+        setPerchBubble('Switched to Browser Instant Voice — hold 🎙️ Live or tap any starter below with zero sign-in needed!', true);
+        showToast('Active: Browser Instant Voice (Zero Sign-In)');
+      });
+    }
+
+    var openAuthGuideBtn = document.getElementById('btnOpenAuthGuide');
+    if (openAuthGuideBtn) {
+      openAuthGuideBtn.addEventListener('click', function () {
+        var idTabBtn = document.querySelector('.tab-btn[data-tab="identity"]');
+        if (idTabBtn) idTabBtn.click();
+        setTimeout(function () {
+          var card = document.getElementById('authGuideCard');
+          if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 40);
       });
     }
 
