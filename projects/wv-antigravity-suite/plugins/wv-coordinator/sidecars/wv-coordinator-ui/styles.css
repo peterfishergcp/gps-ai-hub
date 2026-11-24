@@ -305,34 +305,6 @@ html, body {
   overflow-y: auto;
 }
 
-.coord-auth-guide-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.coord-auth-guide-card {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.38);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  font-size: 12px;
-  line-height: 1.48;
-  color: var(--coord-fg);
-}
-
-.coord-auth-guide-card ul {
-  margin: 6px 0 0 18px;
-  padding: 0;
-}
-
-.coord-auth-guide-card li {
-  margin-bottom: 4px;
-}
-
 .coord-voice-row {
   display: flex;
   align-items: center;
