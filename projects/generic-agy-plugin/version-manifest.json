@@ -445,12 +445,12 @@
     "agy-connectors/scripts/ge_instance_mcp.mjs": {
       "plugin": "agy-connectors",
       "path": "scripts/ge_instance_mcp.mjs",
-      "sha256": "563f81022e35c58a95ecb92791402a0b87e560341848d8a1070f7ec7edd24f54"
+      "sha256": "ceaf1ef76f42cc57e7a92bd40978c9f8522243ba7cb3f7f18c3f8ce124e8697a"
     },
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "2f4532aaca2eedc4eab2e7c39b415f230751494e9cbeab21c590a3dae7560763"
+      "sha256": "66dda83b50f2357eabecbb8c2e8d86eb3e860409d2ab873acde2fab82e74e427"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",

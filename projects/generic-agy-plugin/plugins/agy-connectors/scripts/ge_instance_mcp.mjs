@@ -423,8 +423,12 @@ async function resolveUserAccessToken(cfg) {
     }
   }
 
-  // Tier 3: gcloud CLI fallback (only invoked if an actual gcloud binary exists on PATH)
-  const rawGcloudBins = process.platform === 'win32' ? ['gcloud.cmd', 'gcloud'] : ['gcloud'];
+  // Tier 3: gcloud CLI fallback (only invoked if user already has a gcloud config dir + binary on PATH)
+  const hasGcloudCfg =
+    Boolean((process.env.CLOUDSDK_CONFIG || '').trim()) ||
+    fs.existsSync(path.join(os.homedir(), '.config', 'gcloud')) ||
+    Boolean(process.env.APPDATA && fs.existsSync(path.join(process.env.APPDATA, 'gcloud')));
+  const rawGcloudBins = hasGcloudCfg ? (process.platform === 'win32' ? ['gcloud.cmd', 'gcloud'] : ['gcloud']) : [];
   const pathDirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
   for (const rawBin of rawGcloudBins) {
     let resolvedBin = '';

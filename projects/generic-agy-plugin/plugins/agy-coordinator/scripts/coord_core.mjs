@@ -452,7 +452,18 @@ function resolveExistingGcloudBin(bin, searchPath = '') {
   return '';
 }
 
+function hasExistingGcloudConfigDir() {
+  if ((process.env.CLOUDSDK_CONFIG || '').trim()) return true;
+  if (process.platform === 'win32' && process.env.APPDATA && fs.existsSync(path.join(process.env.APPDATA, 'gcloud'))) {
+    return true;
+  }
+  return fs.existsSync(path.join(os.homedir(), '.config', 'gcloud'));
+}
+
 async function runGcloudNonInteractive(subArgs, timeoutMs = 3500) {
+  if (!hasExistingGcloudConfigDir()) {
+    return { ok: false, stdout: '', error: '' };
+  }
   const safeSubArgs = [...subArgs, '--quiet'];
   const env = buildGcloudExecEnv();
   let lastStderr = '';
