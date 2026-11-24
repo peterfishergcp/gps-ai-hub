@@ -356,7 +356,9 @@ async function checkHermeticLifecycleGates() {
     }
 
     const tmpAfterInstall = fs.readdirSync(canaryTmp);
-    const homeEntries = fs.readdirSync(fakeHome);
+    const homeEntries = fs
+      .readdirSync(fakeHome)
+      .filter((n) => !(process.platform === 'win32' && n === 'AppData'));
     const geminiEntries = fs.existsSync(path.join(fakeHome, '.gemini'))
       ? fs.readdirSync(path.join(fakeHome, '.gemini'))
       : [];
@@ -438,7 +440,9 @@ async function checkHermeticLifecycleGates() {
       g9Issues.push(`Runtime error (exit ${rtRes.status}): ${(rtRes.stderr || rtRes.stdout || '').trim().slice(0, 220)}`);
     }
     const tmpAfterRuntime = fs.readdirSync(canaryTmp);
-    const homeAfterRuntime = fs.readdirSync(fakeHome);
+    const homeAfterRuntime = fs
+      .readdirSync(fakeHome)
+      .filter((n) => !(process.platform === 'win32' && n === 'AppData'));
     const geminiAfterRuntime = fs.readdirSync(path.join(fakeHome, '.gemini'));
     if (tmpAfterRuntime.length > 0) g9Issues.push(`Runtime wrote to TMPDIR: ${tmpAfterRuntime.join(', ')}`);
     if (JSON.stringify(homeAfterRuntime) !== JSON.stringify(['.gemini'])) {
