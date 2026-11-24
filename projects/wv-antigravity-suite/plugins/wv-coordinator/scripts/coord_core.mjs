@@ -2,8 +2,8 @@
  * AGY Coordinator — Core State, Desktop/Brain Discovery, AgentAPI Relay, Persona & Voice Engine
  *
  * Zero external npm dependencies. Uses only Node built-ins (`node:*`).
- * Persistent state lives strictly under `~/.gemini/config/plugin_data/agy-coordinator/`
- * (or `AGY_COORDINATOR_DATA_DIR` when explicitly overridden). Zero `/tmp` writes.
+ * Persistent state lives strictly under `~/.gemini/config/plugin_data/wv-coordinator/`
+ * (or `WV_COORDINATOR_DATA_DIR` / `AGY_COORDINATOR_DATA_DIR` when explicitly overridden). Zero `/tmp` writes.
  */
 
 import { execFile } from 'node:child_process';
@@ -434,12 +434,33 @@ function buildGcloudExecEnv() {
   };
 }
 
+function resolveExistingGcloudBin(bin, searchPath = '') {
+  if (bin.includes(path.sep)) {
+    return fs.existsSync(bin) ? bin : '';
+  }
+  const dirs = String(searchPath || '').split(path.delimiter).filter(Boolean);
+  for (const d of dirs) {
+    const candidate = path.join(d, bin);
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Ignore unreadable PATH segments.
+    }
+  }
+  return '';
+}
+
 async function runGcloudNonInteractive(subArgs, timeoutMs = 3500) {
   const safeSubArgs = [...subArgs, '--quiet'];
   const env = buildGcloudExecEnv();
   let lastStderr = '';
-  for (const bin of getGcloudBinCandidates()) {
-    if (bin.includes(path.sep) && !fs.existsSync(bin)) continue;
+  const seenResolved = new Set();
+  for (const rawBin of getGcloudBinCandidates()) {
+    const bin = resolveExistingGcloudBin(rawBin, env.PATH);
+    if (!bin || seenResolved.has(bin)) continue;
+    seenResolved.add(bin);
     try {
       let stdout = '';
       if (process.platform === 'win32' && /\.cmd$/i.test(bin)) {

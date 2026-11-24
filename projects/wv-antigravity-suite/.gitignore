@@ -13,3 +13,4 @@ wv-twin-profile.md
 ge-instance.json
 node_modules/
 .DS_Store
+.zf_test_sandbox_*

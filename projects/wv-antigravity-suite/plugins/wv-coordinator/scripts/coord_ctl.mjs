@@ -4,7 +4,7 @@
  *
  * Zero-dependency Node CLI for managing Workers, 2-level Group -> Goal -> Task
  * hierarchy, Update Board, IDENTITY.md / SOUL.md persona, and Voice preferences
- * strictly inside `~/.gemini/config/plugin_data/agy-coordinator/`.
+ * strictly inside `~/.gemini/config/plugin_data/wv-coordinator/`.
  */
 
 import {

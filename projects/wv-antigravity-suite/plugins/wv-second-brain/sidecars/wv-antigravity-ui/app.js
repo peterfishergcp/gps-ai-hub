@@ -2272,7 +2272,7 @@
         el('div', {
           className: 'muted',
           style: { fontSize: '11px', marginBottom: '6px' },
-          text: 'Stored in ~/antigravity-twin/memory/profile/custom_seeds.json — never overwritten by plugin updates.',
+          text: 'Stored in ~/.gemini/config/plugin_data/wv-antigravity/memory/profile/custom_seeds.json — never overwritten by plugin updates.',
         }),
         titleInput
           ? el('div', { style: { marginBottom: '6px' } }, [
