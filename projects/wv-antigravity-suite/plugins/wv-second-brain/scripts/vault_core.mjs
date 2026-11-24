@@ -294,7 +294,7 @@ export function buildProfileFiles({ name, roleTitle, org, timezone, preset }) {
 - **Organization / Team:** ${safeOrg}
 - **Primary Time Zone:** \`${safeTz}\` (always anchor daily briefs, calendars, and deadlines in \`${safeTz}\` first)
 - **Persona Track:** ${preset.label} (\`${preset.id}\`)
-- **Memory Path:** \`~/my-antigravity/memory/\`
+- **Memory Path:** \`~/.gemini/config/plugin_data/wv-antigravity/memory/\`
 - **Last Updated:** \`${today}\`
 
 ## Core Operational Lanes
@@ -343,7 +343,7 @@ Write like a clear, direct, experienced ${safeRole} talking to a respected colle
 - **Role:** ${safeRole}
 - **Organization:** ${safeOrg}
 - **Time Zone:** ${safeTz}
-- **Memory Directory:** ~/my-antigravity/memory/
+- **Memory Directory:** ~/.gemini/config/plugin_data/wv-antigravity/memory/
 - **Style:** Direct, BLUF-first, concrete facts over buzzwords, spaced hyphens (\` - \`), strict \`[Draft-Only]\` outbound safety.
 `;
 
@@ -403,14 +403,14 @@ export function initializeVault({
 
   if (syncHomeProfile) {
     try {
-      const geminiDir = path.join(os.homedir(), '.gemini');
-      fs.mkdirSync(geminiDir, { recursive: true });
-      const profileTarget = path.join(geminiDir, 'agy-profile.md');
+      const wvConfigDir = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'wv-antigravity');
+      fs.mkdirSync(wvConfigDir, { recursive: true, mode: 0o700 });
+      const profileTarget = path.join(wvConfigDir, 'wv-profile.md');
       if (force || !fs.existsSync(profileTarget)) {
-        fs.writeFileSync(profileTarget, sharedAgyProfileMd, 'utf-8');
+        fs.writeFileSync(profileTarget, sharedAgyProfileMd, { encoding: 'utf-8', mode: 0o600 });
       }
     } catch {
-      // Ignore if home directory is read-only in restricted test sandboxes
+      // Ignore if config directory is read-only in restricted test sandboxes
     }
   }
 
