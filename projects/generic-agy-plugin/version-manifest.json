@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "1.9.4",
-  "updatedAt": "2026-11-24T18:01:00Z",
+  "suiteVersion": "1.9.5",
+  "updatedAt": "2026-11-24T18:26:00Z",
   "skillCount": 40,
   "skillManifest": {
     "connect-ge": {
@@ -366,13 +366,13 @@
       "plugin": "agy-coordinator",
       "sidecar": "coordinator-ui",
       "files": {
-        "app.js": "ac5063c6e04213eb632524eca4cd31ea4e90d2c3d9d95e960cee65f24bcc2661",
-        "index.html": "b1905f44e601bbadc36915be211c7551893e4f07b3a0a6cf686d989a8a692362",
+        "app.js": "7a13216a3335b09d809abe3669a3a67f7f33c8ec15756380ca005386e86b1440",
+        "index.html": "cdf30ba532bc6d0a84db4f86f72876d0b97aabfa1a01ca1581f78e7787537be4",
         "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
         "sidecar.json": "94128ab0935bcd8529dbf9742e3fe026f739daa81492461175e846effd23496e",
         "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
-        "styles.css": "81d34430a6b257ff07e8a6a823fdf0810b45f9fa79a5150e94e5f5cca574ecdf",
+        "styles.css": "801bdb68369b9e3f960e04c0008b65eea36af43fbeeb554eb704f876d33164b5",
         "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
         "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
       }
@@ -450,7 +450,7 @@
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "1955ee24aad2994b1027e53905a4607dc24436877a397c7a32f1846ef11047b7"
+      "sha256": "f941abc46bbe7199f0ba535bb056898cac1e45f8ee6249d8c2710dc408a9520d"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",

@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.2.5",
-  "updatedAt": "2026-11-24T18:01:00Z",
+  "suiteVersion": "2.2.6",
+  "updatedAt": "2026-11-24T18:26:00Z",
   "skillCount": 40,
   "skillManifest": {
     "automations": {
@@ -366,13 +366,13 @@
       "plugin": "wv-coordinator",
       "sidecar": "wv-coordinator-ui",
       "files": {
-        "app.js": "594878ce81db8fe5fbe95fafe771cb97301802362017eea1f1363a159df09ce3",
-        "index.html": "55209dafbb1f159d935b2429ba9b954812efc2645249fab95d8a07602275b59f",
+        "app.js": "24a3b4e7a67d46ecde52f5645f3e5c1736c1265be9182ad27f2351bca33889e2",
+        "index.html": "8765d47c7d8a3f50152bc03f80e4a287ad7b8f27f9f0c2a748c4e5353935f6c3",
         "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
         "sidecar.json": "1cc70fabe00fed501d0d6444245fc687228b84278134430b51d0dddfabb5d56e",
         "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
-        "styles.css": "81d34430a6b257ff07e8a6a823fdf0810b45f9fa79a5150e94e5f5cca574ecdf",
+        "styles.css": "801bdb68369b9e3f960e04c0008b65eea36af43fbeeb554eb704f876d33164b5",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
       }

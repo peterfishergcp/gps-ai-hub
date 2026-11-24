@@ -2494,8 +2494,8 @@ export async function processCoordinatorTurn({
       }
     } else if (cleanAudio) {
       const msg =
-        `Gemini Live isn't signed in right now${liveError ? ` (${liveError})` : ''}. ` +
-        `Click "🔊 Use Instant Voice" below to talk with zero setup, or open "⚙️ Voice & Identity" for sign-in & account options.`;
+        `I couldn't reach Gemini Live right now${liveError ? ` (${liveError})` : ''}. ` +
+        `Switch to Browser Instant Voice in the dropdown above or check ⚙️ Voice & Identity.`;
       appendChatTurn({ role: 'user', text: '(Voice audio clip)', source });
       const assistantMsg = appendChatTurn({ role: 'assistant', text: msg, source: 'voice-notice' });
       return { ok: false, transcript: '', reply: msg, liveError, modeUsed: 'none', assistantMsg };
