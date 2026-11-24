@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.2.4",
-  "updatedAt": "2026-11-24T16:23:00Z",
+  "suiteVersion": "2.2.5",
+  "updatedAt": "2026-11-24T18:01:00Z",
   "skillCount": 40,
   "skillManifest": {
     "automations": {
@@ -366,15 +366,15 @@
       "plugin": "wv-coordinator",
       "sidecar": "wv-coordinator-ui",
       "files": {
-        "app.js": "24a3b4e7a67d46ecde52f5645f3e5c1736c1265be9182ad27f2351bca33889e2",
-        "index.html": "8765d47c7d8a3f50152bc03f80e4a287ad7b8f27f9f0c2a748c4e5353935f6c3",
+        "app.js": "594878ce81db8fe5fbe95fafe771cb97301802362017eea1f1363a159df09ce3",
+        "index.html": "55209dafbb1f159d935b2429ba9b954812efc2645249fab95d8a07602275b59f",
         "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
         "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
-        "sidecar.json": "bbabb3d7e7d89ec5dbf6f2976131c93a481098042d56311853d44480f699117c",
+        "sidecar.json": "1cc70fabe00fed501d0d6444245fc687228b84278134430b51d0dddfabb5d56e",
         "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
-        "styles.css": "932ff36dd001b48ff6cbcf9aad4340302d420fda98d5fa08fe14b9109829e38a",
+        "styles.css": "81d34430a6b257ff07e8a6a823fdf0810b45f9fa79a5150e94e5f5cca574ecdf",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
+        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
       }
     },
     "wv-design-preview": {
@@ -385,11 +385,11 @@
         "index.html": "e554ed4e3bd149ca1789c75a5a93fc615c750c85e57f98d3dec678a065913bb0",
         "main.mjs": "e043a979eba65b3f551de3e2f10d572f4b6bf698eeb58a8840f297e3c2345b5c",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
-        "sidecar.json": "d37e183b4bc7bc9350325cc5f060ebec487c1f46b73548a9c77bb7f5bf34341b",
+        "sidecar.json": "5919df74fce6f3d78335f1369ced632fd32fe7eaf0242f027452599002521940",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6060c879edb5a09185534ca88c8fb1f5892087db7ed012ccfac697811a27245d",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
+        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
       }
     },
     "wv-skill-manager": {
@@ -401,11 +401,11 @@
         "main.mjs": "3f8b448b602a0e85418f23ab355193466beb3808df8e78478f016a59196e9811",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "seed_prompts_catalog.mjs": "52a6db867ba5aa3eae6296de3a1c1f0fca84c1d1dcbd65e25531a5ac56fb8791",
-        "sidecar.json": "9432001f8809f2c69aab65eb0e51b20e7e20952c88bb639a294a1709e53755c6",
+        "sidecar.json": "29b9c1c6f8b8ca7b60714ba43a648788b1e044a5f8b7018c39191c9999d4ac02",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
+        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
@@ -425,11 +425,11 @@
         "main.mjs": "950a30a84f849a82ae2244128e99cf91ae72444e507fc479804baef7eac28b0d",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "52a6db867ba5aa3eae6296de3a1c1f0fca84c1d1dcbd65e25531a5ac56fb8791",
-        "sidecar.json": "30a34ca3bca99f3bb82fbcd528640bb2f9eb6b178361c341d2293e1b194ab942",
+        "sidecar.json": "a6060ac6c8c5d14f415f02099e43297b71daa9660e160cfb5e44148a35d4d3eb",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
+        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917",
         "tokeneconomics_and_updates_ui.js": "ce6f36471aceb4b2ea5fea53610a3132f490066c34b79c2a36e3cda3cc924f31",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",

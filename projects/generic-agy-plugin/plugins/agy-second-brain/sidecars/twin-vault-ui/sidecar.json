@@ -14,14 +14,15 @@
     "display_name": "My Antigravity",
     "views": [
       {
-        "path": "/?entrypoint=sidebar",
-        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
-        "title": "My Antigravity"
-      },
-      {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
         "title": "My Antigravity"
+      },
+      {
+        "path": "/?entrypoint=sidebar",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
+        "title": "My Antigravity",
+        "title_bar_style": "SIDECAR_UI_TITLE_BAR_STYLE_HIDDEN"
       }
     ]
   }

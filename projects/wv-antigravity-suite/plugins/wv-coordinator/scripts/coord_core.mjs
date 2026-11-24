@@ -452,7 +452,18 @@ function resolveExistingGcloudBin(bin, searchPath = '') {
   return '';
 }
 
+function hasExistingGcloudConfigDir() {
+  if ((process.env.CLOUDSDK_CONFIG || '').trim()) return true;
+  if (process.platform === 'win32' && process.env.APPDATA && fs.existsSync(path.join(process.env.APPDATA, 'gcloud'))) {
+    return true;
+  }
+  return fs.existsSync(path.join(os.homedir(), '.config', 'gcloud'));
+}
+
 async function runGcloudNonInteractive(subArgs, timeoutMs = 3500) {
+  if (!hasExistingGcloudConfigDir()) {
+    return { ok: false, stdout: '', error: '' };
+  }
   const safeSubArgs = [...subArgs, '--quiet'];
   const env = buildGcloudExecEnv();
   let lastStderr = '';
@@ -1785,7 +1796,7 @@ function summarizeFriendlyApiError(rawErrText, status, channel) {
     return `${channel} API is disabled on that key/project — enable Vertex AI / Generative Language API or use an AI Studio key (aistudio.google.com/apikey).`;
   }
   if (/invalid_rapt|reauth related error|Reauthentication required/i.test(txt)) {
-    return 'ADC session expired (Google 20h reauth) — run "gcloud auth application-default login" in Terminal, or add an API key in ⚙️ Voice & Identity.';
+    return 'Google session expired — switch to Browser Instant Voice, or open ⚙️ Voice & Identity for sign-in options.';
   }
   if (/BILLING_DISABLED/i.test(txt)) {
     return `Billing is disabled on the selected GCP project — pick an active project in ⚙️ Voice & Identity.`;
@@ -1836,7 +1847,7 @@ async function resolveGeminiAuthCandidates(prefs) {
         } else {
           const errDesc = String(resp.json?.error_description || resp.json?.error || '').trim();
           if (/invalid_rapt|reauth/i.test(errDesc)) {
-            diagnostics.push('ADC session expired (Google reauth) — run "gcloud auth application-default login"');
+            diagnostics.push('Google Cloud session expired');
           } else if (errDesc) {
             diagnostics.push(`ADC refresh failed (${errDesc.slice(0, 90)})`);
           }
@@ -1857,8 +1868,8 @@ async function resolveGeminiAuthCandidates(prefs) {
         };
         tokenOrigin = 'vertex-gcloud';
       } else if (gcTok.error && /reauth|login|password|account/i.test(gcTok.error)) {
-        if (!diagnostics.some((d) => d.includes('ADC session expired'))) {
-          diagnostics.push('gcloud login expired — run "gcloud auth application-default login"');
+        if (!diagnostics.some((d) => d.includes('session expired'))) {
+          diagnostics.push('Google Cloud session expired');
         }
       }
     }
@@ -2479,19 +2490,19 @@ export async function processCoordinatorTurn({
       parsed = buildLocalActionOrReply(cleanBrowserSpeech, { identity, state, workers });
       modeUsed = 'browser-voice-fallback';
       if (liveError) {
-        parsed.reply += ` (Tip: to reconnect Gemini Live neural voice, open ⚙️ Voice & Identity and click Save & Verify GCP Connection, or run "gcloud auth application-default login".)`;
+        parsed.reply += ` (Gemini Live needs sign-in — use Browser Instant Voice or open ⚙️ Voice & Identity for zero-install setup.)`;
       }
     } else if (cleanAudio) {
       const msg =
-        `I couldn't reach Gemini Live right now${liveError ? ` (${liveError})` : ''}. ` +
-        `No worries — open the ⚙️ Voice & Identity tab and click "🔌 Save & Verify GCP Connection", or run "gcloud auth application-default login" in Terminal if your 20-hour ADC login expired!`;
+        `Gemini Live isn't signed in right now${liveError ? ` (${liveError})` : ''}. ` +
+        `Click "🔊 Use Instant Voice" below to talk with zero setup, or open "⚙️ Voice & Identity" for sign-in & account options.`;
       appendChatTurn({ role: 'user', text: '(Voice audio clip)', source });
       const assistantMsg = appendChatTurn({ role: 'assistant', text: msg, source: 'voice-notice' });
       return { ok: false, transcript: '', reply: msg, liveError, modeUsed: 'none', assistantMsg };
     } else {
       parsed = buildLocalActionOrReply(cleanPrompt, { identity, state, workers });
-      if (liveError && mode === 'gemini-live' && !/⚙️ Voice & Identity/.test(parsed.reply)) {
-        parsed.reply += ` (Tip: open ⚙️ Voice & Identity -> Save & Verify GCP Connection if you'd like to reconnect Gemini Live.)`;
+      if (liveError && mode === 'gemini-live' && !/Voice & Identity/.test(parsed.reply)) {
+        parsed.reply += ` (Tip: switch to Browser Instant Voice or open ⚙️ Voice & Identity for Gemini Live sign-in options.)`;
       }
     }
   }

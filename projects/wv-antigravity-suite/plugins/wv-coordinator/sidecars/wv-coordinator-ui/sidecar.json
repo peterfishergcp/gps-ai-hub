@@ -5,7 +5,7 @@
   ],
   "restart_policy": "always",
   "display_name": "WV Clawy",
-  "description": "Zero-footprint State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub (WV Clawy) — animated 3D Brown Bear perch, Kore voice, side-by-side agent pop-outs, and Group -> Goal -> Task sprints.",
+  "description": "Zero-footprint State of West Virginia Multi-Agent Command Center & Gemini Live Voice Hub (WV Clawy) \u2014 animated 3D Brown Bear perch, Kore voice, side-by-side agent pop-outs, and Group -> Goal -> Task sprints.",
   "has_web_ui": true,
   "agent_permissions": {
     "allows_user_interactions": true
@@ -14,14 +14,15 @@
     "display_name": "WV Clawy",
     "views": [
       {
-        "path": "/?entrypoint=sidebar",
-        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
-        "title": "WV Clawy"
-      },
-      {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
         "title": "WV Clawy"
+      },
+      {
+        "path": "/?entrypoint=sidebar",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
+        "title": "WV Clawy",
+        "title_bar_style": "SIDECAR_UI_TITLE_BAR_STYLE_HIDDEN"
       }
     ]
   }

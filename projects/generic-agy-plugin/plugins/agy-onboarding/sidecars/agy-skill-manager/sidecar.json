@@ -14,14 +14,15 @@
     "display_name": "Skills",
     "views": [
       {
-        "path": "/?entrypoint=sidebar",
-        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
-        "title": "Skills"
-      },
-      {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
         "title": "Skills"
+      },
+      {
+        "path": "/?entrypoint=sidebar",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_SIDEBAR",
+        "title": "Skills",
+        "title_bar_style": "SIDECAR_UI_TITLE_BAR_STYLE_HIDDEN"
       }
     ]
   }
