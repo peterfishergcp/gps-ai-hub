@@ -434,12 +434,44 @@ function buildGcloudExecEnv() {
   };
 }
 
+function resolveExistingGcloudBin(bin, searchPath = '') {
+  if (bin.includes(path.sep)) {
+    return fs.existsSync(bin) ? bin : '';
+  }
+  const dirs = String(searchPath || '').split(path.delimiter).filter(Boolean);
+  for (const d of dirs) {
+    const candidate = path.join(d, bin);
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Ignore unreadable PATH segments.
+    }
+  }
+  return '';
+}
+
+function hasExistingGcloudConfigDir() {
+  if ((process.env.CLOUDSDK_CONFIG || '').trim()) return true;
+  if (process.platform === 'win32' && process.env.APPDATA && fs.existsSync(path.join(process.env.APPDATA, 'gcloud'))) {
+    return true;
+  }
+  return fs.existsSync(path.join(os.homedir(), '.config', 'gcloud'));
+}
+
 async function runGcloudNonInteractive(subArgs, timeoutMs = 3500) {
+  if (!hasExistingGcloudConfigDir()) {
+    return { ok: false, stdout: '', error: '' };
+  }
   const safeSubArgs = [...subArgs, '--quiet'];
   const env = buildGcloudExecEnv();
   let lastStderr = '';
-  for (const bin of getGcloudBinCandidates()) {
-    if (bin.includes(path.sep) && !fs.existsSync(bin)) continue;
+  const seenResolved = new Set();
+  for (const rawBin of getGcloudBinCandidates()) {
+    const bin = resolveExistingGcloudBin(rawBin, env.PATH);
+    if (!bin || seenResolved.has(bin)) continue;
+    seenResolved.add(bin);
     try {
       let stdout = '';
       if (process.platform === 'win32' && /\.cmd$/i.test(bin)) {

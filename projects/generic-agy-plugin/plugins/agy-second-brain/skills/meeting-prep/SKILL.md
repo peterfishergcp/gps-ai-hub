@@ -9,11 +9,11 @@ Give the user a 60-second read before stepping into a stakeholder review, techni
 
 ## Step 1 - Pull Initiative & Stakeholder Context
 
-1. Match the named meeting or topic to its folder under `~/my-antigravity/memory/initiatives/<slug>/` (or pick the highest-priority `AMBER`/`RED`/`P0` initiative if none was specified; if no memory folder exists yet, build the brief from pasted context or offer `/memory init`).
+1. Match the named meeting or topic to its folder under `~/.gemini/config/plugin_data/my-antigravity/memory/initiatives/<slug>/` (or pick the highest-priority `AMBER`/`RED`/`P0` initiative if none was specified; if no memory folder exists yet, build the brief from pasted context or offer `/memory init`).
 2. Read:
    - `initiatives/<slug>/status.md` & `running_notes.md` (focusing on Tier 1 `0-7d` notes)
    - `initiatives/<slug>/context_and_decisions.md` & `stakeholders.md`
-   - Matching open `[ ]` items in `~/my-antigravity/memory/action_items.md` and `Last_Touch_Date` in `contacts.md`.
+   - Matching open `[ ]` items in `~/.gemini/config/plugin_data/my-antigravity/memory/action_items.md` and `Last_Touch_Date` in `contacts.md`.
 3. If a Calendar or Federated Gemini Enterprise MCP (`agy-ge-bridge`) is connected, pull the invite agenda and most recent email/chat exchange with the attendees.
 
 ## Step 2 - Produce the 1-Card Pre-Meeting Brief + Adversarial SCQA Critic

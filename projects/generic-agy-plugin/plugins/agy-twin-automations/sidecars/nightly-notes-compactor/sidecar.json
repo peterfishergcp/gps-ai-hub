@@ -5,15 +5,15 @@
     "agentapi",
     "new-conversation",
     "--",
-    "Run /meeting-notes maintenance on ~/my-antigravity/memory/: compact Tier 1 notes older than 7 days into Tier 2 tactical bullets in initiatives/*/running_notes.md, verify action_items.md formatting, and refresh >21-day staleness flags in contacts.md."
+    "Run /meeting-notes maintenance on ~/.gemini/config/plugin_data/my-antigravity/memory/: compact Tier 1 notes older than 7 days into Tier 2 tactical bullets in initiatives/*/running_notes.md, verify action_items.md formatting, and refresh >21-day staleness flags in contacts.md."
   ],
   "restart_policy": "always",
   "display_name": "Evening Notes & Memory Compactor",
   "description": "Every weekday at 6:00 PM, compacts older running notes across initiatives and updates >21-day stakeholder staleness.",
   "agent_permissions": {
     "access_grants": [
-      "read_file(${HOME}/my-antigravity)",
-      "write_file(${HOME}/my-antigravity)"
+      "read_file(${HOME}/.gemini/config/plugin_data/my-antigravity)",
+      "write_file(${HOME}/.gemini/config/plugin_data/my-antigravity)"
     ]
   }
 }

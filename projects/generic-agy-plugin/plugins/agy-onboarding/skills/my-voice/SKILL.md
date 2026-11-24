@@ -1,6 +1,6 @@
 ---
 name: my-voice
-description: Drafts emails, Teams/Chat replies, executive decision memos, formal letters to officials, constituent responses, and plain-language rewrites in the user's authentic voice (grounded in ~/my-antigravity/memory/profile/voice.md and agy-profile.md) while enforcing a strict Draft-Only rule and PII/accuracy verification. Trigger on /my-voice, "draft a reply in my voice", "respond to this email", "write a follow-up email", "draft a stakeholder update", "write a formal letter", or "rewrite in plain language".
+description: Drafts emails, Teams/Chat replies, executive decision memos, formal letters to officials, constituent responses, and plain-language rewrites in the user's authentic voice (grounded in ~/.gemini/config/plugin_data/my-antigravity/memory/profile/voice.md and agy-profile.md) while enforcing a strict Draft-Only rule and PII/accuracy verification. Trigger on /my-voice, "draft a reply in my voice", "respond to this email", "write a follow-up email", "draft a stakeholder update", "write a formal letter", or "rewrite in plain language".
 ---
 
 # Personal Voice — Authentic Drafting & Correspondence (`/my-voice`)
@@ -8,8 +8,8 @@ description: Drafts emails, Teams/Chat replies, executive decision memos, formal
 Act as the user's personal writing partner across internal emails, Teams/Chat messages, decision memos, formal agency letters, and public/constituent replies.
 
 ## Step 1: Load Voice, Memory & Connector Context
-1. Read `~/my-antigravity/memory/profile/voice.md` and `profile/identity.md` (if personal memory is initialized) alongside `./agy-profile.md` or `~/.gemini/agy-profile.md` to match the user's role, agency terminology, and preferred tone.
-2. If the draft relates to an active workstream or stakeholder tracked in `~/my-antigravity/memory/`, check `initiatives/<slug>/status.md`, `context_and_decisions.md`, and `contacts.md` so dates, milestones, and stakeholder priorities match reality.
+1. Read `~/.gemini/config/plugin_data/my-antigravity/memory/profile/voice.md` and `profile/identity.md` (if personal memory is initialized) alongside `./agy-profile.md` or `~/.gemini/config/plugin_data/my-antigravity/agy-profile.md` to match the user's role, agency terminology, and preferred tone.
+2. If the draft relates to an active workstream or stakeholder tracked in `~/.gemini/config/plugin_data/my-antigravity/memory/`, check `initiatives/<slug>/status.md`, `context_and_decisions.md`, and `contacts.md` so dates, milestones, and stakeholder priorities match reality.
 3. If the user references an email thread, policy doc, or SharePoint/OneDrive file they haven't pasted, check whether `ge_ask_instance` / `ge_search_records` (`agy-ge-bridge`) is configured and pull the exact thread or reference document so the draft is grounded in real facts.
 4. For specialized correspondence formats—such as **Formal Letter to an Elected/Agency Official**, **Constituent Inquiry Response**, **Graceful Decline / Redirect**, **Difficult Conversation Prep**, or **Plain-Language Grade-8 Rewrite**—load `./references/correspondence_playbook.md`.
 

@@ -1,0 +1,36 @@
+name: Generic AGY Suite — Zero-Footprint Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "projects/generic-agy-plugin/**"
+      - ".github/workflows/agy-zero-footprint.yml"
+  pull_request:
+    paths:
+      - "projects/generic-agy-plugin/**"
+      - ".github/workflows/agy-zero-footprint.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  zero-footprint-audit:
+    name: 10-Gate Zero-Footprint Audit (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22 (simulating Antigravity built-in sidecar runtime)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run 10-Gate Generic AGY Zero-Footprint & Clean-Uninstall Audit
+        working-directory: projects/generic-agy-plugin
+        run: node scripts/verify-agy-zero-footprint.mjs

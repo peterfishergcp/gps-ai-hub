@@ -1,18 +1,18 @@
 ---
 name: daily-brief
-description: Generates a concise morning kickoff or weekly executive briefing combining the user's federated Gemini Enterprise (GE) connectors (Outlook/Gmail, Calendar, SharePoint/OneDrive, Teams) AND their Personal Workspace Memory (~/my-antigravity/memory/: P0/P1 Action Items, active 4-file initiative milestones, and >21-day stale stakeholder check-ins) or pasted notes. Trigger on /daily-brief, "morning kickoff", "morning brief", "daily update", "what needs my attention", "prep me for today's meetings", or "weekly status report".
+description: Generates a concise morning kickoff or weekly executive briefing combining the user's federated Gemini Enterprise (GE) connectors (Outlook/Gmail, Calendar, SharePoint/OneDrive, Teams) AND their Personal Workspace Memory (~/.gemini/config/plugin_data/my-antigravity/memory/: P0/P1 Action Items, active 4-file initiative milestones, and >21-day stale stakeholder check-ins) or pasted notes. Trigger on /daily-brief, "morning kickoff", "morning brief", "daily update", "what needs my attention", "prep me for today's meetings", or "weekly status report".
 ---
 
 # Daily Executive Update & Kickoff Brief (`/daily-brief`)
 
-Produce an actionable, scannable daily kickoff brief or weekly rollup tailored to the user's role and primary timezone (check `~/my-antigravity/memory/profile/identity.md`, `./agy-profile.md`, or `~/.gemini/agy-profile.md` first if present).
+Produce an actionable, scannable daily kickoff brief or weekly rollup tailored to the user's role and primary timezone (check `~/.gemini/config/plugin_data/my-antigravity/memory/profile/identity.md`, `./agy-profile.md`, or `~/.gemini/config/plugin_data/my-antigravity/agy-profile.md` first if present).
 
 ## Step 1: Gather Context (Federated GE Connectors + Personal Memory + Local Fallback)
 
 1. **Check Federated Gemini Enterprise (`GE`) Bridge (`agy-ge-bridge`):**
    - If `ge_ask_instance` is available and configured, run a single consolidated query against the user's GE instance summarizing upcoming meetings, unread high-priority messages, and open deadlines across Outlook/Gmail, Calendar, Teams, and SharePoint/OneDrive over the last 48 hours with citations.
    - If not configured yet, note in one friendly line (`Tip: Run /connect-ge anytime to pull live Outlook, Teams, and SharePoint updates automatically`) and continue without blocking.
-2. **Check Personal Workspace Memory (`~/my-antigravity/memory/`, If Initialized):**
+2. **Check Personal Workspace Memory (`~/.gemini/config/plugin_data/my-antigravity/memory/`, If Initialized):**
    - Pull open `P0` and `P1` action items from `action_items.md`.
    - Pull current `GREEN` / `AMBER` / `RED` health and next milestones from `initiatives/*/status.md`.
    - Check `contacts.md` for any stakeholders marked `STALE (>21d)`.

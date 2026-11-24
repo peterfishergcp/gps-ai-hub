@@ -4,7 +4,7 @@ Packages four zero-idle-CPU scheduled automations (`"builtin": "schedule"`) dire
 
 ## Bundled Schedules (Default Timezone: `America/New_York` - Customizable via `/automations`)
 
-1. **Morning Kickoff Brief** (`Weekdays 8:30 AM`): Runs `/daily-brief` across `~/my-antigravity/memory/` and any connected MCPs (`agy-ge-bridge`), surfacing Top 3 daily priorities, `P0`/`P1` Action Items, and `>21d` stale stakeholder alerts.
+1. **Morning Kickoff Brief** (`Weekdays 8:30 AM`): Runs `/daily-brief` across `~/.gemini/config/plugin_data/my-antigravity/memory/` and any connected MCPs (`agy-ge-bridge`), surfacing Top 3 daily priorities, `P0`/`P1` Action Items, and `>21d` stale stakeholder alerts.
 2. **Twice-Daily Follow-Up Action Plan** (`Weekdays 9:30 AM & 2:30 PM`): Runs `/followup-plan` to audit completed items, update `followups/latest_action_plan.md` and `action_items.md`, and prepare `[Draft-Only]` replies.
 3. **Evening Notes & Memory Compactor** (`Weekdays 6:00 PM`): Runs `/meeting-notes` maintenance to compact Tier-1 notes older than 7 days into Tier-2 bullets across `initiatives/*/running_notes.md` and refresh contact staleness flags.
 4. **Friday 3-Altitude Weekly Impact** (`Fridays 4:00 PM`): Runs `/weekly-impact` to write `weekly/YYYY-WXX.md` and append weekly outcomes to `impact/ledger.json` for 1:1s and quarterly reviews.

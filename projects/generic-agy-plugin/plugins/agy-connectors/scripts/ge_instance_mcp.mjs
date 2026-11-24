@@ -423,15 +423,41 @@ async function resolveUserAccessToken(cfg) {
     }
   }
 
-  // Tier 3: gcloud CLI fallback (supports Workforce/Workload or corporate gcloud login)
-  const gcloudBins = process.platform === 'win32' ? ['gcloud.cmd', 'gcloud'] : ['gcloud'];
-  for (const bin of gcloudBins) {
+  // Tier 3: gcloud CLI fallback (only invoked if user already has a gcloud config dir + binary on PATH)
+  const hasGcloudCfg =
+    Boolean((process.env.CLOUDSDK_CONFIG || '').trim()) ||
+    fs.existsSync(path.join(os.homedir(), '.config', 'gcloud')) ||
+    Boolean(process.env.APPDATA && fs.existsSync(path.join(process.env.APPDATA, 'gcloud')));
+  const rawGcloudBins = hasGcloudCfg ? (process.platform === 'win32' ? ['gcloud.cmd', 'gcloud'] : ['gcloud']) : [];
+  const pathDirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  for (const rawBin of rawGcloudBins) {
+    let resolvedBin = '';
+    for (const d of pathDirs) {
+      const cand = path.join(d, rawBin);
+      try {
+        if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+          resolvedBin = cand;
+          break;
+        }
+      } catch {}
+    }
+    if (!resolvedBin) continue;
     try {
-      const tok = execFileSync(bin, ['auth', 'print-access-token'], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-        timeout: 8000,
-      }).trim();
+      const tok = (
+        process.platform === 'win32' && /\.cmd$/i.test(resolvedBin)
+          ? execFileSync('cmd.exe', ['/d', '/s', '/c', resolvedBin, 'auth', 'print-access-token', '--quiet'], {
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore'],
+              timeout: 8000,
+              windowsHide: true,
+            })
+          : execFileSync(resolvedBin, ['auth', 'print-access-token', '--quiet'], {
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore'],
+              timeout: 8000,
+              windowsHide: true,
+            })
+      ).trim();
       if (tok) {
         memoryTokenCache = { accessToken: tok, expiresAt: Date.now() + 240_000, quotaProjectId: cfg.projectId || '' };
         return { accessToken: tok, source: 'gcloud-cli', quotaProjectId: cfg.projectId || '' };

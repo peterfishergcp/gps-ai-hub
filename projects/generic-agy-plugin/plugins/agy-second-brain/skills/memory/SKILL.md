@@ -1,15 +1,15 @@
 ---
 name: memory
-description: Initialize, inspect, search, update, and organize persistent Personal Workspace Memory (~/my-antigravity/memory/), including preset setup (public-sector, pm, developer, leader), Action Items (action_items.md), 21-day stakeholder relationship tracker, 4-file isolated initiatives, and reusable topic notes. Trigger on /memory, "/memory init", "initialize my memory", "check my action items", "add an action item", "create a new initiative", or "who is overdue for a check-in".
+description: Initialize, inspect, search, update, and organize persistent Personal Workspace Memory (~/.gemini/config/plugin_data/my-antigravity/memory/), including preset setup (public-sector, pm, developer, leader), Action Items (action_items.md), 21-day stakeholder relationship tracker, 4-file isolated initiatives, and reusable topic notes. Trigger on /memory, "/memory init", "initialize my memory", "check my action items", "add an action item", "create a new initiative", or "who is overdue for a check-in".
 ---
 
 # Personal Workspace Memory & Action Items Manager (`/memory`)
 
-Initialize and manage the user's persistent **Personal Workspace Memory** at `~/my-antigravity/memory/` (viewable and editable inside **`Extensions -> My Antigravity`**).
+Initialize and manage the user's persistent **Personal Workspace Memory** at `~/.gemini/config/plugin_data/my-antigravity/memory/` (viewable and editable inside **`Extensions -> My Antigravity`**).
 
 ## Sub-Mode: Initialize or Switch Role Preset (`/memory init` or `"initialize my memory"`)
 
-When `~/my-antigravity/memory/profile/identity.md` does not exist yet, or when the user asks to initialize/switch their role preset (`public-sector`, `pm`, `developer`, or `leader`):
+When `~/.gemini/config/plugin_data/my-antigravity/memory/profile/identity.md` does not exist yet, or when the user asks to initialize/switch their role preset (`public-sector`, `pm`, `developer`, or `leader`):
 
 1. **Gather Role Details (If Not Provided):** Ask concisely for Role Preset (`public-sector` default for government staff, `pm`, `developer`, or `leader`), Name & Title, Agency/Team, and IANA Timezone (e.g., `America/New_York`).
 2. **Initialize Personal Memory:**
@@ -24,8 +24,8 @@ When `~/my-antigravity/memory/profile/identity.md` does not exist yet, or when t
        --seed-demo \
        --force
      ```
-   - **No-`node`-on-PATH Fallback:** Create the Markdown and JSON files directly in `~/my-antigravity/memory/` using file tools:
-     - `profile/{identity,portfolio,playbooks,voice}.md` (plus sync `~/.gemini/agy-profile.md`)
+   - **No-`node`-on-PATH Fallback:** Create the Markdown and JSON files directly in `~/.gemini/config/plugin_data/my-antigravity/memory/` using file tools:
+     - `profile/{identity,portfolio,playbooks,voice}.md` (plus sync `~/.gemini/config/plugin_data/my-antigravity/agy-profile.md`)
      - `action_items.md` (`## P0`, `## P1`, `## P2`, `## P3`, `## Completed Archive`)
      - `contacts.md` (`Name | Email | Role | Initiative | Key Priorities | Last_Touch_Date | Status`)
      - `initiatives/<slug>/{status,running_notes,context_and_decisions,stakeholders}.md`

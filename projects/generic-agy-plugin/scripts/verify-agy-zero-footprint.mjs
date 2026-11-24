@@ -1,0 +1,603 @@
+#!/usr/bin/env node
+/**
+ * Generic AGY Plugin Suite — 10-Gate Zero-Footprint & Clean-Uninstall Verifier
+ * (`scripts/verify-agy-zero-footprint.mjs`)
+ *
+ * Deterministically verifies all locked-down corporate laptop & Zero-Footprint invariants:
+ *   Gate 1  — Subprocess Hygiene (0 hooks.json; only built-in `agy-node` `agy-ge-bridge` MCP allowed — 0 npx/uvx/python/docker)
+ *   Gate 2  — Zero external npm/Python runtime dependencies (`package.json`, `node_modules`, `.venv`)
+ *   Gate 3  — Zero sidecar TCP port listeners (`http.createServer`, `net.createServer`, `.listen(`)
+ *   Gate 4  — Zero `/tmp`, `%TEMP%`, `os.tmpdir()`, `~/my-antigravity`, or `~/.gemini/agy-profile.md` leaks across code, skills & cron manifests
+ *   Gate 5  — Opt-in background automations (`agy-twin-automations` ships `"disabled": true`; 8 core plugins active)
+ *   Gate 6  — Windows PowerShell 5.1 UTF-8 BOM-free JSON & zero external CDN `<script>` tags in sidecars
+ *   Gate 7  — `dist/generic-agy-plugin.zip` safety (<750 KB, zero symlinks, installer parity)
+ *   Gate 8  — Live hermetic install in jailed `$HOME` + canary `TMPDIR` (0 `/tmp` writes, 0 files outside `.gemini/config`)
+ *   Gate 9  — Live runtime execution (`vault_core`, `antigravity_updates`, `token_meter`, `coord_core`, `ge_instance_mcp`) with `PATH=""`
+ *   Gate 10 — Live 1-command clean uninstall (`--purge-data`) preserving user Personal Skills with 0 AGY residue
+ */
+
+import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SUITE_ROOT = path.resolve(__dirname, '..');
+const PLUGINS_DIR = path.join(SUITE_ROOT, 'plugins');
+
+const EXPECTED_PLUGINS = [
+  'agy-connectors',
+  'agy-coordinator',
+  'agy-design-studio',
+  'agy-engineering-cloud',
+  'agy-onboarding',
+  'agy-public-workflows',
+  'agy-second-brain',
+  'agy-security',
+  'agy-twin-automations',
+];
+
+const results = [];
+
+function recordGate(num, title, passed, detail) {
+  results.push({ num, title, passed, detail });
+  const icon = passed ? 'PASS' : 'FAIL';
+  console.log(`[${icon}] Gate ${String(num).padStart(2, '0')} · ${title} — ${detail}`);
+}
+
+function walkFiles(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.name === '.git' || ent.name.startsWith('.zf_test_sandbox_')) continue;
+    const full = path.join(dir, ent.name);
+    if (ent.isSymbolicLink()) {
+      out.push({ path: full, isSymlink: true, isDir: false });
+      continue;
+    }
+    if (ent.isDirectory()) {
+      out.push({ path: full, isSymlink: false, isDir: true });
+      walkFiles(full, out);
+    } else {
+      out.push({ path: full, isSymlink: false, isDir: false });
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Gate 1: Subprocess Hygiene (0 hooks.json; only built-in `agy-node` `agy-ge-bridge` MCP)
+// ---------------------------------------------------------------------------
+function checkGate1(allPluginEntries) {
+  const issues = [];
+  const hooks = allPluginEntries.filter((e) => !e.isDir && path.basename(e.path) === 'hooks.json');
+  if (hooks.length > 0) {
+    issues.push(`Unexpected hooks.json: ${hooks.map((h) => path.relative(SUITE_ROOT, h.path)).join(', ')}`);
+  }
+
+  const mcps = allPluginEntries.filter((e) => !e.isDir && path.basename(e.path) === 'mcp_config.json');
+  for (const m of mcps) {
+    const rel = path.relative(SUITE_ROOT, m.path).replace(/\\/g, '/');
+    if (rel !== 'plugins/agy-connectors/mcp_config.json') {
+      issues.push(`Unexpected mcp_config.json: ${rel}`);
+      continue;
+    }
+    const cfg = JSON.parse(fs.readFileSync(m.path, 'utf-8'));
+    const srv = cfg?.mcpServers?.['agy-ge-bridge'];
+    if (
+      !srv ||
+      Object.keys(cfg.mcpServers || {}).length !== 1 ||
+      srv.command !== 'node' ||
+      JSON.stringify(srv.args) !== JSON.stringify(['${PLUGIN_ROOT}/scripts/ge_instance_mcp.mjs'])
+    ) {
+      issues.push('agy-connectors/mcp_config.json must only declare built-in node agy-ge-bridge');
+    }
+  }
+
+  recordGate(
+    1,
+    'Subprocess & MCP Hygiene',
+    issues.length === 0,
+    issues.length ? issues.join('; ') : '0 hooks.json; 1 zero-dependency agy-node MCP bridge (0 npx/uvx/python/docker)'
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate 2: Zero external npm / Python runtime dependencies
+// ---------------------------------------------------------------------------
+function checkGate2(allPluginEntries) {
+  const issues = [];
+  let pkgCount = 0;
+  for (const e of allPluginEntries) {
+    const base = path.basename(e.path);
+    const rel = path.relative(SUITE_ROOT, e.path);
+    if (e.isDir && (base === 'node_modules' || base === '.venv' || base === '__pycache__')) {
+      issues.push(`Forbidden directory: ${rel}`);
+    }
+    if (!e.isDir && (base === 'requirements.txt' || base === 'pyproject.toml' || base === 'package-lock.json')) {
+      issues.push(`External dependency manifest: ${rel}`);
+    }
+    if (!e.isDir && base === 'package.json') {
+      pkgCount++;
+      const pkg = JSON.parse(fs.readFileSync(e.path, 'utf-8').replace(/^\uFEFF/, ''));
+      for (const k of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+        if (pkg[k] && Object.keys(pkg[k]).length > 0) {
+          issues.push(`${rel} declares non-empty ${k}: ${Object.keys(pkg[k]).join(', ')}`);
+        }
+      }
+    }
+  }
+  recordGate(
+    2,
+    'Zero External Runtime Dependencies',
+    issues.length === 0,
+    issues.length ? issues.join('; ') : `Verified ${pkgCount} sidecar package.json files (0 npm/pip dependencies, 0 node_modules)`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate 3: Zero TCP / HTTP port listeners inside all sidecars
+// ---------------------------------------------------------------------------
+function checkGate3(allPluginEntries) {
+  const sidecarCode = allPluginEntries.filter(
+    (e) => !e.isDir && e.path.includes(`${path.sep}sidecars${path.sep}`) && /\.(mjs|js|cjs)$/.test(e.path)
+  );
+  const issues = [];
+  const listenRe = /\b(http\.createServer|https\.createServer|net\.createServer|\.listen\s*\()/;
+  for (const f of sidecarCode) {
+    const txt = fs.readFileSync(f.path, 'utf-8');
+    const m = txt.match(listenRe);
+    if (m) issues.push(`${path.relative(SUITE_ROOT, f.path)} calls ${m[1]}`);
+  }
+  recordGate(
+    3,
+    'Zero Sidecar Firewall / TCP Port Listeners',
+    issues.length === 0,
+    issues.length ? issues.join('; ') : `Scanned ${sidecarCode.length} sidecar JS/MJS files (100% SidecarApp IPC, 0 TCP listeners)`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate 4: Zero `/tmp`, `%TEMP%`, `os.tmpdir()`, `~/my-antigravity`, or `~/.gemini/agy-profile.md` leaks
+// ---------------------------------------------------------------------------
+function checkGate4(allSuiteEntries) {
+  const issues = [];
+  const codeEntries = allSuiteEntries.filter(
+    (e) =>
+      !e.isDir &&
+      !e.path.endsWith('verify-agy-zero-footprint.mjs') &&
+      /\.(mjs|js|sh|ps1)$/.test(e.path)
+  );
+
+  for (const f of codeEntries) {
+    const rel = path.relative(SUITE_ROOT, f.path);
+    const strippedBlocks = fs
+      .readFileSync(f.path, 'utf-8')
+      .replace(/<#[\s\S]*?#>/g, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
+      .replace(/\/\*[\s\S]*?\*\//g, (m) => '\n'.repeat((m.match(/\n/g) || []).length));
+    const lines = strippedBlocks.split(/\r?\n/);
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('*')) return;
+      if (/\bos\.tmpdir\s*\(/.test(trimmed)) {
+        issues.push(`${rel}:${idx + 1} calls os.tmpdir()`);
+      }
+      if (/(['"`])\/(?:private\/|var\/)?tmp\//.test(trimmed)) {
+        issues.push(`${rel}:${idx + 1} references /tmp path`);
+      }
+      if (/\$env:TEMP\b|%TEMP%/i.test(trimmed)) {
+        issues.push(`${rel}:${idx + 1} references Windows %TEMP%`);
+      }
+      if (/~\/my-antigravity\b|\$\{HOME\}\/my-antigravity\b/.test(trimmed)) {
+        issues.push(`${rel}:${idx + 1} references ~/my-antigravity outside ~/.gemini/config`);
+      }
+      if (/~\/\.gemini\/agy-profile\.md/.test(trimmed)) {
+        issues.push(`${rel}:${idx + 1} writes ~/.gemini/agy-profile.md outside ~/.gemini/config`);
+      }
+    });
+  }
+
+  // Also check all SKILL.md, AGENTS.md, README.md, and cron sidecar.json files so agent prompts never write outside ~/.gemini/config!
+  const docAndManifestEntries = allSuiteEntries.filter(
+    (e) =>
+      !e.isDir &&
+      !e.path.endsWith('verify-agy-zero-footprint.mjs') &&
+      /\.(md|json)$/.test(e.path)
+  );
+  for (const f of docAndManifestEntries) {
+    const rel = path.relative(SUITE_ROOT, f.path);
+    const txt = fs.readFileSync(f.path, 'utf-8');
+    if (/~\/my-antigravity\b|\$\{HOME\}\/my-antigravity\b/.test(txt)) {
+      issues.push(`${rel} instructs agent/cron to use ~/my-antigravity outside ~/.gemini/config`);
+    }
+    if (/~\/\.gemini\/agy-profile\.md/.test(txt)) {
+      issues.push(`${rel} instructs agent to write ~/.gemini/agy-profile.md outside ~/.gemini/config`);
+    }
+  }
+
+  recordGate(
+    4,
+    'Zero /tmp, %TEMP%, or Outside-Config Path Leaks',
+    issues.length === 0,
+    issues.length
+      ? issues.slice(0, 5).join('; ')
+      : `Scanned ${codeEntries.length} code files + ${docAndManifestEntries.length} skill/cron/doc files (0 outside-config paths)`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate 5: Plugin Manifest Inventory & Opt-In Background Crons (`agy-twin-automations` disabled)
+// ---------------------------------------------------------------------------
+function checkGate5() {
+  const issues = [];
+  const actual = fs
+    .readdirSync(PLUGINS_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .map((d) => d.name)
+    .sort();
+
+  if (JSON.stringify(actual) !== JSON.stringify(EXPECTED_PLUGINS)) {
+    issues.push(`Plugin list mismatch: got [${actual.join(', ')}]`);
+  }
+
+  for (const p of actual) {
+    const pjPath = path.join(PLUGINS_DIR, p, 'plugin.json');
+    if (!fs.existsSync(pjPath)) {
+      issues.push(`Missing ${p}/plugin.json`);
+      continue;
+    }
+    const pj = JSON.parse(fs.readFileSync(pjPath, 'utf-8'));
+    if (p === 'agy-twin-automations' && pj.disabled !== true) {
+      issues.push('agy-twin-automations/plugin.json must have "disabled": true by default');
+    }
+    if (p !== 'agy-twin-automations' && pj.disabled === true) {
+      issues.push(`${p}/plugin.json unexpectedly disabled`);
+    }
+  }
+  recordGate(
+    5,
+    'Plugin Inventory & Opt-In Cron Guardrail',
+    issues.length === 0,
+    issues.length ? issues.join('; ') : '8 interactive/skill plugins enabled; agy-twin-automations opt-in disabled by default'
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate 6: UTF-8 BOM-Free JSON & Zero External CDN `<script>` Tags in Sidecar HTML
+// ---------------------------------------------------------------------------
+function checkGate6(allSuiteEntries) {
+  const issues = [];
+  let jsonCount = 0;
+  let htmlCount = 0;
+
+  for (const e of allSuiteEntries) {
+    if (e.isDir) continue;
+    const rel = path.relative(SUITE_ROOT, e.path);
+    if (e.path.endsWith('.json')) {
+      jsonCount++;
+      const buf = fs.readFileSync(e.path);
+      if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+        issues.push(`UTF-8 BOM found in ${rel}`);
+      }
+      try {
+        JSON.parse(buf.toString('utf-8'));
+      } catch (err) {
+        issues.push(`Invalid JSON in ${rel}: ${err.message}`);
+      }
+    }
+    if (e.path.includes(`${path.sep}sidecars${path.sep}`) && e.path.endsWith('.html')) {
+      htmlCount++;
+      const html = fs.readFileSync(e.path, 'utf-8');
+      if (/<script[^>]+src=["']https?:\/\//i.test(html) || /<link[^>]+href=["']https?:\/\//i.test(html)) {
+        issues.push(`External CDN dependency in sidecar HTML: ${rel}`);
+      }
+    }
+  }
+  recordGate(
+    6,
+    'BOM-Free JSON & Offline Sidecar HTML',
+    issues.length === 0,
+    issues.length ? issues.join('; ') : `Verified ${jsonCount} BOM-free JSON files and ${htmlCount} offline-ready sidecar HTML files`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate 7: `dist/generic-agy-plugin.zip` Safety, Symlink Hygiene & Installer Parity
+// ---------------------------------------------------------------------------
+function checkGate7(allSuiteEntries) {
+  const issues = [];
+  const symlinks = allSuiteEntries.filter((e) => e.isSymlink);
+  if (symlinks.length > 0) {
+    issues.push(`Symlinks found: ${symlinks.map((s) => path.relative(SUITE_ROOT, s.path)).join(', ')}`);
+  }
+
+  for (const ext of ['sh', 'ps1']) {
+    const top = fs.readFileSync(path.join(SUITE_ROOT, 'scripts', `install-agy-suite.${ext}`), 'utf-8');
+    const embedded = fs.readFileSync(
+      path.join(PLUGINS_DIR, 'agy-onboarding', 'skills', 'agy-update', 'scripts', `install-agy-suite.${ext}`),
+      'utf-8'
+    );
+    if (top !== embedded) {
+      issues.push(`install-agy-suite.${ext} differs between scripts/ and agy-update/scripts/`);
+    }
+  }
+
+  const distZip = path.join(SUITE_ROOT, 'dist', 'generic-agy-plugin.zip');
+  const wsZip = path.join(SUITE_ROOT, 'workshop', 'dist', 'generic-agy-plugin.zip');
+  let sizeKb = 0;
+  if (!fs.existsSync(distZip)) {
+    issues.push('Missing dist/generic-agy-plugin.zip');
+  } else {
+    const b1 = fs.readFileSync(distZip);
+    sizeKb = Math.round((b1.length / 1024) * 10) / 10;
+    if (sizeKb > 750) issues.push(`Bundle exceeds 750 KB cap (${sizeKb} KB)`);
+    if (fs.existsSync(wsZip)) {
+      const b2 = fs.readFileSync(wsZip);
+      if (!b1.equals(b2)) issues.push('workshop/dist/generic-agy-plugin.zip out of sync with dist/');
+    }
+  }
+
+  recordGate(
+    7,
+    'Archive Hygiene & Installer Parity',
+    issues.length === 0,
+    issues.length ? issues.join('; ') : `dist/generic-agy-plugin.zip (${sizeKb} KB), 0 symlinks, sh/ps1 installers in sync`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gates 8, 9 & 10: Live Hermetic Install, Stripped-PATH Runtime & Zero-Residue Uninstall
+// ---------------------------------------------------------------------------
+async function checkHermeticLifecycleGates() {
+  const sandbox = path.join(SUITE_ROOT, `.zf_test_sandbox_${process.pid}`);
+  const fakeHome = path.join(sandbox, 'home');
+  const canaryTmp = path.join(sandbox, 'canary_tmp');
+  fs.rmSync(sandbox, { recursive: true, force: true });
+  fs.mkdirSync(fakeHome, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(canaryTmp, { recursive: true, mode: 0o700 });
+
+  try {
+    const baseEnv = {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+      TMPDIR: canaryTmp,
+      TEMP: canaryTmp,
+      TMP: canaryTmp,
+    };
+
+    // --- Gate 8: Live Hermetic Install ---
+    if (process.platform === 'win32') {
+      execFileSync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          path.join(SUITE_ROOT, 'scripts', 'install-agy-suite.ps1'),
+          '-TargetConfigDir',
+          path.join(fakeHome, '.gemini', 'config'),
+          '-GeInstance',
+          'projects/agy-test/locations/global/collections/default_collection/engines/agy-ge',
+        ],
+        { env: baseEnv, stdio: 'pipe' }
+      );
+    } else {
+      execFileSync(
+        'bash',
+        [
+          path.join(SUITE_ROOT, 'scripts', 'install-agy-suite.sh'),
+          '--target-config-dir',
+          path.join(fakeHome, '.gemini', 'config'),
+          '--ge-instance',
+          'projects/agy-test/locations/global/collections/default_collection/engines/agy-ge',
+        ],
+        { env: baseEnv, stdio: 'pipe' }
+      );
+    }
+
+    const tmpAfterInstall = fs.readdirSync(canaryTmp);
+    const homeEntries = fs
+      .readdirSync(fakeHome)
+      .filter((n) => !(process.platform === 'win32' && n === 'AppData'));
+    const geminiEntries = fs.existsSync(path.join(fakeHome, '.gemini'))
+      ? fs.readdirSync(path.join(fakeHome, '.gemini'))
+      : [];
+    const configEntries = fs.existsSync(path.join(fakeHome, '.gemini', 'config'))
+      ? fs.readdirSync(path.join(fakeHome, '.gemini', 'config'))
+      : [];
+    const stageLeftovers = configEntries.filter((n) => n.startsWith('.install_stage'));
+    const installedPlugins = fs
+      .readdirSync(path.join(fakeHome, '.gemini', 'config', 'plugins'))
+      .sort();
+
+    const g8Issues = [];
+    if (tmpAfterInstall.length > 0) g8Issues.push(`Canary TMPDIR touched: ${tmpAfterInstall.join(', ')}`);
+    if (JSON.stringify(homeEntries) !== JSON.stringify(['.gemini'])) {
+      g8Issues.push(`Unexpected $HOME entries: ${homeEntries.join(', ')}`);
+    }
+    if (JSON.stringify(geminiEntries) !== JSON.stringify(['config'])) {
+      g8Issues.push(`Unexpected ~/.gemini entries outside config/: ${geminiEntries.join(', ')}`);
+    }
+    if (stageLeftovers.length > 0) g8Issues.push(`Staging dir not cleaned: ${stageLeftovers.join(', ')}`);
+    if (JSON.stringify(installedPlugins) !== JSON.stringify(EXPECTED_PLUGINS)) {
+      g8Issues.push(`Installed plugins mismatch: ${installedPlugins.join(', ')}`);
+    }
+
+    recordGate(
+      8,
+      'Hermetic Sandbox Install (Jailed $HOME & Canary /tmp)',
+      g8Issues.length === 0,
+      g8Issues.length
+        ? g8Issues.join('; ')
+        : 'Installed all 9 AGY plugins strictly inside ~/.gemini/config/ (0 /tmp files, 0 home clutter)'
+    );
+
+    // --- Gate 9: Live Runtime Exercise With Stripped PATH (Zero gcloud / python / git / npm) ---
+    const runtimeScript = `
+      import path from 'node:path';
+      import { pathToFileURL } from 'node:url';
+
+      const cfg = path.join(process.env.HOME, '.gemini', 'config');
+      const plugins = path.join(cfg, 'plugins');
+
+      const vaultCore = await import(pathToFileURL(path.join(plugins, 'agy-second-brain', 'scripts', 'vault_core.mjs')).href);
+      const updatesMod = await import(pathToFileURL(path.join(plugins, 'agy-second-brain', 'sidecars', 'twin-vault-ui', 'antigravity_updates.mjs')).href);
+      const tokenMeter = await import(pathToFileURL(path.join(plugins, 'agy-onboarding', 'sidecars', 'agy-skill-manager', 'token_meter.mjs')).href);
+      const coordCore = await import(pathToFileURL(path.join(plugins, 'agy-coordinator', 'scripts', 'coord_core.mjs')).href);
+      const geMcp = await import(pathToFileURL(path.join(plugins, 'agy-connectors', 'scripts', 'ge_instance_mcp.mjs')).href);
+
+      vaultCore.initializeVault({ role: 'public-sector', name: 'AGY Test User', roleTitle: 'Operations Analyst', org: 'Agency Ops', seedDemo: true, force: true });
+      const vs = vaultCore.getVaultState();
+      const up = updatesMod.getUpdatesState();
+      updatesMod.saveUpdatesPreferences({ completeStep: 'setup-clawy' });
+      tokenMeter.writeTokenPrefs({ planTier: 'plus', rateProfile: 'orchestrator' });
+      const tp = tokenMeter.readTokenPrefs();
+
+      const cs = coordCore.loadState();
+      const id = coordCore.loadIdentity();
+      const voice = coordCore.getPublicVoiceStatus();
+      const gRes = coordCore.mutateGroups({ action: 'add', title: 'AGY Sprint' });
+      coordCore.mutateGoals({ action: 'add', groupId: gRes.group?.id || 'group-default', title: 'Zero-Footprint Rollout' });
+      const diag = await coordCore.diagnoseVoiceConnection({});
+      const geDirs = geMcp.getConnectorDataDirs();
+
+      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || tp.planTier !== 'plus' || !cs || !id || !voice || !diag || !Array.isArray(geDirs)) {
+        throw new Error('Runtime state validation failed');
+      }
+      console.log('RUNTIME_OK');
+    `;
+
+    const rtRes = spawnSync(process.execPath, ['--input-type=module', '-e', runtimeScript], {
+      env: {
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+        TMPDIR: canaryTmp,
+        TEMP: canaryTmp,
+        TMP: canaryTmp,
+        PATH: '', // Completely empty PATH — proves zero gcloud/python/git/cmd dependency!
+      },
+      encoding: 'utf-8',
+    });
+
+    const g9Issues = [];
+    if (rtRes.status !== 0 || !String(rtRes.stdout || '').includes('RUNTIME_OK')) {
+      g9Issues.push(`Runtime error (exit ${rtRes.status}): ${(rtRes.stderr || rtRes.stdout || '').trim().slice(0, 220)}`);
+    }
+    const tmpAfterRuntime = fs.readdirSync(canaryTmp);
+    const homeAfterRuntime = fs
+      .readdirSync(fakeHome)
+      .filter((n) => !(process.platform === 'win32' && n === 'AppData'));
+    const geminiAfterRuntime = fs.readdirSync(path.join(fakeHome, '.gemini'));
+    if (tmpAfterRuntime.length > 0) g9Issues.push(`Runtime wrote to TMPDIR: ${tmpAfterRuntime.join(', ')}`);
+    if (JSON.stringify(homeAfterRuntime) !== JSON.stringify(['.gemini'])) {
+      g9Issues.push(`Runtime created $HOME clutter: ${homeAfterRuntime.join(', ')}`);
+    }
+    if (JSON.stringify(geminiAfterRuntime) !== JSON.stringify(['config'])) {
+      g9Issues.push(`Runtime wrote outside ~/.gemini/config/: ${geminiAfterRuntime.join(', ')}`);
+    }
+
+    recordGate(
+      9,
+      'Stripped-PATH Runtime Test (PATH="" · No gcloud/python/git)',
+      g9Issues.length === 0,
+      g9Issues.length
+        ? g9Issues.join('; ')
+        : 'My Antigravity + Clawy + TokenEconomics + GE Bridge ran cleanly with PATH="" (0 /tmp writes, 0 outside-config files)'
+    );
+
+    // --- Gate 10: Clean 1-Command Uninstall (`--purge-data`) Preserving User Personal Skills ---
+    const rulesDir = path.join(fakeHome, '.gemini', 'config', 'rules');
+    const personalSkillDir = path.join(fakeHome, '.gemini', 'config', 'skills', 'my-agency-checklist');
+    fs.mkdirSync(rulesDir, { recursive: true });
+    fs.mkdirSync(personalSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(rulesDir, 'my-voice-profile.md'), '# My Voice\n', 'utf-8');
+    fs.writeFileSync(path.join(personalSkillDir, 'SKILL.md'), '---\nname: my-agency-checklist\n---\n', 'utf-8');
+
+    if (process.platform === 'win32') {
+      execFileSync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          path.join(SUITE_ROOT, 'scripts', 'uninstall-agy-suite.ps1'),
+          '-TargetConfigDir',
+          path.join(fakeHome, '.gemini', 'config'),
+          '-PurgeMemoryData',
+        ],
+        { env: baseEnv, stdio: 'pipe' }
+      );
+    } else {
+      execFileSync(
+        'bash',
+        [
+          path.join(SUITE_ROOT, 'scripts', 'uninstall-agy-suite.sh'),
+          '--target-config-dir',
+          path.join(fakeHome, '.gemini', 'config'),
+          '--purge-data',
+        ],
+        { env: baseEnv, stdio: 'pipe' }
+      );
+    }
+
+    const g10Issues = [];
+    const remainingPlugins = fs.existsSync(path.join(fakeHome, '.gemini', 'config', 'plugins'))
+      ? fs.readdirSync(path.join(fakeHome, '.gemini', 'config', 'plugins'))
+      : [];
+    const remainingPluginData = fs.existsSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data'))
+      ? fs.readdirSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data'))
+      : [];
+    if (remainingPlugins.length > 0) g10Issues.push(`Leftover plugins: ${remainingPlugins.join(', ')}`);
+    if (remainingPluginData.length > 0) g10Issues.push(`Leftover plugin_data: ${remainingPluginData.join(', ')}`);
+    if (fs.existsSync(path.join(rulesDir, 'my-voice-profile.md'))) {
+      g10Issues.push('Leftover rules/my-voice-profile.md');
+    }
+    if (!fs.existsSync(path.join(personalSkillDir, 'SKILL.md'))) {
+      g10Issues.push('User Personal Skill in ~/.gemini/config/skills/ was not preserved!');
+    }
+
+    recordGate(
+      10,
+      'Zero-Residue Uninstall (--purge-data) + Personal Skill Preservation',
+      g10Issues.length === 0,
+      g10Issues.length
+        ? g10Issues.join('; ')
+        : '0 AGY plugins, 0 AGY plugin_data folders, and 0 AGY rules remain; user Personal Skill preserved intact'
+    );
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+}
+
+async function main() {
+  console.log('======================================================================');
+  console.log('Generic AGY Plugin Suite — 10-Gate Zero-Footprint Audit');
+  console.log('======================================================================');
+
+  const allPluginEntries = walkFiles(PLUGINS_DIR);
+  const allSuiteEntries = walkFiles(SUITE_ROOT);
+
+  checkGate1(allPluginEntries);
+  checkGate2(allPluginEntries);
+  checkGate3(allPluginEntries);
+  checkGate4(allSuiteEntries);
+  checkGate5();
+  checkGate6(allSuiteEntries);
+  checkGate7(allSuiteEntries);
+  await checkHermeticLifecycleGates();
+
+  const failed = results.filter((r) => !r.passed);
+  console.log('----------------------------------------------------------------------');
+  if (failed.length > 0) {
+    console.error(`FAILED ${failed.length} of ${results.length} Zero-Footprint gates.`);
+    process.exit(1);
+  }
+  console.log(`ALL ${results.length}/${results.length} ZERO-FOOTPRINT GATES PASSED.`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

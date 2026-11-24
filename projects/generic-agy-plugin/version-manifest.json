@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "1.9.2",
-  "updatedAt": "2026-11-23T19:20:00Z",
+  "suiteVersion": "1.9.3",
+  "updatedAt": "2026-11-24T17:00:00Z",
   "skillCount": 40,
   "skillManifest": {
     "connect-ge": {
@@ -109,29 +109,29 @@
     "agy-onboard": {
       "plugin": "agy-onboarding",
       "skill": "agy-onboard",
-      "treeSha256": "a82e1a014096db20",
+      "treeSha256": "b50cc4224806246a",
       "files": {
-        "SKILL.md": "ea3695cf0ddde55909c082b3d3d44c03c0e16e4124a6ee70427f9faf8865f66a",
+        "SKILL.md": "893c69dd9474a06af5c92c13c31dd56f0e18506aa0d49ea47231e029626e67d5",
         "references/onboarding_sops_playbook.md": "80d0dc02bbe54da4b013534ce165801b153ade1ab343ae1d74238613f5364734"
       }
     },
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "ed1865da1c6a7b9d",
+      "treeSha256": "a365d5e056b5b3ea",
       "files": {
-        "SKILL.md": "9fd7546dfc121913fd8d35d3eace46ed8bca17828b5bbc9f5fc80a5f65ada6ab",
+        "SKILL.md": "57535720da0aee86297d0e41210e500a7609bdf753e126ec15feac2c19307a4d",
         "scripts/incremental-sync.mjs": "3e2ddd94d9371085ab515c1e2fa51f91647cea0e5216a51b99f29a6d441e682e",
-        "scripts/install-agy-suite.ps1": "1ebce7bb1ee05bc23518714bfae7fa326c80cd6042bb29eda05036e8cd3bef55",
-        "scripts/install-agy-suite.sh": "986cb8e58a5e02aae216dbb4dbf77aa6c340ed088b5f5fd44534baa155643847"
+        "scripts/install-agy-suite.ps1": "8872a5c00f6c645fb6ff8c2486dd814f4bb4cd126c7d0f4a1cc66bfba4527f8a",
+        "scripts/install-agy-suite.sh": "f118a5138531e38b7a829d0191e5bd7e51e3741a5a501c2c0fa8ae4710777f7d"
       }
     },
     "daily-brief": {
       "plugin": "agy-onboarding",
       "skill": "daily-brief",
-      "treeSha256": "e802d80e43410720",
+      "treeSha256": "f8b24e6a0b8eb90f",
       "files": {
-        "SKILL.md": "5c222ddb32683ba7a225fb042b45b9fa473f0abc540668fecd938b839927f41b",
+        "SKILL.md": "e34d69c111d9d58dc0c722228e252d2c9bf09bc284f4428be8bf2439e5d79a32",
         "references/meetings_project_playbook.md": "6d51098ad9716b726e6668304dd8f2bd2d4d71fd4514c30b14814c40ee112c94"
       }
     },
@@ -155,10 +155,10 @@
     "my-voice": {
       "plugin": "agy-onboarding",
       "skill": "my-voice",
-      "treeSha256": "20b6385dd7a2a3ed",
+      "treeSha256": "68a412c89a7e261b",
       "files": {
-        "SKILL.md": "7d7e1aa0f5f50611a0e20f047baecd60fd1f27798cb9658a30ca19a48f1086da",
-        "references/correspondence_playbook.md": "9efdea925ee1a93d3274903d72b2d041832f75a0f20e1529e830604af88b38d1"
+        "SKILL.md": "b7d31e95415ab91bc9422742bc6be2ce976043aa09496a203ce5286c421f841a",
+        "references/correspondence_playbook.md": "216065b95fb134500e24c596c3a29ee41bdd619166f09e1ae41183a1acc862c1"
       }
     },
     "orchestrator-guide": {
@@ -273,34 +273,34 @@
     "followup-plan": {
       "plugin": "agy-second-brain",
       "skill": "followup-plan",
-      "treeSha256": "22b4d6c7a3204fec",
+      "treeSha256": "5e1396e51d2a8a30",
       "files": {
-        "SKILL.md": "4379776a47d9fd6259678b49b9b77a96da58bc9c7922a0114627d181c18a7b93"
+        "SKILL.md": "cd41cf18afd514d3424143ce9dc33d59dee30bf4f59484c87488fb90a78fe69e"
       }
     },
     "meeting-notes": {
       "plugin": "agy-second-brain",
       "skill": "meeting-notes",
-      "treeSha256": "b49df1fb7a9af793",
+      "treeSha256": "84a937e145992cd7",
       "files": {
-        "SKILL.md": "532e649e956b523df680c1e313a1f4f630869e59c36165b09f183bf70e60e85c",
+        "SKILL.md": "b095a6107f8f6e68fc397fe964588dea6a4471b1de62ee2f27da371e4da44203",
         "references/compaction_rubric.md": "36225910450e56d01fc78990a9c8c0c60a3f1010e51fa88973145b0cba5bf6ca"
       }
     },
     "meeting-prep": {
       "plugin": "agy-second-brain",
       "skill": "meeting-prep",
-      "treeSha256": "9d098435f45d9520",
+      "treeSha256": "5225604382e74149",
       "files": {
-        "SKILL.md": "567e7abce620985b53fd0296178a6525154042b72d1d49ea767d019ff00053ab"
+        "SKILL.md": "69d570f309689fe65053972ec201f276b82e46b12814b00bedbbdb9dd76c2488"
       }
     },
     "memory": {
       "plugin": "agy-second-brain",
       "skill": "memory",
-      "treeSha256": "5e419fcb5b604bdd",
+      "treeSha256": "59accd2dc0aec25f",
       "files": {
-        "SKILL.md": "a89475b5a5fca2c6934eefc77956f3aaf069539d42311c5add4a0b641c26bb94"
+        "SKILL.md": "63cf1808830abcd6f2012839749a30800c487406029597c8b9f1028c5a9c8006"
       }
     },
     "no-ai-slop": {
@@ -322,17 +322,17 @@
     "swarm-prep": {
       "plugin": "agy-second-brain",
       "skill": "swarm-prep",
-      "treeSha256": "18d5a12377059b26",
+      "treeSha256": "d39a83f10ff38cb7",
       "files": {
-        "SKILL.md": "150b2601db386479ad0b8b8d811c86fb78aa303d9d25918a18ee8b525fa752c4"
+        "SKILL.md": "ba8412326a51485afdb664f6060a7af64c0840254854c5b6f5fb6aac0f611a69"
       }
     },
     "weekly-impact": {
       "plugin": "agy-second-brain",
       "skill": "weekly-impact",
-      "treeSha256": "7cb2df5875dad18a",
+      "treeSha256": "3547e12f24650446",
       "files": {
-        "SKILL.md": "9c3ef6057c16cc5d551f037a88ca26a5cef9f9710a6a262468e56daa766e5ff8"
+        "SKILL.md": "9a7f493e087c6bd7c4b502d39b0c846a71b8a7b0138c5be31176be825b7bf89b"
       }
     },
     "iam-secret-hygiene": {
@@ -355,9 +355,9 @@
     "automations": {
       "plugin": "agy-twin-automations",
       "skill": "automations",
-      "treeSha256": "62f907acc3d40ae4",
+      "treeSha256": "5333945cc4314a94",
       "files": {
-        "SKILL.md": "c2256a09beee790fe3520c86ed4dedf118c0656cfeda8c185f3b4ca13b79c81c"
+        "SKILL.md": "6f1fa34578ae25ed11bb9fe6d72375e281e2e862840184ba4e39324546696f11"
       }
     }
   },
@@ -373,7 +373,7 @@
         "sidecar.json": "b95da8710ead2e36aa7dd185977ceda87eaa178e141ae48ac1b94dbcc23a7e67",
         "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
         "styles.css": "932ff36dd001b48ff6cbcf9aad4340302d420fda98d5fa08fe14b9109829e38a",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
     },
@@ -388,7 +388,7 @@
         "sidecar.json": "d66417655d46cd5f80d0cdff0dea19b9557ceb835d966ec9b56c079d7c4f7f49",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6060c879edb5a09185534ca88c8fb1f5892087db7ed012ccfac697811a27245d",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda"
       }
     },
@@ -404,7 +404,7 @@
         "sidecar.json": "eb710ff72767b24a94caffb24f2a5c0be784f75ff33250aedb544b091b8f77d5",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
@@ -419,7 +419,7 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "antigravity_updates.mjs": "ebc5c13c3d7ee3633d216edd1da13d3f69cb1b087b94ced2a90e5b2f2811eb23",
+        "antigravity_updates.mjs": "37fe447d68ea124a3ba0d9bb3efbbabc79dc7785bd685a80b460a87b67611d71",
         "app.js": "57beb2ad78df86a71505f378d28616f6d81291fab800aab89663aaa7b1813bb3",
         "index.html": "a74ce5ba5d8ac88a5cf1e00f51d6a56b84a4e50e1e43e4a0201cc8ecffd14f3c",
         "main.mjs": "e0071d12d46c972d1b995b11ff244a1b475d8893bd0395eeb14958c91c25facc",
@@ -428,7 +428,7 @@
         "sidecar.json": "7f12d47c9dfae67fe5980e5229d11128bac4e31e9d7669694438779af25fa982",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
+        "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
         "token_pill_ui.js": "71fad47b3929827bd27cf8bc6854dd82dd831fffa8dd5d6624227e0e6178ebda",
         "tokeneconomics_and_updates_ui.js": "ce6f36471aceb4b2ea5fea53610a3132f490066c34b79c2a36e3cda3cc924f31",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
@@ -445,12 +445,12 @@
     "agy-connectors/scripts/ge_instance_mcp.mjs": {
       "plugin": "agy-connectors",
       "path": "scripts/ge_instance_mcp.mjs",
-      "sha256": "4979c3312f50806e70032a25a87fcff3fe01ec04ff722e866637f3102df2298e"
+      "sha256": "ceaf1ef76f42cc57e7a92bd40978c9f8522243ba7cb3f7f18c3f8ce124e8697a"
     },
     "agy-coordinator/scripts/coord_core.mjs": {
       "plugin": "agy-coordinator",
       "path": "scripts/coord_core.mjs",
-      "sha256": "808c656f0f07c186dcfe70a8cab58f0ad5f4ceced2e43080d9075fa23c355963"
+      "sha256": "66dda83b50f2357eabecbb8c2e8d86eb3e860409d2ab873acde2fab82e74e427"
     },
     "agy-coordinator/scripts/coord_ctl.mjs": {
       "plugin": "agy-coordinator",
@@ -475,7 +475,7 @@
     "agy-second-brain/scripts/vault_core.mjs": {
       "plugin": "agy-second-brain",
       "path": "scripts/vault_core.mjs",
-      "sha256": "f8edde185edd3bca319ab0451baf81baaa4ebf77dd13e214319ad46fc2cad30c"
+      "sha256": "7db578b9dba8451c8cdacf9362fd317fb9a2007571025a0a3ddc628c625d1f93"
     },
     "agy-twin-automations/scripts/configure_schedules.mjs": {
       "plugin": "agy-twin-automations",

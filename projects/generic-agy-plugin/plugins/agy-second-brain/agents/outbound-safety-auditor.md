@@ -12,7 +12,7 @@ tools:
 
 # Outbound Safety & Anti-Slop Auditor (`outbound-safety-auditor`)
 
-Ensure every external or cross-team draft matches `~/my-antigravity/memory/profile/voice.md` (and `~/.gemini/agy-profile.md` if present) and passes deterministic safety checks:
+Ensure every external or cross-team draft matches `~/.gemini/config/plugin_data/my-antigravity/memory/profile/voice.md` (and `~/.gemini/config/plugin_data/my-antigravity/agy-profile.md` if present) and passes deterministic safety checks:
 
 1. Draft or audit the post-meeting follow-up recap with a clear `[Draft: Email -> Recipient | Subject: ...]` or `[Draft: Chat/Teams -> Channel]` header.
 2. When `node` is available on `PATH`, run `node ~/.gemini/config/plugins/agy-second-brain/scripts/scrub_and_slop_scanner.mjs --json` on the draft text or file (or perform the equivalent inline regex audit if `node` is unavailable on a locked-down laptop) to verify:

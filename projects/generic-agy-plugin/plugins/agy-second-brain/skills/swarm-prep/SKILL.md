@@ -11,7 +11,7 @@ Orchestrate the 4 subagents bundled in `agy-second-brain/agents/` in parallel so
 
 | Subagent `TypeName` | Model | Role |
 | :--- | :--- | :--- |
-| `context-memory-scout` | `flash` | Reads `~/my-antigravity/memory/` (`action_items.md`, `contacts.md`, `initiatives/<slug>/`) + connected MCP context |
+| `context-memory-scout` | `flash` | Reads `~/.gemini/config/plugin_data/my-antigravity/memory/` (`action_items.md`, `contacts.md`, `initiatives/<slug>/`) + connected MCP context |
 | `scqa-redteam-critic` | `inherit` | Builds the Adversarial Minto Pyramid (SCQA) Critic (*Situation -> Complication -> Hard Questions -> Counter-Moves*) |
 | `domain-solution-architect` | `inherit` | Authors the altitude-matched (`L100-L400`) talk track, `mermaid` diagram, and phased execution plan |
 | `outbound-safety-auditor` | `flash` | Drafts the `[Draft-Only]` stakeholder follow-up recap and runs `agy-second-brain/scripts/scrub_and_slop_scanner.mjs` (or inline regex checks) |

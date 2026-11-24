@@ -1,6 +1,6 @@
 ---
 name: meeting-notes
-description: Ingests meeting transcripts, Gemini Meet Notes, Teams/Zoom summaries, or raw call notes into ~/my-antigravity/memory/, strips embedded base64 bloat, applies 4-Tier Recency Compaction (0-7d, 8-30d, 31-90d, 90d+) to initiatives/<slug>/running_notes.md, extracts open action items into action_items.md, and updates Last_Touch_Date in contacts.md. Trigger on /meeting-notes, "sync my meeting notes", "compact these call notes", or "extract action items from this transcript".
+description: Ingests meeting transcripts, Gemini Meet Notes, Teams/Zoom summaries, or raw call notes into ~/.gemini/config/plugin_data/my-antigravity/memory/, strips embedded base64 bloat, applies 4-Tier Recency Compaction (0-7d, 8-30d, 31-90d, 90d+) to initiatives/<slug>/running_notes.md, extracts open action items into action_items.md, and updates Last_Touch_Date in contacts.md. Trigger on /meeting-notes, "sync my meeting notes", "compact these call notes", or "extract action items from this transcript".
 ---
 
 # Meeting Notes Harvester & Action Item Extractor (`/meeting-notes`)
@@ -15,7 +15,7 @@ Turn messy meeting transcripts, shared call notes, or pasted summaries into stru
 
 ## Step 2 - Update Initiative Topics & Action Items
 
-Map each meeting to its matching folder under `~/my-antigravity/memory/initiatives/<slug>/` (create a new 4-file folder if a new project or workstream appears). See `./references/compaction_rubric.md` for detailed examples:
+Map each meeting to its matching folder under `~/.gemini/config/plugin_data/my-antigravity/memory/initiatives/<slug>/` (create a new 4-file folder if a new project or workstream appears). See `./references/compaction_rubric.md` for detailed examples:
 
 1. **`initiatives/<slug>/running_notes.md` (4-Tier Recency Compaction):**
    - **Tier 1 (`0-7 Days`):** Prepend dated summary, key stakeholder objections/quotes, and concrete next steps.

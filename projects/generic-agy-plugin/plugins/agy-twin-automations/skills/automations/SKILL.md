@@ -19,9 +19,9 @@ Help the user customize and activate the 4 opt-in `"builtin": "schedule"` automa
 ## Configuration & Activation Steps
 
 1. **Set the User's IANA Timezone (Native `edit_file` First — Zero `node` on `PATH` Required):**
-   - Read `~/my-antigravity/memory/profile/identity.md` or `~/.gemini/agy-profile.md` (or ask for their IANA timezone such as `America/New_York`, `America/Chicago`, `America/Denver`, `America/Los_Angeles`, or `Europe/London` — never 3-letter abbreviations like `EST`).
+   - Read `~/.gemini/config/plugin_data/my-antigravity/memory/profile/identity.md` or `~/.gemini/config/plugin_data/my-antigravity/agy-profile.md` (or ask for their IANA timezone such as `America/New_York`, `America/Chicago`, `America/Denver`, `America/Los_Angeles`, or `Europe/London` — never 3-letter abbreviations like `EST`).
    - Use native `edit_file` directly on the four `~/.gemini/config/plugins/agy-twin-automations/sidecars/*/sidecar.json` files to update `CRON_TZ=<IANA_Zone>` and any custom hour/minute in `args[0]`.
 2. **Offer a Live Test Run & Scoped Permissions:**
-   - Offer to execute one test run right now (for example running `/daily-brief`) and add exact scoped `workspace_uris` (`file://<user-home>/my-antigravity/memory` on macOS/Linux) or `read_file` / `write_file` grants in `agent_permissions`.
+   - Offer to execute one test run right now (for example running `/daily-brief`) and add exact scoped `workspace_uris` (`file://<user-home>/.gemini/config/plugin_data/my-antigravity/memory` on macOS/Linux) or `read_file` / `write_file` grants in `agent_permissions`.
 3. **Enable Opt-In Plugin & Dashboard Toggle:**
    - Remind the user that the scheduled automations plugin ships disabled by default (toggle **Scheduled Automations** in **`Extensions -> Skills`**), and give them the action link `[Open Automations Dashboard](sidecar://dashboard)` to toggle individual schedules on or off.
