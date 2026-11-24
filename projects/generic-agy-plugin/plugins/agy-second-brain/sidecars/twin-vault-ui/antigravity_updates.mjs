@@ -209,7 +209,7 @@ function getStateDir(customStateDir = '') {
   const d =
     customStateDir ||
     process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR ||
-    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'updates-feed');
+    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'my-antigravity', 'updates-feed');
   const resolved = path.resolve(d);
   fs.mkdirSync(resolved, { recursive: true, mode: 0o700 });
   return resolved;

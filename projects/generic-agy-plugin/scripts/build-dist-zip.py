@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import zipfile
 
 
@@ -121,6 +122,9 @@ def build_zip() -> Path:
         suite_root / "README.md",
         suite_root / "scripts" / "install-agy-suite.ps1",
         suite_root / "scripts" / "install-agy-suite.sh",
+        suite_root / "scripts" / "uninstall-agy-suite.ps1",
+        suite_root / "scripts" / "uninstall-agy-suite.sh",
+        suite_root / "scripts" / "verify-agy-zero-footprint.mjs",
         suite_root / "plugins",
     ]
 
@@ -153,3 +157,6 @@ if __name__ == "__main__":
     archive = build_zip()
     size_kb = archive.stat().st_size / 1024.0
     print(f"Built {archive} ({size_kb:.1f} KB)")
+    verifier = archive.parent.parent / "scripts" / "verify-agy-zero-footprint.mjs"
+    if verifier.exists() and shutil.which("node"):
+        subprocess.run(["node", str(verifier)], check=True)

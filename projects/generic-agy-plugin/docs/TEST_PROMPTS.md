@@ -230,7 +230,7 @@ gcloud run deploy agency-grant-portal \
 
 ## Prompt 8 — Personal Memory, Action Items, SCQA Meeting Prep & Outbound Scrubbing
 
-- **What you'll try:** Initialize your persistent Personal Memory (`~/my-antigravity/memory/`), ingest sample call notes into `action_items.md`, generate a 1-card Adversarial Minto SCQA pre-meeting brief, and run anti-slop + outbound safety scrubbing on a draft email.
+- **What you'll try:** Initialize your persistent Personal Memory (`~/.gemini/config/plugin_data/my-antigravity/memory/`), ingest sample call notes into `action_items.md`, generate a 1-card Adversarial Minto SCQA pre-meeting brief, and run anti-slop + outbound safety scrubbing on a draft email.
 - **What success looks like:** `profile/{identity,portfolio,playbooks,voice}.md`, `action_items.md`, `contacts.md`, and 4-file `initiatives/` folders power the AI Inbox **`Action Items`** (`Suggested to-dos` + `Topics to catch up on`) inside **`Extensions -> My Antigravity`**; Robert Vance's `STALE (>21d)` status clears after ingesting the call notes; `/meeting-prep` builds a realistic SCQA red-team section; and `/outbound-scrub` + `/no-ai-slop` catch `[CONFIRM: ...]`, `[TODO: ...]`, and LLM filler phrases.
 - **About how long:** 2–3 minutes.
 
@@ -261,7 +261,7 @@ Test our `agy-second-brain` skills (`/memory`, `/meeting-notes`, `/meeting-prep`
 
 ```text
 1. `/swarm-prep`: Run a 4-agent parallel 360 prep pack for our Thursday milestone review on `broadband-grant-round-3` (covering memory status, an L100–L300 talk track with a Mermaid workflow diagram, SCQA pushback & counter-moves, and a pre-scrubbed `[Draft-Only]` stakeholder recap).
-2. `/weekly-impact`: Summarize our current progress across Altitude 1 (Executive Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity) into `~/my-antigravity/memory/weekly/` and `impact/ledger.json`.
+2. `/weekly-impact`: Summarize our current progress across Altitude 1 (Executive Outcomes), Altitude 2 (Cross-Team Reusable Assets), and Altitude 3 (Workstream Velocity) into `~/.gemini/config/plugin_data/my-antigravity/memory/weekly/` and `impact/ledger.json`.
 ```
 
 ---

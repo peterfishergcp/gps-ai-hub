@@ -1,6 +1,6 @@
 ---
 name: agy-onboard
-description: Interactive 60-second onboarding for Public Sector staff in Google Antigravity, including optional 1-step Personal Workspace Memory setup (~/my-antigravity/memory/), 30-60-90 day onboarding plans, SOP builders, and continuity desk guides. Use when a user says /agy-onboard, "set up my profile", "initialize my workspace memory", "help me get started with Antigravity", "create a 30-60-90 day plan", or "build an SOP or onboarding packet".
+description: Interactive 60-second onboarding for Public Sector staff in Google Antigravity, including optional 1-step Personal Workspace Memory setup (~/.gemini/config/plugin_data/my-antigravity/memory/), 30-60-90 day onboarding plans, SOP builders, and continuity desk guides. Use when a user says /agy-onboard, "set up my profile", "initialize my workspace memory", "help me get started with Antigravity", "create a 30-60-90 day plan", or "build an SOP or onboarding packet".
 ---
 
 # Public Sector — Antigravity Quick Onboarding (`/agy-onboard`)
@@ -18,16 +18,16 @@ Welcome the user concisely and get them productive in **under 60 seconds** with 
 Ask the user (allowing rough or 1-line answers):
 1. **Agency / Division, Role & Time Zone:** Which Public Sector agency, office, or team are you in, what is your primary role, and what is your IANA time zone (e.g., `America/New_York`, `America/Chicago`, `America/Los_Angeles`)?
 2. **Primary Audiences & Tone:** Who do you write or build for most often (e.g., agency leadership, legislators, sister divisions, vendors, or constituents), and how do you like to sound (e.g., concise BLUF bullets, warm consultative prose, formal statutory memo)?
-3. **Top 2 Weekly Time-Sinks & Active Initiatives:** What recurring tasks or 1-2 active projects/programs would save you the most time? *(Also ask if they want to initialize their persistent **Personal Workspace Memory** at `~/my-antigravity/memory/`—recommended!)*
+3. **Top 2 Weekly Time-Sinks & Active Initiatives:** What recurring tasks or 1-2 active projects/programs would save you the most time? *(Also ask if they want to initialize their persistent **Personal Workspace Memory** at `~/.gemini/config/plugin_data/my-antigravity/memory/`—recommended!)*
 4. **Your Gemini Enterprise (`GE`) Instance (Default Connector Hub):** Paste your **Gemini Enterprise Resource Path** (`projects/<PROJECT_ID>/locations/<LOCATION>/collections/default_collection/engines/<ENGINE_ID>`) or **Cloud Console Gemini Enterprise URL** if your IT admin shared it—connecting your GE instance unlocks federated **Outlook, SharePoint, OneDrive, Teams, Drive, and GitHub** connectors in one step! *(Say "skip" to configure anytime via `/connect-ge`.)*
 
 ---
 
 ## Step 2: Persist Profile, Initialize Personal Memory & Configure GE Instance
 
-1. **Save Personal Profile (`./agy-profile.md` / `~/.gemini/agy-profile.md`):**
+1. **Save Personal Profile (`./agy-profile.md` / `~/.gemini/config/plugin_data/my-antigravity/agy-profile.md`):**
    - Save a clean, human-readable profile containing Agency / Division, Role, Primary Time Zone, Preferred Voice & Formatting Rules (BLUF, plain language, spaced hyphens ` - `), and Standing Guardrails (**Draft-Only**, **Zero hardcoded secrets**, **Verify PII/statutory citations**).
-2. **Optional 1-Step Personal Memory Initialization (`~/my-antigravity/memory/`):**
+2. **Optional 1-Step Personal Memory Initialization (`~/.gemini/config/plugin_data/my-antigravity/memory/`):**
    - Unless the user opts out, initialize their persistent workspace memory using the `public-sector` preset (or `pm`, `developer`, `leader` if closer to their role):
      ```bash
      node ~/.gemini/config/plugins/agy-second-brain/scripts/vault_cli.mjs init \

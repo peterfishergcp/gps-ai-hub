@@ -112,7 +112,7 @@ export function getTokenPrefsPath(stateDir = '') {
   const base =
     stateDir ||
     process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR ||
-    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'token-telemetry');
+    path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'my-antigravity', 'token-telemetry');
   return path.join(path.resolve(base), 'token-prefs.json');
 }
 

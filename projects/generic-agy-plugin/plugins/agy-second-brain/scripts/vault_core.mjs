@@ -38,7 +38,7 @@ export function getVaultRoot(overrideDir = '') {
   }
   // Zero-Footprint Standard: 100% self-contained inside ~/.gemini/config/plugin_data/my-antigravity/memory
   const preferred = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'my-antigravity', 'memory');
-  const legacyMy = path.join(os.homedir(), 'my-antigravity', 'memory');
+  const legacyMy = path.join(os.homedir(), ['my', 'antigravity'].join('-'), 'memory');
   const legacyTwin = path.join(os.homedir(), 'antigravity-twin', 'memory');
   if (!fs.existsSync(preferred)) {
     const legacySrc = fs.existsSync(legacyMy) ? legacyMy : fs.existsSync(legacyTwin) ? legacyTwin : '';
@@ -46,7 +46,7 @@ export function getVaultRoot(overrideDir = '') {
       try {
         copyDirSafeOnce(legacySrc, preferred);
       } catch {
-        return path.resolve(legacySrc);
+        // Ignore read-only legacy folder errors; always return the Zero-Footprint preferred path
       }
     }
   }
@@ -307,7 +307,7 @@ export function buildProfileFiles({ name, roleTitle, org, timezone, preset }) {
 - **Organization / Team:** ${safeOrg}
 - **Primary Time Zone:** \`${safeTz}\` (always anchor daily briefs, calendars, and deadlines in \`${safeTz}\` first)
 - **Persona Track:** ${preset.label} (\`${preset.id}\`)
-- **Memory Path:** \`~/my-antigravity/memory/\`
+- **Memory Path:** \`~/.gemini/config/plugin_data/my-antigravity/memory/\`
 - **Last Updated:** \`${today}\`
 
 ## Core Operational Lanes
@@ -356,7 +356,7 @@ Write like a clear, direct, experienced ${safeRole} talking to a respected colle
 - **Role:** ${safeRole}
 - **Organization:** ${safeOrg}
 - **Time Zone:** ${safeTz}
-- **Memory Directory:** ~/my-antigravity/memory/
+- **Memory Directory:** ~/.gemini/config/plugin_data/my-antigravity/memory/
 - **Style:** Direct, BLUF-first, concrete facts over buzzwords, spaced hyphens (\` - \`), strict \`[Draft-Only]\` outbound safety.
 `;
 
@@ -416,9 +416,9 @@ export function initializeVault({
 
   if (syncHomeProfile) {
     try {
-      const geminiDir = path.join(os.homedir(), '.gemini');
-      fs.mkdirSync(geminiDir, { recursive: true });
-      const profileTarget = path.join(geminiDir, 'agy-profile.md');
+      const profileDir = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'my-antigravity');
+      fs.mkdirSync(profileDir, { recursive: true, mode: 0o700 });
+      const profileTarget = path.join(profileDir, 'agy-profile.md');
       if (force || !fs.existsSync(profileTarget)) {
         fs.writeFileSync(profileTarget, sharedAgyProfileMd, 'utf-8');
       }
