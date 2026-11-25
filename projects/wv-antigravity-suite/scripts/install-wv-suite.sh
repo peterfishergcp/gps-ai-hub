@@ -1,25 +1,24 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.1.3).
+# Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.0).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ — zero /tmp or /private/tmp writes,
 # zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
+# Automatically removes deprecated legacy plugins (wv-connectors, wv-coordinator) on upgrade.
 set -euo pipefail
 
 DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 ZIP_URL=""
-GE_INSTANCE=""
-OAUTH_CLIENT_ID=""
-OAUTH_CLIENT_SECRET=""
 TARGET_CONFIG_DIR="${HOME}/.gemini/config"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --zip-url) ZIP_URL="${2:-}"; shift 2 ;;
-    --ge-instance) GE_INSTANCE="${2:-}"; shift 2 ;;
-    --oauth-client-id) OAUTH_CLIENT_ID="${2:-}"; shift 2 ;;
-    --oauth-client-secret) OAUTH_CLIENT_SECRET="${2:-}"; shift 2 ;;
+    --ge-instance|--oauth-client-id|--oauth-client-secret)
+      # Retained for backward CLI compatibility; connectors now use native Antigravity Customizations -> Google Workspace.
+      shift 2
+      ;;
     --target-config-dir|--config-dir) TARGET_CONFIG_DIR="${2:-}"; shift 2 ;;
     -h|--help)
-      echo "Usage: $0 [--zip-url <https-zip>] [--ge-instance <ge-resource>] [--oauth-client-id <id>] [--target-config-dir <dir>]"
+      echo "Usage: $0 [--zip-url <https-zip>] [--target-config-dir <dir>]"
       exit 0
       ;;
     *) echo "Unknown flag: $1" >&2; exit 1 ;;
@@ -27,12 +26,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
-CONN_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/wv-connectors"
 MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/wv-antigravity/memory"
-COORD_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/wv-coordinator"
 
-mkdir -p -m 700 "${PLUGINS_DEST}" "${CONN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}"
-chmod 700 "${CONN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}" 2>/dev/null || true
+mkdir -p -m 700 "${PLUGINS_DEST}" "${MEM_DATA_DIR}"
+chmod 700 "${MEM_DATA_DIR}" 2>/dev/null || true
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 SUITE_ROOT=""
@@ -90,7 +87,7 @@ if [[ -n "${ZIP_URL}" ]]; then
     exit 1
   fi
   init_stage_dir
-  echo "Downloading State of West Virginia Antigravity Suite v2.1.3 (<500 KB)..."
+  echo "Downloading State of West Virginia Antigravity Suite v2.3.0..."
   curl -fsSL "${ZIP_URL}" -o "${STAGE_DIR}/wv.zip"
   mkdir -p -m 700 "${STAGE_DIR}/extracted"
   validate_and_extract_zip "${STAGE_DIR}/wv.zip" "${STAGE_DIR}/extracted"
@@ -114,6 +111,11 @@ if [[ -z "${SOURCE_PLUGINS_DIR}" || ! -d "${SOURCE_PLUGINS_DIR}" ]]; then
   exit 1
 fi
 
+# Clean up deprecated plugins from pre-v2.3.0 installs so orphaned sidebar icons disappear cleanly
+for legacy_p in wv-connectors wv-coordinator; do
+  rm -rf "${PLUGINS_DEST:?}/${legacy_p}"
+done
+
 COUNT=0
 for pdir in "${SOURCE_PLUGINS_DIR}"/*; do
   [[ -d "${pdir}" && ! -L "${pdir}" ]] || continue
@@ -129,17 +131,6 @@ for pdir in "${SOURCE_PLUGINS_DIR}"/*; do
   COUNT=$((COUNT + 1))
 done
 
-if [[ -n "${GE_INSTANCE}" ]]; then
-  GE_JSON="${CONN_DATA_DIR}/ge-instance.json"
-  esc_ge="${GE_INSTANCE//\\/\\\\}"; esc_ge="${esc_ge//\"/\\\"}"
-  esc_cid="${OAUTH_CLIENT_ID//\\/\\\\}"; esc_cid="${esc_cid//\"/\\\"}"
-  esc_sec="${OAUTH_CLIENT_SECRET//\\/\\\\}"; esc_sec="${esc_sec//\"/\\\"}"
-  TS_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  printf '{\n  "rawInput": "%s",\n  "oauthClientId": "%s",\n  "oauthClientSecret": "%s",\n  "updatedAt": "%s"\n}\n' \
-    "${esc_ge}" "${esc_cid}" "${esc_sec}" "${TS_UTC}" > "${GE_JSON}"
-  chmod 600 "${GE_JSON}"
-fi
-
 if command -v pkill >/dev/null 2>&1; then
   pkill -f "[n]ode .*wv-coordinator-ui/main.mjs" 2>/dev/null || true
   pkill -f "[n]ode .*wv-antigravity-ui/main.mjs" 2>/dev/null || true
@@ -147,4 +138,4 @@ if command -v pkill >/dev/null 2>&1; then
   pkill -f "[n]ode .*wv-design-preview/main.mjs" 2>/dev/null || true
 fi
 
-echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (4 UI extensions: WV Antigravity, WV Clawy [Clawy], WV Skills, WV Preview)"
+echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (3 UI panels: WV My Hub, WV Skills [with Ask Clawy], WV Preview)"

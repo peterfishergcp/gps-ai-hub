@@ -211,43 +211,6 @@
     }
 
     var latestKnownConvId = '';
-    var isFullPageSidebarView =
-      !(window.sidecar && window.sidecar.conversationId) ||
-      window.location.search.indexOf('entrypoint=sidebar') !== -1 ||
-      window.location.search.indexOf('view=sidebar') !== -1;
-
-    var headerActionsHost =
-      document.querySelector('header .topbar-actions') ||
-      document.querySelector('header .header-actions') ||
-      containerEl;
-
-    if (isFullPageSidebarView && headerActionsHost && !document.getElementById('agyDockSidePanelBtn')) {
-      var dockBtn = makeEl('button', 'agy-dock-sidepanel-btn', '◫ Side Panel');
-      dockBtn.id = 'agyDockSidePanelBtn';
-      dockBtn.type = 'button';
-      dockBtn.title = 'Open your chat and dock this plugin in the Right-Hand Side Panel (⇧⌘B)';
-      dockBtn.addEventListener('click', async function () {
-        try {
-          if (window.sidecar && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
-            if (latestKnownConvId) {
-              window.sidecar.ui.toggleConversation(latestKnownConvId, { openSidePanel: true });
-              return;
-            }
-            if (window.sidecar.agent && window.sidecar.agent.startConversation) {
-              var created = await window.sidecar.agent.startConversation(
-                'Ready — docked panel in the Right-Hand Side Panel.',
-                'Workspace Session'
-              );
-              if (created && created.conversationId) {
-                latestKnownConvId = String(created.conversationId);
-                window.sidecar.ui.toggleConversation(latestKnownConvId, { openSidePanel: true });
-              }
-            }
-          }
-        } catch (e) {}
-      });
-      headerActionsHost.appendChild(dockBtn);
-    }
 
     function renderData(data) {
       if (!data || !data.ok || !data.windows) return;

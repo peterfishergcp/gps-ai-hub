@@ -1,7 +1,7 @@
 {
-  "suiteVersion": "2.2.6",
-  "updatedAt": "2026-11-24T18:26:00Z",
-  "skillCount": 40,
+  "suiteVersion": "2.3.0",
+  "updatedAt": "2026-11-25T19:15:00Z",
+  "skillCount": 36,
   "skillManifest": {
     "automations": {
       "plugin": "wv-automations",
@@ -9,40 +9,6 @@
       "treeSha256": "931bd13053265d78",
       "files": {
         "SKILL.md": "b04a576e2ef3dda0f7151e509b65cc25490fec96855c8a63371451c0affa97d6"
-      }
-    },
-    "connect-ge": {
-      "plugin": "wv-connectors",
-      "skill": "connect-ge",
-      "treeSha256": "fb39cfb2a1097ed0",
-      "files": {
-        "SKILL.md": "b100ce16843e97972ac5532f2f147187335a4a0df8e06ef7728b484c0fac698a",
-        "references/entra_google_identity_federated_ge.md": "a6b587f220fd7c956fcaa00011ea2cab2acdbc5306d2a9a3579bc3020aa87330"
-      }
-    },
-    "connect-github-bigquery": {
-      "plugin": "wv-connectors",
-      "skill": "connect-github-bigquery",
-      "treeSha256": "eb043c878d90d91b",
-      "files": {
-        "SKILL.md": "df65dc9fe9e29ef1dee598870819cafd93e48160f4e2249a8245aea77ef3f5ce"
-      }
-    },
-    "connect-m365-workspace": {
-      "plugin": "wv-connectors",
-      "skill": "connect-m365-workspace",
-      "treeSha256": "532f27e37a0b935c",
-      "files": {
-        "SKILL.md": "451c4ea9a808d9295f25183cb2c57dac87f225fe71bfb295e6b38cfbc110c148",
-        "references/federated_connector_prompts.md": "72f33db350f785a685da20facbe7a8a54d69390c48927c4bcef4d387711064f9"
-      }
-    },
-    "wv-coordinator": {
-      "plugin": "wv-coordinator",
-      "skill": "wv-coordinator",
-      "treeSha256": "9a50c03463831b8e",
-      "files": {
-        "SKILL.md": "fdeb9cb7458dbe00cdb7449f8ebae18f9da630f8892340d57abed0fa8a8fade6"
       }
     },
     "doc-design": {
@@ -65,10 +31,10 @@
     "wv-dashboard": {
       "plugin": "wv-design-studio",
       "skill": "wv-dashboard",
-      "treeSha256": "1ea98761f20db51d",
+      "treeSha256": "93c7a80891c61096",
       "files": {
         "SKILL.md": "d5104313bacd67d40d47398d11ece765b2be286451ae0093fa2e9281bf9bd732",
-        "assets/runtime/app.js": "dd642f02477439e2a91a4e210d98474d40c796c152cb2abba0b4cc20aa634960",
+        "assets/runtime/app.js": "62042925753a3c5fa603284a14ed5024b76138ef2522c8cb53bde2f775f4c7e4",
         "assets/runtime/index.html": "e3c981daf7f131decb42ee40f4eefad2d808c66293749cff5ea4cb6435b5a9c2",
         "assets/runtime/server.mjs": "c58dead4ef8051a66a7d718e8cbc44d5925a651adb99f7bcbd5d470118b21895",
         "assets/runtime/styles.css": "594753a51e3a6d7b7c3d66a552aec17e8a4b2ae9943a93ce5b9c649c8afa9742",
@@ -117,26 +83,26 @@
     "daily-brief": {
       "plugin": "wv-onboarding",
       "skill": "daily-brief",
-      "treeSha256": "2212df132d652e8a",
+      "treeSha256": "5e0f772e4d2315f0",
       "files": {
-        "SKILL.md": "e9889ac084504dac428cf25e597e1c62b2b7b76ea31ba06dc7e99298ed7a13a5",
+        "SKILL.md": "fec021509a0a56cabcdaf877e8aec55f4058eb5cf89b5815f6d5744178bffe1f",
         "references/meetings_project_playbook.md": "acc75d4430fad541539ddf0c31a6f600f1d011f7b29da20b0bc2d2016660a311"
       }
     },
     "inbox-triage": {
       "plugin": "wv-onboarding",
       "skill": "inbox-triage",
-      "treeSha256": "54af673ceef3df38",
+      "treeSha256": "5b229db2c93cb553",
       "files": {
-        "SKILL.md": "c1bba3b8cb0e38817592453e918c633b232e8987be0e0c670c4607ee9fdfcb4b"
+        "SKILL.md": "ade287c18ffa86d4d7ba438e79168e1fdf7ba7a9ee8ec4c91e5f3a40b4acde14"
       }
     },
     "model-guide": {
       "plugin": "wv-onboarding",
       "skill": "model-guide",
-      "treeSha256": "4e903e22bec60b00",
+      "treeSha256": "01f6f33879582bc4",
       "files": {
-        "SKILL.md": "5f4c88414c2b81fa069480936e0a6399b10d21e8eef4cd66aa8c4dcc44cc15c9",
+        "SKILL.md": "ef4d45e177b0f08ab2c1533ef5cc7a4a22072b99ccc799773bd82874d88755e1",
         "references/claude_and_gemini_playbook.md": "7bc1b240f91d66959aa215d1ddafd95063d9a914907da9a04e0727a006748e77"
       }
     },
@@ -171,21 +137,21 @@
     "wv-onboard": {
       "plugin": "wv-onboarding",
       "skill": "wv-onboard",
-      "treeSha256": "18e863085699996b",
+      "treeSha256": "b06917a37b918a6b",
       "files": {
-        "SKILL.md": "4ee8ef4a5f8915323cc2bc96473e6bcda993ca39b7c0ef757cb6d721ac42af9d",
+        "SKILL.md": "171302d947678c967785b28141b6fba8138b67612ca617b108c252d88eae6797",
         "references/onboarding_sops_playbook.md": "36da2c313eb386da1657802f4ba902a78f4dcdb0cac19acef8079a758a430fa0"
       }
     },
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "93a0b802f56f11c2",
+      "treeSha256": "fc74b9743b911162",
       "files": {
         "SKILL.md": "9c7ef3e75e8a3a14734d0a5cc4f8d32ed573cc92369157a284f9f62eb7b8483c",
         "scripts/incremental-sync.mjs": "65de187e9e80eb71ae611308b749302c99ab958bcb4c9844f12714af4c8e5a8f",
-        "scripts/install-wv-suite.ps1": "24563072f9b696757ac90fc6dab87e9a81a0413041d02cf966f6f2bc7d9b2289",
-        "scripts/install-wv-suite.sh": "f57e5add7cdab00da5b675806c239395937ef31b1771883046fd2b509d042035"
+        "scripts/install-wv-suite.ps1": "534aa9b564bccff59fd82eca69ccdb479ad554591857a19022bcb3646c89710e",
+        "scripts/install-wv-suite.sh": "5375d517a06ece810bcca8dd884e1401e4e0a30fe42455d5613eca238312225a"
       }
     },
     "followup-plan": {
@@ -216,9 +182,9 @@
     "memory": {
       "plugin": "wv-second-brain",
       "skill": "memory",
-      "treeSha256": "af3dd704b43f26df",
+      "treeSha256": "f9af859437c846d4",
       "files": {
-        "SKILL.md": "28759e91713d0fafd88faa294f807719b6caa6c6a1de660039b9505c60403ad0"
+        "SKILL.md": "c415797c772570a6fbdca0ee0023740ef1a38df9f1ef7f8a12fbee42ae3e06b5"
       }
     },
     "no-ai-slop": {
@@ -362,50 +328,36 @@
     }
   },
   "sidecarManifest": {
-    "wv-coordinator-ui": {
-      "plugin": "wv-coordinator",
-      "sidecar": "wv-coordinator-ui",
-      "files": {
-        "app.js": "24a3b4e7a67d46ecde52f5645f3e5c1736c1265be9182ad27f2351bca33889e2",
-        "index.html": "8765d47c7d8a3f50152bc03f80e4a287ad7b8f27f9f0c2a748c4e5353935f6c3",
-        "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
-        "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
-        "sidecar.json": "1cc70fabe00fed501d0d6444245fc687228b84278134430b51d0dddfabb5d56e",
-        "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
-        "styles.css": "801bdb68369b9e3f960e04c0008b65eea36af43fbeeb554eb704f876d33164b5",
-        "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
-      }
-    },
     "wv-design-preview": {
       "plugin": "wv-design-studio",
       "sidecar": "wv-design-preview",
       "files": {
-        "app.js": "f521a9c81e0c0699f2044c81364d39e10048f82407274b59232cd29a1718d218",
-        "index.html": "e554ed4e3bd149ca1789c75a5a93fc615c750c85e57f98d3dec678a065913bb0",
-        "main.mjs": "e043a979eba65b3f551de3e2f10d572f4b6bf698eeb58a8840f297e3c2345b5c",
+        "app.js": "c437124c44acd243c0f07608c4422cce31d37de4edcf2a9ba761676e7a221040",
+        "index.html": "1061d083682142fdbbe17f488683a4b509a6b7861f489df5fa4ac862bfd5a327",
+        "main.mjs": "528ca9fedf3e0761b01d57a42c041357c026a563f0b7bcac629af6448e196b56",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "5919df74fce6f3d78335f1369ced632fd32fe7eaf0242f027452599002521940",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "6060c879edb5a09185534ca88c8fb1f5892087db7ed012ccfac697811a27245d",
+        "styles.css": "92a37f0b1a85d6347db51ff01f9cd6d111bef96eb7d0c6f8ca04357d654647b6",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
+        "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b"
       }
     },
     "wv-skill-manager": {
       "plugin": "wv-onboarding",
       "sidecar": "wv-skill-manager",
       "files": {
-        "app.js": "3587bc956d0b40dc688a6fdd9ee55beb14f84c0f53b612dddd8beb43b1d535a8",
-        "index.html": "1946dde740cf0d362f4e6c3748a0041b13f97b256b2b26318cff2a1d446a333b",
-        "main.mjs": "3f8b448b602a0e85418f23ab355193466beb3808df8e78478f016a59196e9811",
+        "app.js": "94b1f3380d1cfd671364e3908049265685f9482620dfa6634e889079333e2a42",
+        "index.html": "546f304ecd0fc2b28e781f0c943c9d1cce953cf18949c241893199744dbb3935",
+        "main.mjs": "1b1e6e984b6ef141fac6ee6ee05a35f5823f121a2ed0075bebddbf42b5eabef8",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "52a6db867ba5aa3eae6296de3a1c1f0fca84c1d1dcbd65e25531a5ac56fb8791",
+        "seed_prompts_catalog.mjs": "82ca7428b2714c7419ba07f10f7ec7b1645c79d795753baa4272b27d6a65cd1a",
         "sidecar.json": "29b9c1c6f8b8ca7b60714ba43a648788b1e044a5f8b7018c39191c9999d4ac02",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
+        "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917",
+        "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b",
+        "assets/clawy_mascot.png": "5e7c18d4a1fa045d580d2366e713dcf099f3c15963c33fb3ab98490d2f448b63",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
@@ -419,18 +371,18 @@
       "plugin": "wv-second-brain",
       "sidecar": "wv-antigravity-ui",
       "files": {
-        "antigravity_updates.mjs": "10dccfb68ae93f742caef238edfb6767d1057b5487bfb8e74f5af8075ff43f0a",
-        "app.js": "a8e708dc5a63919197a12048f50c6a9b3d011053b42b7bb7b6838a0ca80de69a",
-        "index.html": "de9b1d2e453b9f6620299754a60a6a00922f759eeeca66be34bb1b1baca03db0",
+        "antigravity_updates.mjs": "b2a917833ffbd6b17a6cc032ae33431ae4aeb9bae688df9dd085e98d7006495e",
+        "app.js": "48d6fcc0e8c51f5d4e143ac0e27223f750514df54734718721d45a8794512ac1",
+        "index.html": "57e7179fb052e17f8c28d1c9b83ae3999aaf1ba80341d4a0891135ea262670a3",
         "main.mjs": "950a30a84f849a82ae2244128e99cf91ae72444e507fc479804baef7eac28b0d",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "52a6db867ba5aa3eae6296de3a1c1f0fca84c1d1dcbd65e25531a5ac56fb8791",
-        "sidecar.json": "a6060ac6c8c5d14f415f02099e43297b71daa9660e160cfb5e44148a35d4d3eb",
+        "seed_prompts_catalog.mjs": "82ca7428b2714c7419ba07f10f7ec7b1645c79d795753baa4272b27d6a65cd1a",
+        "sidecar.json": "8e18c4b82b96a5d0860c10aeb19594b6d63fbe4be979f38a92dd2a88f6805671",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917",
-        "tokeneconomics_and_updates_ui.js": "ce6f36471aceb4b2ea5fea53610a3132f490066c34b79c2a36e3cda3cc924f31",
+        "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b",
+        "tokeneconomics_and_updates_ui.js": "9fe65c6ad25c8ff53781210618cbb04b66511d37fe355bc5b5e0bcdd6b0b2e58",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",

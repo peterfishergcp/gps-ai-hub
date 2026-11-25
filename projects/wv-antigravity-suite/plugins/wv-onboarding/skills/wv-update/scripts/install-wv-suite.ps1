@@ -1,12 +1,13 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.1.3).
+  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.0).
 .DESCRIPTION
   Adheres strictly to WV corporate laptop standards (Windows 11 / PowerShell 5.1, zero admin rights,
   zero standalone Node/Python/Git/Docker required, zero files created outside $HOME\.gemini\config\,
-  zero %TEMP% writes, and zero local MCP subprocesses). Installs all 8 WV plugins (3 UI extensions:
-  WV Antigravity, WV Skills, WV Preview; wv-automations opt-in/disabled by default), writes BOM-free
-  UTF-8 JSON configs, and preserves user skill toggles & GE settings.
+  zero %TEMP% writes, and zero local MCP subprocesses). Installs all 7 WV plugins (3 UI panels:
+  WV My Hub, WV Skills [with inline Ask Clawy], WV Preview; wv-automations opt-in/disabled by default),
+  auto-cleans deprecated legacy plugins (wv-connectors, wv-coordinator) on upgrade, writes BOM-free
+  UTF-8 JSON configs, and preserves user skill toggles & Personal Memory.
 #>
 [CmdletBinding()]
 param(
@@ -27,7 +28,6 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
@@ -36,14 +36,10 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $TargetConfigDir = Join-Path $UserHome ".gemini\config"
 }
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
-$PluginDataDir = Join-Path $TargetConfigDir "plugin_data\wv-connectors"
 $MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\wv-antigravity\memory"
-$CoordDataDir = Join-Path $TargetConfigDir "plugin_data\wv-coordinator"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
-New-Item -ItemType Directory -Force -Path $PluginDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
-New-Item -ItemType Directory -Force -Path $CoordDataDir | Out-Null
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)
@@ -90,7 +86,7 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "wv-antigravity-suite.zip"
-    Write-Host "Downloading WV Antigravity Suite v2.1.3 (<500 KB)..." -ForegroundColor Cyan
+    Write-Host "Downloading WV Antigravity Suite v2.3.0..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
@@ -120,6 +116,14 @@ try {
     throw "Could not locate plugins/ directory to install."
   }
 
+  # Clean up deprecated plugins from pre-v2.3.0 installs so orphaned sidebar icons disappear cleanly
+  foreach ($legacyP in @("wv-connectors", "wv-coordinator")) {
+    $legacyPath = Join-Path $PluginsDest $legacyP
+    if (Test-Path $legacyPath) {
+      Remove-Item -Recurse -Force -Path $legacyPath
+    }
+  }
+
   $InstalledNames = @()
   foreach ($dir in (Get-ChildItem -Path $SourcePluginsDir -Directory)) {
     if ($dir.Name.StartsWith(".")) { continue }
@@ -139,18 +143,6 @@ try {
     $InstalledNames += $dir.Name
   }
   Write-Host ("Installed {0} WV zero-footprint plugins to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
-
-  if (-not [string]::IsNullOrWhiteSpace($GeInstance)) {
-    $GeConfigPath = Join-Path $PluginDataDir "ge-instance.json"
-    $Payload = @{
-      rawInput          = $GeInstance
-      oauthClientId     = $OAuthClientId
-      oauthClientSecret = $OAuthClientSecret
-      updatedAt         = (Get-Date).ToUniversalTime().ToString("o")
-    } | ConvertTo-Json -Depth 4
-    [System.IO.File]::WriteAllText($GeConfigPath, ($Payload + "`n"), $Utf8NoBom)
-    Write-Host "Saved BOM-free Gemini Enterprise instance to $GeConfigPath" -ForegroundColor Green
-  }
 
   $LedgerPath = Join-Path $TargetConfigDir "plugin_data\wv-onboarding\skill-toggles.json"
   if (Test-Path $LedgerPath) {

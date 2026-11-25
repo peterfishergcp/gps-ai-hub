@@ -46,7 +46,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Google Antigravity Plugin Suite — Complete Tour',
     summary:
-      'Practical tour of where to click across WV Antigravity Overview, WV Clawy 🐻, Action Items, WV Skills & Personal Skills, TokenEconomics, and WV Preview.',
+      'Practical tour of where to click across WV My Hub Overview, Action Items, WV Skills (with Ask Clawy 🐻) & Personal Skills, TokenEconomics, and WV Preview.',
     url: 'https://www.youtube.com/watch?v=_VjZQ2_HkSA',
     tryLabel: 'Tour My Workspace →',
     tryPrompt:
@@ -60,7 +60,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'West Virginia Antigravity Suite — 60-Second Install & Turbo Mode Guide',
     summary:
-      'Step-by-step WV guide to pasting the wv-antigravity-suite command, using ⚡ Turbo during setup vs. 🔒 Default daily, and linking @wv.gov GE search.',
+      'Step-by-step WV guide to pasting the wv-antigravity-suite command, using ⚡ Turbo during setup vs. 🔒 Default daily, and enabling built-in Google Workspace connectors under Customizations.',
     url: 'https://www.youtube.com/watch?v=OjdnOHKMfNA',
     tryLabel: 'Run 60s Setup →',
     tryPrompt:
@@ -74,7 +74,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Using 1-Click Skills, Personal Skills & Visual Previews (Dashboards & Slides)',
     summary:
-      'How to run 40 ready-made skills in WV Skills, create your own Personal Skills (+ New Skill), and customize interactive Dashboards & 16:9 Slide Decks in WV Preview.',
+      'How to run 36 ready-made skills in WV Skills, ask Clawy 🐻 to find the right skill, create Personal Skills (+ New Skill), and export Dashboards & 16:9 Slide Decks in WV Preview.',
     url: 'https://www.youtube.com/watch?v=EBNOPmh48d0',
     tryLabel: 'Build Sample Deck →',
     tryPrompt:
@@ -102,11 +102,11 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'How to Use Clawy — Multi-Agent Command Center & Gemini Live Voice',
     summary:
-      'How to open WV Clawy 🐻, see which parallel chats Need You, click ↗ Pop Out for side-by-side split view, connect Kore Gemini Live voice, and track Goals.',
+      'Overview of multi-agent coordination and how Clawy 🐻 now lives right inside WV Skills to match skills and start focused chats in 1 click.',
     url: 'https://www.youtube.com/watch?v=TeWdmiyXnxo',
-    tryLabel: 'Open WV Clawy 🐻 →',
+    tryLabel: 'Run Daily Brief →',
     tryPrompt:
-      '/wv-coordinator Summarize my active agent conversations and show any items waiting on me.',
+      '/daily-brief Summarize my active priorities, open Action Items, and any follow-ups waiting on me.',
   },
 ];
 

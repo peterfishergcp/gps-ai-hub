@@ -32,10 +32,30 @@
       <div class="header-actions">
         <button type="button" class="btn-secondary" id="openConvBtn" hidden title="Jump to the conversation that created this deliverable">Open Chat</button>
         <button type="button" class="btn-secondary" id="refreshListBtn" title="Scan conversations &amp; reload visual deliverables">Refresh</button>
-        <button type="button" class="btn-secondary" id="printPdfBtn" disabled title="Print or Save as PDF">Print / PDF</button>
-        <button type="button" class="btn-primary" id="downloadStandaloneBtn" disabled>Download HTML ↗</button>
+        <button type="button" class="btn-secondary" id="printPdfBtn" disabled title="Open in an unsandboxed browser tab to Print or Save as PDF">Print / PDF</button>
+        <button type="button" class="btn-secondary" id="saveDownloadsBtn" disabled title="Save standalone .html directly to your Downloads folder">Save HTML</button>
+        <button type="button" class="btn-primary" id="openBrowserBtn" disabled title="Open full-screen in an unsandboxed browser tab">Open in Browser ↗</button>
       </div>
     </div>
+
+    <div class="artifact-finder-bar" id="artifactFinderBar" hidden>
+      <div class="artifact-picker-wrap">
+        <button type="button" class="btn-secondary artifact-picker-btn" id="artifactPickerBtn" aria-expanded="false">
+          All Artifacts (0) ▾
+        </button>
+        <div class="artifact-dropdown" id="artifactDropdown" hidden></div>
+      </div>
+      <div class="preview-search-box">
+        <span class="search-glyph" aria-hidden="true">⌕</span>
+        <input type="search" id="artifactSearchInput" placeholder="Search artifacts by title, type, or date..." autocomplete="off">
+      </div>
+      <select id="artifactSortSelect" class="preview-sort-select" aria-label="Sort deliverables">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="title">Title A–Z</option>
+      </select>
+    </div>
+
     <div class="filter-bar" id="kindFilterBar" hidden></div>
     <div class="tabs-bar" id="deliverableTabs" role="tablist" aria-label="Generated design deliverables"></div>
   </header>
@@ -46,7 +66,7 @@
       <p>Generate an interactive dashboard, 16:9 slide deck, or print-ready flyer in chat and click <strong>Refresh</strong>—or launch one in 1 click below:</p>
       <div class="starter-grid" id="starterGrid"></div>
     </div>
-    <iframe id="previewFrame" class="preview-frame" title="Rendered Visual Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals" hidden></iframe>
+    <iframe id="previewFrame" class="preview-frame" title="Rendered Visual Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
   </main>
 
   <div class="toast" id="statusToast" hidden></div>
