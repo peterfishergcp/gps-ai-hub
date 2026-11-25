@@ -1,7 +1,7 @@
 {
   "name": "wv-automations",
   "displayName": "WV Automations \u2014 Scheduled Routines (Opt-In)",
-  "version": "2.1.3",
+  "version": "2.3.2",
   "disabled": true,
   "description": "Opt-in background scheduled automations for Google Antigravity: Morning Kickoff Brief (/daily-brief), Twice-Daily Follow-Up Sweep (/followup-plan), Evening Notes Compactor (/meeting-notes), and Friday Weekly Impact (/weekly-impact). Ships disabled by default so background schedules only run when explicitly enabled.",
   "logo": "assets/logo.svg",

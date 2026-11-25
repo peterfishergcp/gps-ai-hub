@@ -1,12 +1,12 @@
 {
   "name": "wv-onboarding",
-  "displayName": "WV Skills \u2014 West Virginia Skill Manager & Connectors",
-  "version": "2.1.3",
-  "description": "Includes the clean WV Skills panel with AI Inbox styling & live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude 5.5 & Gemini 4 model guide (/model-guide), WV onboarding (/wv-onboard), morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /wv-update.",
+  "displayName": "WV Skills \u2014 36 Curated Skills, Ask Clawy & Personal Skills",
+  "version": "2.3.2",
+  "description": "Includes the clean WV Skills panel with AI Inbox styling, inline Ask Clawy bear assistant, live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude & Gemini model guide (/model-guide), WV onboarding (/wv-onboard), morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /wv-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /token-usage to retrieve my exact 5-hour, 24-hour, and 7-day token consumption and render an interactive usage dashboard",
     "Run /orchestrator-guide to see how best to select and prompt Orchestrator (Neon, Argon, Carbon) for fast execution and lower quota burn",
-    "Run /wv-onboard to set up my West Virginia agency role, Personal Memory, and Gemini Enterprise connection"
+    "Run /wv-onboard to set up my West Virginia agency role, Personal Memory, and built-in Google Workspace connectors"
   ]
 }

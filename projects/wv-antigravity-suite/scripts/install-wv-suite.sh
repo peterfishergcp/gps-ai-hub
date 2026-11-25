@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.1).
+# Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.2).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ — zero /tmp or /private/tmp writes,
 # zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
 # Automatically removes deprecated legacy plugins (wv-connectors, wv-coordinator) on upgrade.
@@ -87,7 +87,7 @@ if [[ -n "${ZIP_URL}" ]]; then
     exit 1
   fi
   init_stage_dir
-  echo "Downloading State of West Virginia Antigravity Suite v2.3.1..."
+  echo "Downloading State of West Virginia Antigravity Suite v2.3.2..."
   curl -fsSL "${ZIP_URL}" -o "${STAGE_DIR}/wv.zip"
   mkdir -p -m 700 "${STAGE_DIR}/extracted"
   validate_and_extract_zip "${STAGE_DIR}/wv.zip" "${STAGE_DIR}/extracted"
@@ -131,11 +131,30 @@ for pdir in "${SOURCE_PLUGINS_DIR}"/*; do
   COUNT=$((COUNT + 1))
 done
 
-if command -v pkill >/dev/null 2>&1; then
-  pkill -f "[n]ode .*wv-coordinator-ui/main.mjs" 2>/dev/null || true
-  pkill -f "[n]ode .*wv-antigravity-ui/main.mjs" 2>/dev/null || true
-  pkill -f "[n]ode .*wv-skill-manager/main.mjs" 2>/dev/null || true
-  pkill -f "[n]ode .*wv-design-preview/main.mjs" 2>/dev/null || true
-fi
+# Restart running WV sidecars cleanly so upgraded UI/API code loads immediately
+restart_wv_sidecars() {
+  if command -v pkill >/dev/null 2>&1; then
+    pkill -f "[w]v-sidecar=wv-" 2>/dev/null || true
+    pkill -f "[w]v-coordinator-ui/main.mjs" 2>/dev/null || true
+  fi
+  # Also catch pre-v2.3.2 sidecars invoked as `node ... main.mjs` whose CWD is inside ${PLUGINS_DEST}/wv-*
+  if command -v pgrep >/dev/null 2>&1; then
+    local pid cwd_path
+    for pid in $(pgrep -f "main\.mjs" 2>/dev/null || true); do
+      cwd_path=""
+      if [[ -L "/proc/${pid}/cwd" ]]; then
+        cwd_path="$(readlink "/proc/${pid}/cwd" 2>/dev/null || true)"
+      elif command -v lsof >/dev/null 2>&1; then
+        cwd_path="$(lsof -a -p "${pid}" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n 1 || true)"
+      fi
+      case "${cwd_path}" in
+        "${PLUGINS_DEST}"/wv-*)
+          kill "${pid}" 2>/dev/null || true
+          ;;
+      esac
+    done
+  fi
+}
+restart_wv_sidecars || true
 
-echo "Installed ${COUNT} zero-footprint WV plugins into ${PLUGINS_DEST} (3 UI panels: WV My Hub, WV Skills [with Ask Clawy], WV Preview)"
+echo "Installed ${COUNT} zero-footprint WV plugins (v2.3.2) into ${PLUGINS_DEST} (3 UI panels: WV My Hub, WV Skills [with Ask Clawy], WV Preview)"

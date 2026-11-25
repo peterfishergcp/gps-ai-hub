@@ -771,3 +771,99 @@ svg.brand-logo {
   padding: 5px 11px;
   cursor: pointer;
 }
+
+.search-clear-btn {
+  border: none;
+  background: transparent;
+  color: var(--pv-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 3px;
+  cursor: pointer;
+}
+
+.search-clear-btn:hover {
+  color: var(--pv-fg);
+}
+
+.artifact-new-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #10b981;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.save-confirm-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  font-size: 12px;
+}
+
+.save-confirm-banner[hidden] {
+  display: none;
+}
+
+:root[data-theme="dark"] .save-confirm-banner {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(52, 211, 153, 0.42);
+  color: #a7f3d0;
+}
+
+.save-confirm-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.save-confirm-badge {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.save-confirm-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  background: rgba(6, 95, 70, 0.08);
+  padding: 2px 7px;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+:root[data-theme="dark"] .save-confirm-path {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.save-confirm-tip {
+  font-size: 11.5px;
+  opacity: 0.9;
+}
+
+.save-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.save-confirm-btn {
+  padding: 4px 10px;
+  font-size: 11.5px;
+}

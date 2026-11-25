@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.1).
+  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.2).
 .DESCRIPTION
   Adheres strictly to WV corporate laptop standards (Windows 11 / PowerShell 5.1, zero admin rights,
   zero standalone Node/Python/Git/Docker required, zero files created outside $HOME\.gemini\config\,
@@ -86,7 +86,7 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "wv-antigravity-suite.zip"
-    Write-Host "Downloading WV Antigravity Suite v2.3.1..." -ForegroundColor Cyan
+    Write-Host "Downloading WV Antigravity Suite v2.3.2..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
@@ -142,7 +142,17 @@ try {
     Copy-Item -Recurse -Force -Path $dir.FullName -Destination $dest
     $InstalledNames += $dir.Name
   }
-  Write-Host ("Installed {0} WV zero-footprint plugins to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
+  Write-Host ("Installed {0} WV zero-footprint plugins (v2.3.2) to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
+
+  try {
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+      $_.CommandLine -and ($_.CommandLine -match '--wv-sidecar=wv-' -or $_.CommandLine -match 'wv-coordinator-ui')
+    } | ForEach-Object {
+      Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+  } catch {
+    # Non-fatal if CIM is restricted on locked-down workstations
+  }
 
   $LedgerPath = Join-Path $TargetConfigDir "plugin_data\wv-onboarding\skill-toggles.json"
   if (Test-Path $LedgerPath) {

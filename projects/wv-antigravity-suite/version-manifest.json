@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.3.1",
-  "updatedAt": "2026-11-25T20:10:00Z",
+  "suiteVersion": "2.3.2",
+  "updatedAt": "2026-11-25T20:38:00Z",
   "skillCount": 36,
   "skillManifest": {
     "automations": {
@@ -146,12 +146,12 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "76242a7d1647f10c",
+      "treeSha256": "73434a417dea0b27",
       "files": {
         "SKILL.md": "22414e8657626a7f14e06016e17c6517340b31010d9f4de9d9c7594219048804",
         "scripts/incremental-sync.mjs": "46dc51e124479a558fe112583ff9d49ee92b3ac00f3035c5a4147d9d3f0a20f4",
-        "scripts/install-wv-suite.ps1": "7aa7fdec660fcc19f0858e44f4eb8afb95ada3e5c1ae8c04bafc2278026ba019",
-        "scripts/install-wv-suite.sh": "02c4a6cbc41664ac008b0a1786dff76ea9314c61c16d7fe93a6182bb766d9ca7"
+        "scripts/install-wv-suite.ps1": "1ca7cb44c3da5480af8752768b6b7e8705c961e3c131427c34b93daeb1150572",
+        "scripts/install-wv-suite.sh": "77de0e9772eecedab6b60aabd6be440ee1bdd218ee0ddc45236c3feb6043deee"
       }
     },
     "followup-plan": {
@@ -332,13 +332,13 @@
       "plugin": "wv-design-studio",
       "sidecar": "wv-design-preview",
       "files": {
-        "app.js": "c437124c44acd243c0f07608c4422cce31d37de4edcf2a9ba761676e7a221040",
-        "index.html": "1061d083682142fdbbe17f488683a4b509a6b7861f489df5fa4ac862bfd5a327",
+        "app.js": "398c47bf8c7e6d39b41f9ef7c94946464c3ae30f1d812fd4527be0b63aea5a46",
+        "index.html": "d137656f9f5de87f91b158bcfcd702d63ed0d365b515ceea647ecc1e856c9d7c",
         "main.mjs": "e8393d8155365426a0458b9ccb51d1c08cd777b066ff552426551565a9de9a03",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
-        "sidecar.json": "5919df74fce6f3d78335f1369ced632fd32fe7eaf0242f027452599002521940",
+        "sidecar.json": "bf600d3d819920bedcf8f7ab983faf69d1300d9d2c6e47c3845bffb1a2f0a148",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "92a37f0b1a85d6347db51ff01f9cd6d111bef96eb7d0c6f8ca04357d654647b6",
+        "styles.css": "972de8d5b6f0b2a4fb6da28708b569338a4edbdf44afb87d731b4d2b8fa5b8bd",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b"
       }
@@ -352,7 +352,7 @@
         "main.mjs": "f7d50a0df3931d126a023fce46e0e6408581cb9c9a9c41eacc523ae27acbc86c",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
         "seed_prompts_catalog.mjs": "f1a825c2653341c49107f595b211a55f8b78efdc3d9c42ef076c62f1d65dfb3d",
-        "sidecar.json": "29b9c1c6f8b8ca7b60714ba43a648788b1e044a5f8b7018c39191c9999d4ac02",
+        "sidecar.json": "d82ba5bc1d2b2a90c7aad31845d9305048be9ee9ff9ae4f6bc6a2d9c850b4f5c",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
@@ -377,7 +377,7 @@
         "main.mjs": "ffd092629f4ed3116b3dfecda3ac13a5fc6f9d0c745023343f8937c86099f0fd",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "82ca7428b2714c7419ba07f10f7ec7b1645c79d795753baa4272b27d6a65cd1a",
-        "sidecar.json": "8e18c4b82b96a5d0860c10aeb19594b6d63fbe4be979f38a92dd2a88f6805671",
+        "sidecar.json": "563089364ee82518b71127058cdec98e622195465d5e00331f124cf0c786348c",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
