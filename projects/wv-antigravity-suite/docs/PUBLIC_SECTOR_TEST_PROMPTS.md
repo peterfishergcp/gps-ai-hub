@@ -1,9 +1,9 @@
-# Government Services (`public_sector`) Skills — 7 Guided Test Prompts (`v2.0.0`)
+# Government Services (`public_sector`) Skills — 7 Guided Test Prompts (`v2.2.6`)
 
-These **7 guided test prompts** exercise every skill in the **`Government Services (public_sector) (7)`** category inside **`Extensions → WV Antigravity → Skills`** and **`Extensions → WV Skills`** (bundled inside your existing `wv-state-workflows` plugin—no extra plugin install required).
+These **7 guided test prompts** exercise every skill in the **`Government Services (public_sector) (7)`** category inside **`Extensions → WV Skills`** (bundled inside your existing `wv-state-workflows` plugin—no extra plugin install required).
 
 > [!TIP]
-> **New in `v2.0.0` — 1-Click Starter OR Full West Virginia Deep-Test Script:** Open **`Extensions → WV Antigravity → Skills`**, click the **`Government Services (public_sector) (7)`** filter pill, and click **`Run →`** on any card (**Option A** below) with zero copy-paste—or paste **Option B** when you want to test the full West Virginia county and statutory scenarios.
+> **New in `v2.2.6` — 1-Click Starter OR Full West Virginia Deep-Test Script:** Open **`Extensions → WV Skills`** (or click **`◫ Side Panel`** to dock it beside your chat), click the **`Government Services (public_sector) (7)`** filter pill, and click **`Run →`** on any card (**Option A** below) with zero copy-paste—or paste **Option B** when you want to test the full West Virginia county and statutory scenarios.
 
 ---
 
@@ -18,7 +18,7 @@ Because **no Federal Regulatory MCP server is attached by default on tester lapt
 | **PS-1:** `/document-intake-cleanup-and-validation` | **Yes — 100% Standalone** | Evaluates pasted/uploaded paystubs, leases, and residency proofs directly; runs deterministic gross-income math with zero MCP calls needed. |
 | **PS-2:** `/plain-language-notice-generator` | **Yes — 100% Standalone** | Rewrites pasted West Virginia public advisories into plain language while preserving 100% of dates, phone numbers, and regulatory citations. |
 | **PS-3:** `/public-records-redaction` | **Yes — 100% Standalone** | Redacts pasted records line-by-line using its bundled Federal + West Virginia statutory guide (**W. Va. Code § 29B-1-4**) with pinpoint citations and officer flags. |
-| **PS-4:** `/foia-request-processing` | **Yes (with Pasted Records or remote HTTPS Gemini Enterprise MCP)** | Treats pasted repository search hits (or remote HTTPS Gemini Enterprise MCP Federated GE results) as connected search results to build the 3-table officer report, and **correctly logs unconnected systems (e.g., ServiceNow / SMS) in `Gaps`**. |
+| **PS-4:** `/foia-request-processing` | **Yes (with Pasted Records or remote HTTPS Gemini Enterprise MCP / GE Companion)** | Treats pasted repository search hits (or remote HTTPS Gemini Enterprise MCP Federated GE results) as connected search results to build the 3-table officer report, and **correctly logs unconnected systems (e.g., ServiceNow / SMS) in `Gaps`**. |
 | **PS-5:** `/rfp-vendor-evaluation` | **Yes — Partial External Flag by Design** | Evaluates pasted vendor proposals against the RFP rubric and builds a cited compliance matrix, while **intentionally marking external database checks (federal debarment / exclusions) as `Cannot Verify — No External Connector`**. |
 | **PS-6:** `/expense-auditor` | **Tier-2 `.gov` Web Fallback (or Pasted Rules)** | Looks for a Federal Regulatory MCP (`2 CFR Part 200`) first; when absent, falls back to official `.gov` web lookup if internet search is enabled—or flags unverified rate lookups cleanly while auditing all ledger math. |
 | **PS-7:** `/policy-and-statute-assistant` | **Strict Anti-Hallucination Gate (Web Fallback or Timeout Banner)** | Looks for the Federal Regulatory MCP first, then official `.gov` search. **If neither an MCP server nor `.gov` web search is reachable, it intentionally refuses to quote statutes from model memory** and outputs `[⚠️ RETRIEVAL TIMEOUT: Official endpoint unreachable...]` + a drafted Policy Clarification Request (`PCR`). **Seeing that banner offline means the safety gate passed!** |
@@ -27,7 +27,7 @@ Because **no Federal Regulatory MCP server is attached by default on tester lapt
 
 ## Prompt PS-1 — Public Sector Document Intake & Validation (`/document-intake-cleanup-and-validation`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /document-intake-cleanup-and-validation Simulate an intake validation check on two biweekly paystubs ($1,420.50 and $1,485.00 gross) and a residential lease, verifying prospective monthly gross income math and missing proofs.
@@ -38,7 +38,7 @@ Because **no Federal Regulatory MCP server is attached by default on tester lapt
 ```markdown
 /document-intake-cleanup-and-validation Act as an intake validation assistant for a West Virginia county constituent benefits & emergency utility assistance portal. Validate these 3 uploaded/OCR'd proof documents submitted by applicant "Marcus Vance (Kanawha County, WV)" and calculate prospective monthly gross income:
 1. Uploaded File: `Vance_Paystub_1_Oct2026.pdf` (Bi-weekly pay period: 10/01/2026 – 10/14/2026; Employer: Appalachian Logistics LLC, Charleston, WV; Regular Hours: 80.0 @ $21.50/hr = $1,720.00; Overtime: 4.0 hrs @ $32.25/hr = $129.00; Gross Pay: $1,849.00; YTD Gross: $38,829.00; Optical quality: Clear, all corners visible).
-2. Uploaded File: `Vance_Paystub_2_Oct2026.pdf` (Bi-weekly pay period: 10/15/2026 – 10/28/2026; Employer: Appalachian Logistics LLC; Regular Hours: 80.0 @ $21.50/hr = $1,720.00; Overtime: 0.0 hrs; Gross Pay: $1,720.00; YTD Gross: $40,549.00; Optical quality: Clear).
+2. Uploaded File: `Vance_Paystub_2_Oct2026.pdf` (Bi-weekly pay period: 10/15/2026 – 10/28/2026; Employer: Appalachian Logistics LLC, Charleston, WV; Regular Hours: 80.0 @ $21.50/hr = $1,720.00; Overtime: 0.0 hrs; Gross Pay: $1,720.00; YTD Gross: $40,549.00; Optical quality: Clear).
 3. Uploaded File: `Vance_Residential_Lease_2026.pdf` (Property: 412 Elk River Rd, Apt B, Charleston, WV 25301; Monthly Rent: $975.00; Term: 07/01/2026 – 06/30/2027; Page 1 of 3 and Page 2 of 3 present — Page 3 of 3 signature block is MISSING; Utility addendum blurred/illegible at bottom margin).
 Check math continuity across YTD totals, compute prospective monthly gross income using standard bi-weekly conversion rules, flag all document/signature defects, and format the structured intake validation summary for the caseworker.
 ```
@@ -47,7 +47,7 @@ Check math continuity across YTD totals, compute prospective monthly gross incom
 
 ## Prompt PS-2 — Plain Language Notice Generator (`/plain-language-notice-generator`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /plain-language-notice-generator Rewrite a dense agency water-system maintenance advisory into clear Grade-7 plain language while preserving every exact date, phone number, and statutory notice block.
@@ -64,7 +64,7 @@ Check math continuity across YTD totals, compute prospective monthly gross incom
 
 ## Prompt PS-3 — Public Records Redaction (`/public-records-redaction`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /public-records-redaction Demonstrate a first-pass segregability and redaction table on a sample incident intake memo containing constituent SSNs, personal cell numbers, and pre-decisional legal advice.
@@ -90,7 +90,7 @@ From: J. Miller, Senior Field Engineer (Work Email: j.miller@wv.gov | Work Desk:
 
 ## Prompt PS-4 — FOIA Request Processing (`/foia-request-processing`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /foia-request-processing Walk through a structured three-table first-pass FOIA officer report for a request seeking broadband grant scoring rubrics and correspondence from the last 90 days.
@@ -112,7 +112,7 @@ Confirm the governing West Virginia law, evaluate each record (in-scope vs. out-
 
 ## Prompt PS-5 — RFP Vendor Evaluation (`/rfp-vendor-evaluation`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /rfp-vendor-evaluation Build a structured RFP vendor evaluation matrix template comparing 3 bidder proposals across Mandatory Pass/Fail Gates, Technical Approach, Security/Compliance, and Cost.
@@ -145,7 +145,7 @@ SUBMITTED VENDOR PACKAGES:
 
 ## Prompt PS-6 — Expense Auditor (`/expense-auditor`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /expense-auditor Audit a sample 5-line federal grant expenditure voucher against 2 CFR Part 200 Uniform Guidance—flagging unallowable entertainment/refreshment costs, missing itemized receipts, and undocumented T&M hours.
@@ -174,7 +174,7 @@ SUBMITTED Q1 LEDGER (`Subrecipient_Q1_Ledger.csv`):
 
 ## Prompt PS-7 — Policy and Statute Assistant (`/policy-and-statute-assistant`)
 
-### Option A — 1-Click Starter (In `WV Antigravity → Skills` — No Copy-Paste)
+### Option A — 1-Click Starter (In `WV Skills` — No Copy-Paste)
 
 ```markdown
 /policy-and-statute-assistant Explain the authority hierarchy and pinpoint 2 CFR Part 200 citations governing emergency noncompetitive procurement vs. competitive sealed bids.
