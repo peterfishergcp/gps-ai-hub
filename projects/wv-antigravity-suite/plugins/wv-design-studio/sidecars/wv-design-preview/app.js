@@ -16,6 +16,7 @@
   var activeId = '';
   var activeDeliverable = null;
   var currentHtml = '';
+  var lastSavedPath = '';
   var toastTimer = null;
 
   var STARTERS = [
@@ -188,20 +189,80 @@
     return list;
   }
 
+  function isVeryRecent(tsMs) {
+    if (!tsMs) return false;
+    return Math.max(0, Date.now() - tsMs) <= 20 * 60 * 1000;
+  }
+
+  function hideSaveConfirmBanner() {
+    var banner = document.getElementById('saveConfirmBanner');
+    if (banner) banner.hidden = true;
+  }
+
+  function showSaveConfirmBanner(savedPath, fileName, customTip) {
+    lastSavedPath = String(savedPath || '');
+    var banner = document.getElementById('saveConfirmBanner');
+    var pathEl = document.getElementById('saveConfirmPath');
+    var tipEl = document.getElementById('saveConfirmTip');
+    if (!banner || !pathEl) return;
+    pathEl.textContent = lastSavedPath || ('Downloads/' + (fileName || 'deliverable.html'));
+    if (tipEl) {
+      tipEl.textContent =
+        customTip ||
+        'Open Finder / File Explorer \u2192 Downloads and double-click to view or print in Chrome, Safari, or Edge.';
+    }
+    banner.hidden = false;
+  }
+
+  function copyTextSafe(text) {
+    var str = String(text || '');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(str).then(
+        function () { return true; },
+        function () { return fallbackCopy(str); }
+      );
+    }
+    return Promise.resolve(fallbackCopy(str));
+  }
+
+  function fallbackCopy(str) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = str;
+      ta.setAttribute('readonly', 'readonly');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Boolean(ok);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function updateSubtitleAndButtons() {
     var sub = document.getElementById('previewSubtitle');
     var openBrowserBtn = document.getElementById('openBrowserBtn');
     var saveBtn = document.getElementById('saveDownloadsBtn');
-    var printBtn = document.getElementById('printPdfBtn');
     var openConvBtn = document.getElementById('openConvBtn');
     var finderBar = document.getElementById('artifactFinderBar');
     var pickerBtn = document.getElementById('artifactPickerBtn');
+    var searchIn = document.getElementById('artifactSearchInput');
+    var clearBtn = document.getElementById('clearSearchBtn');
 
     var visible = filteredDeliverables();
     if (finderBar) finderBar.hidden = deliverables.length === 0;
     if (pickerBtn) {
       pickerBtn.textContent = 'All Artifacts (' + visible.length + ') \u25BE';
       pickerBtn.setAttribute('aria-expanded', String(dropdownOpen));
+    }
+    if (searchIn && deliverables.length > 0) {
+      searchIn.placeholder = 'Search ' + deliverables.length + ' artifacts by title, type, or date...';
+    }
+    if (clearBtn) {
+      clearBtn.hidden = !String(searchQuery || '').trim();
     }
 
     if (sub) {
@@ -212,15 +273,14 @@
         sub.textContent =
           deliverables.length +
           (deliverables.length === 1 ? ' artifact' : ' artifacts') +
-          ' (newest first)' +
-          (latestStamp ? ' · Viewing: ' + latestStamp : '');
+          ' \u00B7 Newest first' +
+          (latestStamp ? ' \u00B7 Viewing: ' + latestStamp : '');
       }
     }
 
     var hasActive = Boolean(activeDeliverable && currentHtml);
     if (openBrowserBtn) openBrowserBtn.disabled = !hasActive;
     if (saveBtn) saveBtn.disabled = !hasActive;
-    if (printBtn) printBtn.disabled = !hasActive;
     if (openConvBtn) {
       var canJump = Boolean(
         activeDeliverable &&
@@ -259,12 +319,16 @@
       var left = el('span', 'artifact-dropdown-left');
       left.appendChild(el('span', 'tab-kind-tag', kindShortLabel(d.kind)));
       left.appendChild(el('span', 'artifact-dropdown-title', d.title || d.id));
+      if (isVeryRecent(ts)) {
+        left.appendChild(el('span', 'artifact-new-badge', 'NEW'));
+      }
       item.appendChild(left);
       item.appendChild(el('span', 'artifact-time-tag', formatRelativeStamp(ts)));
       item.addEventListener('click', function () {
         activeId = d.id;
         activeDeliverable = d;
         dropdownOpen = false;
+        hideSaveConfirmBanner();
         renderDropdown();
         renderTabs();
         loadSelectedPreview();
@@ -352,12 +416,16 @@
       btn.title = (d.title || d.id) + (stamp ? ' · ' + stamp : '') + (d.fileName ? ' (' + d.fileName + ')' : '');
       btn.appendChild(el('span', 'tab-kind-tag', kindShortLabel(d.kind)));
       btn.appendChild(el('span', '', d.title || d.id));
+      if (isVeryRecent(ts)) {
+        btn.appendChild(el('span', 'artifact-new-badge', 'NEW'));
+      }
       if (stamp) {
         btn.appendChild(el('span', 'artifact-time-tag', stamp));
       }
       btn.addEventListener('click', function () {
         activeId = d.id;
         activeDeliverable = d;
+        hideSaveConfirmBanner();
         renderTabs();
         renderDropdown();
         loadSelectedPreview();
@@ -450,8 +518,8 @@
     }
   }
 
-  async function saveToUserDownloads() {
-    if (!activeId) return;
+  async function saveToUserDownloads(customTip) {
+    if (!activeId) return false;
     try {
       var res = await sidecarFetch('/api/save-download', {
         method: 'POST',
@@ -460,7 +528,8 @@
       });
       var data = await res.json();
       if (data && data.ok) {
-        showToast('Saved to Downloads/' + data.fileName + ' — double-click to open in Chrome/Edge!');
+        showSaveConfirmBanner(data.savedPath, data.fileName, customTip);
+        showToast('Saved to Downloads/' + data.fileName);
         return true;
       }
       showToast('Save failed: ' + ((data && data.error) || 'Could not write to Downloads'));
@@ -474,20 +543,7 @@
     if (!activeId) return;
     var ok = openInUnsandboxedTab('/api/raw?id=' + encodeURIComponent(activeId), 'Opened full-screen in browser tab');
     if (!ok) {
-      saveToUserDownloads();
-    }
-  }
-
-  function handlePrintPdf() {
-    if (!activeId) return;
-    var ok = openInUnsandboxedTab(
-      '/api/raw?id=' + encodeURIComponent(activeId) + '&autoprint=1',
-      'Opened Print / Save as PDF view in browser tab'
-    );
-    if (!ok) {
-      saveToUserDownloads().then(function () {
-        showToast('Saved HTML to Downloads — open in Chrome/Edge and press Ctrl+P / Cmd+P to Save as PDF');
-      });
+      saveToUserDownloads('Browser pop-out was blocked — saved directly to Downloads so you can double-click to open in Chrome, Safari, or Edge.');
     }
   }
 
@@ -512,11 +568,6 @@
       });
     }
 
-    var printBtn = document.getElementById('printPdfBtn');
-    if (printBtn) {
-      printBtn.addEventListener('click', handlePrintPdf);
-    }
-
     var saveBtn = document.getElementById('saveDownloadsBtn');
     if (saveBtn) {
       saveBtn.addEventListener('click', function () {
@@ -529,6 +580,21 @@
       openBrowserBtn.addEventListener('click', handleOpenInBrowser);
     }
 
+    var copyPathBtn = document.getElementById('copySavedPathBtn');
+    if (copyPathBtn) {
+      copyPathBtn.addEventListener('click', function () {
+        if (!lastSavedPath) return;
+        copyTextSafe(lastSavedPath).then(function (copied) {
+          showToast(copied ? 'Copied Downloads path to clipboard' : lastSavedPath);
+        });
+      });
+    }
+
+    var dismissSaveBtn = document.getElementById('dismissSaveBannerBtn');
+    if (dismissSaveBtn) {
+      dismissSaveBtn.addEventListener('click', hideSaveConfirmBanner);
+    }
+
     var searchIn = document.getElementById('artifactSearchInput');
     if (searchIn) {
       searchIn.addEventListener('input', function () {
@@ -538,6 +604,20 @@
         if (filteredDeliverables().length > 0) {
           loadSelectedPreview();
         }
+      });
+    }
+
+    var clearSearchBtn = document.getElementById('clearSearchBtn');
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', function () {
+        searchQuery = '';
+        if (searchIn) searchIn.value = '';
+        renderTabs();
+        renderDropdown();
+        if (filteredDeliverables().length > 0) {
+          loadSelectedPreview();
+        }
+        if (searchIn) searchIn.focus();
       });
     }
 
@@ -576,10 +656,13 @@
       if (!frame || ev.source !== frame.contentWindow) return;
       if (!ev.data || ev.data.type !== 'wv-preview-action') return;
       if (ev.data.action === 'print') {
-        handlePrintPdf();
-      } else if (ev.data.action === 'save-downloads') {
-        saveToUserDownloads();
-      } else if (ev.data.action === 'open' || ev.data.action === 'open-or-save' || ev.data.action === 'download') {
+        saveToUserDownloads('Saved to Downloads — open in Chrome, Safari, or Edge and press Cmd+P / Ctrl+P to print or save as PDF.');
+      } else if (
+        ev.data.action === 'save-downloads' ||
+        ev.data.action === 'open' ||
+        ev.data.action === 'open-or-save' ||
+        ev.data.action === 'download'
+      ) {
         saveToUserDownloads();
       }
     });

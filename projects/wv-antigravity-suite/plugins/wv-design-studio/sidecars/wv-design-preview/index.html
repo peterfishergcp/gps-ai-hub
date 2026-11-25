@@ -32,9 +32,8 @@
       <div class="header-actions">
         <button type="button" class="btn-secondary" id="openConvBtn" hidden title="Jump to the conversation that created this deliverable">Open Chat</button>
         <button type="button" class="btn-secondary" id="refreshListBtn" title="Scan conversations &amp; reload visual deliverables">Refresh</button>
-        <button type="button" class="btn-secondary" id="printPdfBtn" disabled title="Open in an unsandboxed browser tab to Print or Save as PDF">Print / PDF</button>
-        <button type="button" class="btn-secondary" id="saveDownloadsBtn" disabled title="Save standalone .html directly to your Downloads folder">Save HTML</button>
-        <button type="button" class="btn-primary" id="openBrowserBtn" disabled title="Open full-screen in an unsandboxed browser tab">Open in Browser ↗</button>
+        <button type="button" class="btn-secondary" id="openBrowserBtn" disabled title="Open full-screen in an unsandboxed browser tab">Open in Browser ↗</button>
+        <button type="button" class="btn-primary" id="saveDownloadsBtn" disabled title="Save standalone .html file directly into your Downloads folder">Save to Downloads ↓</button>
       </div>
     </div>
 
@@ -48,12 +47,25 @@
       <div class="preview-search-box">
         <span class="search-glyph" aria-hidden="true">⌕</span>
         <input type="search" id="artifactSearchInput" placeholder="Search artifacts by title, type, or date..." autocomplete="off">
+        <button type="button" id="clearSearchBtn" class="search-clear-btn" hidden aria-label="Clear search">×</button>
       </div>
       <select id="artifactSortSelect" class="preview-sort-select" aria-label="Sort deliverables">
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
         <option value="title">Title A–Z</option>
       </select>
+    </div>
+
+    <div class="save-confirm-banner" id="saveConfirmBanner" role="status" aria-live="polite" hidden>
+      <div class="save-confirm-main">
+        <span class="save-confirm-badge">✓ Saved to Downloads</span>
+        <code class="save-confirm-path" id="saveConfirmPath"></code>
+        <span class="save-confirm-tip" id="saveConfirmTip">Open Finder / File Explorer → Downloads and double-click to view or print in Chrome, Safari, or Edge.</span>
+      </div>
+      <div class="save-confirm-actions">
+        <button type="button" class="btn-secondary save-confirm-btn" id="copySavedPathBtn">Copy Path</button>
+        <button type="button" class="btn-secondary save-confirm-btn" id="dismissSaveBannerBtn" aria-label="Dismiss notice">×</button>
+      </div>
     </div>
 
     <div class="filter-bar" id="kindFilterBar" hidden></div>

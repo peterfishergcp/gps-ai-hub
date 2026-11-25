@@ -1,7 +1,8 @@
 {
   "command": "node",
   "args": [
-    "main.mjs"
+    "main.mjs",
+    "--wv-sidecar=wv-antigravity-ui"
   ],
   "restart_policy": "always",
   "display_name": "WV My Hub",
