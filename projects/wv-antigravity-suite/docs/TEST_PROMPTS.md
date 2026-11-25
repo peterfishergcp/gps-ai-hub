@@ -18,7 +18,7 @@ Welcome to **Version 2.2.6** of the **State of West Virginia Antigravity Suite**
 
 ## Quick 3-Step Setup (Zero-Footprint State Laptop Standard)
 
-1. **Step 1 — Sign In to Antigravity Desktop (`@wv.gov` Business Account):** Open the interactive [West Virginia Antigravity v2.2.6 Launchpad](../workshop/index.html) in Chrome or Edge.
+1. **Step 1 — Sign In to Antigravity Desktop (`@wv.gov` Business Account):** Follow the [7-Step WV Antigravity Sign-In Guide](https://serve-dot-zipline.appspot.com/asset/18726ad2-eb6d-5295-baf2-86442bb8f3df/zpc/gktu4puu98z/), or open the interactive [West Virginia Antigravity v2.2.6 Launchpad](../workshop/index.html) in Chrome or Edge.
 2. **Step 2 — Install the `v2.2.6` Suite (From a New Conversation in Antigravity):** Click **`+ New Conversation`**, optionally switch **`Request Review`** (bottom-right of the prompt box) to **`Turbo`** during setup so you are not prompted 9 times (then switch back to **`Default`** once complete), and paste:
 
 ```text
