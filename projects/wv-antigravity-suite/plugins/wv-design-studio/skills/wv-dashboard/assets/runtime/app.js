@@ -1245,6 +1245,11 @@
     var printBtn = document.getElementById('printViewBtn');
     if (printBtn) {
       printBtn.addEventListener('click', function () {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'wv-preview-action', action: 'print' }, '*');
+          showToast('Opening Print / Save as PDF view (if inside chat preview, open WV Preview in left sidebar for 1-click PDF)');
+          return;
+        }
         window.print();
       });
     }
@@ -1306,6 +1311,11 @@
     var dlHtmlBtn = document.getElementById('downloadHtmlBtn');
     if (dlHtmlBtn) {
       dlHtmlBtn.addEventListener('click', function () {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'wv-preview-action', action: 'save-downloads' }, '*');
+          showToast('Exporting HTML — if inside chat preview, open WV Preview in the left sidebar for 1-click Save HTML & Open in Browser');
+          return;
+        }
         var inlineEl = document.getElementById('initial-data');
         if (inlineEl && state.config && state.snapshot) {
           inlineEl.textContent = JSON.stringify({ config: state.config, snapshot: state.snapshot }).replace(/</g, '\\u003c');
@@ -1320,7 +1330,7 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        showToast('Downloaded wv-dashboard-standalone.html — click it in your browser downloads bar to open in Chrome/Edge!');
+        showToast('Downloaded wv-dashboard-standalone.html — open directly in Chrome or Edge!');
       });
     }
 

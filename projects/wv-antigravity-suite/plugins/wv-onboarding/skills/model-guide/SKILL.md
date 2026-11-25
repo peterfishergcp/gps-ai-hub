@@ -38,7 +38,7 @@ Help Public Sector staff, engineers, and agency IT administrators get the best r
   ```bash
   agy --model claude-sonnet-5-5 --effort high
   ```
-- **Check Quota, Token Telemetry & Credit Usage:** Run **`/token-usage`** in chat to scan your exact local 5h/24h/7d token consumption (or hover over the live **`in | out | thinking`** pill in **`WV Antigravity`**, **`Skills`**, or **`Preview`**), click **Model Selector -> `View Usage`** in Desktop, or run **`/usage`** and **`/credits`** in `agy` CLI.
+- **Check Quota, Token Telemetry & Credit Usage:** Run **`/token-usage`** in chat to scan your exact local 5h/24h/7d token consumption (or hover over the live **`in | out | thinking`** pill in **`WV My Hub`**, **`WV Skills`**, or **`WV Preview`**), click **Model Selector -> `View Usage`** in Desktop, or run **`/usage`** and **`/credits`** in `agy` CLI.
 
 ---
 

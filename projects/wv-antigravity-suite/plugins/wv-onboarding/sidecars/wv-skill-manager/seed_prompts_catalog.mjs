@@ -91,16 +91,6 @@ const WV_CATEGORIES = {
     categoryLabel: 'WV Onboarding, Token Telemetry & Triage',
     chipLabel: 'WV Onboarding',
   },
-  'wv-coordinator': {
-    order: 15,
-    categoryLabel: 'WV Clawy — Multi-Agent Voice & Sprint Coordinator',
-    chipLabel: 'WV Clawy',
-  },
-  'wv-connectors': {
-    order: 20,
-    categoryLabel: 'WV Gemini Enterprise & Cloud Connectors',
-    chipLabel: 'WV Connectors',
-  },
   'wv-design-studio': {
     order: 30,
     categoryLabel: 'WV Design Studio — Dashboards, Slides & Docs',
@@ -561,7 +551,6 @@ export const SUITE_PLUGIN_SETS = {
     'agy-second-brain',
     'agy-twin-automations',
     'wv-onboarding',
-    'wv-connectors',
     'wv-design-studio',
     'wv-state-workflows',
     'wv-engineering-cloud',

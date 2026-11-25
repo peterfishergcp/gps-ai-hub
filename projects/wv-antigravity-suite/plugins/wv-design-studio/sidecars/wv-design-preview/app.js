@@ -1,12 +1,18 @@
 /**
- * Preview — Antigravity Visual Deliverable Frontend
- * Pure DOM API construction (createElement + textContent + replaceChildren).
+ * WV Preview — Antigravity Visual Deliverable Frontend (v2.3.0)
+ * - Newest-first sorting with Search, Sort toggle & Today/Yesterday/Earlier dropdown picker
+ * - Working Open in Browser, Print / PDF (unsandboxed tab), and Save HTML (~/Downloads)
+ * - postMessage bridge so buttons inside embedded dashboards/slides/flyers work too!
+ * - 100% Pure DOM API construction (createElement + textContent + replaceChildren).
  */
 (function () {
   'use strict';
 
   var deliverables = [];
   var selectedKind = 'all';
+  var searchQuery = '';
+  var sortMode = 'newest';
+  var dropdownOpen = false;
   var activeId = '';
   var activeDeliverable = null;
   var currentHtml = '';
@@ -46,12 +52,71 @@
     t.textContent = msg;
     t.hidden = false;
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3400);
   }
 
   function sidecarFetch(url, opts) {
     var fn = (window.sidecar && window.sidecar.fetch) ? window.sidecar.fetch : window.fetch.bind(window);
     return fn(url, opts);
+  }
+
+  function getTimestampMs(d) {
+    if (!d) return 0;
+    if (typeof d.mtimeMs === 'number' && d.mtimeMs > 0) return d.mtimeMs;
+    if (d.updatedAt) {
+      var parsed = Date.parse(d.updatedAt);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return 0;
+  }
+
+  function formatRelativeStamp(tsMs) {
+    if (!tsMs) return '';
+    var now = Date.now();
+    var diff = Math.max(0, now - tsMs);
+    var mins = Math.floor(diff / 60000);
+    if (mins < 2) return 'Just now';
+    if (mins < 60) return mins + 'm ago';
+    var dt = new Date(tsMs);
+    var today = new Date(now);
+    var sameDay =
+      dt.getFullYear() === today.getFullYear() &&
+      dt.getMonth() === today.getMonth() &&
+      dt.getDate() === today.getDate();
+    if (sameDay) {
+      return 'Today ' + dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+    var yest = new Date(now - 86400000);
+    var isYest =
+      dt.getFullYear() === yest.getFullYear() &&
+      dt.getMonth() === yest.getMonth() &&
+      dt.getDate() === yest.getDate();
+    if (isYest) return 'Yesterday';
+    return dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  function dateGroupLabel(tsMs) {
+    if (!tsMs) return 'Earlier';
+    var now = Date.now();
+    var dt = new Date(tsMs);
+    var today = new Date(now);
+    if (
+      dt.getFullYear() === today.getFullYear() &&
+      dt.getMonth() === today.getMonth() &&
+      dt.getDate() === today.getDate()
+    ) {
+      return 'Today';
+    }
+    var yest = new Date(now - 86400000);
+    if (
+      dt.getFullYear() === yest.getFullYear() &&
+      dt.getMonth() === yest.getMonth() &&
+      dt.getDate() === yest.getDate()
+    ) {
+      return 'Yesterday';
+    }
+    if (now - tsMs < 7 * 86400000) return 'This Week';
+    return 'Earlier';
   }
 
   async function launchStarterPrompt(promptText, cmd) {
@@ -101,26 +166,60 @@
   }
 
   function filteredDeliverables() {
-    if (selectedKind === 'all') return deliverables;
-    return deliverables.filter(function (d) { return d.kind === selectedKind; });
+    var q = (searchQuery || '').trim().toLowerCase();
+    var list = deliverables.filter(function (d) {
+      if (selectedKind !== 'all' && d.kind !== selectedKind) return false;
+      if (!q) return true;
+      var hay = [
+        d.title || '',
+        d.fileName || '',
+        kindShortLabel(d.kind),
+        formatRelativeStamp(getTimestampMs(d)),
+        d.updatedAt || ''
+      ].join(' ').toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+
+    list.sort(function (a, b) {
+      if (sortMode === 'oldest') return getTimestampMs(a) - getTimestampMs(b);
+      if (sortMode === 'title') return String(a.title || '').localeCompare(String(b.title || ''));
+      return getTimestampMs(b) - getTimestampMs(a);
+    });
+    return list;
   }
 
   function updateSubtitleAndButtons() {
     var sub = document.getElementById('previewSubtitle');
-    var dlBtn = document.getElementById('downloadStandaloneBtn');
+    var openBrowserBtn = document.getElementById('openBrowserBtn');
+    var saveBtn = document.getElementById('saveDownloadsBtn');
     var printBtn = document.getElementById('printPdfBtn');
     var openConvBtn = document.getElementById('openConvBtn');
+    var finderBar = document.getElementById('artifactFinderBar');
+    var pickerBtn = document.getElementById('artifactPickerBtn');
+
+    var visible = filteredDeliverables();
+    if (finderBar) finderBar.hidden = deliverables.length === 0;
+    if (pickerBtn) {
+      pickerBtn.textContent = 'All Artifacts (' + visible.length + ') \u25BE';
+      pickerBtn.setAttribute('aria-expanded', String(dropdownOpen));
+    }
 
     if (sub) {
       if (deliverables.length === 0) {
         sub.textContent = 'Dashboards, 16:9 Slides & Branded Docs';
       } else {
-        sub.textContent = deliverables.length + (deliverables.length === 1 ? ' deliverable captured' : ' deliverables captured') + ' · Click any pill to preview';
+        var latestStamp = activeDeliverable ? formatRelativeStamp(getTimestampMs(activeDeliverable)) : '';
+        sub.textContent =
+          deliverables.length +
+          (deliverables.length === 1 ? ' artifact' : ' artifacts') +
+          ' (newest first)' +
+          (latestStamp ? ' · Viewing: ' + latestStamp : '');
       }
     }
 
     var hasActive = Boolean(activeDeliverable && currentHtml);
-    if (dlBtn) dlBtn.disabled = !hasActive;
+    if (openBrowserBtn) openBrowserBtn.disabled = !hasActive;
+    if (saveBtn) saveBtn.disabled = !hasActive;
     if (printBtn) printBtn.disabled = !hasActive;
     if (openConvBtn) {
       var canJump = Boolean(
@@ -132,6 +231,46 @@
       );
       openConvBtn.hidden = !canJump;
     }
+  }
+
+  function renderDropdown() {
+    var menu = document.getElementById('artifactDropdown');
+    if (!menu) return;
+    menu.hidden = !dropdownOpen;
+    if (!dropdownOpen) return;
+    menu.replaceChildren();
+
+    var visible = filteredDeliverables();
+    if (!visible.length) {
+      menu.appendChild(el('div', 'artifact-group-label', 'No matching artifacts'));
+      return;
+    }
+
+    var lastGroup = '';
+    visible.forEach(function (d) {
+      var ts = getTimestampMs(d);
+      var grp = sortMode === 'title' ? 'Alphabetical' : dateGroupLabel(ts);
+      if (grp !== lastGroup) {
+        lastGroup = grp;
+        menu.appendChild(el('div', 'artifact-group-label', grp));
+      }
+      var item = el('button', 'artifact-dropdown-item' + (d.id === activeId ? ' active' : ''));
+      item.type = 'button';
+      var left = el('span', 'artifact-dropdown-left');
+      left.appendChild(el('span', 'tab-kind-tag', kindShortLabel(d.kind)));
+      left.appendChild(el('span', 'artifact-dropdown-title', d.title || d.id));
+      item.appendChild(left);
+      item.appendChild(el('span', 'artifact-time-tag', formatRelativeStamp(ts)));
+      item.addEventListener('click', function () {
+        activeId = d.id;
+        activeDeliverable = d;
+        dropdownOpen = false;
+        renderDropdown();
+        renderTabs();
+        loadSelectedPreview();
+      });
+      menu.appendChild(item);
+    });
   }
 
   function renderKindFilter() {
@@ -173,6 +312,7 @@
         selectedKind = k;
         renderKindFilter();
         renderTabs();
+        renderDropdown();
         loadSelectedPreview();
       });
       bar.appendChild(chip);
@@ -203,21 +343,29 @@
     activeDeliverable = visible.find(function (d) { return d.id === activeId; }) || visible[0];
 
     visible.forEach(function (d) {
+      var ts = getTimestampMs(d);
+      var stamp = formatRelativeStamp(ts);
       var btn = el('button', 'tab-pill' + (d.id === activeId ? ' active' : ''));
       btn.type = 'button';
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-selected', String(d.id === activeId));
-      btn.title = (d.title || d.id) + (d.fileName ? ' (' + d.fileName + ')' : '');
+      btn.title = (d.title || d.id) + (stamp ? ' · ' + stamp : '') + (d.fileName ? ' (' + d.fileName + ')' : '');
       btn.appendChild(el('span', 'tab-kind-tag', kindShortLabel(d.kind)));
       btn.appendChild(el('span', '', d.title || d.id));
+      if (stamp) {
+        btn.appendChild(el('span', 'artifact-time-tag', stamp));
+      }
       btn.addEventListener('click', function () {
         activeId = d.id;
         activeDeliverable = d;
         renderTabs();
+        renderDropdown();
         loadSelectedPreview();
       });
       bar.appendChild(btn);
     });
+
+    updateSubtitleAndButtons();
   }
 
   function loadSelectedPreview() {
@@ -249,19 +397,25 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (!data || !data.ok) return;
+        var prevTopId = deliverables.length > 0 ? deliverables[0].id : '';
         deliverables = Array.isArray(data.deliverables) ? data.deliverables : [];
+        // Auto-jump to newest deliverable when a brand-new artifact appears on Refresh
+        if (deliverables.length > 0 && (!activeId || (isManualRefresh && deliverables[0].id !== prevTopId))) {
+          activeId = deliverables[0].id;
+        }
         if (selectedKind !== 'all' && !deliverables.some(function (d) { return d.kind === selectedKind; })) {
           selectedKind = 'all';
         }
         renderKindFilter();
         renderTabs();
+        renderDropdown();
         if (deliverables.length > 0) {
           loadSelectedPreview();
         }
         if (isManualRefresh) {
           showToast(
             deliverables.length > 0
-              ? 'Refreshed — ' + deliverables.length + (deliverables.length === 1 ? ' deliverable' : ' deliverables') + ' ready'
+              ? 'Refreshed — ' + deliverables.length + ' artifacts sorted newest first'
               : 'No HTML deliverables found yet'
           );
         }
@@ -269,13 +423,72 @@
       .catch(function () {});
   }
 
-  function buildDownloadFilename() {
-    if (activeDeliverable && activeDeliverable.fileName) {
-      return activeDeliverable.fileName;
+  function openInUnsandboxedTab(urlPath, fallbackLabel) {
+    var fullUrl = new URL(urlPath, window.location.origin).href;
+    var opened = null;
+    try {
+      opened = window.open(fullUrl, '_blank', 'noopener');
+    } catch (_) {
+      opened = null;
     }
-    var raw = (activeDeliverable && activeDeliverable.title) ? activeDeliverable.title : (activeId || 'antigravity-deliverable');
-    var slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
-    return (slug || 'antigravity-deliverable') + '.html';
+    if (opened) {
+      showToast(fallbackLabel || 'Opened in browser tab');
+      return true;
+    }
+    try {
+      var a = document.createElement('a');
+      a.href = fullUrl;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast(fallbackLabel || 'Opened in browser tab');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function saveToUserDownloads() {
+    if (!activeId) return;
+    try {
+      var res = await sidecarFetch('/api/save-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: activeId })
+      });
+      var data = await res.json();
+      if (data && data.ok) {
+        showToast('Saved to Downloads/' + data.fileName + ' — double-click to open in Chrome/Edge!');
+        return true;
+      }
+      showToast('Save failed: ' + ((data && data.error) || 'Could not write to Downloads'));
+    } catch (err) {
+      showToast('Could not save to Downloads — try Open in Browser instead.');
+    }
+    return false;
+  }
+
+  function handleOpenInBrowser() {
+    if (!activeId) return;
+    var ok = openInUnsandboxedTab('/api/raw?id=' + encodeURIComponent(activeId), 'Opened full-screen in browser tab');
+    if (!ok) {
+      saveToUserDownloads();
+    }
+  }
+
+  function handlePrintPdf() {
+    if (!activeId) return;
+    var ok = openInUnsandboxedTab(
+      '/api/raw?id=' + encodeURIComponent(activeId) + '&autoprint=1',
+      'Opened Print / Save as PDF view in browser tab'
+    );
+    if (!ok) {
+      saveToUserDownloads().then(function () {
+        showToast('Saved HTML to Downloads — open in Chrome/Edge and press Ctrl+P / Cmd+P to Save as PDF');
+      });
+    }
   }
 
   function init() {
@@ -301,31 +514,75 @@
 
     var printBtn = document.getElementById('printPdfBtn');
     if (printBtn) {
-      printBtn.addEventListener('click', function () {
-        var frame = document.getElementById('previewFrame');
-        if (frame && frame.contentWindow && currentHtml) {
-          frame.contentWindow.focus();
-          frame.contentWindow.print();
+      printBtn.addEventListener('click', handlePrintPdf);
+    }
+
+    var saveBtn = document.getElementById('saveDownloadsBtn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function () {
+        saveToUserDownloads();
+      });
+    }
+
+    var openBrowserBtn = document.getElementById('openBrowserBtn');
+    if (openBrowserBtn) {
+      openBrowserBtn.addEventListener('click', handleOpenInBrowser);
+    }
+
+    var searchIn = document.getElementById('artifactSearchInput');
+    if (searchIn) {
+      searchIn.addEventListener('input', function () {
+        searchQuery = searchIn.value || '';
+        renderTabs();
+        renderDropdown();
+        if (filteredDeliverables().length > 0) {
+          loadSelectedPreview();
         }
       });
     }
 
-    var dlBtn = document.getElementById('downloadStandaloneBtn');
-    if (dlBtn) {
-      dlBtn.addEventListener('click', function () {
-        if (!currentHtml) return;
-        var blob = new Blob([currentHtml], { type: 'text/html;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = buildDownloadFilename();
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showToast('Downloaded ' + a.download + ' — open directly in Chrome or Edge');
+    var sortSel = document.getElementById('artifactSortSelect');
+    if (sortSel) {
+      sortSel.addEventListener('change', function () {
+        sortMode = sortSel.value || 'newest';
+        renderTabs();
+        renderDropdown();
       });
     }
+
+    var pickerBtn = document.getElementById('artifactPickerBtn');
+    if (pickerBtn) {
+      pickerBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        dropdownOpen = !dropdownOpen;
+        renderDropdown();
+        updateSubtitleAndButtons();
+      });
+    }
+
+    document.addEventListener('click', function (ev) {
+      if (!dropdownOpen) return;
+      var wrap = document.querySelector('.artifact-picker-wrap');
+      if (wrap && !wrap.contains(ev.target)) {
+        dropdownOpen = false;
+        renderDropdown();
+        updateSubtitleAndButtons();
+      }
+    });
+
+    // Listen for action delegation from embedded dashboards, slides & flyers inside previewFrame
+    window.addEventListener('message', function (ev) {
+      var frame = document.getElementById('previewFrame');
+      if (!frame || ev.source !== frame.contentWindow) return;
+      if (!ev.data || ev.data.type !== 'wv-preview-action') return;
+      if (ev.data.action === 'print') {
+        handlePrintPdf();
+      } else if (ev.data.action === 'save-downloads') {
+        saveToUserDownloads();
+      } else if (ev.data.action === 'open' || ev.data.action === 'open-or-save' || ev.data.action === 'download') {
+        saveToUserDownloads();
+      }
+    });
 
     fetchDeliverables(false);
   }

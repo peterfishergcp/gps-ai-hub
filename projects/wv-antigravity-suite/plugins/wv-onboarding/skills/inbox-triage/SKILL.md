@@ -10,7 +10,7 @@ Sort high-volume email queues or operational field reports deterministically usi
 ## Step 1: Retrieve Messages & Active Threshold Rules
 1. **Check Federated GE Instance First (remote HTTPS Gemini Enterprise MCP):**
    - If Gemini Enterprise `StreamAssist` is configured, query unread or recent messages from the user's federated **Outlook** or **Gmail** connector (default window: last 24–72 hours, or user-specified query/sender/folder), requesting message subject, sender, timestamp, attachment names, and key body excerpt.
-   - If no connector is active yet, process pasted threads, `.eml` files, `.csv` logs, or folder documents directly (and mention `/connect-ge` as a 1-step option for live Outlook/Gmail access).
+   - If no connector is active yet, process pasted threads, `.eml` files, `.csv` logs, or folder documents directly (and mention enabling Gmail/Drive via **`Customizations → Marketplace → Google Workspace`** for live access).
 2. **Apply Explicit 4-Bucket Triage Rules** (use custom agency rules if the user provides a policy doc, otherwise apply this baseline):
    - **Bucket 1 — Immediate Director / Leadership Alert (`[URGENT ESCALATION]`):**
      - Life/safety incidents, injuries, environmental/mine/facility hazards, statutory FOIA/legal deadlines (`<= 5 business days`), media or legislative inquiries, system outages, or budget/audit exceptions above threshold.

@@ -1,9 +1,9 @@
 {
   "name": "wv-second-brain",
-  "displayName": "WV Antigravity \u2014 Action Items, Memory, Workflows & Skills",
-  "version": "2.1.3",
+  "displayName": "WV My Hub \u2014 Action Items, Memory, Workflows & TokenEconomics",
+  "version": "2.3.0",
   "logo": "assets/logo.svg",
-  "description": "Zero-footprint Personal Workspace Memory (~/.gemini/config/plugin_data/wv-antigravity/memory/) with the clean WV Antigravity AI Inbox UI, Action Items & Topics to catch up on, 4-file initiative tracking, Customize voice & memory editor, Adversarial Minto SCQA pre-meeting prep, 4-agent parallel swarm orchestration, 3-Altitude weekly impact ledger, anti-AI-slop editing, and deterministic outbound scrubbing.",
+  "description": "Zero-footprint Personal Workspace Memory (~/.gemini/config/plugin_data/wv-antigravity/memory/) with the clean WV My Hub UI, Action Items & Topics to catch up on, 4-file initiative tracking, Customize voice & memory editor, TokenEconomics, Adversarial Minto SCQA pre-meeting prep, 4-agent parallel swarm orchestration, 3-Altitude weekly impact ledger, anti-AI-slop editing, and deterministic outbound scrubbing.",
   "suggestedPrompts": [
     "/memory Initialize my West Virginia Personal Memory and summarize my active Action Items and initiatives",
     "/meeting-prep Build a 1-page pre-meeting brief and Adversarial Minto SCQA Critic for my highest-priority initiative",

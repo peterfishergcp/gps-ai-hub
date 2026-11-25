@@ -5,7 +5,7 @@ description: Initialize, inspect, search, update, and organize persistent Person
 
 # Personal Workspace Memory & Action Items Manager (`/memory`)
 
-Initialize and manage the user's persistent **Personal Workspace Memory** at `~/.gemini/config/plugin_data/wv-antigravity/memory/` (viewable and editable inside **`Extensions -> WV Antigravity`**).
+Initialize and manage the user's persistent **Personal Workspace Memory** at `~/.gemini/config/plugin_data/wv-antigravity/memory/` (viewable and editable inside **`Plugins -> WV My Hub`**).
 
 ## Sub-Mode: Initialize or Switch Role Preset (`/memory init` or `"initialize my memory"`)
 
@@ -30,7 +30,7 @@ When `~/.gemini/config/plugin_data/wv-antigravity/memory/profile/identity.md` do
      - `contacts.md` (`Name | Email | Role | Initiative | Key Priorities | Last_Touch_Date | Status`)
      - `initiatives/<slug>/{status,running_notes,context_and_decisions,stakeholders}.md`
      - `topics/lessons-learned.md`, `followups/latest_action_plan.md`, and `impact/ledger.json`.
-3. Point the user to **`Extensions -> WV Antigravity`** (`Action Items` and the top-right **Customize** icon) and suggest running **`/daily-brief`** next.
+3. Point the user to **`Plugins -> WV My Hub`** (`Action Items` and the top-right **Customize** icon) and suggest running **`/daily-brief`** next.
 
 ---
 

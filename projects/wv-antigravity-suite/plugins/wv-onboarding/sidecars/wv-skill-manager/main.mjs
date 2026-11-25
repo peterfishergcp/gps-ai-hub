@@ -666,6 +666,18 @@ app.api(
 );
 
 app.api(
+  '/api/clawy-mascot',
+  () => {
+    const pngPath = path.join(__dirname, 'assets', 'clawy_mascot.png');
+    if (!fs.existsSync(pngPath)) {
+      return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+    }
+    return new Response(fs.readFileSync(pngPath), { contentType: 'image/png' });
+  },
+  'GET'
+);
+
+app.api(
   '/api/token-summary',
   async (data) => getTokenMeterSummary((data && data.convId) || '', getSidecarStateDir()),
   'GET'

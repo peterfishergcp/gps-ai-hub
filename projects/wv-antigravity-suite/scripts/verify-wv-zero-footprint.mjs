@@ -30,8 +30,6 @@ const PLUGINS_DIR = path.join(SUITE_ROOT, 'plugins');
 
 const EXPECTED_PLUGINS = [
   'wv-automations',
-  'wv-connectors',
-  'wv-coordinator',
   'wv-design-studio',
   'wv-engineering-cloud',
   'wv-onboarding',
@@ -77,7 +75,7 @@ function checkGate1(allPluginEntries) {
   if (forbidden.length > 0) {
     recordGate(1, 'Zero Local MCP / Hook Subprocesses', false, `Found: ${forbidden.map((f) => path.relative(SUITE_ROOT, f.path)).join(', ')}`);
   } else {
-    recordGate(1, 'Zero Local MCP / Hook Subprocesses', true, '0 mcp_config.json and 0 hooks.json across all 9 WV plugins');
+    recordGate(1, 'Zero Local MCP / Hook Subprocesses', true, '0 mcp_config.json and 0 hooks.json across all 7 WV plugins');
   }
 }
 
@@ -216,7 +214,7 @@ function checkGate5() {
     5,
     'Plugin Inventory & Opt-In Cron Guardrail',
     issues.length === 0,
-    issues.length ? issues.join('; ') : '8 interactive/skill plugins enabled; wv-automations opt-in disabled by default'
+    issues.length ? issues.join('; ') : '6 interactive/skill plugins enabled; wv-automations opt-in disabled by default'
   );
 }
 
@@ -324,6 +322,12 @@ async function checkHermeticLifecycleGates() {
       TMP: canaryTmp,
     };
 
+    // Seed deprecated v2.2.x plugins to prove upgrade auto-cleanup deletes orphaned sidebar icons
+    fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-connectors'), { recursive: true });
+    fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-coordinator'), { recursive: true });
+    fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-connectors', 'plugin.json'), '{"name":"wv-connectors"}\n');
+    fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-coordinator', 'plugin.json'), '{"name":"wv-coordinator"}\n');
+
     // --- Gate 8: Live Hermetic Install ---
     if (process.platform === 'win32') {
       execFileSync(
@@ -336,8 +340,6 @@ async function checkHermeticLifecycleGates() {
           path.join(SUITE_ROOT, 'scripts', 'install-wv-suite.ps1'),
           '-TargetConfigDir',
           path.join(fakeHome, '.gemini', 'config'),
-          '-GeInstance',
-          'projects/wv-test/locations/global/collections/default_collection/engines/wv-ge',
         ],
         { env: baseEnv, stdio: 'pipe' }
       );
@@ -348,8 +350,6 @@ async function checkHermeticLifecycleGates() {
           path.join(SUITE_ROOT, 'scripts', 'install-wv-suite.sh'),
           '--target-config-dir',
           path.join(fakeHome, '.gemini', 'config'),
-          '--ge-instance',
-          'projects/wv-test/locations/global/collections/default_collection/engines/wv-ge',
         ],
         { env: baseEnv, stdio: 'pipe' }
       );
@@ -389,7 +389,7 @@ async function checkHermeticLifecycleGates() {
       g8Issues.length === 0,
       g8Issues.length
         ? g8Issues.join('; ')
-        : 'Installed all 9 WV plugins strictly inside ~/.gemini/config/ (0 /tmp files, 0 home clutter)'
+        : 'Installed all 7 WV plugins strictly inside ~/.gemini/config/ & auto-removed legacy wv-connectors/wv-coordinator (0 /tmp files, 0 home clutter)'
     );
 
     // --- Gate 9: Live Runtime Exercise With Stripped PATH (Zero gcloud / python / git / npm) ---
@@ -403,21 +403,18 @@ async function checkHermeticLifecycleGates() {
 
       const vaultCore = await import(pathToFileURL(path.join(plugins, 'wv-second-brain', 'scripts', 'vault_core.mjs')).href);
       const updatesMod = await import(pathToFileURL(path.join(plugins, 'wv-second-brain', 'sidecars', 'wv-antigravity-ui', 'antigravity_updates.mjs')).href);
-      const coordCore = await import(pathToFileURL(path.join(plugins, 'wv-coordinator', 'scripts', 'coord_core.mjs')).href);
+      const catalogMod = await import(pathToFileURL(path.join(plugins, 'wv-onboarding', 'sidecars', 'wv-skill-manager', 'seed_prompts_catalog.mjs')).href);
 
       vaultCore.initializeVault({ role: 'public-sector', name: 'WV Test User', roleTitle: 'Operations Analyst', org: 'WV Agency', seedDemo: true, force: true });
       const vs = vaultCore.getVaultState();
       const up = updatesMod.getUpdatesState();
-      updatesMod.saveUpdatesPreferences({ completeStep: 'setup-clawy' });
+      updatesMod.saveUpdatesPreferences({ completeStep: 'connect-workspace' });
 
-      const cs = coordCore.loadState();
-      const id = coordCore.loadIdentity();
-      const voice = coordCore.getPublicVoiceStatus();
-      const gRes = coordCore.mutateGroups({ action: 'add', title: 'WV Sprint' });
-      coordCore.mutateGoals({ action: 'add', groupId: gRes.group?.id || 'group-default', title: 'Zero-Footprint Rollout' });
-      const diag = await coordCore.diagnoseVoiceConnection({});
+      const cat = catalogMod.buildSkillsCatalog({ pluginsRoot: plugins, personalSkillsRoot: path.join(cfg, 'skills') });
+      const clawyPng = path.join(plugins, 'wv-onboarding', 'sidecars', 'wv-skill-manager', 'assets', 'clawy_mascot.png');
+      const hasLegacyCat = cat.some((c) => c.categoryId === 'wv-connectors' || c.categoryId === 'wv-coordinator');
 
-      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || !cs || !id || !voice || !diag) {
+      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || !Array.isArray(cat) || hasLegacyCat || !fs.existsSync(clawyPng)) {
         throw new Error('Runtime state validation failed');
       }
       console.log('RUNTIME_OK');
@@ -458,7 +455,7 @@ async function checkHermeticLifecycleGates() {
       g9Issues.length === 0,
       g9Issues.length
         ? g9Issues.join('; ')
-        : 'WV Antigravity + WV Clawy + Updates ran cleanly with PATH="" (0 /tmp writes, 0 files outside ~/.gemini/config)'
+        : 'WV My Hub + WV Skills (Ask Clawy) + Updates ran cleanly with PATH="" (0 /tmp writes, 0 files outside ~/.gemini/config)'
     );
 
     // --- Gate 10: Clean 1-Command Uninstall (`--purge-data`) Preserving User Personal Skills ---

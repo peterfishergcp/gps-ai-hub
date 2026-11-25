@@ -29,11 +29,6 @@
 
   const QUICK_WORKFLOWS = [
     {
-      cmd: '/wv-coordinator',
-      desc: 'Open WV Clawy 🐻: Multi-Agent Command Center, Kore Voice & Sprints',
-      prompt: '/wv-coordinator Help me set up WV Clawy, verify my GCP Project & Kore Gemini Live voice connection, and summarize my active agent conversations.',
-    },
-    {
       cmd: '/daily-brief',
       desc: 'Morning kickoff: top action items, calendar & >21d check-ins',
       prompt: '/daily-brief Give me my workday kickoff brief, top 3 actions, and any stale stakeholder check-ins.',
@@ -155,31 +150,7 @@
         }
       }
     } catch {}
-    showToast('Click "WV Skills" (Sparkles icon) in the left Extensions sidebar to browse all skills & Personal Skills!');
-  }
-
-  function openClawyCoordinator() {
-    try {
-      if (window.sidecar && window.sidecar.ui) {
-        if (typeof window.sidecar.ui.toggleAuxPane === 'function') {
-          window.sidecar.ui.toggleAuxPane({
-            tabType: 'sidecarView',
-            uri: 'sidecar://wv-coordinator/wv-coordinator-ui/',
-          });
-          showToast('Opened WV Clawy 🐻 in Auxiliary Pane');
-          return;
-        }
-        if (typeof window.sidecar.ui.openSidecar === 'function') {
-          window.sidecar.ui.openSidecar('wv-coordinator', 'wv-coordinator-ui');
-          return;
-        }
-        if (typeof window.sidecar.ui.toggleSidecar === 'function') {
-          window.sidecar.ui.toggleSidecar('wv-coordinator', 'wv-coordinator-ui');
-          return;
-        }
-      }
-    } catch {}
-    showToast('Click "WV Clawy" (Brown Bear icon) in the left Extensions sidebar to open your Multi-Agent Command Center & Kore Voice!');
+    showToast('Click "WV Skills" (Sparkles icon) in the left Plugins sidebar to browse skills, Personal Skills & Ask Clawy!');
   }
 
   function markMasteryStep(stepId) {
@@ -197,7 +168,6 @@
       apiPost,
       dispatchPrompt,
       openSkillsExtension: openDedicatedSkillsHub,
-      openClawyExtension: openClawyCoordinator,
       markMasteryStep,
       reloadState: loadState,
       rerender: render,
@@ -260,7 +230,7 @@
           await window.sidecar.agent.sendMessage(promptText);
           showToast('Sent prompt to active conversation');
         } else {
-          const created = await window.sidecar.agent.startConversation(promptText, title || 'WV Antigravity');
+          const created = await window.sidecar.agent.startConversation(promptText, title || 'WV My Hub');
           if (created && created.conversationId && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
             window.sidecar.ui.toggleConversation(created.conversationId);
           }
@@ -491,7 +461,7 @@
   async function loadState() {
     appState = await apiGet('/api/state');
     const p = appState.profile || {};
-    headerTitle.textContent = 'WV Antigravity';
+    headerTitle.textContent = 'WV My Hub';
     headerSub.textContent = p.role && p.role !== 'Ready' ? p.role : '';
     render();
   }
@@ -659,7 +629,7 @@
         orchestratorOptimizeMode && window.AGYTokenAndUpdatesUI
           ? window.AGYTokenAndUpdatesUI.wrapPromptForOrchestrator(q)
           : q;
-      dispatchPrompt(finalPrompt, orchestratorOptimizeMode ? 'Orchestrator Task' : 'WV Antigravity');
+      dispatchPrompt(finalPrompt, orchestratorOptimizeMode ? 'Orchestrator Task' : 'WV My Hub');
     }
 
     function updateHeroSearch() {
@@ -1895,7 +1865,7 @@
             const currentText = textareaRef && editorMode === 'edit' ? textareaRef.value : selectedFile.content || '';
             const inlineBlock =
               currentText && currentText.length <= 14000
-                ? '\n\nHere is the current file content from WV Antigravity (`' +
+                ? '\n\nHere is the current file content from WV My Hub (`' +
                   selectedFile.path +
                   '`):\n\n```markdown\n' +
                   currentText +
@@ -2568,7 +2538,7 @@
 
   function render() {
     if (!appState) {
-      viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading WV Antigravity...' }));
+      viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading WV My Hub...' }));
       return;
     }
     let nodes = [];
@@ -2603,14 +2573,6 @@
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
 
-  const openClawyBtn = document.getElementById('btn-open-clawy-ext');
-  if (openClawyBtn) {
-    openClawyBtn.addEventListener('click', () => {
-      markMasteryStep('setup-clawy');
-      openClawyCoordinator();
-    });
-  }
-
   const openSkillsBtn = document.getElementById('btn-open-skills-ext');
   if (openSkillsBtn) {
     openSkillsBtn.addEventListener('click', openDedicatedSkillsHub);
@@ -2632,7 +2594,7 @@
   loadState().catch((err) => {
     viewRoot.replaceChildren(
       el('div', { className: 'card' }, [
-        el('strong', { text: 'Unable to load WV Antigravity: ' }),
+        el('strong', { text: 'Unable to load WV My Hub: ' }),
         err.message || 'Unknown error',
       ])
     );
