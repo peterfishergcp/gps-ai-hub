@@ -414,7 +414,16 @@ async function checkHermeticLifecycleGates() {
       const clawyPng = path.join(plugins, 'wv-onboarding', 'sidecars', 'wv-skill-manager', 'assets', 'clawy_mascot.png');
       const hasLegacyCat = cat.some((c) => c.categoryId === 'wv-connectors' || c.categoryId === 'wv-coordinator');
 
-      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || !Array.isArray(cat) || hasLegacyCat || !fs.existsSync(clawyPng)) {
+      // Re-seed legacy v2.2.x folders to prove runtime self-healing prunes them even after additive agy plugin install
+      fs.mkdirSync(path.join(plugins, 'wv-connectors'), { recursive: true });
+      fs.mkdirSync(path.join(plugins, 'wv-coordinator'), { recursive: true });
+      fs.writeFileSync(path.join(plugins, 'wv-connectors', 'plugin.json'), '{"name":"wv-connectors"}\\n');
+      fs.writeFileSync(path.join(plugins, 'wv-coordinator', 'plugin.json'), '{"name":"wv-coordinator"}\\n');
+      const pruned = catalogMod.pruneRetiredWvPlugins(plugins);
+      const legacyStillExists =
+        fs.existsSync(path.join(plugins, 'wv-connectors')) || fs.existsSync(path.join(plugins, 'wv-coordinator'));
+
+      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || !Array.isArray(cat) || hasLegacyCat || !fs.existsSync(clawyPng) || legacyStillExists || pruned.length !== 2) {
         throw new Error('Runtime state validation failed');
       }
       console.log('RUNTIME_OK');

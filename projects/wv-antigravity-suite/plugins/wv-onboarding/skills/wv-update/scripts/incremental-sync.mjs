@@ -214,17 +214,18 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
     }
   }
 
-    // Clean up retired pre-v2.1.2 local stdio MCP config & legacy chat sidecar if present
+    // Clean up retired pre-v2.3.0 legacy plugins (wv-connectors & wv-coordinator) so orphaned sidebar icons disappear cleanly
     if (!checkOnly) {
-      const retiredPaths = [
-        path.join(pluginsRoot, 'wv-connectors', 'mcp_config.json'),
-        path.join(pluginsRoot, 'wv-connectors', 'scripts'),
-        path.join(pluginsRoot, 'wv-connectors', 'sidecars'),
-      ];
-      for (const rp of retiredPaths) {
-        if (fs.existsSync(rp)) {
-          try { fs.rmSync(rp, { recursive: true, force: true }); } catch {}
-        }
+      const resolvedRoot = path.resolve(pluginsRoot);
+      for (const legacyName of ['wv-connectors', 'wv-coordinator']) {
+        const target = path.resolve(resolvedRoot, legacyName);
+        if (target !== path.join(resolvedRoot, legacyName) || !target.startsWith(resolvedRoot + path.sep)) continue;
+        try {
+          const st = fs.lstatSync(target);
+          if (st && !st.isSymbolicLink() && st.isDirectory() && fs.existsSync(path.join(target, 'plugin.json'))) {
+            fs.rmSync(target, { recursive: true, force: true });
+          }
+        } catch {}
       }
     }
 
@@ -249,7 +250,7 @@ async function cliMain() {
       return;
     }
     const modeLabel = summary.checkOnly ? 'Check Only' : 'Incremental Sync';
-    console.log(`=== Generic AGY Plugin ${modeLabel} (Remote v${summary.suiteVersion}) ===`);
+    console.log(`=== WV Antigravity Suite ${modeLabel} (Remote v${summary.suiteVersion}) ===`);
     console.log(`Skills Checked: ${summary.checkedSkillsCount} | Skills ${summary.checkOnly ? 'With Updates' : 'Updated'}: ${summary.updatedSkillsCount} | Files ${summary.checkOnly ? 'Changed' : 'Downloaded'}: ${summary.updatedFilesCount}`);
     for (const s of summary.skills) {
       if (s.changedFiles.length > 0) {
