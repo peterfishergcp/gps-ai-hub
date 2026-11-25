@@ -1,12 +1,12 @@
-# State of West Virginia — Antigravity Suite (`v2.1.2`) Guided Test Prompts
+# State of West Virginia — Antigravity Suite (`v2.2.6`) Guided Test Prompts
 
-Welcome to **Version 2.1.0** of the **State of West Virginia Antigravity Suite** (`8` modular plugins · `39` ready-to-run skills + auto-discovered **`★ My Personal Skills`** · `3` custom-icon left-sidebar extensions · **`TokenEconomics`** dashboard · **`Overview` Updates & Video Walkthroughs Hub** · `100%` zero-footprint storage inside `~/.gemini/config/`).
+Welcome to **Version 2.2.6** of the **State of West Virginia Antigravity Suite** (`9` modular plugins (`8` active + opt-in `wv-automations`) · `40` ready-to-run skills + auto-discovered **`★ My Personal Skills`** · `4` custom-icon left-sidebar panels (`WV Antigravity`, `WV Clawy`, `WV Skills`, `WV Preview`) · **`TokenEconomics`** dashboard · **`Overview` Updates & Video Walkthroughs Hub** · `100%` zero-footprint storage inside `~/.gemini/config/`).
 
 > [!TIP]
-> **What Changed in `v2.1.2` — Dedicated `WV Skills` (`★ My Personal Skills`), `TokenEconomics` & `Overview` Updates Hub:**
-> - **Dedicated `WV Skills` Hub:** All `39` curated skills (including **`WV State Skills`**) **plus** your own **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`) now live inside **`Extensions → WV Skills`** (Sparkles icon) in the AI-Inbox Card Grid with 1-Click **`Run →`**, `+ New Skill`, `Save My Copy`, and Safe Export secret scanning.
+> **What Changed in `v2.2.6` — `WV Clawy` Multi-Agent Command Center, `◫ Side Panel` Docking, 10-Gate Zero-Footprint CI & 5 WV How-To Videos:**
+> - **Dedicated `WV Skills` Hub:** All `40` curated skills (including **`WV State Skills`**) **plus** your own **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`) live inside **`Extensions → WV Skills`** (Sparkles icon) in the AI-Inbox Card Grid with 1-Click **`Run →`**, `+ New Skill`, `Save My Copy`, and Safe Export secret scanning.
 > - **`TokenEconomics` Dashboard Tab:** Open **`Extensions → WV Antigravity → TokenEconomics`** to track your monthly pooled quota cap, 14-day velocity, Orchestrator + Hydrogen + Workflows playbooks, and amber `/compact` context alerts (`>=160k` tokens).
-> - **`Overview` Updates & Video Walkthroughs:** Open **`Extensions → WV Antigravity → Overview`** to toggle **`⚡ Orchestrator`**, watch 3–4 minute two-host video tutorials, and subscribe to Google Antigravity updates. Every test section below includes **both** the **1-Click In-App Starter** and the **Full West Virginia Deep-Test Script**.
+> - **`Overview` Updates, 5 WV Videos, `WV Clawy` & `◫ Side Panel`:** Open **`Extensions → WV Antigravity → Overview`** to toggle **`⚡ Orchestrator`**, watch 5 rebuilt West Virginia how-to video guides, open **`WV Clawy`** (Warm Brown Bear icon) for multi-agent **`↗ Pop Out`** split view & voice, and click **`◫ Side Panel`** in any panel header to dock beside your chat. Every test section below includes **both** the **1-Click In-App Starter** and the **Full West Virginia Deep-Test Script**.
 
 ## Before You Begin
 
@@ -18,27 +18,30 @@ Welcome to **Version 2.1.0** of the **State of West Virginia Antigravity Suite**
 
 ## Quick 3-Step Setup (Zero-Footprint State Laptop Standard)
 
-1. **Step 1 — Sign In to Antigravity Desktop (`@wv.gov` Business Account):** Complete the [7-Step Antigravity Setup Guide](../setup-guide/index.html), or open the interactive [West Virginia Antigravity v2.1.2 Launchpad](../workshop/index.html) in Chrome or Edge.
-2. **Step 2 — Install the `v2.1.2` Suite (From a New Conversation in Antigravity):** Click **`+ New Conversation`**, optionally switch **`Request Review`** (bottom-right of the prompt box) to **`Turbo`** during setup (then switch back to **`Default`** once complete), and paste:
+1. **Step 1 — Sign In to Antigravity Desktop (`@wv.gov` Business Account):** Open the interactive [West Virginia Antigravity v2.2.6 Launchpad](../workshop/index.html) in Chrome or Edge.
+2. **Step 2 — Install the `v2.2.6` Suite (From a New Conversation in Antigravity):** Click **`+ New Conversation`**, optionally switch **`Request Review`** (bottom-right of the prompt box) to **`Turbo`** during setup so you are not prompted 9 times (then switch back to **`Default`** once complete), and paste:
 
 ```text
 agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/wv-antigravity-suite
 ```
 
-3. **Step 3 — Open the 3 West Virginia Extensions & Launch Skills in 1 Click:** Look at the **`Extensions`** rail on the left side of Antigravity. In `v2.1.2`, you will see three West Virginia panels—each with its own distinct icon and a live hoverable **`5h: in | out | thinking`** token pill in the top bar.
+> **Direct 1-Line PowerShell / Terminal Option (Zero `git`, Zero `/tmp` or `%TEMP%` Writes):** You can also run the `<2s` zero-admin installer directly in Windows PowerShell 5.1 (`irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex`) or macOS/Linux Terminal (`curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash`)—all staging stays strictly inside `$HOME/.gemini/config/`.
 
-![West Virginia Antigravity v2.1.2 Launchpad](./screenshots/wv-launchpad.png)
+3. **Step 3 — Open the 4 West Virginia Panels & Dock in 1 Click:** Look at the **`Plugins` / `Extensions`** rail on the left side of Antigravity. In `v2.2.6`, you will see four West Virginia panels (`WV Antigravity`, `WV Clawy`, `WV Skills`, `WV Preview`)—each with its own custom icon, a live hoverable **`5h: in | out | thinking`** token pill, and a top-right **`◫ Side Panel`** button to dock beside any conversation (also reachable via **`⋮ → Plugins`**).
+
+![West Virginia Antigravity v2.2.6 Launchpad](./screenshots/wv-launchpad.png)
 
 ---
 
-## Meet the 3 West Virginia Left-Sidebar Extensions (`v2.1.2`)
+## Meet the 4 West Virginia Left-Sidebar Panels (`v2.2.6`)
 
-![Four West Virginia Left-Sidebar Extensions](./screenshots/wv-sidebar-4-icons.png)
+![Four West Virginia Left-Sidebar Panels](./screenshots/wv-sidebar-4-icons.png)
 
-| Left-Sidebar Extension | Sidebar Icon | What It Does | Fastest 1-Click Action (No Copy-Paste) |
+| Left-Sidebar Panel | Sidebar Icon | What It Does | Fastest 1-Click Action (No Copy-Paste) |
 | :--- | :--- | :--- | :--- |
-| **`WV Antigravity`** | Antigravity Rainbow **A** | Daily command center with **Overview** (`⚡ Orchestrator` + Updates & Video Hub), AI Inbox **Action Items**, **Initiatives**, **Stakeholders**, and **TokenEconomics** (monthly cap & spend playbooks). | Toggle **`⚡ Orchestrator`** on `Overview` or check your monthly cap in **`TokenEconomics`**. |
-| **`WV Skills`** | Sparkles | Dedicated AI-Inbox Card Grid for all **39 suite skills** (including **`WV State Skills`**) **plus** auto-discovered **`★ My Personal Skills`** (`~/.gemini/config/skills/` & `.gemini/skills/`), GE Hub, Safe Export & `<1s` `Sync Updates`. | Click **`Run →`** on any skill card, **`+ New Skill`**, or **`★ My Personal Skills`**. |
+| **`WV Antigravity`** | Antigravity Rainbow **A** | Daily command center with **Overview** (`⚡ Orchestrator` + Updates & 5 WV Video Guides), AI Inbox **Action Items**, **Initiatives**, **Stakeholders**, and **TokenEconomics** (monthly cap & spend playbooks). | Toggle **`⚡ Orchestrator`** on `Overview` or check your monthly cap in **`TokenEconomics`**. |
+| **`WV Clawy`** | Warm Brown Bear | Multi-Agent Command Center & Voice Hub: 5-state attention triage (`Needs You`, `Working`, `Ready for Review`, `Idle`), **`↗ Pop Out`** split chat, 2-level `Group → Goal → Task` sprints, Instant Voice (No Login), and `Kore` Gemini Live voice. | Click **`📊 Summarize my agents`**, **`↗ Pop Out`** on any active agent card, or **`◫ Side Panel`** to dock. |
+| **`WV Skills`** | Sparkles | Dedicated AI-Inbox Card Grid for all **40 suite skills** (including **`WV State Skills`**) **plus** auto-discovered **`★ My Personal Skills`** (`~/.gemini/config/skills/` & `.gemini/skills/`), GE Hub, Safe Export & `<1s` `Sync Updates`. | Click **`Run →`** on any skill card, **`+ New Skill`**, or **`★ My Personal Skills`**. |
 | **`WV Preview`** | Magnifying Glass | Serverless visual viewer for West Virginia Executive Dashboards, 16:9 Slide Decks, and Stakeholder Flyers (`0` local ports). | Click any captured deliverable pill, or click **`Download HTML`** / **`Print / PDF`**. |
 
 ![WV Antigravity Skills Tab 1-Click Run Buttons](./screenshots/wv-antigravity-skills-1click.png)
@@ -47,7 +50,7 @@ agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projec
 
 ---
 
-## Recommended Order of Guided Tests (`v2.1.2`)
+## Recommended Order of Guided Tests (`v2.2.6`)
 
 | Test # | Focus Area & Plugin | Audience | 1-Click Ready? |
 | :--- | :--- | :--- | :--- |
@@ -55,12 +58,13 @@ agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projec
 | **Test 2** | **Gemini 4, Claude 5.5, Orchestrator & Live Token Meter** (`wv-onboarding`) | Everyone + IT | Yes — `Run →` on `/model-guide`, `/orchestrator-guide`, `/token-usage` |
 | **Test 3** | **Onboarding, Daily Brief, My Voice (`/my-voice`) & Inbox Triage** (`wv-onboarding`) | Everyone | Yes — `Run →` in `WV Antigravity` or `WV Skills` |
 | **Test 4** | **`WV State Skills`: WV FOIA (`§ 29B-1-4`), Legal Redlining & Policy Audit** (`wv-state-workflows`) | Legal, FOIA, Program Staff | Yes — Filter pill **`WV State Skills (3)`** → `Run →` |
-| **Test 5 (New in v2.0)** | **Zero-Footprint Memory, AI Inbox `Action Items`, SCQA Prep & Anti-Slop** (`wv-second-brain`) | Everyone | Yes — `Action Items` tab + `Memory & Prep (8)` |
-| **Test 6 (New in v2.1)** | **`TokenEconomics` Spending Cap, `★ My Personal Skills` & `Overview` Updates Hub** (`WV Antigravity` + `WV Skills`) | Everyone | Yes — Open `TokenEconomics` & `★ My Personal Skills` |
+| **Test 5** | **Zero-Footprint Memory, AI Inbox `Action Items`, SCQA Prep & Anti-Slop** (`wv-second-brain`) | Everyone | Yes — `Action Items` tab + `Memory & Prep (8)` |
+| **Test 6** | **`TokenEconomics` Spending Cap, `★ My Personal Skills` & `Overview` Updates Hub** (`WV Antigravity` + `WV Skills`) | Everyone | Yes — Open `TokenEconomics` & `★ My Personal Skills` |
 | **Test 7** | **Legacy App Refactoring, Cloud Run & BigQuery SQL** (`wv-engineering-cloud`) | Developers & Data Analysts | Yes — Filter pill **`WV Engineering (4)`** → `Run →` |
 | **Test 8** | **Security & Cloud Readiness ("Catch the 4 Real-World Mistakes")** (`wv-security`) | CISO, Security & Cloud IT | Yes — 1-click workspace scan or paste 4-bug snippet |
 | **Test 9** | **Federated Gemini Enterprise (`GE`) Connectors** (`wv-connectors`) | IT & Power Users | Yes — `GE Connector Hub` button or `/connect-ge` |
-| **Test 10 (Run Last)** | **4-Agent Parallel Swarm, 3-Altitude Weekly Impact & Opt-In Automations** (`wv-second-brain` + `wv-automations`) | Power Users & Leads | Yes — `Run →` on `/swarm-prep` & `/weekly-impact` |
+| **Test 10 (New in `v2.2.6`)** | **`WV Clawy` Multi-Agent Command Center, `↗ Pop Out` Split Chat & Voice** (`wv-coordinator`) | Everyone + Leads | Yes — Click **`WV Clawy`** (Brown Bear) → **`📊 Summarize my agents`** or `Run →` `/wv-coordinator` |
+| **Test 11 (Run Last)** | **4-Agent Parallel Swarm, 3-Altitude Weekly Impact & Opt-In Automations** (`wv-second-brain` + `wv-automations`) | Power Users & Leads | Yes — `Run →` on `/swarm-prep` & `/weekly-impact` |
 
 *(For the 7 `Government Services (public_sector)` prompts `PS-1` through `PS-7`, see [`PUBLIC_SECTOR_TEST_PROMPTS.md`](./PUBLIC_SECTOR_TEST_PROMPTS.md).)*
 
@@ -87,7 +91,7 @@ Using `/wv-dashboard`, `/slides`, and `/doc-design`, create a West Virginia "Mou
 1. `/wv-dashboard`: Scaffold an interactive West Virginia Command Center dashboard in `./wv-mountain-state-demo/dashboard` (`wv-official` theme) featuring the Capitol Command Navy header (`#0F1A2A`), `Ask Gemini Enterprise` search bar, `2026 SITE READINESS CLOCK` ribbon, numbered tabs (`1. TODAY & TRIAGE`, `2. PRIORITY AGENDA`, `3. PORTFOLIO ANALYTICS` for charts, `4. COUNTY SITE REGISTER` for the register table), green-bordered System Health banner, 4 KPI cards ($40.0M Authorized Funding, Active Pipeline, Qualifying Acreage, Projected Jobs), and dark-navy-header `NEEDS ACTION NOW` + `MY WORK LIST` operational split panels.
 2. `/slides`: Create a 5-slide 16:9 executive briefing deck (`./wv-mountain-state-demo/slides/deck.html`) with keyboard navigation and speaker notes (`N` key).
 3. `/doc-design`: Create a 1-page print-ready stakeholder fact sheet (`./wv-mountain-state-demo/flyer/flyer.html`) comparing WVEDA Loan terms vs. IJDC Grant tiers.
-IMPORTANT — Follow the v2.1.2 WV Design Studio visual preview rules:
+IMPORTANT — Follow the v2.2.6 WV Design Studio visual preview rules:
 - Write the self-contained single-file HTML copies (`dashboard-standalone.html`, `deck.html`, `flyer.html`) to the Conversation Artifact Directory with `UserFacing: true` and embed `<agent-embed>` previews so I see rendered visuals—never link raw workspace `index.html` code files in chat.
 - Do NOT create any 127.0.0.1 or localhost .url.json artifacts and do NOT start python3 -m http.server (all 3 HTML deliverables render serverless in the Side Pane and inside `Extensions -> WV Preview` with an 'Open / Download HTML' button for Chrome/Edge).
 ```
@@ -96,7 +100,7 @@ IMPORTANT — Follow the v2.1.2 WV Design Studio visual preview rules:
 
 ## Test 2 — Gemini 4, Anthropic Claude 5.5, Orchestrator & Live Token Meter (`/model-guide`, `/orchestrator-guide`, `/token-usage`)
 
-- **What this tests:** `/model-guide`, `/orchestrator-guide`, `/token-usage`, plus hovering the top-right **`5h: ... in | ... out | ... thinking`** token pill inside any of the 3 WV sidebar extensions.
+- **What this tests:** `/model-guide`, `/orchestrator-guide`, `/token-usage`, plus hovering the top-right **`5h: ... in | ... out | ... thinking`** token pill inside any of the 4 WV sidebar panels.
 
 ### Option A — 1-Click Starter (No Copy-Paste Needed)
 
@@ -116,7 +120,7 @@ Run `/model-guide` and `/orchestrator-guide` for our West Virginia agency develo
 
 ## Test 3 — Onboarding, Daily Brief, My Voice (`/my-voice`) & Inbox Triage (`wv-onboarding`)
 
-- **What this tests:** `/wv-onboard`, `/daily-brief`, `/my-voice` *(renamed from `/digital-twin` in `v2.1.2`)*, `/inbox-triage` (Unreadable-Attachment Fail-Safe Hold), and `/wv-update`.
+- **What this tests:** `/wv-onboard`, `/daily-brief`, `/my-voice` *(renamed from `/digital-twin`)*, `/inbox-triage` (Unreadable-Attachment Fail-Safe Hold), and `/wv-update`.
 
 ![WV Skills Panel](./screenshots/wv-skills.png)
 
@@ -127,7 +131,7 @@ Click **`Run →`** / **`▶ Seed:`** on **`/wv-onboard`**, **`/daily-brief`**, 
 ### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
 
 ```markdown
-Run a combined test of our `wv-onboarding` v2.1.2 skills (`/wv-onboard`, `/inbox-triage`, `/daily-brief`, and `/my-voice`) for my role as Deputy Director of Operations at the West Virginia Department of Economic Development:
+Run a combined test of our `wv-onboarding` v2.2.6 skills (`/wv-onboard`, `/inbox-triage`, `/daily-brief`, and `/my-voice`) for my role as Deputy Director of Operations at the West Virginia Department of Economic Development:
 1. `/wv-onboard`: Initialize my zero-footprint role and writing voice profile inside `~/.gemini/config/plugin_data/wv-antigravity/memory/profile/` (`identity.md` and `voice.md`, with zero files written outside `~/.gemini/config/`), tuned to a concise executive BLUF (Bottom-Line-Up-Front) voice for agency leadership and county commissioners.
 2. `/inbox-triage`: Triage these 3 incoming emails against our escalation rules (Escalate immediately if: budget impact > $250K, statutory/FOIA deadline <= 5 business days, or County Commissioner / Legislature inquiry):
    - Email A (From: Kanawha County Commission): "Urgent: $1.4M water main match modification needed before Friday's IJDC board vote."
@@ -146,7 +150,7 @@ Run a combined test of our `wv-onboarding` v2.1.2 skills (`/wv-onboard`, `/inbox
 
 ### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-Click the **`WV State Skills (3)`** category pill in **`WV Antigravity → Skills`** (or **`WV Skills`**) and click **`Run →`** on **`/foia-expert`**, **`/legal-procurement-review`**, or **`/policy-program-audit`**.
+Click the **`WV State Skills (3)`** category pill in **`WV Skills`** and click **`Run →`** on **`/foia-expert`**, **`/legal-procurement-review`**, or **`/policy-program-audit`**.
 
 ### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
 
@@ -163,7 +167,7 @@ Test all 3 `WV State Skills` (`/foia-expert`, `/legal-procurement-review`, and `
 
 ---
 
-## Test 5 (New in `v2.1.2`) — Personal Memory, AI Inbox `Action Items`, Minto SCQA Prep & Outbound Scrubbing (`WV Antigravity`)
+## Test 5 — Personal Memory, AI Inbox `Action Items`, Minto SCQA Prep & Outbound Scrubbing (`WV Antigravity`)
 
 - **What this tests:** AI Inbox **`Action Items`** (`Suggested to-dos` + `Topics to catch up on`), `/memory`, `/meeting-notes`, `/meeting-prep`, `/followup-plan`, `/no-ai-slop`, and `/outbound-scrub`.
 
@@ -186,9 +190,9 @@ Run an end-to-end test of `wv-second-brain` (`/meeting-notes`, `/meeting-prep`, 
 
 ---
 
-## Test 6 (New in `v2.1.2`) — `TokenEconomics` Cap Estimator, `★ My Personal Skills` & `Overview` Updates Hub
+## Test 6 — `TokenEconomics` Cap Estimator, `★ My Personal Skills` & `Overview` Updates Hub
 
-- **What this tests:** **`Extensions → WV Antigravity → TokenEconomics`** (monthly pooled `$` cap estimator, 14-day SVG trend chart, Orchestrator/Workflows playbooks), **`Overview`** (`⚡ Orchestrator` optimizer + Updates & Video Walkthroughs), and **`Extensions → WV Skills → ★ My Personal Skills`** (personal skill creation & Safe Export secret scan).
+- **What this tests:** **`Extensions → WV Antigravity → TokenEconomics`** (monthly pooled `$` cap estimator, 14-day SVG trend chart, Orchestrator/Workflows playbooks), **`Overview`** (`⚡ Orchestrator` optimizer + Updates & 5 WV Video Walkthroughs), and **`Extensions → WV Skills → ★ My Personal Skills`** (personal skill creation & Safe Export secret scan).
 
 ![WV Antigravity TokenEconomics Tab](./screenshots/wv-antigravity-tokeneconomics.png)
 
@@ -211,7 +215,7 @@ Run `/token-usage` and `/orchestrator-guide` for our West Virginia cohort:
 
 ### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-Click **`WV Engineering (4)`** in **`WV Antigravity → Skills`** and click **`Run →`** on **`/modernize-refactor`**, **`/deploy-cloudrun`**, or **`/bigquery-architect`**.
+Click **`WV Engineering (4)`** in **`WV Skills`** and click **`Run →`** on **`/modernize-refactor`**, **`/deploy-cloudrun`**, or **`/bigquery-architect`**.
 
 ### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
 
@@ -237,7 +241,7 @@ Test `wv-engineering-cloud` (`/modernize-refactor`, `/deploy-cloudrun`, and `/bi
 
 ### Option A — 1-Click Starter on Your Current Workspace (No Copy-Paste Needed)
 
-Click **`WV Security (2)`** in **`WV Antigravity → Skills`** and click **`Run →`** on **`/security-audit`** or **`/iam-secret-hygiene`**.
+Click **`WV Security (2)`** in **`WV Skills`** and click **`Run →`** on **`/security-audit`** or **`/iam-secret-hygiene`**.
 
 ### Option B — Full 4-Vulnerability CISO Test Snippet (Optional Copy-Paste)
 
@@ -279,11 +283,34 @@ Click **`GE Connector Hub`** in **`Extensions → WV Skills`** or **`Run →`** 
 
 ---
 
-## Test 10 (Run Last — New in `v2.1.2`) — 4-Agent Parallel Swarm, 3-Altitude Weekly Impact & Opt-In Automations
+## Test 10 (New in `v2.2.6`) — `WV Clawy` Multi-Agent Command Center, `↗ Pop Out` Split Chat, `◫ Side Panel` & Voice (`wv-coordinator`)
+
+- **What this tests:** **`Extensions → WV Clawy`** (Warm Brown Bear icon), 5-state parallel agent triage (`Needs You`, `Working`, `Ready for Review`, `Idle`, `Stalled`), **`↗ Pop Out`** side-by-side split chat, **`◫ Side Panel`** docking, 2-level `Group → Goal → Task` sprints, **`🔊 Use Instant Voice (No Login)`** (zero-login browser speech), **`✨ Gemini Live (Kore)`** neural voice, and the in-app **`⚙️ Sign-In & Logout Guide`**.
+
+![WV Clawy Multi-Agent Command Center & Voice](./screenshots/wv-clawy.png)
 
 ### Option A — 1-Click Starter (No Copy-Paste Needed)
 
-Click **`Run →`** on **`/swarm-prep`** or **`/weekly-impact`** inside **`WV Antigravity → Overview`** (`1-Click Workflows`) or **`Skills → Memory & Prep (8)`**.
+1. Open **`WV Clawy`** (Warm Brown Bear icon in the left sidebar) and click **`📊 Summarize my agents`** on the starter chips below the prompt bar—or click **`↗ Pop Out`** on any active agent card to open it side-by-side.
+2. Click **`◫ Side Panel`** in the top-right header to dock `WV Clawy` into the Right-Hand Side Panel next to your current chat.
+3. Click **`🔊 Use Instant Voice (No Login)`** for zero-login hands-free voice, or switch to **`Gemini Live`** and open **`⚙️ Sign-In & Logout Guide`** for `@wv.gov` Kore neural voice guidance.
+
+### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
+
+```markdown
+/wv-coordinator Triage all of my active Antigravity agent conversations and organize a West Virginia Mountain State Ready sprint:
+1. Summarize which active conversations Need Me, are Working, are Ready for Review, or can be closed as Idle.
+2. Create a strict 2-level Group -> Goal -> Task sprint plan for "Mountain State Ready Q4 Rollout" inside `~/.gemini/config/plugin_data/wv-coordinator/` with 2 Goals ("IJDC Board Packet" and "55-County Broadband Rubric") and 2 concrete Tasks per Goal.
+3. Confirm whether my voice mode is ready for zero-login Instant Voice or Gemini Live (Kore) without touching any files outside `~/.gemini/config/`.
+```
+
+---
+
+## Test 11 (Run Last) — 4-Agent Parallel Swarm, 3-Altitude Weekly Impact & Opt-In Automations
+
+### Option A — 1-Click Starter (No Copy-Paste Needed)
+
+Click **`Run →`** on **`/swarm-prep`** or **`/weekly-impact`** inside **`WV Antigravity → Overview`** (`1-Click Workflows`) or **`WV Skills → Memory & Prep (8)`**.
 
 ### Option B — Full West Virginia Deep-Test Script (Optional Copy-Paste)
 
@@ -304,4 +331,4 @@ After trying your chosen prompts, please share quick feedback in your pilot form
 
 ### Clean Uninstall & Incremental Updates
 - **Fast `<1s` Updates:** Click **`Sync Updates`** in **`Extensions → WV Skills`** or type `/wv-update`.
-- **Clean Uninstall:** Run [`scripts/uninstall-wv-suite.ps1`](../scripts/uninstall-wv-suite.ps1) on Windows PowerShell 5.1 (or [`scripts/uninstall-wv-suite.sh`](../scripts/uninstall-wv-suite.sh) on macOS/Linux; pass `-PurgeData` / `--purge-data` to also delete saved memory and settings).
+- **Clean Uninstall:** Run [`scripts/uninstall-wv-suite.ps1`](../scripts/uninstall-wv-suite.ps1) on Windows PowerShell 5.1 (pass `-PurgeMemoryData` to also delete saved memory and settings) or [`scripts/uninstall-wv-suite.sh`](../scripts/uninstall-wv-suite.sh) on macOS/Linux (pass `--purge-data` to also delete saved memory and settings). Run `node scripts/verify-wv-zero-footprint.mjs` anytime to verify 10/10 zero-footprint & clean-uninstall compliance.
