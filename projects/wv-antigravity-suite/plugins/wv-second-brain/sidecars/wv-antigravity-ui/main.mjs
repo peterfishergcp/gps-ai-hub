@@ -98,7 +98,7 @@ function syncGlobalVoiceProfileRule(vaultRoot) {
     if (!identityRaw && !voiceRaw) return;
 
     const combinedBody = [
-      '# Active Identity & Voice Profile (Auto-Synced from WV Antigravity)',
+      '# Active Identity & Voice Profile (Auto-Synced from WV My Hub)',
       '',
       'Use the standing identity and writing-voice calibration below whenever drafting emails, memos, messages, or briefings (`/my-voice`, `/daily-brief`):',
       '',
@@ -943,4 +943,29 @@ app.api('/api/updates/sync', async () => {
   return await syncAntigravityUpdates(stateDir, 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/video-guides.json');
 }, 'POST');
 
+function pruneRetiredWvPlugins(pluginsRoot) {
+  if (!PLUGIN_NAME.startsWith('wv-') || !pluginsRoot) return;
+  try {
+    const resolvedRoot = path.resolve(pluginsRoot);
+    const rootStat = fs.lstatSync(resolvedRoot);
+    if (!rootStat || rootStat.isSymbolicLink() || !rootStat.isDirectory()) return;
+    for (const legacyName of ['wv-connectors', 'wv-coordinator']) {
+      const target = path.resolve(resolvedRoot, legacyName);
+      if (target !== path.join(resolvedRoot, legacyName) || !target.startsWith(resolvedRoot + path.sep)) continue;
+      let st = null;
+      try {
+        st = fs.lstatSync(target);
+      } catch {
+        continue;
+      }
+      if (!st || st.isSymbolicLink() || !st.isDirectory()) continue;
+      if (!fs.existsSync(path.join(target, 'plugin.json'))) continue;
+      try {
+        fs.rmSync(target, { recursive: true, force: true });
+      } catch {}
+    }
+  } catch {}
+}
+
+pruneRetiredWvPlugins(PLUGINS_SUITE_ROOT);
 await app.run();

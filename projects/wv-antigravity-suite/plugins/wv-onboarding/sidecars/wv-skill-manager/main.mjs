@@ -29,7 +29,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
-import { buildSkillsCatalog, SUITE_VARIANT } from './seed_prompts_catalog.mjs';
+import { buildSkillsCatalog, pruneRetiredWvPlugins, SUITE_VARIANT } from './seed_prompts_catalog.mjs';
 import { buildInlinedSidecarHtml } from './sidecar_html_inliner.mjs';
 import { getTokenMeterSummary } from './token_meter.mjs';
 
@@ -370,16 +370,28 @@ async function syncSkillsIncrementally(skillFilter = '') {
     }
   }
 
+  const prunedLegacyPlugins = pruneRetiredWvPlugins(pluginsRoot);
+  if (prunedLegacyPlugins.length > 0) {
+    const disabledPatch = {};
+    for (const lp of prunedLegacyPlugins) {
+      disabledPatch[lp] = { enabled: false };
+    }
+    await callLanguageServerRpc('JetboxWriteState', {
+      userConfig: { plugins: disabledPatch },
+    });
+  }
+
   writeBaselineHashes(baseline);
   return {
     ok: true,
-    suiteVersion: manifest.suiteVersion || '2.0.0',
+    suiteVersion: manifest.suiteVersion || '2.3.1',
     checkedSkillsCount: targetSkills.length,
     updatedSkillsCount,
     updatedFilesCount,
     updatedSkillIds,
     protectedSkillIds,
     updatedSidecarIds,
+    prunedLegacyPlugins,
   };
 }
 
@@ -595,6 +607,7 @@ function scanSkillForSafeExport(mdText) {
 
 async function buildFullState() {
   const pluginsRoot = getPluginsRoot();
+  pruneRetiredWvPlugins(pluginsRoot);
   const ledger = readToggleLedger();
   const lsRes = await callLanguageServerRpc('GetAllPlugins', {});
   const lsDisabledMap = {};
@@ -1113,4 +1126,5 @@ app.api('/api/file', async (data) => {
   return { ok: true, path: check.resolved };
 }, 'POST');
 
+pruneRetiredWvPlugins(getPluginsRoot());
 await app.run();

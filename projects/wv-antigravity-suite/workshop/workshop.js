@@ -163,7 +163,7 @@
 
     grid.replaceChildren();
     if (filtered.length === 0) {
-      grid.appendChild(el('p', 'empty-state', 'No skills match your filter. Clear the search box to see all 39 skills.'));
+      grid.appendChild(el('p', 'empty-state', 'No skills match your filter. Clear the search box to see all 36 skills.'));
       return;
     }
 

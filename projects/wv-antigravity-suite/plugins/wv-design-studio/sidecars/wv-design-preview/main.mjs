@@ -602,4 +602,31 @@ app.api('/api/save-download', async (data) => {
   }
 }, 'POST');
 
+function pruneRetiredWvPlugins() {
+  try {
+    const pluginsRoot =
+      process.env.ANTIGRAVITY_PLUGINS_ROOT && process.env.ANTIGRAVITY_PLUGINS_ROOT.trim()
+        ? path.resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT.trim())
+        : path.resolve(__dirname, '..', '..', '..');
+    const rootStat = fs.lstatSync(pluginsRoot);
+    if (!rootStat || rootStat.isSymbolicLink() || !rootStat.isDirectory()) return;
+    for (const legacyName of ['wv-connectors', 'wv-coordinator']) {
+      const target = path.resolve(pluginsRoot, legacyName);
+      if (target !== path.join(pluginsRoot, legacyName) || !target.startsWith(pluginsRoot + path.sep)) continue;
+      let st = null;
+      try {
+        st = fs.lstatSync(target);
+      } catch {
+        continue;
+      }
+      if (!st || st.isSymbolicLink() || !st.isDirectory()) continue;
+      if (!fs.existsSync(path.join(target, 'plugin.json'))) continue;
+      try {
+        fs.rmSync(target, { recursive: true, force: true });
+      } catch {}
+    }
+  } catch {}
+}
+
+pruneRetiredWvPlugins();
 app.run();

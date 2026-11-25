@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.0).
+  Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.1).
 .DESCRIPTION
   Adheres strictly to WV corporate laptop standards (Windows 11 / PowerShell 5.1, zero admin rights,
   zero standalone Node/Python/Git/Docker required, zero files created outside $HOME\.gemini\config\,
@@ -86,7 +86,7 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "wv-antigravity-suite.zip"
-    Write-Host "Downloading WV Antigravity Suite v2.3.0..." -ForegroundColor Cyan
+    Write-Host "Downloading WV Antigravity Suite v2.3.1..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null

@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.3.0",
-  "updatedAt": "2026-11-25T19:15:00Z",
+  "suiteVersion": "2.3.1",
+  "updatedAt": "2026-11-25T20:10:00Z",
   "skillCount": 36,
   "skillManifest": {
     "automations": {
@@ -146,12 +146,12 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "fc74b9743b911162",
+      "treeSha256": "76242a7d1647f10c",
       "files": {
-        "SKILL.md": "9c7ef3e75e8a3a14734d0a5cc4f8d32ed573cc92369157a284f9f62eb7b8483c",
-        "scripts/incremental-sync.mjs": "65de187e9e80eb71ae611308b749302c99ab958bcb4c9844f12714af4c8e5a8f",
-        "scripts/install-wv-suite.ps1": "534aa9b564bccff59fd82eca69ccdb479ad554591857a19022bcb3646c89710e",
-        "scripts/install-wv-suite.sh": "5375d517a06ece810bcca8dd884e1401e4e0a30fe42455d5613eca238312225a"
+        "SKILL.md": "22414e8657626a7f14e06016e17c6517340b31010d9f4de9d9c7594219048804",
+        "scripts/incremental-sync.mjs": "46dc51e124479a558fe112583ff9d49ee92b3ac00f3035c5a4147d9d3f0a20f4",
+        "scripts/install-wv-suite.ps1": "7aa7fdec660fcc19f0858e44f4eb8afb95ada3e5c1ae8c04bafc2278026ba019",
+        "scripts/install-wv-suite.sh": "02c4a6cbc41664ac008b0a1786dff76ea9314c61c16d7fe93a6182bb766d9ca7"
       }
     },
     "followup-plan": {
@@ -334,7 +334,7 @@
       "files": {
         "app.js": "c437124c44acd243c0f07608c4422cce31d37de4edcf2a9ba761676e7a221040",
         "index.html": "1061d083682142fdbbe17f488683a4b509a6b7861f489df5fa4ac862bfd5a327",
-        "main.mjs": "528ca9fedf3e0761b01d57a42c041357c026a563f0b7bcac629af6448e196b56",
+        "main.mjs": "e8393d8155365426a0458b9ccb51d1c08cd777b066ff552426551565a9de9a03",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "5919df74fce6f3d78335f1369ced632fd32fe7eaf0242f027452599002521940",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
@@ -349,9 +349,9 @@
       "files": {
         "app.js": "94b1f3380d1cfd671364e3908049265685f9482620dfa6634e889079333e2a42",
         "index.html": "546f304ecd0fc2b28e781f0c943c9d1cce953cf18949c241893199744dbb3935",
-        "main.mjs": "1b1e6e984b6ef141fac6ee6ee05a35f5823f121a2ed0075bebddbf42b5eabef8",
+        "main.mjs": "f7d50a0df3931d126a023fce46e0e6408581cb9c9a9c41eacc523ae27acbc86c",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "82ca7428b2714c7419ba07f10f7ec7b1645c79d795753baa4272b27d6a65cd1a",
+        "seed_prompts_catalog.mjs": "f1a825c2653341c49107f595b211a55f8b78efdc3d9c42ef076c62f1d65dfb3d",
         "sidecar.json": "29b9c1c6f8b8ca7b60714ba43a648788b1e044a5f8b7018c39191c9999d4ac02",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
@@ -374,7 +374,7 @@
         "antigravity_updates.mjs": "b2a917833ffbd6b17a6cc032ae33431ae4aeb9bae688df9dd085e98d7006495e",
         "app.js": "48d6fcc0e8c51f5d4e143ac0e27223f750514df54734718721d45a8794512ac1",
         "index.html": "57e7179fb052e17f8c28d1c9b83ae3999aaf1ba80341d4a0891135ea262670a3",
-        "main.mjs": "950a30a84f849a82ae2244128e99cf91ae72444e507fc479804baef7eac28b0d",
+        "main.mjs": "ffd092629f4ed3116b3dfecda3ac13a5fc6f9d0c745023343f8937c86099f0fd",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "82ca7428b2714c7419ba07f10f7ec7b1645c79d795753baa4272b27d6a65cd1a",
         "sidecar.json": "8e18c4b82b96a5d0860c10aeb19594b6d63fbe4be979f38a92dd2a88f6805671",
