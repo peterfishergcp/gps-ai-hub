@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.2).
+# Fast (<2 second) Zero-Footprint installer & updater for the State of West Virginia Antigravity Suite (v2.3.3).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ — zero /tmp or /private/tmp writes,
 # zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
 # Automatically removes deprecated legacy plugins (wv-connectors, wv-coordinator) on upgrade.
@@ -87,7 +87,7 @@ if [[ -n "${ZIP_URL}" ]]; then
     exit 1
   fi
   init_stage_dir
-  echo "Downloading State of West Virginia Antigravity Suite v2.3.2..."
+  echo "Downloading State of West Virginia Antigravity Suite v2.3.3..."
   curl -fsSL "${ZIP_URL}" -o "${STAGE_DIR}/wv.zip"
   mkdir -p -m 700 "${STAGE_DIR}/extracted"
   validate_and_extract_zip "${STAGE_DIR}/wv.zip" "${STAGE_DIR}/extracted"
@@ -157,4 +157,4 @@ restart_wv_sidecars() {
 }
 restart_wv_sidecars || true
 
-echo "Installed ${COUNT} zero-footprint WV plugins (v2.3.2) into ${PLUGINS_DEST} (3 UI panels: WV My Hub, WV Skills [with Ask Clawy], WV Preview)"
+echo "Installed ${COUNT} zero-footprint WV plugins (v2.3.3) into ${PLUGINS_DEST} (3 UI panels: WV My Hub, WV Skills [with Ask Clawy], WV Preview)"

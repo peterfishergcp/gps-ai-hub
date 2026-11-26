@@ -410,6 +410,13 @@ export function saveUpdatesPreferences(prefs = {}, stateDir = '') {
   if (typeof prefs.completeStep === 'string' && /^[a-z0-9_-]{1,32}$/.test(prefs.completeStep)) {
     completedSet.add(prefs.completeStep);
   }
+  if (Array.isArray(prefs.completeSteps)) {
+    for (const st of prefs.completeSteps) {
+      if (typeof st === 'string' && /^[a-z0-9_-]{1,32}$/.test(st)) {
+        completedSet.add(st);
+      }
+    }
+  }
 
   const next = {
     emailHint: rawEmail,
@@ -420,7 +427,7 @@ export function saveUpdatesPreferences(prefs = {}, stateDir = '') {
     updatedAt: new Date().toISOString(),
   };
 
-  const tmp = `${subPath}.tmp-${process.pid}`;
+  const tmp = `${subPath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   fs.writeFileSync(tmp, JSON.stringify(next, null, 2) + '\n', { mode: 0o600 });
   fs.renameSync(tmp, subPath);
   return next;
@@ -463,7 +470,7 @@ export async function syncAntigravityUpdates(stateDir = '', videoJsonUrl = '') {
     items,
     videos: remoteVideos || BUNDLED_VIDEO_GUIDES,
   };
-  const tmp = `${cachePath}.tmp-${process.pid}`;
+  const tmp = `${cachePath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   fs.writeFileSync(tmp, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });
   fs.renameSync(tmp, cachePath);
 

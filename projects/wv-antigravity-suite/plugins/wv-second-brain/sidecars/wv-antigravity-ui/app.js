@@ -153,8 +153,58 @@
     showToast('Click "WV Skills" (Sparkles icon) in the left Plugins sidebar to browse skills, Personal Skills & Ask Clawy!');
   }
 
+  const optimisticMasterySteps = new Set();
+
+  function applyLocalMasterySteps(extraSteps) {
+    if (!appState) return;
+    if (!appState.updates || typeof appState.updates !== 'object') {
+      appState.updates = { subscription: { completedMasterySteps: [] } };
+    }
+    if (!appState.updates.subscription || typeof appState.updates.subscription !== 'object') {
+      appState.updates.subscription = { completedMasterySteps: [] };
+    }
+    const merged = new Set(
+      Array.isArray(appState.updates.subscription.completedMasterySteps)
+        ? appState.updates.subscription.completedMasterySteps
+        : []
+    );
+    optimisticMasterySteps.forEach((s) => merged.add(s));
+    if (Array.isArray(extraSteps)) {
+      extraSteps.forEach((s) => {
+        if (typeof s === 'string' && s) merged.add(s);
+      });
+    }
+    appState.updates.subscription.completedMasterySteps = Array.from(merged);
+  }
+
   function markMasteryStep(stepId) {
-    apiPost('/api/updates/prefs', { completeStep: stepId }).catch(() => {});
+    if (!stepId || typeof stepId !== 'string') return;
+    const hadBefore =
+      optimisticMasterySteps.has(stepId) ||
+      Boolean(
+        appState &&
+          appState.updates &&
+          appState.updates.subscription &&
+          Array.isArray(appState.updates.subscription.completedMasterySteps) &&
+          appState.updates.subscription.completedMasterySteps.includes(stepId)
+      );
+    optimisticMasterySteps.add(stepId);
+    applyLocalMasterySteps([stepId]);
+    if (!hadBefore) {
+      render();
+    }
+    apiPost('/api/updates/prefs', {
+      completeStep: stepId,
+      completeSteps: Array.from(optimisticMasterySteps),
+    })
+      .then((res) => {
+        if (res && res.updates && appState) {
+          appState.updates = res.updates;
+          applyLocalMasterySteps();
+          if (activeTab === 'overview') render();
+        }
+      })
+      .catch(() => {});
   }
 
   function getUiBridgeContext() {
@@ -172,6 +222,7 @@
       reloadState: loadState,
       rerender: render,
       switchTab: (nextTab) => {
+        if (nextTab === 'tokens') markMasteryStep('check-tokens');
         activeTab = nextTab;
         syncTabButtons();
         render();
@@ -224,6 +275,9 @@
   }
 
   async function dispatchPrompt(promptText, title) {
+    if (String(promptText || '').trim().startsWith('/')) {
+      markMasteryStep('run-skill');
+    }
     try {
       if (window.sidecar && window.sidecar.agent) {
         if (window.sidecar.conversationId) {
@@ -460,6 +514,7 @@
 
   async function loadState() {
     appState = await apiGet('/api/state');
+    applyLocalMasterySteps();
     const p = appState.profile || {};
     headerTitle.textContent = 'WV My Hub';
     headerSub.textContent = p.role && p.role !== 'Ready' ? p.role : '';
@@ -2555,6 +2610,9 @@
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
+      if (activeTab === 'tokens') {
+        markMasteryStep('check-tokens');
+      }
       syncTabButtons();
       render();
     });
@@ -2575,7 +2633,10 @@
 
   const openSkillsBtn = document.getElementById('btn-open-skills-ext');
   if (openSkillsBtn) {
-    openSkillsBtn.addEventListener('click', openDedicatedSkillsHub);
+    openSkillsBtn.addEventListener('click', () => {
+      markMasteryStep('personal-skill');
+      openDedicatedSkillsHub();
+    });
   }
 
   const customizeBtn = document.getElementById('btn-customize');
