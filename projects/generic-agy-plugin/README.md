@@ -34,7 +34,7 @@ Designed specifically for **strict government corporate laptop policies**:
 
 ### 3. `Preview` *(Magnifying Glass Icon — Searchable, Newest-First Deliverable Viewer)*
 
-![Preview — Serverless Deliverable Preview](./docs/screenshots/my-antigravity-initiatives.png)
+![Preview — Searchable Visual Deliverable Viewer](./docs/screenshots/my-antigravity-preview.png)
 
 ---
 
