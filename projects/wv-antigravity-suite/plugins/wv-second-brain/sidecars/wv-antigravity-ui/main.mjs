@@ -485,6 +485,39 @@ app.api(
   'GET'
 );
 
+function hasAnyPreviewDeliverable() {
+  try {
+    const regPath = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'wv-design-studio', 'deliverables.json');
+    if (fs.existsSync(regPath) && fs.lstatSync(regPath).isFile()) {
+      const parsed = __parseJsonNoBom(fs.readFileSync(regPath, 'utf-8'));
+      const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed && parsed.deliverables) ? parsed.deliverables : [];
+      if (list.length > 0) return true;
+    }
+    const brainDirs = [];
+    if (process.env.ANTIGRAVITY_BRAIN_DIR) brainDirs.push(process.env.ANTIGRAVITY_BRAIN_DIR);
+    if (process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR) {
+      const m = String(process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR).match(/^(.*)[\\/]+sidecar_data[\\/]/);
+      if (m && m[1]) brainDirs.push(path.join(m[1], 'brain'));
+    }
+    brainDirs.push(path.join(os.homedir(), '.gemini', 'antigravity', 'brain'));
+    brainDirs.push(path.join(os.homedir(), '.gemini', 'jetski', 'brain'));
+    const seen = new Set();
+    for (const bd of brainDirs) {
+      const resolved = path.resolve(bd);
+      if (seen.has(resolved) || !fs.existsSync(resolved)) continue;
+      seen.add(resolved);
+      const convs = fs.readdirSync(resolved, { withFileTypes: true }).slice(0, 60);
+      for (const c of convs) {
+        if (!c.isDirectory() || c.isSymbolicLink() || c.name.startsWith('.')) continue;
+        const cPath = path.join(resolved, c.name);
+        const files = fs.readdirSync(cPath);
+        if (files.some((f) => f.endsWith('.html') && !f.startsWith('.'))) return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
 app.api(
   '/api/state',
   async () => {
@@ -497,10 +530,12 @@ app.api(
     const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
     const tokenEconomics = await getTokenMeterSummary('', stateDir);
     const updates = getUpdatesState(stateDir);
+    const hasPreviewDeliverables = hasAnyPreviewDeliverable();
     return {
       ok: true,
       tokenEconomics,
       updates,
+      hasPreviewDeliverables,
       ...state,
       personalSkillsRoot: personalRoot,
       skillsCatalog,

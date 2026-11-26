@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.3.2",
-  "updatedAt": "2026-11-25T20:38:00Z",
+  "suiteVersion": "2.3.3",
+  "updatedAt": "2026-11-26T03:26:00Z",
   "skillCount": 36,
   "skillManifest": {
     "automations": {
@@ -146,12 +146,12 @@
     "wv-update": {
       "plugin": "wv-onboarding",
       "skill": "wv-update",
-      "treeSha256": "73434a417dea0b27",
+      "treeSha256": "d7411f2aaaa072c5",
       "files": {
         "SKILL.md": "22414e8657626a7f14e06016e17c6517340b31010d9f4de9d9c7594219048804",
         "scripts/incremental-sync.mjs": "46dc51e124479a558fe112583ff9d49ee92b3ac00f3035c5a4147d9d3f0a20f4",
-        "scripts/install-wv-suite.ps1": "1ca7cb44c3da5480af8752768b6b7e8705c961e3c131427c34b93daeb1150572",
-        "scripts/install-wv-suite.sh": "77de0e9772eecedab6b60aabd6be440ee1bdd218ee0ddc45236c3feb6043deee"
+        "scripts/install-wv-suite.ps1": "a90150634022930117b733aae952418955dfebe720a15be4dcdf35128f5459ff",
+        "scripts/install-wv-suite.sh": "9ff42dc24203b206f27bb2f3c6614fd49e96e47251332d99dc7752668e1b75ff"
       }
     },
     "followup-plan": {
@@ -371,10 +371,10 @@
       "plugin": "wv-second-brain",
       "sidecar": "wv-antigravity-ui",
       "files": {
-        "antigravity_updates.mjs": "b2a917833ffbd6b17a6cc032ae33431ae4aeb9bae688df9dd085e98d7006495e",
-        "app.js": "48d6fcc0e8c51f5d4e143ac0e27223f750514df54734718721d45a8794512ac1",
+        "antigravity_updates.mjs": "68f120a1073ef4d184f294d3286b969f374c6405f6af4dd701d35ba849aefa31",
+        "app.js": "b55c7b42626d3df8b448400ba05ecdc084d516e07bd6865ff558a8447e91efb8",
         "index.html": "57e7179fb052e17f8c28d1c9b83ae3999aaf1ba80341d4a0891135ea262670a3",
-        "main.mjs": "ffd092629f4ed3116b3dfecda3ac13a5fc6f9d0c745023343f8937c86099f0fd",
+        "main.mjs": "e70308a00b11e21abbf5142997a47c9d05d3a2172489bd95d595030cd7837a62",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
         "seed_prompts_catalog.mjs": "82ca7428b2714c7419ba07f10f7ec7b1645c79d795753baa4272b27d6a65cd1a",
         "sidecar.json": "563089364ee82518b71127058cdec98e622195465d5e00331f124cf0c786348c",
@@ -382,7 +382,7 @@
         "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
         "token_meter.mjs": "2501074e7715e7b2c9d52fa481eb7435a6eb594e5121facd5814eca681ef478b",
         "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b",
-        "tokeneconomics_and_updates_ui.js": "9fe65c6ad25c8ff53781210618cbb04b66511d37fe355bc5b5e0bcdd6b0b2e58",
+        "tokeneconomics_and_updates_ui.js": "242f05facbfdf47d2a7b826ef18c869ecd9023db51d1c627b7cfef6a92bbeffe",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",

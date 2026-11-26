@@ -119,6 +119,9 @@
     if (myCat && Array.isArray(myCat.skills) && myCat.skills.length > 0) {
       doneSet.add('personal-skill');
     }
+    if (ctx.appState && ctx.appState.hasPreviewDeliverables) {
+      doneSet.add('preview-dash');
+    }
 
     var steps = [
       {
@@ -248,7 +251,7 @@
         el('button', {
           type: 'button',
           className: 'btn btn-secondary btn-sm',
-          text: 'Open WV Skills \u2728',
+          text: ctx.isWv ? 'Open WV Skills \u2728' : 'Open Skills \u2728',
           onClick: function () {
             ctx.openSkillsExtension();
           },
