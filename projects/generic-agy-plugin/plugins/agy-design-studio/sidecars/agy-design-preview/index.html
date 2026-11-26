@@ -12,27 +12,18 @@
     <div class="header-top">
       <div class="brand-row">
         <svg class="brand-logo" width="28" height="28" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-          <defs>
-            <radialGradient id="pvTopRed" cx="62%" cy="22%" r="48%">
-              <stop offset="0%" stop-color="#FF4B3A"/>
-              <stop offset="48%" stop-color="#FF9F1C"/>
-              <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
-            </radialGradient>
-            <radialGradient id="pvLeftGreen" cx="34%" cy="32%" r="46%">
-              <stop offset="0%" stop-color="#34C759"/>
-              <stop offset="52%" stop-color="#A3E635" stop-opacity="0.7"/>
-              <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
-            </radialGradient>
-            <linearGradient id="pvBaseBlue" x1="50" y1="12" x2="50" y2="88" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#60A5FA"/>
-              <stop offset="55%" stop-color="#2563EB"/>
-              <stop offset="100%" stop-color="#3B82F6"/>
-            </linearGradient>
-          </defs>
-          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#pvBaseBlue)"/>
-          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#pvLeftGreen)"/>
-          <path d="M50 13C38.5 13 31.8 29.5 24.5 49.5C18.2 66.8 13.5 76.2 9.8 81.2C7.8 83.9 9.9 87 13.1 86.4C19.8 85.1 26.2 77.6 32.8 66.8C38.5 57.5 43.6 52.5 50 52.5C56.4 52.5 61.5 57.5 67.2 66.8C73.8 77.6 80.2 85.1 86.9 86.4C90.1 87 92.2 83.9 90.2 81.2C86.5 76.2 81.8 66.8 75.5 49.5C68.2 29.5 61.5 13 50 13Z" fill="url(#pvTopRed)"/>
-        </svg>
+  <defs>
+    <linearGradient id="agyPreviewGrad" x1="14" y1="14" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1E40AF"/>
+    </linearGradient>
+  </defs>
+  <circle cx="44" cy="44" r="26" stroke="url(#agyPreviewGrad)" stroke-width="11"/>
+  <circle cx="44" cy="44" r="15" fill="#3B82F6" fill-opacity="0.14"/>
+  <path d="M34 34C37.5 30.5 42.5 29 47.5 30" stroke="#60A5FA" stroke-width="5" stroke-linecap="round"/>
+  <path d="M64 64L85 85" stroke="url(#agyPreviewGrad)" stroke-width="12" stroke-linecap="round"/>
+</svg>
         <div>
           <h1>Preview</h1>
           <p class="subtitle" id="previewSubtitle">Dashboards, 16:9 Slides &amp; Branded Docs</p>
@@ -41,10 +32,42 @@
       <div class="header-actions">
         <button type="button" class="btn-secondary" id="openConvBtn" hidden title="Jump to the conversation that created this deliverable">Open Chat</button>
         <button type="button" class="btn-secondary" id="refreshListBtn" title="Scan conversations &amp; reload visual deliverables">Refresh</button>
-        <button type="button" class="btn-secondary" id="printPdfBtn" disabled title="Print or Save as PDF">Print / PDF</button>
-        <button type="button" class="btn-primary" id="downloadStandaloneBtn" disabled>Download HTML ↗</button>
+        <button type="button" class="btn-secondary" id="openBrowserBtn" disabled title="Open full-screen in an unsandboxed browser tab">Open in Browser ↗</button>
+        <button type="button" class="btn-primary" id="saveDownloadsBtn" disabled title="Save standalone .html file directly into your Downloads folder">Save to Downloads ↓</button>
       </div>
     </div>
+
+    <div class="artifact-finder-bar" id="artifactFinderBar" hidden>
+      <div class="artifact-picker-wrap">
+        <button type="button" class="btn-secondary artifact-picker-btn" id="artifactPickerBtn" aria-expanded="false">
+          All Artifacts (0) ▾
+        </button>
+        <div class="artifact-dropdown" id="artifactDropdown" hidden></div>
+      </div>
+      <div class="preview-search-box">
+        <span class="search-glyph" aria-hidden="true">⌕</span>
+        <input type="search" id="artifactSearchInput" placeholder="Search artifacts by title, type, or date..." autocomplete="off">
+        <button type="button" id="clearSearchBtn" class="search-clear-btn" hidden aria-label="Clear search">×</button>
+      </div>
+      <select id="artifactSortSelect" class="preview-sort-select" aria-label="Sort deliverables">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="title">Title A–Z</option>
+      </select>
+    </div>
+
+    <div class="save-confirm-banner" id="saveConfirmBanner" role="status" aria-live="polite" hidden>
+      <div class="save-confirm-main">
+        <span class="save-confirm-badge">✓ Saved to Downloads</span>
+        <code class="save-confirm-path" id="saveConfirmPath"></code>
+        <span class="save-confirm-tip" id="saveConfirmTip">Open Finder / File Explorer → Downloads and double-click to view or print in Chrome, Safari, or Edge.</span>
+      </div>
+      <div class="save-confirm-actions">
+        <button type="button" class="btn-secondary save-confirm-btn" id="copySavedPathBtn">Copy Path</button>
+        <button type="button" class="btn-secondary save-confirm-btn" id="dismissSaveBannerBtn" aria-label="Dismiss notice">×</button>
+      </div>
+    </div>
+
     <div class="filter-bar" id="kindFilterBar" hidden></div>
     <div class="tabs-bar" id="deliverableTabs" role="tablist" aria-label="Generated design deliverables"></div>
   </header>
@@ -55,7 +78,7 @@
       <p>Generate an interactive dashboard, 16:9 slide deck, or print-ready flyer in chat and click <strong>Refresh</strong>—or launch one in 1 click below:</p>
       <div class="starter-grid" id="starterGrid"></div>
     </div>
-    <iframe id="previewFrame" class="preview-frame" title="Rendered Visual Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals" hidden></iframe>
+    <iframe id="previewFrame" class="preview-frame" title="Rendered Visual Deliverable Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
   </main>
 
   <div class="toast" id="statusToast" hidden></div>

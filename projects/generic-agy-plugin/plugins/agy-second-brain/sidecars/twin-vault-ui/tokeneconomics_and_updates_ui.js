@@ -119,6 +119,9 @@
     if (myCat && Array.isArray(myCat.skills) && myCat.skills.length > 0) {
       doneSet.add('personal-skill');
     }
+    if (ctx.appState && ctx.appState.hasPreviewDeliverables) {
+      doneSet.add('preview-dash');
+    }
 
     var steps = [
       {
@@ -130,21 +133,14 @@
         },
       },
       {
-        id: 'setup-clawy',
-        label: ctx.isWv ? '2. Set Up WV Clawy \uD83D\uDC3B' : '2. Set Up Clawy \uD83D\uDC3B',
+        id: 'connect-workspace',
+        label: '2. Connect Google Workspace',
         onSelect: function () {
-          ctx.markMasteryStep('setup-clawy');
-          if (typeof ctx.openClawyExtension === 'function') {
-            ctx.openClawyExtension();
-          }
-          var clawyCmd = ctx.isWv ? '/wv-coordinator' : '/agy-coordinator';
-          var clawyName = ctx.isWv ? 'WV Clawy' : 'Clawy';
+          ctx.markMasteryStep('connect-workspace');
+          ctx.showToast('Open Customizations → Marketplace → Google Workspace in the left rail to enable Docs, Sheets, Slides, Drive, Calendar & Gmail!');
           ctx.dispatchPrompt(
-            clawyCmd +
-              ' Help me set up ' +
-              clawyName +
-              ', verify my GCP Project & Kore Gemini Live voice connection, and summarize my active agent conversations.',
-            clawyCmd
+            'Walk me through connecting Antigravity\'s built-in Google Workspace connectors (Google Docs, Sheets, Slides, Drive, Calendar, and Gmail) under Customizations -> Marketplace -> Google Workspace.',
+            'Connect Google Workspace'
           );
         },
       },
@@ -255,16 +251,7 @@
         el('button', {
           type: 'button',
           className: 'btn btn-secondary btn-sm',
-          text: ctx.isWv ? 'Open WV Clawy \uD83D\uDC3B' : 'Open Clawy \uD83D\uDC3B',
-          onClick: function () {
-            ctx.markMasteryStep('setup-clawy');
-            if (typeof ctx.openClawyExtension === 'function') ctx.openClawyExtension();
-          },
-        }),
-        el('button', {
-          type: 'button',
-          className: 'btn btn-secondary btn-sm',
-          text: 'Open Skills Hub \u2728',
+          text: ctx.isWv ? 'Open WV Skills \u2728' : 'Open Skills \u2728',
           onClick: function () {
             ctx.openSkillsExtension();
           },

@@ -25,7 +25,16 @@ def update_manifest_hashes(suite_root: Path) -> None:
     if not manifest_path.exists():
         return
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    suite_version = str(manifest.get("suiteVersion") or "").strip()
     plugins_dir = suite_root / "plugins"
+    if suite_version and plugins_dir.is_dir():
+        for plugin_dir in sorted(p for p in plugins_dir.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            pj_path = plugin_dir / "plugin.json"
+            if pj_path.is_file():
+                pj = json.loads(pj_path.read_text(encoding="utf-8").lstrip("\ufeff"))
+                if pj.get("version") != suite_version:
+                    pj["version"] = suite_version
+                    pj_path.write_text(json.dumps(pj, indent=2) + "\n", encoding="utf-8")
     skill_manifest: dict[str, dict] = {}
 
     if plugins_dir.is_dir():

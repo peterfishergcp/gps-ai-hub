@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-/tmp installer & updater for the Public Sector Antigravity Suite (v1.9.3).
-# Stages strictly inside ~/.gemini/config/.install_stage_$$ (zero /tmp or /private/tmp writes,
-# zero 'agy plugin install' /tmp/lsrpc.sh prompts, and zero files outside ~/.gemini/config/).
+# Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v2.0.0).
+# Stages strictly inside ~/.gemini/config/.install_stage_$$ — zero /tmp or /private/tmp writes,
+# zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
+# Automatically removes deprecated pre-v2.0.0 plugins (agy-connectors, agy-coordinator) on upgrade.
 
 set -euo pipefail
 
@@ -58,12 +59,10 @@ if [[ -n "${SCRIPT_PATH}" && -f "${SCRIPT_PATH}" ]]; then
 fi
 
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
-PLUGIN_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-connectors"
 MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/my-antigravity/memory"
-COORD_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/agy-coordinator"
 
-mkdir -p -m 700 "${PLUGINS_DEST}" "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}"
-chmod 700 "${PLUGIN_DATA_DIR}" "${MEM_DATA_DIR}" "${COORD_DATA_DIR}" 2>/dev/null || true
+mkdir -p -m 700 "${PLUGINS_DEST}" "${MEM_DATA_DIR}"
+chmod 700 "${MEM_DATA_DIR}" 2>/dev/null || true
 
 STAGE_DIR=""
 cleanup() {
@@ -119,7 +118,7 @@ if [[ -n "${ZIP_URL}" ]]; then
   ZIP_FILE="${STAGE_DIR}/generic-agy-plugin.zip"
   EXTRACT_DIR="${STAGE_DIR}/extracted"
   mkdir -p -m 700 "${EXTRACT_DIR}"
-  echo "Downloading Generic AGY Plugin Suite v1.9.3 (<700 KB)..."
+  echo "Downloading Generic AGY Plugin Suite v2.0.0 (<700 KB)..."
   curl -fsSL "${ZIP_URL}" -o "${ZIP_FILE}"
   validate_and_extract_zip "${ZIP_FILE}" "${EXTRACT_DIR}"
   if [[ -d "${EXTRACT_DIR}/plugins" ]]; then
@@ -207,6 +206,11 @@ METAEOF
   done
 fi
 
+# Clean up deprecated plugins from pre-v2.0.0 installs so orphaned sidebar icons disappear cleanly
+for legacy_p in agy-connectors agy-coordinator; do
+  rm -rf "${PLUGINS_DEST:?}/${legacy_p}"
+done
+
 INSTALLED=()
 for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
   [[ -d "${pdir}" && ! -L "${pdir}" ]] || continue
@@ -221,40 +225,32 @@ for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
   cp -R "${pdir}" "${PLUGINS_DEST}/${pname}"
   INSTALLED+=("${pname}")
 done
-echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins to ${PLUGINS_DEST}: ${INSTALLED[*]}"
-# Restart any running AGY UI sidecar processes so Antigravity's Sidecar Runner ("restart_policy": "always") boots the updated code immediately
-if command -v pkill >/dev/null 2>&1; then
-  pkill -f "plugins/agy-coordinator/sidecars/coordinator-ui/main.mjs" 2>/dev/null || true
-  pkill -f "plugins/agy-second-brain/sidecars/twin-vault-ui/main.mjs" 2>/dev/null || true
-  pkill -f "plugins/agy-onboarding/sidecars/agy-skill-manager/main.mjs" 2>/dev/null || true
-fi
+echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins (v2.0.0) to ${PLUGINS_DEST}: ${INSTALLED[*]}"
 
-if [[ -n "${GE_INSTANCE}" ]]; then
-  GE_CFG="${PLUGIN_DATA_DIR}/ge-instance.json"
-  umask 077
-  esc_ge="${GE_INSTANCE//\\/\\\\}"
-  esc_ge="${esc_ge//\"/\\\"}"
-  esc_cid="${OAUTH_CLIENT_ID//\\/\\\\}"
-  esc_cid="${esc_cid//\"/\\\"}"
-  esc_csec="${OAUTH_CLIENT_SECRET//\\/\\\\}"
-  esc_csec="${esc_csec//\"/\\\"}"
-  ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  cat > "${GE_CFG}" <<EOF
-{
-  "rawInput": "${esc_ge}",
-  "oauthClientId": "${esc_cid}",
-  "oauthClientSecret": "${esc_csec}",
-  "updatedAt": "${ts}"
-}
-EOF
-  chmod 600 "${GE_CFG}" 2>/dev/null || true
-  if [[ -d "${HOME}/.gemini/antigravity" ]]; then
-    AGY_DATA_DIR="${HOME}/.gemini/antigravity/plugin_data/agy-connectors"
-    mkdir -p -m 700 "${AGY_DATA_DIR}" 2>/dev/null || true
-    cp "${GE_CFG}" "${AGY_DATA_DIR}/ge-instance.json" 2>/dev/null || true
-    chmod 600 "${AGY_DATA_DIR}/ge-instance.json" 2>/dev/null || true
+# Restart running AGY sidecars cleanly so upgraded UI/API code loads immediately
+restart_agy_sidecars() {
+  if command -v pkill >/dev/null 2>&1; then
+    pkill -f "[a]gy-sidecar=" 2>/dev/null || true
+    pkill -f "[c]oordinator-ui/main.mjs" 2>/dev/null || true
   fi
-  echo "Saved default Gemini Enterprise instance to ${GE_CFG}"
-fi
+  # Also catch pre-v2.0.0 sidecars invoked as `node ... main.mjs` whose CWD is inside ${PLUGINS_DEST}/agy-*
+  if command -v pgrep >/dev/null 2>&1; then
+    local pid cwd_path
+    for pid in $(pgrep -f "main\.mjs" 2>/dev/null || true); do
+      cwd_path=""
+      if [[ -L "/proc/${pid}/cwd" ]]; then
+        cwd_path="$(readlink "/proc/${pid}/cwd" 2>/dev/null || true)"
+      elif command -v lsof >/dev/null 2>&1; then
+        cwd_path="$(lsof -a -p "${pid}" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n 1 || true)"
+      fi
+      case "${cwd_path}" in
+        "${PLUGINS_DEST}"/agy-*)
+          kill "${pid}" 2>/dev/null || true
+          ;;
+      esac
+    done
+  fi
+}
+restart_agy_sidecars || true
 
-echo "Ready! Open Google Antigravity -> Extensions -> My Antigravity or Skills (or run /agy-onboard) to begin."
+echo "Ready! Open Google Antigravity -> Plugins -> My Hub, Skills (with Ask Clawy), or Preview (or run /agy-onboard) to begin."

@@ -29,7 +29,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp, Response } from 'sidecar_sdk';
-import { buildSkillsCatalog, SUITE_VARIANT } from './seed_prompts_catalog.mjs';
+import { buildSkillsCatalog, pruneRetiredAgyPlugins, SUITE_VARIANT } from './seed_prompts_catalog.mjs';
 import { buildInlinedSidecarHtml } from './sidecar_html_inliner.mjs';
 import { getTokenMeterSummary } from './token_meter.mjs';
 
@@ -402,10 +402,22 @@ async function syncSkillsIncrementally(skillFilter = '') {
     }
   }
 
+  const prunedLegacyPlugins = pruneRetiredAgyPlugins(pluginsRoot);
+  if (prunedLegacyPlugins.length > 0) {
+    const disabledPatch = {};
+    for (const lp of prunedLegacyPlugins) {
+      disabledPatch[lp] = { enabled: false };
+    }
+    await callLanguageServerRpc('JetboxWriteState', {
+      userConfig: { plugins: disabledPatch },
+    });
+  }
+
   writeBaselineHashes(baseline);
   return {
     ok: true,
     suiteVersion: manifest.suiteVersion || '2.0.0',
+    prunedLegacyPlugins,
     checkedSkillsCount: targetSkills.length,
     updatedSkillsCount,
     updatedFilesCount,
@@ -710,6 +722,7 @@ function scanSkillForSafeExport(mdText) {
 
 async function buildFullState() {
   const pluginsRoot = getPluginsRoot();
+  pruneRetiredAgyPlugins(pluginsRoot);
   const ledger = readToggleLedger();
   const lsRes = await callLanguageServerRpc('GetAllPlugins', {});
   const lsDisabledMap = {};
@@ -772,6 +785,18 @@ app.api(
       return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
     }
     const pngPath = path.join(__dirname, 'assets', 'emoji', `${code}.png`);
+    if (!fs.existsSync(pngPath)) {
+      return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+    }
+    return new Response(fs.readFileSync(pngPath), { contentType: 'image/png' });
+  },
+  'GET'
+);
+
+app.api(
+  '/api/clawy-mascot',
+  () => {
+    const pngPath = path.join(__dirname, 'assets', 'clawy_mascot.png');
     if (!fs.existsSync(pngPath)) {
       return new Response('Not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
     }
@@ -1216,4 +1241,5 @@ app.api('/api/file', async (data) => {
   return { ok: true, path: check.resolved };
 }, 'POST');
 
+pruneRetiredAgyPlugins(getPluginsRoot());
 await app.run();

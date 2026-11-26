@@ -1,10 +1,12 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v1.9.3).
+  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v2.0.0).
 .DESCRIPTION
   Stages strictly inside $HOME\.gemini\config\.install_stage_<guid> (zero %TEMP% writes, zero
-  'agy plugin install' prompts, zero standalone Node/Python/Git required). Installs all 9 AGY plugins,
-  writes BOM-free UTF-8 JSON configs, and preserves user skill toggles, personal skills, and GE settings.
+  local MCP subprocesses, zero standalone Node/Python/Git required). Installs all 7 AGY plugins
+  (3 UI panels: My Hub, Skills [with inline Ask Clawy], Preview; agy-twin-automations opt-in),
+  auto-cleans deprecated legacy plugins (agy-connectors, agy-coordinator) on upgrade, writes
+  BOM-free UTF-8 JSON configs, and preserves user skill toggles, personal skills, and memory.
 #>
 [CmdletBinding()]
 param(
@@ -34,14 +36,10 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $TargetConfigDir = Join-Path $UserHome ".gemini\config"
 }
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
-$PluginDataDir = Join-Path $TargetConfigDir "plugin_data\agy-connectors"
 $MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\my-antigravity\memory"
-$CoordDataDir = Join-Path $TargetConfigDir "plugin_data\agy-coordinator"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
-New-Item -ItemType Directory -Force -Path $PluginDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
-New-Item -ItemType Directory -Force -Path $CoordDataDir | Out-Null
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)
@@ -88,7 +86,7 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "generic-agy-plugin.zip"
-    Write-Host "Downloading Generic AGY Plugin Suite v1.9.3 (<700 KB)..." -ForegroundColor Cyan
+    Write-Host "Downloading Generic AGY Plugin Suite v2.0.0 (<700 KB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
@@ -161,6 +159,14 @@ try {
     }
   }
 
+  # Clean up deprecated plugins from pre-v2.0.0 installs so orphaned sidebar icons disappear cleanly
+  foreach ($legacyP in @("agy-connectors", "agy-coordinator")) {
+    $legacyPath = Join-Path $PluginsDest $legacyP
+    if (Test-Path $legacyPath) {
+      Remove-Item -Recurse -Force -Path $legacyPath
+    }
+  }
+
   $InstalledNames = @()
   foreach ($dir in (Get-ChildItem -Path $SourcePluginsDir -Directory)) {
     if ($dir.Name.StartsWith(".")) { continue }
@@ -179,24 +185,16 @@ try {
     Copy-Item -Recurse -Force -Path $dir.FullName -Destination $dest
     $InstalledNames += $dir.Name
   }
-  Write-Host ("Installed {0} zero-footprint AGY plugins to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
+  Write-Host ("Installed {0} zero-footprint AGY plugins (v2.0.0) to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
 
-  if (-not [string]::IsNullOrWhiteSpace($GeInstance)) {
-    $GeConfigPath = Join-Path $PluginDataDir "ge-instance.json"
-    $Payload = @{
-      rawInput          = $GeInstance
-      oauthClientId     = $OAuthClientId
-      oauthClientSecret = $OAuthClientSecret
-      updatedAt         = (Get-Date).ToUniversalTime().ToString("o")
-    } | ConvertTo-Json -Depth 4
-    [System.IO.File]::WriteAllText($GeConfigPath, ($Payload + "`n"), $Utf8NoBom)
-    $AgyRoot = Join-Path (Split-Path -Parent $TargetConfigDir) "antigravity"
-    if (Test-Path $AgyRoot) {
-      $AgyDataDir = Join-Path $AgyRoot "plugin_data\agy-connectors"
-      New-Item -ItemType Directory -Force -Path $AgyDataDir | Out-Null
-      [System.IO.File]::WriteAllText((Join-Path $AgyDataDir "ge-instance.json"), ($Payload + "`n"), $Utf8NoBom)
+  try {
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+      $_.CommandLine -and ($_.CommandLine -match '--agy-sidecar=' -or $_.CommandLine -match 'coordinator-ui')
+    } | ForEach-Object {
+      Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
     }
-    Write-Host "Saved BOM-free Gemini Enterprise instance to $GeConfigPath" -ForegroundColor Green
+  } catch {
+    # Non-fatal if CIM is restricted on locked-down workstations
   }
 
   $LedgerPath = Join-Path $TargetConfigDir "plugin_data\agy-onboarding\skill-toggles.json"
@@ -220,7 +218,7 @@ try {
     } catch {}
   }
 
-  Write-Host "`nReady! Open Google Antigravity -> Extensions -> My Antigravity or Skills (or run /agy-onboard) to begin." -ForegroundColor Green
+  Write-Host "`nReady! Open Google Antigravity -> Plugins -> My Hub, Skills (with Ask Clawy), or Preview (or run /agy-onboard) to begin." -ForegroundColor Green
 } finally {
   if ($null -ne $StageDir -and (Test-Path $StageDir)) {
     Remove-Item -Recurse -Force -Path $StageDir -ErrorAction SilentlyContinue

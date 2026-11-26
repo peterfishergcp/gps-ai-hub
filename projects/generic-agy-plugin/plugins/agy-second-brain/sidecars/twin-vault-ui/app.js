@@ -29,11 +29,6 @@
 
   const QUICK_WORKFLOWS = [
     {
-      cmd: '/agy-coordinator',
-      desc: 'Open Clawy 🐻: Multi-Agent Command Center, Kore Voice & Sprints',
-      prompt: '/agy-coordinator Help me set up Clawy, verify my GCP Project & Kore Gemini Live voice connection, and summarize my active agent conversations.',
-    },
-    {
       cmd: '/daily-brief',
       desc: 'Morning kickoff: top action items, calendar & >21d check-ins',
       prompt: '/daily-brief Give me my workday kickoff brief, top 3 actions, and any stale stakeholder check-ins.',
@@ -155,35 +150,61 @@
         }
       }
     } catch {}
-    showToast('Click "Skills" (Sparkles icon) in the left Extensions sidebar to browse all skills & Personal Skills!');
+    showToast('Click "Skills" (Sparkles icon) in the left Plugins sidebar to browse skills, Personal Skills & Ask Clawy!');
   }
 
-  function openClawyCoordinator() {
-    try {
-      if (window.sidecar && window.sidecar.ui) {
-        if (typeof window.sidecar.ui.toggleAuxPane === 'function') {
-          window.sidecar.ui.toggleAuxPane({
-            tabType: 'sidecarView',
-            uri: 'sidecar://agy-coordinator/coordinator-ui/',
-          });
-          showToast('Opened Clawy 🐻 in Auxiliary Pane');
-          return;
-        }
-        if (typeof window.sidecar.ui.openSidecar === 'function') {
-          window.sidecar.ui.openSidecar('agy-coordinator', 'coordinator-ui');
-          return;
-        }
-        if (typeof window.sidecar.ui.toggleSidecar === 'function') {
-          window.sidecar.ui.toggleSidecar('agy-coordinator', 'coordinator-ui');
-          return;
-        }
-      }
-    } catch {}
-    showToast('Click "Clawy" (Brown Bear icon) in the left Extensions sidebar to open your Multi-Agent Command Center & Kore Voice!');
+  const optimisticMasterySteps = new Set();
+
+  function applyLocalMasterySteps(extraSteps) {
+    if (!appState) return;
+    if (!appState.updates || typeof appState.updates !== 'object') {
+      appState.updates = { subscription: { completedMasterySteps: [] } };
+    }
+    if (!appState.updates.subscription || typeof appState.updates.subscription !== 'object') {
+      appState.updates.subscription = { completedMasterySteps: [] };
+    }
+    const merged = new Set(
+      Array.isArray(appState.updates.subscription.completedMasterySteps)
+        ? appState.updates.subscription.completedMasterySteps
+        : []
+    );
+    optimisticMasterySteps.forEach((s) => merged.add(s));
+    if (Array.isArray(extraSteps)) {
+      extraSteps.forEach((s) => {
+        if (typeof s === 'string' && s) merged.add(s);
+      });
+    }
+    appState.updates.subscription.completedMasterySteps = Array.from(merged);
   }
 
   function markMasteryStep(stepId) {
-    apiPost('/api/updates/prefs', { completeStep: stepId }).catch(() => {});
+    if (!stepId || typeof stepId !== 'string') return;
+    const hadBefore =
+      optimisticMasterySteps.has(stepId) ||
+      Boolean(
+        appState &&
+          appState.updates &&
+          appState.updates.subscription &&
+          Array.isArray(appState.updates.subscription.completedMasterySteps) &&
+          appState.updates.subscription.completedMasterySteps.includes(stepId)
+      );
+    optimisticMasterySteps.add(stepId);
+    applyLocalMasterySteps([stepId]);
+    if (!hadBefore) {
+      render();
+    }
+    apiPost('/api/updates/prefs', {
+      completeStep: stepId,
+      completeSteps: Array.from(optimisticMasterySteps),
+    })
+      .then((res) => {
+        if (res && res.updates && appState) {
+          appState.updates = res.updates;
+          applyLocalMasterySteps();
+          if (activeTab === 'overview') render();
+        }
+      })
+      .catch(() => {});
   }
 
   function getUiBridgeContext() {
@@ -197,11 +218,11 @@
       apiPost,
       dispatchPrompt,
       openSkillsExtension: openDedicatedSkillsHub,
-      openClawyExtension: openClawyCoordinator,
       markMasteryStep,
       reloadState: loadState,
       rerender: render,
       switchTab: (nextTab) => {
+        if (nextTab === 'tokens') markMasteryStep('check-tokens');
         activeTab = nextTab;
         syncTabButtons();
         render();
@@ -254,13 +275,16 @@
   }
 
   async function dispatchPrompt(promptText, title) {
+    if (String(promptText || '').trim().startsWith('/')) {
+      markMasteryStep('run-skill');
+    }
     try {
       if (window.sidecar && window.sidecar.agent) {
         if (window.sidecar.conversationId) {
           await window.sidecar.agent.sendMessage(promptText);
           showToast('Sent prompt to active conversation');
         } else {
-          const created = await window.sidecar.agent.startConversation(promptText, title || 'My Antigravity');
+          const created = await window.sidecar.agent.startConversation(promptText, title || 'My Hub');
           if (created && created.conversationId && window.sidecar.ui && window.sidecar.ui.toggleConversation) {
             window.sidecar.ui.toggleConversation(created.conversationId);
           }
@@ -490,8 +514,9 @@
 
   async function loadState() {
     appState = await apiGet('/api/state');
+    applyLocalMasterySteps();
     const p = appState.profile || {};
-    headerTitle.textContent = 'My Antigravity';
+    headerTitle.textContent = 'My Hub';
     headerSub.textContent = p.role && p.role !== 'Ready' ? p.role : '';
     render();
   }
@@ -659,7 +684,7 @@
         orchestratorOptimizeMode && window.AGYTokenAndUpdatesUI
           ? window.AGYTokenAndUpdatesUI.wrapPromptForOrchestrator(q)
           : q;
-      dispatchPrompt(finalPrompt, orchestratorOptimizeMode ? 'Orchestrator Task' : 'My Antigravity');
+      dispatchPrompt(finalPrompt, orchestratorOptimizeMode ? 'Orchestrator Task' : 'My Hub');
     }
 
     function updateHeroSearch() {
@@ -1895,7 +1920,7 @@
             const currentText = textareaRef && editorMode === 'edit' ? textareaRef.value : selectedFile.content || '';
             const inlineBlock =
               currentText && currentText.length <= 14000
-                ? '\n\nHere is the current file content from My Antigravity (`' +
+                ? '\n\nHere is the current file content from My Hub (`' +
                   selectedFile.path +
                   '`):\n\n```markdown\n' +
                   currentText +
@@ -2272,7 +2297,7 @@
         el('div', {
           className: 'muted',
           style: { fontSize: '11px', marginBottom: '6px' },
-          text: 'Stored in ~/antigravity-twin/memory/profile/custom_seeds.json — never overwritten by plugin updates.',
+          text: 'Stored in ~/.gemini/config/plugin_data/my-antigravity/memory/profile/custom_seeds.json — never overwritten by plugin updates.',
         }),
         titleInput
           ? el('div', { style: { marginBottom: '6px' } }, [
@@ -2568,7 +2593,7 @@
 
   function render() {
     if (!appState) {
-      viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading My Antigravity...' }));
+      viewRoot.replaceChildren(el('div', { className: 'muted', text: 'Loading My Hub...' }));
       return;
     }
     let nodes = [];
@@ -2585,6 +2610,9 @@
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
+      if (activeTab === 'tokens') {
+        markMasteryStep('check-tokens');
+      }
       syncTabButtons();
       render();
     });
@@ -2603,17 +2631,12 @@
       .catch((err) => showToast('Refresh failed: ' + err.message));
   });
 
-  const openClawyBtn = document.getElementById('btn-open-clawy-ext');
-  if (openClawyBtn) {
-    openClawyBtn.addEventListener('click', () => {
-      markMasteryStep('setup-clawy');
-      openClawyCoordinator();
-    });
-  }
-
   const openSkillsBtn = document.getElementById('btn-open-skills-ext');
   if (openSkillsBtn) {
-    openSkillsBtn.addEventListener('click', openDedicatedSkillsHub);
+    openSkillsBtn.addEventListener('click', () => {
+      markMasteryStep('personal-skill');
+      openDedicatedSkillsHub();
+    });
   }
 
   const customizeBtn = document.getElementById('btn-customize');
@@ -2632,7 +2655,7 @@
   loadState().catch((err) => {
     viewRoot.replaceChildren(
       el('div', { className: 'card' }, [
-        el('strong', { text: 'Unable to load My Antigravity: ' }),
+        el('strong', { text: 'Unable to load My Hub: ' }),
         err.message || 'Unknown error',
       ])
     );

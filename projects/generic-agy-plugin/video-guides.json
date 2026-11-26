@@ -1,6 +1,6 @@
 {
   "channelUrl": "https://www.youtube.com/@PeterFisher-gps-google",
-  "updatedAt": "2026-11-23T19:20:00Z",
+  "updatedAt": "2026-11-26T03:40:00Z",
   "videos": [
     {
       "id": "vid-suite-overview",
@@ -9,7 +9,7 @@
       "badge": "3 Min \u00b7 How-To Video",
       "dateLabel": "Nov 2026",
       "title": "Google Antigravity Plugin Suite \u2014 Complete Tour",
-      "summary": "Practical tour of where to click across My Antigravity Overview, Clawy \ud83d\udc3b, Action Items, 1-Click & Personal Skills, TokenEconomics, and Visual Preview.",
+      "summary": "Practical tour of where to click across My Hub Overview, Action Items, Skills (with Ask Clawy \ud83d\udc3b) & Personal Skills, TokenEconomics, Preview, and built-in Google Workspace connectors.",
       "url": "https://www.youtube.com/watch?v=_VjZQ2_HkSA",
       "tryLabel": "Tour My Workspace \u2192",
       "tryPrompt": "/daily-brief Walk me through my workspace Overview, open Action Items, Personal Skills, and TokenEconomics health."
@@ -21,7 +21,7 @@
       "badge": "3 Min \u00b7 How-To Video",
       "dateLabel": "Nov 2026",
       "title": "Getting Started in 60 Seconds & Using Turbo Mode",
-      "summary": "Step-by-step guide to pasting the 1-line install command, using \u26a1 Turbo during setup vs. \ud83d\udd12 Default for daily work, and setting your role and writing voice.",
+      "summary": "Step-by-step guide to pasting the 1-line install command, using \u26a1 Turbo during setup vs. \ud83d\udd12 Default daily, and enabling built-in Google Workspace connectors under Customizations.",
       "url": "https://www.youtube.com/watch?v=JMNn19uuJCo",
       "tryLabel": "Run 60s Setup \u2192",
       "tryPrompt": "/memory Check my role profile, writing voice, and personal memory setup and confirm Default review safety best practices."
@@ -33,10 +33,10 @@
       "badge": "2.5 Min \u00b7 How-To Video",
       "dateLabel": "Nov 2026",
       "title": "Using 1-Click Skills, Personal Skills & Visual Previews (Dashboards & Slides)",
-      "summary": "How to run 40 ready-made skills, create your own Personal Skills (+ New Skill), and customize interactive Dashboards & 16:9 Slide Decks in Preview.",
+      "summary": "How to run 36 ready-made skills in Skills, ask Clawy \ud83d\udc3b to find the right skill, search artifacts in Preview, and Save to Downloads or Open in Browser.",
       "url": "https://www.youtube.com/watch?v=EBNOPmh48d0",
       "tryLabel": "Build Sample Deck \u2192",
-      "tryPrompt": "/slides Create a crisp 5-slide executive readiness briefing deck with speaker notes and open the rendered visual preview in the Side Pane."
+      "tryPrompt": "/slides Create a crisp 5-slide executive readiness briefing deck with speaker notes and open the rendered visual preview in Preview."
     },
     {
       "id": "vid-orchestrator-workflows-tokens",
@@ -54,13 +54,13 @@
       "id": "vid-clawy-coordinator",
       "kind": "video",
       "topic": "videos",
-      "badge": "3 Min \u00b7 How-To Video",
+      "badge": "2.5 Min \u00b7 How-To Video",
       "dateLabel": "Nov 2026",
-      "title": "How to Use Clawy \u2014 Multi-Agent Command Center & Gemini Live Voice",
-      "summary": "How to open Clawy \ud83d\udc3b, see which parallel chats Need You, click \u2197 Pop Out for side-by-side split view, connect Kore Gemini Live voice, and track Goals.",
+      "title": "How to Use Ask Clawy \ud83d\udc3b \u2014 Plain-English Skill & Chat Assistant in Skills",
+      "summary": "How to click the Ask Clawy \ud83d\udc3b bear icon beside the Skills search bar to match the right Public Sector skill in plain English or launch a chat in 1 click.",
       "url": "https://www.youtube.com/watch?v=TeWdmiyXnxo",
-      "tryLabel": "Open Clawy \ud83d\udc3b \u2192",
-      "tryPrompt": "/agy-coordinator Summarize my active agent conversations and show any items waiting on me."
+      "tryLabel": "Run Daily Brief \u2192",
+      "tryPrompt": "/daily-brief Summarize my active priorities, open Action Items, and any follow-ups waiting on me."
     }
   ]
 }

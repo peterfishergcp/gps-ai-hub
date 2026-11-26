@@ -98,7 +98,7 @@ function syncGlobalVoiceProfileRule(vaultRoot) {
     if (!identityRaw && !voiceRaw) return;
 
     const combinedBody = [
-      '# Active Identity & Voice Profile (Auto-Synced from My Antigravity)',
+      '# Active Identity & Voice Profile (Auto-Synced from My Hub)',
       '',
       'Use the standing identity and writing-voice calibration below whenever drafting emails, memos, messages, or briefings (`/my-voice`, `/daily-brief`):',
       '',
@@ -476,6 +476,39 @@ app.api(
   'GET'
 );
 
+function hasAnyPreviewDeliverable() {
+  try {
+    const regPath = path.join(os.homedir(), '.gemini', 'config', 'plugin_data', 'agy-design-studio', 'deliverables.json');
+    if (fs.existsSync(regPath) && fs.lstatSync(regPath).isFile()) {
+      const parsed = __parseJsonNoBom(fs.readFileSync(regPath, 'utf-8'));
+      const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed && parsed.deliverables) ? parsed.deliverables : [];
+      if (list.length > 0) return true;
+    }
+    const brainDirs = [];
+    if (process.env.ANTIGRAVITY_BRAIN_DIR) brainDirs.push(process.env.ANTIGRAVITY_BRAIN_DIR);
+    if (process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR) {
+      const m = String(process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR).match(/^(.*)[\\/]+sidecar_data[\\/]/);
+      if (m && m[1]) brainDirs.push(path.join(m[1], 'brain'));
+    }
+    brainDirs.push(path.join(os.homedir(), '.gemini', 'antigravity', 'brain'));
+    brainDirs.push(path.join(os.homedir(), '.gemini', 'jetski', 'brain'));
+    const seen = new Set();
+    for (const bd of brainDirs) {
+      const resolved = path.resolve(bd);
+      if (seen.has(resolved) || !fs.existsSync(resolved)) continue;
+      seen.add(resolved);
+      const convs = fs.readdirSync(resolved, { withFileTypes: true }).slice(0, 60);
+      for (const c of convs) {
+        if (!c.isDirectory() || c.isSymbolicLink() || c.name.startsWith('.')) continue;
+        const cPath = path.join(resolved, c.name);
+        const files = fs.readdirSync(cPath);
+        if (files.some((f) => f.endsWith('.html') && !f.startsWith('.'))) return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
 app.api(
   '/api/state',
   async () => {
@@ -488,10 +521,12 @@ app.api(
     const stateDir = process.env.ANTIGRAVITY_EXECUTABLE_DATA_DIR || path.join(vaultRoot, '.ui_state');
     const tokenEconomics = await getTokenMeterSummary('', stateDir);
     const updates = getUpdatesState(stateDir);
+    const hasPreviewDeliverables = hasAnyPreviewDeliverable();
     return {
       ok: true,
       tokenEconomics,
       updates,
+      hasPreviewDeliverables,
       ...state,
       personalSkillsRoot: personalRoot,
       skillsCatalog,
@@ -934,4 +969,29 @@ app.api('/api/updates/sync', async () => {
   return await syncAntigravityUpdates(stateDir, 'https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/video-guides.json');
 }, 'POST');
 
+function pruneRetiredAgyPlugins(pluginsRoot) {
+  if (!PLUGIN_NAME.startsWith('agy-') || !pluginsRoot) return;
+  try {
+    const resolvedRoot = path.resolve(pluginsRoot);
+    const rootStat = fs.lstatSync(resolvedRoot);
+    if (!rootStat || rootStat.isSymbolicLink() || !rootStat.isDirectory()) return;
+    for (const legacyName of ['agy-connectors', 'agy-coordinator']) {
+      const target = path.resolve(resolvedRoot, legacyName);
+      if (target !== path.join(resolvedRoot, legacyName) || !target.startsWith(resolvedRoot + path.sep)) continue;
+      let st = null;
+      try {
+        st = fs.lstatSync(target);
+      } catch {
+        continue;
+      }
+      if (!st || st.isSymbolicLink() || !st.isDirectory()) continue;
+      if (!fs.existsSync(path.join(target, 'plugin.json'))) continue;
+      try {
+        fs.rmSync(target, { recursive: true, force: true });
+      } catch {}
+    }
+  } catch {}
+}
+
+pruneRetiredAgyPlugins(PLUGINS_SUITE_ROOT);
 await app.run();

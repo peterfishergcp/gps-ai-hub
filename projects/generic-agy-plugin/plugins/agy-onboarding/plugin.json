@@ -1,12 +1,12 @@
 {
   "name": "agy-onboarding",
-  "displayName": "Skills \u2014 Antigravity Skill Manager & Connectors",
-  "version": "1.7.4",
-  "description": "Includes the clean Antigravity Skills panel with live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude 5.5 & Gemini 4 model guide (/model-guide), Personal Memory-aware onboarding (/agy-onboard), unified morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /agy-update.",
+  "displayName": "Skills \u2014 36 Curated Skills, Ask Clawy & Personal Skills",
+  "version": "2.0.0",
+  "description": "Includes the clean Antigravity Skills panel with inline Ask Clawy bear assistant, live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude & Gemini model guide (/model-guide), Personal Memory-aware onboarding (/agy-onboard), unified morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /agy-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Run /token-usage to retrieve my exact 5-hour, 24-hour, and 7-day token consumption and render an interactive usage dashboard",
     "Run /orchestrator-guide to see how best to select and prompt Orchestrator (Neon, Argon, Carbon) for fast execution and lower quota burn",
-    "Run /agy-onboard to set up my Public Sector agency role, Personal Memory, and Gemini Enterprise connection"
+    "Run /agy-onboard to set up my Public Sector agency role, Personal Memory, and built-in Google Workspace connectors"
   ]
 }

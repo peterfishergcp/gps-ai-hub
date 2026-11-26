@@ -17,6 +17,36 @@ import path from 'node:path';
 
 export const SUITE_VARIANT = 'generic'; // 'generic' | 'wv'
 
+export const RETIRED_AGY_PLUGINS = ['agy-connectors', 'agy-coordinator'];
+
+export function pruneRetiredAgyPlugins(pluginsRoot) {
+  const removed = [];
+  if (SUITE_VARIANT !== 'generic' || !pluginsRoot) return removed;
+  try {
+    const resolvedRoot = path.resolve(pluginsRoot);
+    const rootStat = fs.lstatSync(resolvedRoot);
+    if (!rootStat || rootStat.isSymbolicLink() || !rootStat.isDirectory()) return removed;
+    for (const legacyName of RETIRED_AGY_PLUGINS) {
+      const target = path.resolve(resolvedRoot, legacyName);
+      if (target !== path.join(resolvedRoot, legacyName)) continue;
+      if (!target.startsWith(resolvedRoot + path.sep)) continue;
+      let st = null;
+      try {
+        st = fs.lstatSync(target);
+      } catch {
+        continue;
+      }
+      if (!st || st.isSymbolicLink() || !st.isDirectory()) continue;
+      if (!fs.existsSync(path.join(target, 'plugin.json'))) continue;
+      try {
+        fs.rmSync(target, { recursive: true, force: true });
+        removed.push(legacyName);
+      } catch {}
+    }
+  } catch {}
+  return removed;
+}
+
 export const PUBLIC_SECTOR_GOV_SKILLS = new Set([
   'document-intake-cleanup-and-validation',
   'expense-auditor',
@@ -32,16 +62,6 @@ const GENERIC_CATEGORIES = {
     order: 10,
     categoryLabel: 'Onboarding, Token Telemetry & Triage',
     chipLabel: 'Onboarding',
-  },
-  'agy-coordinator': {
-    order: 15,
-    categoryLabel: 'Clawy — Multi-Agent Voice & Sprint Coordinator',
-    chipLabel: 'Clawy Coordinator',
-  },
-  'agy-connectors': {
-    order: 20,
-    categoryLabel: 'Gemini Enterprise Federated Connectors',
-    chipLabel: 'GE Connectors',
   },
   'agy-design-studio': {
     order: 30,
@@ -70,7 +90,7 @@ const GENERIC_CATEGORIES = {
   },
   'agy-second-brain': {
     order: 70,
-    categoryLabel: 'Memory, Action Items, Swarm Prep & Anti-Slop',
+    categoryLabel: 'My Hub — Memory, Action Items, Swarm Prep & Anti-Slop',
     chipLabel: 'Memory & Prep',
   },
   'agy-twin-automations': {
@@ -789,6 +809,7 @@ export function buildSkillsCatalog(pluginsSuiteRoot, options = {}) {
     const expectedPrefix = SUITE_VARIANT === 'wv' ? 'wv-' : 'agy-';
 
     for (const pluginDirName of pluginDirs) {
+      if (SUITE_VARIANT === 'generic' && RETIRED_AGY_PLUGINS.includes(pluginDirName)) continue;
       const pluginPath = path.join(pluginsSuiteRoot, pluginDirName);
       const skillsRoot = path.join(pluginPath, 'skills');
       if (!fs.existsSync(skillsRoot)) continue;

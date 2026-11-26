@@ -1,42 +1,8 @@
 {
-  "suiteVersion": "1.9.5",
-  "updatedAt": "2026-11-24T18:26:00Z",
-  "skillCount": 40,
+  "suiteVersion": "2.0.0",
+  "updatedAt": "2026-11-26T03:40:00Z",
+  "skillCount": 36,
   "skillManifest": {
-    "connect-ge": {
-      "plugin": "agy-connectors",
-      "skill": "connect-ge",
-      "treeSha256": "6398d10e90d280d6",
-      "files": {
-        "SKILL.md": "505b18ce1e7b26831f199dba9ffdcc2c2c77a20557633b6450de3e276915dbb1",
-        "references/entra_google_identity_federated_ge.md": "70376af656df8c5ec19b958f06b5f777bec6a69b392d2f3d9d814f6464886d8d"
-      }
-    },
-    "connect-github-bigquery": {
-      "plugin": "agy-connectors",
-      "skill": "connect-github-bigquery",
-      "treeSha256": "a1a9a5c2eae1c0fd",
-      "files": {
-        "SKILL.md": "f3174df10d38454bf13280c286e82f713096ed7ccc14c911dfa68821b3191865"
-      }
-    },
-    "connect-m365-workspace": {
-      "plugin": "agy-connectors",
-      "skill": "connect-m365-workspace",
-      "treeSha256": "e3f8b0491ab2720c",
-      "files": {
-        "SKILL.md": "356f93b872d758323b15012e64eb699591ad443197c97f8840426ac68360291a",
-        "references/federated_connector_prompts.md": "f45a72fe362483594498fd53fa56860f7be40adea2abc6197ed5521e24a8e2fe"
-      }
-    },
-    "agy-coordinator": {
-      "plugin": "agy-coordinator",
-      "skill": "agy-coordinator",
-      "treeSha256": "56d9ba568cdce2eb",
-      "files": {
-        "SKILL.md": "6eb21b2785fb2c7fa5f67fa30a3a395ae80d98926db7a3ea72ba24545f191b42"
-      }
-    },
     "agy-dashboard": {
       "plugin": "agy-design-studio",
       "skill": "agy-dashboard",
@@ -109,21 +75,21 @@
     "agy-onboard": {
       "plugin": "agy-onboarding",
       "skill": "agy-onboard",
-      "treeSha256": "b50cc4224806246a",
+      "treeSha256": "fddeeda05f058adc",
       "files": {
-        "SKILL.md": "893c69dd9474a06af5c92c13c31dd56f0e18506aa0d49ea47231e029626e67d5",
+        "SKILL.md": "f93fab7b9fe4988a2ddd3a05c5f62e61904183ea61235b59308c1e2e3a1965ec",
         "references/onboarding_sops_playbook.md": "80d0dc02bbe54da4b013534ce165801b153ade1ab343ae1d74238613f5364734"
       }
     },
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "a365d5e056b5b3ea",
+      "treeSha256": "edfd700b67db80a7",
       "files": {
-        "SKILL.md": "57535720da0aee86297d0e41210e500a7609bdf753e126ec15feac2c19307a4d",
-        "scripts/incremental-sync.mjs": "3e2ddd94d9371085ab515c1e2fa51f91647cea0e5216a51b99f29a6d441e682e",
-        "scripts/install-agy-suite.ps1": "8872a5c00f6c645fb6ff8c2486dd814f4bb4cd126c7d0f4a1cc66bfba4527f8a",
-        "scripts/install-agy-suite.sh": "f118a5138531e38b7a829d0191e5bd7e51e3741a5a501c2c0fa8ae4710777f7d"
+        "SKILL.md": "96c4952a209f0f6ef77b05a4b61fed7917d914bea97f2abc50ef5199f5241665",
+        "scripts/incremental-sync.mjs": "9ebf31174e56bc09e8821f2e4c91a4144b082474115866936daee251300b1f19",
+        "scripts/install-agy-suite.ps1": "ee56b69917ea841598676dca6dcb33c405265e9cad09758fa46130d6b5cfcc32",
+        "scripts/install-agy-suite.sh": "df2773a6c5a1dc5f88a40c913466846d6513ce93d1207dc1075f14977125d99d"
       }
     },
     "daily-brief": {
@@ -362,50 +328,36 @@
     }
   },
   "sidecarManifest": {
-    "coordinator-ui": {
-      "plugin": "agy-coordinator",
-      "sidecar": "coordinator-ui",
-      "files": {
-        "app.js": "7a13216a3335b09d809abe3669a3a67f7f33c8ec15756380ca005386e86b1440",
-        "index.html": "cdf30ba532bc6d0a84db4f86f72876d0b97aabfa1a01ca1581f78e7787537be4",
-        "main.mjs": "ef83f9654bc9099f2d0012c863a150b5a8369d9d072f1bfc5cfc00bd96505a0f",
-        "package.json": "02acdd19f8f5ec2247df7680894227f3f4220d9dd68dfb8c8317831c3913cc7e",
-        "sidecar.json": "94128ab0935bcd8529dbf9742e3fe026f739daa81492461175e846effd23496e",
-        "sidecar_html_inliner.mjs": "5af90260964608cb1680111c8295a282713f06218a64cdd3f7bf3ac4f0921573",
-        "styles.css": "801bdb68369b9e3f960e04c0008b65eea36af43fbeeb554eb704f876d33164b5",
-        "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
-      }
-    },
     "agy-design-preview": {
       "plugin": "agy-design-studio",
       "sidecar": "agy-design-preview",
       "files": {
-        "app.js": "c02526af90922eb90733e2ec31b4f17fd4221cd16f60a37ea066e7d1f728c28e",
-        "index.html": "d28b5f7412af07058653d05b10325687efef0d07f77377f53a9cb239d83cc9d0",
-        "main.mjs": "7c2d97efd1aae83fc0774eb312407accd4d635e57dfd9430ad37933a6c212227",
+        "app.js": "28a07ea690ea63437184ae6b4841d276a08f4063462f4c5e3fcaaf32035b3062",
+        "index.html": "49b3bafe53edf4656491b1649c1a9c784085d0bddae637e2e5e50cc525b47fab",
+        "main.mjs": "f5341e6f5e8528e851fd8c3855def1ec7f9989a68ae5b640d53654f37d47c0d1",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
-        "sidecar.json": "4e5e9c0f4a0b6828419a8d3a32d6f7482149f36ce97f9d44c9b2c83d13ea83a0",
+        "sidecar.json": "c1491f66243361d6bc89d9c6d7ed094db41ab13b5b256e396f40683bbb02006f",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "6060c879edb5a09185534ca88c8fb1f5892087db7ed012ccfac697811a27245d",
+        "styles.css": "972de8d5b6f0b2a4fb6da28708b569338a4edbdf44afb87d731b4d2b8fa5b8bd",
         "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917"
+        "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b"
       }
     },
     "agy-skill-manager": {
       "plugin": "agy-onboarding",
       "sidecar": "agy-skill-manager",
       "files": {
-        "app.js": "830e798b526ec2a2b31318f323044db616688877a8ab7869bef29f8112794bbe",
-        "index.html": "6636342d3701c5f4c1dd6c6a992f0cf738bad42cf9d8bcd0a8b10986a8e6ff51",
-        "main.mjs": "4eb7b4d9e334d20721923a6b326dcb5232a27d4153a450180bee01d0e337fbef",
+        "app.js": "c40fd1cc1d072648d73e4c4c5dc201c648c88d7bb4f7e8893266e4114a0a3670",
+        "index.html": "75a2dcb5f9a5c1d2a31e8f563a4e19177004a349bc4c71aa1aad5f29b6298659",
+        "main.mjs": "faa8f8cc2c97ddf5dc0eb7af3dd034f78414ef55a88c63322d3fc6a40f474f41",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "37c66d7341f08f37a582be31d2b68f9e69b28ab06701890e9abb134a9c0ffc0e",
-        "sidecar.json": "3a642626628ee067ae00d0aaf7ea02a5de4c66908eca684a2e9ec9b8690ef81f",
+        "seed_prompts_catalog.mjs": "3bc4c24a90553adf17c98d74939dcfa41987a30a066df67d3a993171c0ea3ffa",
+        "sidecar.json": "95aa274a95f7ad733a972869053e9f836146bfe0debef533b454355442d0ae65",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
+        "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
         "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917",
+        "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b",
+        "assets/clawy_mascot.png": "5e7c18d4a1fa045d580d2366e713dcf099f3c15963c33fb3ab98490d2f448b63",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
@@ -419,18 +371,18 @@
       "plugin": "agy-second-brain",
       "sidecar": "twin-vault-ui",
       "files": {
-        "antigravity_updates.mjs": "37fe447d68ea124a3ba0d9bb3efbbabc79dc7785bd685a80b460a87b67611d71",
-        "app.js": "57beb2ad78df86a71505f378d28616f6d81291fab800aab89663aaa7b1813bb3",
-        "index.html": "a74ce5ba5d8ac88a5cf1e00f51d6a56b84a4e50e1e43e4a0201cc8ecffd14f3c",
-        "main.mjs": "e0071d12d46c972d1b995b11ff244a1b475d8893bd0395eeb14958c91c25facc",
+        "antigravity_updates.mjs": "32019306ca20d4a377f8159e4de81b791a832fffc7d4d9fce0d4be48e694118f",
+        "app.js": "f51dce8ea5da80133908b5b17a6bc3fa014fbf80a3fee5d4e14fa3787ff54da7",
+        "index.html": "656c27610258dcf24aacf3b1524c60244e166ece033dff4c3e1d2280041f7191",
+        "main.mjs": "17ccff10e1bba3bf51688b776b67ae2a0b6ea8e899273a2465f23ae784034d56",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "37c66d7341f08f37a582be31d2b68f9e69b28ab06701890e9abb134a9c0ffc0e",
-        "sidecar.json": "55b3bea6dbdb2227556d2374dc9c8c8c03bf8feb309dbd56eedc122ec1e2b782",
+        "seed_prompts_catalog.mjs": "3bc4c24a90553adf17c98d74939dcfa41987a30a066df67d3a993171c0ea3ffa",
+        "sidecar.json": "b7b2ae2acaa7cd2cdea56dc5373dd36965fbbe5312b00b04e5d55e741a9a7bf5",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
-        "styles.css": "87532fba5f11ec234553aa27ece6b590f514334df673ca3fb3ec6381c4b4c802",
+        "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
         "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
-        "token_pill_ui.js": "d21a668335cbad6adcd9a250653baa4109456954b5d72eeeaa4d211367d25917",
-        "tokeneconomics_and_updates_ui.js": "ce6f36471aceb4b2ea5fea53610a3132f490066c34b79c2a36e3cda3cc924f31",
+        "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b",
+        "tokeneconomics_and_updates_ui.js": "242f05facbfdf47d2a7b826ef18c869ecd9023db51d1c627b7cfef6a92bbeffe",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
@@ -442,21 +394,6 @@
     }
   },
   "scriptManifest": {
-    "agy-connectors/scripts/ge_instance_mcp.mjs": {
-      "plugin": "agy-connectors",
-      "path": "scripts/ge_instance_mcp.mjs",
-      "sha256": "ceaf1ef76f42cc57e7a92bd40978c9f8522243ba7cb3f7f18c3f8ce124e8697a"
-    },
-    "agy-coordinator/scripts/coord_core.mjs": {
-      "plugin": "agy-coordinator",
-      "path": "scripts/coord_core.mjs",
-      "sha256": "f941abc46bbe7199f0ba535bb056898cac1e45f8ee6249d8c2710dc408a9520d"
-    },
-    "agy-coordinator/scripts/coord_ctl.mjs": {
-      "plugin": "agy-coordinator",
-      "path": "scripts/coord_ctl.mjs",
-      "sha256": "17630b2bccfd3c9ef25616922eb6bb2bfea4abade3c1c9dbbe0d06dde3a5fd18"
-    },
     "agy-design-studio/scripts/register_deliverable.mjs": {
       "plugin": "agy-design-studio",
       "path": "scripts/register_deliverable.mjs",

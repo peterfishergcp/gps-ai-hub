@@ -6,7 +6,9 @@
   let skillsSearch = '';
   let showOtherPlugins = false;
   let showCreateSkillDrawer = false;
-  let showGeDrawer = false;
+  let showClawyDrawer = false;
+  let clawyInputText = '';
+  let clawyResponse = null; // { mode: 'matches'|'workspace'|'chat', query, message, matches: [] }
   let activeForkCardKey = null;
   let activeSeedCardKey = null;
   let confirmDeleteSlug = null;
@@ -292,64 +294,307 @@
     ]);
   }
 
-  function buildGeConnectorDrawer() {
-    if (!showGeDrawer) return null;
-    const curVal =
-      (appState && appState.geConfig && (appState.geConfig.rawInput || appState.geConfig.engineId)) || '';
-    const geInput = el('input', {
-      type: 'text',
-      className: 'form-input',
-      id: 'ge-resource-input',
-      value: curVal,
-      placeholder: 'projects/YOUR_PROJECT/locations/global/collections/default_collection/engines/YOUR_ENGINE_ID',
+  function makeClawyBearImg(altText) {
+    const img = el('img', {
+      className: 'clawy-bear-img',
+      src: '/api/clawy-mascot',
+      alt: altText || 'Clawy Bear',
+    });
+    img.addEventListener('error', () => {
+      if (img.parentNode) {
+        img.parentNode.insertBefore(document.createTextNode('\uD83D\uDC3B'), img);
+        img.parentNode.removeChild(img);
+      }
+    });
+    return img;
+  }
+
+  function runClawySkillAssistant(rawQuery) {
+    const q = String(rawQuery || '').trim();
+    clawyInputText = q;
+    if (!q) {
+      clawyResponse = null;
+      render();
+      return;
+    }
+    const lower = q.toLowerCase();
+
+    // 1. Google Workspace / Connectors question -> guide directly to built-in Customizations
+    if (
+      /\b(google\s+workspace|google\s+docs|google\s+sheets|google\s+slides|google\s+drive|google\s+calendar|gmail|connector|connectors|ge\s+hub|customizations|marketplace)\b/.test(
+        lower
+      )
+    ) {
+      clawyResponse = {
+        mode: 'workspace',
+        query: q,
+        message:
+          'Connect Google Docs, Sheets, Slides, Drive, Calendar, and Gmail right inside Antigravity: open Customizations in the left sidebar → Marketplace → Google Workspace, then click + next to each app.',
+        matches: [],
+      };
+      render();
+      return;
+    }
+
+    // 2. Active chats / general conversation triage -> direct 1-click chat launch
+    if (/\b(active\s+chats?|my\s+chats?|conversations?|what\s+needs\s+my\s+attention|my\s+agents?)\b/.test(lower)) {
+      clawyResponse = {
+        mode: 'chat',
+        query: q,
+        message: 'Ready to run this directly in Antigravity chat with your workspace context:',
+        promptToSend: '/daily-brief ' + q,
+        matches: [],
+      };
+      render();
+      return;
+    }
+
+    // 3. Smart local skill matching across suite + personal skills with Public Sector domain synonyms
+    const synonymMap = {
+      foia: ['foia', 'public', 'records', 'redaction', '29b', 'vaughn'],
+      redact: ['redaction', 'foia', 'pii', 'ssn', 'public-records-redaction'],
+      dashboard: ['dashboard', 'kpi', 'agy-dashboard', 'chart', 'tracker'],
+      slide: ['slides', 'deck', 'presentation', 'briefing'],
+      deck: ['slides', 'deck', 'presentation'],
+      flyer: ['doc-design', 'flyer', 'memo', 'notice', 'pdf'],
+      memo: ['doc-design', 'memo', 'plain-language', 'my-voice'],
+      contract: ['legal-procurement-review', 'redline', 'sow', 'rfp', '5a-3'],
+      rfp: ['rfp-vendor-evaluation', 'bid', 'vendor', 'procurement'],
+      grant: ['expense-auditor', '2 cfr', 'agy-dashboard', 'policy-program-audit'],
+      expense: ['expense-auditor', 'voucher', 'receipt', 'ledger', '2 cfr'],
+      paystub: ['document-intake-cleanup-and-validation', 'income', 'intake', 'lease'],
+      boil: ['plain-language-notice-generator', 'advisory', 'notice'],
+      statute: ['policy-and-statute-assistant', 'cfr', 'regulation', 'snap'],
+      policy: ['policy-program-audit', 'policy-and-statute-assistant', 'bill', 'rule'],
+      email: ['inbox-triage', 'my-voice', 'followup-plan', 'daily-brief'],
+      reply: ['my-voice', 'followup-plan', 'no-ai-slop'],
+      meeting: ['meeting-prep', 'meeting-notes', 'swarm-prep'],
+      slop: ['no-ai-slop', 'outbound-scrub'],
+      scrub: ['outbound-scrub', 'security-audit', 'pii'],
+      sql: ['bigquery-architect', 'bigquery'],
+      cloud: ['deploy-cloudrun', 'find-cloud-skill', 'security-audit', 'iam-secret-hygiene'],
+      refactor: ['modernize-refactor', 'legacy'],
+      security: ['security-audit', 'iam-secret-hygiene', 'owasp'],
+      token: ['token-usage', 'orchestrator-guide', 'model-guide'],
+      claude: ['model-guide', 'orchestrator-guide'],
+      model: ['model-guide', 'orchestrator-guide'],
+      memory: ['memory', 'agy-onboard', 'weekly-impact'],
+      swarm: ['swarm-prep', 'weekly-impact'],
+    };
+
+    const rawTokens = lower
+      .replace(/[^a-z0-9/_-]+/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length >= 2 && !new Set(['the', 'and', 'for', 'with', 'how', 'can', 'what', 'which', 'help', 'helps', 'skill', 'skills', 'need', 'want', 'this', 'that', 'from']).has(t));
+
+    const expandedTokens = new Set(rawTokens);
+    rawTokens.forEach((tok) => {
+      Object.keys(synonymMap).forEach((k) => {
+        if (tok.includes(k) || k.includes(tok)) {
+          synonymMap[k].forEach((syn) => expandedTokens.add(syn));
+        }
+      });
     });
 
-    return el('div', { className: 'card', style: { marginBottom: '16px' } }, [
-      el('div', { className: 'card-header' }, [
-        el('h3', { className: 'card-title', text: 'Gemini Enterprise (GE) Federated Connector Hub' }),
+    const allCats = (appState && appState.categories) || [];
+    const pool = [];
+    allCats.forEach((c) => {
+      if (c.scope === 'other') return;
+      (c.skills || []).forEach((s) => pool.push({ ...s, categoryLabel: c.chipLabel || c.categoryLabel }));
+    });
+
+    const scored = pool
+      .map((s) => {
+        const hay = [s.id, s.command, s.title, s.subtitle, s.badge, s.seedPrompt, s.categoryLabel]
+          .join(' ')
+          .toLowerCase();
+        let score = 0;
+        if (hay.includes(lower)) score += 10;
+        expandedTokens.forEach((tok) => {
+          if (String(s.id || '').toLowerCase().includes(tok) || String(s.command || '').toLowerCase().includes(tok)) {
+            score += 5;
+          } else if (String(s.title || '').toLowerCase().includes(tok)) {
+            score += 3;
+          } else if (hay.includes(tok)) {
+            score += 1;
+          }
+        });
+        return { skill: s, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (scored.length > 0) {
+      clawyResponse = {
+        mode: 'matches',
+        query: q,
+        message:
+          'Here ' +
+          (scored.length === 1 ? 'is the best Antigravity skill' : 'are the top ' + scored.length + ' Antigravity skills') +
+          ' for "' +
+          q +
+          '":',
+        matches: scored.map((x) => x.skill),
+      };
+    } else {
+      clawyResponse = {
+        mode: 'chat',
+        query: q,
+        message: 'No exact skill keyword matched — launch this straight into an Antigravity conversation:',
+        promptToSend: q,
+        matches: [],
+      };
+    }
+    render();
+  }
+
+  function buildClawyAssistantDrawer() {
+    if (!showClawyDrawer) return null;
+
+    const inputEl = el('input', {
+      type: 'text',
+      className: 'form-input',
+      id: 'clawy-ask-input',
+      value: clawyInputText,
+      placeholder: 'Ask Clawy — e.g. "Which skill redacts a FOIA memo?", "Build a KPI dashboard", or "Connect Google Drive"...',
+    });
+    inputEl.addEventListener('input', () => {
+      clawyInputText = inputEl.value;
+    });
+    inputEl.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        runClawySkillAssistant(inputEl.value);
+      }
+    });
+
+    const starters = [
+      { label: '\uD83D\uDCC4 Redact a FOIA memo', q: 'Which skill helps redact a FOIA memo?' },
+      { label: '\uD83D\uDCCA Build a KPI dashboard', q: 'Build a public sector executive KPI dashboard' },
+      { label: '\u2709\uFE0F Draft a reply in my voice', q: 'Draft an email reply in my voice and triage inbox' },
+      { label: '\uD83D\uDD0C Connect Google Workspace', q: 'How do I connect Google Workspace Docs Drive Gmail?' },
+    ];
+
+    let replyNode = null;
+    if (clawyResponse) {
+      const r = clawyResponse;
+      const children = [el('div', { style: { fontSize: '12.5px', fontWeight: '600' }, text: r.message })];
+
+      if (r.mode === 'workspace') {
+        children.push(
+          el('div', { className: 'topbar-actions' }, [
+            el('button', {
+              type: 'button',
+              className: 'ai-sky-pill',
+              text: 'Walk Me Through Google Workspace Setup \u2192',
+              onClick: () =>
+                dispatchPrompt(
+                  'Walk me through enabling the built-in Google Workspace connectors (Google Docs, Sheets, Slides, Drive, Calendar, and Gmail) under Customizations -> Marketplace -> Google Workspace in Antigravity.',
+                  'Google Workspace Connectors'
+                ),
+            }),
+          ])
+        );
+      } else if (r.mode === 'matches' && r.matches.length > 0) {
+        r.matches.forEach((sk) => {
+          children.push(
+            el('div', { className: 'clawy-match-row' }, [
+              el('div', { className: 'clawy-match-meta' }, [
+                el('div', { className: 'clawy-match-title', text: sk.title + ' (' + sk.command + ')' }),
+                el('div', { className: 'clawy-match-sub', text: sk.subtitle || sk.categoryLabel }),
+              ]),
+              el('button', {
+                type: 'button',
+                className: 'ai-sky-pill',
+                text: 'Run ' + sk.command + ' \u2192',
+                onClick: () => dispatchPrompt(sk.command + ' ' + r.query, sk.command),
+              }),
+            ])
+          );
+        });
+        children.push(
+          el('div', { className: 'topbar-actions' }, [
+            el('button', {
+              type: 'button',
+              className: 'btn btn-secondary btn-sm',
+              text: 'Filter Grid to Top Match',
+              onClick: () => {
+                skillsCategory = 'all';
+                skillsSearch = r.matches[0].id;
+                render();
+              },
+            }),
+            el('button', {
+              type: 'button',
+              className: 'btn btn-ghost btn-sm',
+              text: 'Ask in Chat Instead \u2192',
+              onClick: () => dispatchPrompt(r.query, 'Ask Clawy'),
+            }),
+          ])
+        );
+      } else {
+        children.push(
+          el('div', { className: 'topbar-actions' }, [
+            el('button', {
+              type: 'button',
+              className: 'ai-sky-pill',
+              text: 'Launch in Antigravity Chat \u2192',
+              onClick: () => dispatchPrompt(r.promptToSend || r.query, 'Ask Clawy'),
+            }),
+          ])
+        );
+      }
+
+      replyNode = el('div', { className: 'clawy-reply-box' }, children);
+    }
+
+    return el('div', { className: 'clawy-drawer', id: 'clawy-assistant-drawer' }, [
+      el('div', { className: 'clawy-drawer-head' }, [
+        el('div', { className: 'clawy-drawer-brand' }, [
+          makeClawyBearImg('Clawy'),
+          el('div', {}, [
+            el('strong', { style: { fontSize: '13.5px' }, text: 'Clawy — Skill & Workspace Assistant' }),
+            el('div', {
+              className: 'muted',
+              style: { fontSize: '11.5px' },
+              text: 'Describe what you need in plain English — I will match the best skill or launch a chat.',
+            }),
+          ]),
+        ]),
         el('button', {
           type: 'button',
-          className: 'btn btn-secondary btn-sm',
-          text: 'Close',
+          className: 'btn btn-ghost btn-sm',
+          text: 'Close \u00D7',
           onClick: () => {
-            showGeDrawer = false;
+            showClawyDrawer = false;
             render();
           },
         }),
       ]),
-      el('p', {
-        className: 'muted',
-        style: { marginTop: '0', marginBottom: '8px' },
-        text: 'Paste your Gemini Enterprise Engine Resource Path to connect federated SharePoint, Outlook, OneDrive, Teams, Gmail, Drive, and GitHub.',
-      }),
-      el('div', { className: 'form-row' }, [
-        el('div', { style: { flex: '1', minWidth: '260px' } }, [geInput]),
+      el('div', { className: 'clawy-prompt-row' }, [
+        inputEl,
         el('button', {
           type: 'button',
           className: 'btn btn-sm',
-          id: 'btn-save-ge',
-          text: 'Save GE Instance',
-          onClick: async () => {
-            try {
-              await apiPost('/api/save-ge', { geInstance: geInput.value });
-              await loadState();
-              showToast('Saved Gemini Enterprise instance configuration');
-            } catch (err) {
-              showToast('Could not save GE config: ' + err.message);
-            }
-          },
-        }),
-        el('button', {
-          type: 'button',
-          className: 'ai-sky-pill',
-          text: 'Test /connect-ge →',
-          onClick: () =>
-            dispatchPrompt(
-              '/connect-ge Verify my Gemini Enterprise bridge status and test federated search connectivity.',
-              '/connect-ge'
-            ),
+          id: 'btn-clawy-submit',
+          text: 'Ask Clawy \u2192',
+          onClick: () => runClawySkillAssistant(inputEl.value),
         }),
       ]),
+      el(
+        'div',
+        { className: 'clawy-chip-row' },
+        starters.map((st) =>
+          el('button', {
+            type: 'button',
+            className: 'skill-chip',
+            text: st.label,
+            onClick: () => runClawySkillAssistant(st.q),
+          })
+        )
+      ),
+      replyNode,
     ]);
   }
 
@@ -454,17 +699,13 @@
       otherSkillCount += (c.skills || []).length;
     });
 
-    const geConfigured = Boolean(
-      appState.geConfig && (appState.geConfig.rawInput || appState.geConfig.engineId || appState.geConfig.projectId)
-    );
     headerSub.textContent =
       enabledSuiteCount +
       ' of ' +
       suiteSkillsCount +
       ' suite skills enabled \u00B7 ' +
       mySkillsCount +
-      ' personal \u00B7 ' +
-      (geConfigured ? 'GE Connected' : 'GE Optional');
+      ' personal';
 
     const visibleCategories = showOtherPlugins ? allCategories : suiteAndMyCats;
     const visibleKeys = new Set(visibleCategories.map((c) => c.categoryId || c.plugin));
@@ -997,17 +1238,42 @@
 
     renderCards();
 
+    const clawyToggleBtn = el(
+      'button',
+      {
+        type: 'button',
+        id: 'btn-clawy-inline',
+        className: 'clawy-search-btn' + (showClawyDrawer ? ' active' : ''),
+        title: 'Ask Clawy to match a skill or launch a chat',
+        onClick: () => {
+          showClawyDrawer = !showClawyDrawer;
+          if (showClawyDrawer) showCreateSkillDrawer = false;
+          render();
+          if (showClawyDrawer) {
+            setTimeout(() => {
+              const ci = document.getElementById('clawy-ask-input');
+              if (ci) ci.focus();
+            }, 30);
+          }
+        },
+      },
+      [makeClawyBearImg('Clawy'), el('span', { text: 'Ask Clawy' })]
+    );
+
     viewRoot.replaceChildren(
       el('div', { className: 'ai-inbox-wrap' }, [
         buildFileInspectorModal(),
         buildNewSkillDrawer(),
-        buildGeConnectorDrawer(),
         heroHead,
         el('div', { className: 'skills-toolbar' }, [
-          el('div', { className: 'ai-search-bar', style: { marginBottom: '4px' } }, [
-            el('span', { className: 'muted', style: { fontSize: '15px', fontWeight: '700' }, text: '\u2315' }),
-            searchInput,
+          el('div', { className: 'skills-search-clawy-row' }, [
+            el('div', { className: 'ai-search-bar' }, [
+              el('span', { className: 'muted', style: { fontSize: '15px', fontWeight: '700' }, text: '\u2315' }),
+              searchInput,
+            ]),
+            clawyToggleBtn,
           ]),
+          buildClawyAssistantDrawer(),
           el('div', { className: 'skills-chip-row' }, chipButtons),
         ]),
         el('div', { className: 'ai-wave-sep' }, [makeWaveSvg()]),
@@ -1028,13 +1294,7 @@
 
   document.getElementById('btn-new-skill').addEventListener('click', () => {
     showCreateSkillDrawer = !showCreateSkillDrawer;
-    showGeDrawer = false;
-    render();
-  });
-
-  document.getElementById('btn-ge-hub').addEventListener('click', () => {
-    showGeDrawer = !showGeDrawer;
-    showCreateSkillDrawer = false;
+    showClawyDrawer = false;
     render();
   });
 
@@ -1047,7 +1307,7 @@
       showToast(
         res.updatedSkillsCount > 0
           ? 'Updated ' + res.updatedSkillsCount + ' skills (' + res.updatedFilesCount + ' files)'
-          : 'All ' + (res.checkedSkillsCount || 40) + ' skills are up to date (v' + (res.suiteVersion || '2.1') + ')'
+          : 'All ' + (res.checkedSkillsCount || 36) + ' skills are up to date (v' + (res.suiteVersion || '2.3.0') + ')'
       );
     } catch (err) {
       showToast('Sync check offline or unreachable — local skills remain ready');
