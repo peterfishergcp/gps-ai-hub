@@ -109,7 +109,6 @@
     var el = ctx.el;
     var updatesState = (ctx.appState && ctx.appState.updates) || {};
     var sub = updatesState.subscription || {};
-    if (sub.dismissedMastery) return null;
 
     var doneSet = new Set(Array.isArray(sub.completedMasterySteps) ? sub.completedMasterySteps : []);
     // Auto-credit personal skill step if user already has >=1 personal skill
@@ -189,6 +188,39 @@
       return doneSet.has(s.id);
     }).length;
 
+    if (sub.dismissedMastery) {
+      return el(
+        'div',
+        {
+          className: 'mastery-restore-row',
+          id: 'mastery-restore-row',
+          style: {
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            margin: '-4px 0 10px 0',
+          },
+        },
+        [
+          el('button', {
+            type: 'button',
+            className: 'btn btn-ghost btn-sm',
+            id: 'btn-show-checklist',
+            title: 'Show the 6-step Quick Adoption Checklist again',
+            text: 'Show Checklist (' + doneCount + '/6) \u25BE',
+            onClick: async function () {
+              if (ctx.appState && ctx.appState.updates && ctx.appState.updates.subscription) {
+                ctx.appState.updates.subscription.dismissedMastery = false;
+              }
+              ctx.rerender();
+              await ctx.apiPost('/api/updates/prefs', { dismissedMastery: false });
+              await ctx.reloadState();
+            },
+          }),
+        ]
+      );
+    }
+
     return el('div', { className: 'mastery-bar', id: 'mastery-onboarding-bar' }, [
       el('div', { className: 'mastery-top' }, [
         el('div', { className: 'topbar-actions' }, [
@@ -198,9 +230,13 @@
         el('button', {
           type: 'button',
           className: 'btn btn-ghost btn-sm',
-          title: 'Dismiss quick adoption bar',
+          title: 'Hide quick adoption bar (you can restore it anytime)',
           text: 'Dismiss \u00D7',
           onClick: async function () {
+            if (ctx.appState && ctx.appState.updates && ctx.appState.updates.subscription) {
+              ctx.appState.updates.subscription.dismissedMastery = true;
+            }
+            ctx.rerender();
             await ctx.apiPost('/api/updates/prefs', { dismissedMastery: true });
             await ctx.reloadState();
           },

@@ -1,7 +1,7 @@
 {
   "name": "agy-engineering-cloud",
   "displayName": "AGY Engineering \u2014 Refactoring, Cloud Run & BigQuery",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Stage-gated legacy application refactoring (adapted from Google's migrate-to-rust Crucible), zero-Docker Cloud Run source deployments, BigQuery SQL migration & cost optimization, and on-demand Google Cloud skill loading.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

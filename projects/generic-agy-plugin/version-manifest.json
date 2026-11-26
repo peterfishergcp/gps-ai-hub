@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.0.0",
-  "updatedAt": "2026-11-26T03:40:00Z",
+  "suiteVersion": "2.0.1",
+  "updatedAt": "2026-11-26T04:34:00Z",
   "skillCount": 36,
   "skillManifest": {
     "agy-dashboard": {
@@ -382,7 +382,7 @@
         "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
         "token_meter.mjs": "9a840ef5f8c127bb3e2c3c68a8a619f87ad5a69ecc64c0d505011598044b1b9a",
         "token_pill_ui.js": "d39b6f5167710fd7e0482efb9535583601efd9064011a5beb4f470b6f0bd9b5b",
-        "tokeneconomics_and_updates_ui.js": "242f05facbfdf47d2a7b826ef18c869ecd9023db51d1c627b7cfef6a92bbeffe",
+        "tokeneconomics_and_updates_ui.js": "113e5e0165a524c447571f53ee08d838841e8997ca3d6399c05ef73988ae6a9e",
         "assets/emoji/1f30a.png": "2208a96a3aff677dbd44c036ee9eca6b5722476896e04bb26ce0ae25577382a9",
         "assets/emoji/1f36a.png": "805abcbda345abaad5fbb8ef825a7dcc3cf6a0d0431a76a166a825225e939214",
         "assets/emoji/1f48e.png": "b4ccf3e216b2e34b9bac35eebde66480f35f1d68a05f4d79096d4517e63167e9",
