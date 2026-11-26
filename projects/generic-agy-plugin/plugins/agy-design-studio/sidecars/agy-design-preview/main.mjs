@@ -551,6 +551,15 @@ app.api('/api/render', async (data) => {
   };
 }, 'POST');
 
+const RAW_HTML_SECURITY_HEADERS = {
+  // Unique opaque origin via CSP sandbox (intentionally omits allow-same-origin) so
+  // agent-generated HTML opened in a browser tab cannot access sidecar APIs or tokens.
+  'Content-Security-Policy':
+    "sandbox allow-scripts allow-forms allow-downloads allow-modals; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src data: https:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+};
+
 app.api('/api/raw', (data) => {
   const id = String((data && data.id) || '').trim();
   const autoPrint = String((data && data.autoprint) || '') === '1';
@@ -562,6 +571,7 @@ app.api('/api/raw', (data) => {
   return new Response(body, {
     status: 200,
     contentType: 'text/html; charset=utf-8',
+    headers: RAW_HTML_SECURITY_HEADERS,
   });
 }, 'GET');
 
@@ -625,6 +635,26 @@ function pruneRetiredAgyPlugins() {
         fs.rmSync(target, { recursive: true, force: true });
       } catch {}
     }
+    const pluginDataRoot = path.resolve(pluginsRoot, '..', 'plugin_data');
+    try {
+      const dataRootStat = fs.lstatSync(pluginDataRoot);
+      if (dataRootStat && !dataRootStat.isSymbolicLink() && dataRootStat.isDirectory()) {
+        for (const legacyName of ['agy-connectors', 'agy-coordinator']) {
+          const dataTarget = path.resolve(pluginDataRoot, legacyName);
+          if (dataTarget !== path.join(pluginDataRoot, legacyName) || !dataTarget.startsWith(pluginDataRoot + path.sep)) continue;
+          let dst = null;
+          try {
+            dst = fs.lstatSync(dataTarget);
+          } catch {
+            continue;
+          }
+          if (!dst || dst.isSymbolicLink() || !dst.isDirectory()) continue;
+          try {
+            fs.rmSync(dataTarget, { recursive: true, force: true });
+          } catch {}
+        }
+      }
+    } catch {}
   } catch {}
 }
 

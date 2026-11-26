@@ -1,7 +1,7 @@
 {
   "name": "wv-onboarding",
   "displayName": "WV Skills \u2014 36 Curated Skills, Ask Clawy & Personal Skills",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Includes the clean WV Skills panel with AI Inbox styling, inline Ask Clawy bear assistant, live hoverable token usage meter (in | out | thinking), Token & Quota Consumption Analyzer (/token-usage), Orchestrator mastery guide (/orchestrator-guide), Anthropic Claude & Gemini model guide (/model-guide), WV onboarding (/wv-onboard), morning briefings (/daily-brief), personal voice drafting (/my-voice), inbox triage, and <1s incremental /wv-update.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

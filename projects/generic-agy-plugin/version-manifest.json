@@ -1,6 +1,6 @@
 {
-  "suiteVersion": "2.0.1",
-  "updatedAt": "2026-11-26T04:34:00Z",
+  "suiteVersion": "2.0.2",
+  "updatedAt": "2026-11-26T22:00:00Z",
   "skillCount": 36,
   "skillManifest": {
     "agy-dashboard": {
@@ -84,12 +84,12 @@
     "agy-update": {
       "plugin": "agy-onboarding",
       "skill": "agy-update",
-      "treeSha256": "edfd700b67db80a7",
+      "treeSha256": "243c35f44ceb886b",
       "files": {
-        "SKILL.md": "96c4952a209f0f6ef77b05a4b61fed7917d914bea97f2abc50ef5199f5241665",
-        "scripts/incremental-sync.mjs": "9ebf31174e56bc09e8821f2e4c91a4144b082474115866936daee251300b1f19",
-        "scripts/install-agy-suite.ps1": "ee56b69917ea841598676dca6dcb33c405265e9cad09758fa46130d6b5cfcc32",
-        "scripts/install-agy-suite.sh": "df2773a6c5a1dc5f88a40c913466846d6513ce93d1207dc1075f14977125d99d"
+        "SKILL.md": "8e886750ce6753286ec03059bf8a778128985944e4e029e4bf03fce247225318",
+        "scripts/incremental-sync.mjs": "84e34197e9b4ee040695a45785d02feb0e6fe5692c409702349d33eb925d2121",
+        "scripts/install-agy-suite.ps1": "4f00d6f814fd967fa84786d3233ff2550994be4dbfe5adb61310a5119d64e6ee",
+        "scripts/install-agy-suite.sh": "33d4f6c6007bcd020eab5190f139ebf13b4bbd9ce35c32d5f4f444a87806785d"
       }
     },
     "daily-brief": {
@@ -333,8 +333,8 @@
       "sidecar": "agy-design-preview",
       "files": {
         "app.js": "28a07ea690ea63437184ae6b4841d276a08f4063462f4c5e3fcaaf32035b3062",
-        "index.html": "49b3bafe53edf4656491b1649c1a9c784085d0bddae637e2e5e50cc525b47fab",
-        "main.mjs": "f5341e6f5e8528e851fd8c3855def1ec7f9989a68ae5b640d53654f37d47c0d1",
+        "index.html": "32d93a33209741de8e25099f793728b705f6d1576bdadd28a0cfbc09648d35b2",
+        "main.mjs": "ea3ae01db523af3b39daea899e4b41400e69d12141bdbb977e41ed61adc17fdd",
         "package.json": "7bd4610e21e64407fdaaacef2cd451d5103ea3bd5ab3ca4d7bf60fe89da1f94f",
         "sidecar.json": "c1491f66243361d6bc89d9c6d7ed094db41ab13b5b256e396f40683bbb02006f",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
@@ -351,7 +351,7 @@
         "index.html": "75a2dcb5f9a5c1d2a31e8f563a4e19177004a349bc4c71aa1aad5f29b6298659",
         "main.mjs": "faa8f8cc2c97ddf5dc0eb7af3dd034f78414ef55a88c63322d3fc6a40f474f41",
         "package.json": "7890f7e7c2545dc44b6f3b0e69dec269044bf44370370b18ba4bb6dadeaad9a4",
-        "seed_prompts_catalog.mjs": "3bc4c24a90553adf17c98d74939dcfa41987a30a066df67d3a993171c0ea3ffa",
+        "seed_prompts_catalog.mjs": "f0ccd16e9e179d15502d44a439d2c84d934ed95e55688c6b89240e1954f07864",
         "sidecar.json": "95aa274a95f7ad733a972869053e9f836146bfe0debef533b454355442d0ae65",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",
@@ -374,9 +374,9 @@
         "antigravity_updates.mjs": "32019306ca20d4a377f8159e4de81b791a832fffc7d4d9fce0d4be48e694118f",
         "app.js": "f51dce8ea5da80133908b5b17a6bc3fa014fbf80a3fee5d4e14fa3787ff54da7",
         "index.html": "656c27610258dcf24aacf3b1524c60244e166ece033dff4c3e1d2280041f7191",
-        "main.mjs": "17ccff10e1bba3bf51688b776b67ae2a0b6ea8e899273a2465f23ae784034d56",
+        "main.mjs": "ab81dda31483f284c15c5adac65900030f4a7252802c7fec780d9bcdba2b3786",
         "package.json": "be802de33bcbc21ce828907a63919653666ceb405e162bba4c281ca299c7b49a",
-        "seed_prompts_catalog.mjs": "3bc4c24a90553adf17c98d74939dcfa41987a30a066df67d3a993171c0ea3ffa",
+        "seed_prompts_catalog.mjs": "f0ccd16e9e179d15502d44a439d2c84d934ed95e55688c6b89240e1954f07864",
         "sidecar.json": "b7b2ae2acaa7cd2cdea56dc5373dd36965fbbe5312b00b04e5d55e741a9a7bf5",
         "sidecar_html_inliner.mjs": "cf9f34f2ecf86403731e65285330731f7c1942064842fac539b93ef2d3f20329",
         "styles.css": "6e296c9d4871aeb8bead7459c8a344f93cb9c181a9c66f1824e94ad33a0b9edf",

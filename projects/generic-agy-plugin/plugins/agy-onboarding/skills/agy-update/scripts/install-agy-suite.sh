@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v2.0.0).
+# Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v2.0.2).
 # Stages strictly inside ~/.gemini/config/.install_stage_$$ — zero /tmp or /private/tmp writes,
 # zero home-directory clutter, zero local MCP subprocesses, and zero external runtime dependencies.
-# Automatically removes deprecated pre-v2.0.0 plugins (agy-connectors, agy-coordinator) on upgrade.
+# Verifies SHA-256 integrity of downloaded bundles (fail-closed) and removes deprecated pre-v2.0.0
+# plugins and credential directories (agy-connectors, agy-coordinator) on upgrade.
 
 set -euo pipefail
 
-DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+SUITE_VERSION="2.0.2"
+REPO_REF="agy-v2.0.2"
 ZIP_URL=""
+EXPECTED_SHA256=""
 GIT_REPO_URL=""
 GE_INSTANCE=""
 OAUTH_CLIENT_ID=""
@@ -18,6 +21,14 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --zip-url)
       ZIP_URL="${2:-}"
+      shift 2
+      ;;
+    --ref)
+      REPO_REF="${2:-}"
+      shift 2
+      ;;
+    --sha256)
+      EXPECTED_SHA256="${2:-}"
       shift 2
       ;;
     --git-sparse)
@@ -41,7 +52,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      echo "Usage: $0 [--zip-url <https-zip>] [--git-sparse <https-git-repo>] [--ge-instance <ge-url-or-resource>] [--oauth-client-id <id>] [--config-dir <dir>]"
+      echo "Usage: $0 [--ref <git-tag-or-sha>] [--zip-url <https-zip>] [--sha256 <64-hex>] [--git-sparse <https-git-repo>] [--config-dir <dir>]"
       exit 0
       ;;
     *)
@@ -51,6 +62,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ ! "${REPO_REF}" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "${REPO_REF}" == *".."* ]]; then
+  echo "Error: Refusing invalid --ref value: ${REPO_REF}" >&2
+  exit 1
+fi
+DEFAULT_ZIP_URL="https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/${REPO_REF}/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 SUITE_ROOT=""
 if [[ -n "${SCRIPT_PATH}" && -f "${SCRIPT_PATH}" ]]; then
@@ -59,10 +76,40 @@ if [[ -n "${SCRIPT_PATH}" && -f "${SCRIPT_PATH}" ]]; then
 fi
 
 PLUGINS_DEST="${TARGET_CONFIG_DIR}/plugins"
-MEM_DATA_DIR="${TARGET_CONFIG_DIR}/plugin_data/my-antigravity/memory"
+PLUGIN_DATA_DEST="${TARGET_CONFIG_DIR}/plugin_data"
+MEM_DATA_DIR="${PLUGIN_DATA_DEST}/my-antigravity/memory"
 
 mkdir -p -m 700 "${PLUGINS_DEST}" "${MEM_DATA_DIR}"
 chmod 700 "${MEM_DATA_DIR}" 2>/dev/null || true
+
+sha256_of() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print tolower($1)}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print tolower($1)}'
+  else
+    echo "Error: shasum or sha256sum is required to verify bundle integrity." >&2
+    exit 1
+  fi
+}
+
+verify_zip_sha256() {
+  local zip_path="$1"
+  local expected_hex
+  expected_hex="$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]' | awk '{print $1}')"
+  if [[ ! "${expected_hex}" =~ ^[0-9a-f]{64}$ ]]; then
+    echo "Error: Refusing install — missing or malformed SHA-256 digest." >&2
+    exit 1
+  fi
+  local actual_hex
+  actual_hex="$(sha256_of "${zip_path}")"
+  if [[ "${actual_hex}" != "${expected_hex}" ]]; then
+    echo "Error: SHA-256 integrity mismatch for ${zip_path}!" >&2
+    echo "  Expected: ${expected_hex}" >&2
+    echo "  Actual:   ${actual_hex}" >&2
+    exit 1
+  fi
+}
 
 STAGE_DIR=""
 cleanup() {
@@ -100,7 +147,7 @@ validate_and_extract_zip() {
   fi
 }
 
-# Default to HTTPS pre-built ZIP when piped via `curl -fsSL ... | bash` without local checkout
+# Default to pinned HTTPS pre-built ZIP (verified fail-closed via .zip.sha256) when run outside a local checkout
 if [[ -z "${ZIP_URL}" && -z "${GIT_REPO_URL}" ]]; then
   if [[ -z "${SUITE_ROOT}" ]] || [[ ! -d "${SUITE_ROOT}/plugins" && ! -f "${SUITE_ROOT}/dist/generic-agy-plugin.zip" ]]; then
     ZIP_URL="${DEFAULT_ZIP_URL}"
@@ -118,8 +165,13 @@ if [[ -n "${ZIP_URL}" ]]; then
   ZIP_FILE="${STAGE_DIR}/generic-agy-plugin.zip"
   EXTRACT_DIR="${STAGE_DIR}/extracted"
   mkdir -p -m 700 "${EXTRACT_DIR}"
-  echo "Downloading Generic AGY Plugin Suite v2.0.0 (<700 KB)..."
+  echo "Downloading Generic AGY Plugin Suite v${SUITE_VERSION} (${REPO_REF}, <700 KB)..."
   curl -fsSL "${ZIP_URL}" -o "${ZIP_FILE}"
+  if [[ -z "${EXPECTED_SHA256}" ]]; then
+    curl -fsSL "${ZIP_URL}.sha256" -o "${ZIP_FILE}.sha256"
+    EXPECTED_SHA256="$(awk '{print $1}' "${ZIP_FILE}.sha256")"
+  fi
+  verify_zip_sha256 "${ZIP_FILE}" "${EXPECTED_SHA256}"
   validate_and_extract_zip "${ZIP_FILE}" "${EXTRACT_DIR}"
   if [[ -d "${EXTRACT_DIR}/plugins" ]]; then
     SOURCE_SUITE_DIR="${EXTRACT_DIR}"
@@ -144,6 +196,12 @@ elif [[ -n "${SUITE_ROOT}" && -f "${SUITE_ROOT}/dist/generic-agy-plugin.zip" ]];
   init_stage_dir
   EXTRACT_DIR="${STAGE_DIR}/extracted"
   mkdir -p -m 700 "${EXTRACT_DIR}"
+  if [[ -z "${EXPECTED_SHA256}" && -f "${SUITE_ROOT}/dist/generic-agy-plugin.zip.sha256" ]]; then
+    EXPECTED_SHA256="$(awk '{print $1}' "${SUITE_ROOT}/dist/generic-agy-plugin.zip.sha256")"
+  fi
+  if [[ -n "${EXPECTED_SHA256}" ]]; then
+    verify_zip_sha256 "${SUITE_ROOT}/dist/generic-agy-plugin.zip" "${EXPECTED_SHA256}"
+  fi
   validate_and_extract_zip "${SUITE_ROOT}/dist/generic-agy-plugin.zip" "${EXTRACT_DIR}"
   SOURCE_SUITE_DIR="${EXTRACT_DIR}"
 fi
@@ -156,13 +214,6 @@ fi
 # Protect any stock SKILL.md that the user customized locally before upgrading plugin folders
 PERSONAL_SKILLS_DIR="${TARGET_CONFIG_DIR}/skills"
 BASELINE_JSON="${TARGET_CONFIG_DIR}/plugin_data/agy-onboarding/baseline-hashes.json"
-sha256_of() {
-  if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
-  fi
-}
 
 if [[ -f "${BASELINE_JSON}" && -d "${PLUGINS_DEST}" ]]; then
   for new_pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
@@ -206,9 +257,10 @@ METAEOF
   done
 fi
 
-# Clean up deprecated plugins from pre-v2.0.0 installs so orphaned sidebar icons disappear cleanly
+# Clean up deprecated plugins AND their retired credential directories from pre-v2.0.0 installs
 for legacy_p in agy-connectors agy-coordinator; do
   rm -rf "${PLUGINS_DEST:?}/${legacy_p}"
+  rm -rf "${PLUGIN_DATA_DEST:?}/${legacy_p}"
 done
 
 INSTALLED=()
@@ -225,7 +277,7 @@ for pdir in "${SOURCE_SUITE_DIR}/plugins"/*; do
   cp -R "${pdir}" "${PLUGINS_DEST}/${pname}"
   INSTALLED+=("${pname}")
 done
-echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins (v2.0.0) to ${PLUGINS_DEST}: ${INSTALLED[*]}"
+echo "Installed ${#INSTALLED[@]} zero-footprint AGY plugins (v${SUITE_VERSION}) to ${PLUGINS_DEST}: ${INSTALLED[*]}"
 
 # Restart running AGY sidecars cleanly so upgraded UI/API code loads immediately
 restart_agy_sidecars() {

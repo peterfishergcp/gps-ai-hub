@@ -214,18 +214,29 @@ export async function runIncrementalSync({ skillFilter = '', checkOnly = false, 
     }
   }
 
-    // Clean up retired pre-v2.3.0 legacy plugins (wv-connectors & wv-coordinator) so orphaned sidebar icons disappear cleanly
+    // Clean up retired pre-v2.3.0 legacy plugins (wv-connectors & wv-coordinator) and their plugin_data credential stores
     if (!checkOnly) {
       const resolvedRoot = path.resolve(pluginsRoot);
+      const pluginDataRoot = path.resolve(resolvedRoot, '..', 'plugin_data');
       for (const legacyName of ['wv-connectors', 'wv-coordinator']) {
         const target = path.resolve(resolvedRoot, legacyName);
-        if (target !== path.join(resolvedRoot, legacyName) || !target.startsWith(resolvedRoot + path.sep)) continue;
-        try {
-          const st = fs.lstatSync(target);
-          if (st && !st.isSymbolicLink() && st.isDirectory() && fs.existsSync(path.join(target, 'plugin.json'))) {
-            fs.rmSync(target, { recursive: true, force: true });
-          }
-        } catch {}
+        if (target === path.join(resolvedRoot, legacyName) && target.startsWith(resolvedRoot + path.sep)) {
+          try {
+            const st = fs.lstatSync(target);
+            if (st && !st.isSymbolicLink() && st.isDirectory() && fs.existsSync(path.join(target, 'plugin.json'))) {
+              fs.rmSync(target, { recursive: true, force: true });
+            }
+          } catch {}
+        }
+        const dataTarget = path.resolve(pluginDataRoot, legacyName);
+        if (dataTarget === path.join(pluginDataRoot, legacyName) && dataTarget.startsWith(pluginDataRoot + path.sep)) {
+          try {
+            const dst = fs.lstatSync(dataTarget);
+            if (dst && !dst.isSymbolicLink() && dst.isDirectory()) {
+              fs.rmSync(dataTarget, { recursive: true, force: true });
+            }
+          } catch {}
+        }
       }
     }
 

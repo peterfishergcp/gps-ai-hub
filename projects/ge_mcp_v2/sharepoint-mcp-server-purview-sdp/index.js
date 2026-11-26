@@ -316,13 +316,11 @@ const TOOLS = buildSharePointV2Tools(
   }
 );
 
-const stateHolder = { lastPayload: null };
-
 const app = createSharePointHttpServer({
   serviceName: "sharepoint-mcp-server-purview-sdp",
   version: "2.0.0",
   defaultAllowAppCredentials: false,
-  buildMcpServer(authContext) {
+  buildMcpServer(authContext, req) {
     refreshSdpContentPolicy(false).catch(() => {});
     return createSharePointV2McpInstance({
       serviceName: "sharepoint-mcp-server-purview-sdp",
@@ -331,7 +329,7 @@ const app = createSharePointHttpServer({
       skillsDir: path.join(__dirname, "skills"),
       appConfig: APP_CONFIG,
       tools: TOOLS,
-      stateHolder,
+      callerAuthHeader: req?.headers?.authorization,
       async executeDomainTool(name, args) {
         try {
           const resultObj = await executeStandardSharePointTool({

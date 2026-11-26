@@ -990,6 +990,26 @@ function pruneRetiredAgyPlugins(pluginsRoot) {
         fs.rmSync(target, { recursive: true, force: true });
       } catch {}
     }
+    const pluginDataRoot = path.resolve(resolvedRoot, '..', 'plugin_data');
+    try {
+      const dataRootStat = fs.lstatSync(pluginDataRoot);
+      if (dataRootStat && !dataRootStat.isSymbolicLink() && dataRootStat.isDirectory()) {
+        for (const legacyName of ['agy-connectors', 'agy-coordinator']) {
+          const dataTarget = path.resolve(pluginDataRoot, legacyName);
+          if (dataTarget !== path.join(pluginDataRoot, legacyName) || !dataTarget.startsWith(pluginDataRoot + path.sep)) continue;
+          let dst = null;
+          try {
+            dst = fs.lstatSync(dataTarget);
+          } catch {
+            continue;
+          }
+          if (!dst || dst.isSymbolicLink() || !dst.isDirectory()) continue;
+          try {
+            fs.rmSync(dataTarget, { recursive: true, force: true });
+          } catch {}
+        }
+      }
+    } catch {}
   } catch {}
 }
 

@@ -20,6 +20,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -279,7 +280,9 @@ function checkGate7(allSuiteEntries) {
   }
 
   const distZip = path.join(SUITE_ROOT, 'dist', 'wv-antigravity-suite.zip');
+  const distSha = path.join(SUITE_ROOT, 'dist', 'wv-antigravity-suite.zip.sha256');
   const wsZip = path.join(SUITE_ROOT, 'workshop', 'dist', 'wv-antigravity-suite.zip');
+  const wsSha = path.join(SUITE_ROOT, 'workshop', 'dist', 'wv-antigravity-suite.zip.sha256');
   let sizeKb = 0;
   if (!fs.existsSync(distZip)) {
     issues.push('Missing dist/wv-antigravity-suite.zip');
@@ -287,6 +290,19 @@ function checkGate7(allSuiteEntries) {
     const b1 = fs.readFileSync(distZip);
     sizeKb = Math.round((b1.length / 1024) * 10) / 10;
     if (sizeKb > 750) issues.push(`Bundle exceeds 750 KB cap (${sizeKb} KB)`);
+    const actualSha = crypto.createHash('sha256').update(b1).digest('hex');
+    if (!fs.existsSync(distSha)) {
+      issues.push('Missing dist/wv-antigravity-suite.zip.sha256');
+    } else {
+      const shaText = fs.readFileSync(distSha, 'utf-8').trim();
+      const shaToken = shaText.split(/\s+/)[0].toLowerCase();
+      if (!/^[a-f0-9]{64}$/.test(shaToken) || shaToken !== actualSha) {
+        issues.push('dist/wv-antigravity-suite.zip.sha256 digest mismatch');
+      }
+      if (fs.existsSync(wsSha) && fs.readFileSync(wsSha, 'utf-8') !== fs.readFileSync(distSha, 'utf-8')) {
+        issues.push('workshop/dist/wv-antigravity-suite.zip.sha256 out of sync with dist/');
+      }
+    }
     if (fs.existsSync(wsZip)) {
       const b2 = fs.readFileSync(wsZip);
       if (!b1.equals(b2)) issues.push('workshop/dist/wv-antigravity-suite.zip out of sync with dist/');
@@ -295,9 +311,9 @@ function checkGate7(allSuiteEntries) {
 
   recordGate(
     7,
-    'Archive Hygiene & Installer Parity',
+    'Archive Hygiene, SHA-256 Digest & Installer Parity',
     issues.length === 0,
-    issues.length ? issues.join('; ') : `dist/wv-antigravity-suite.zip (${sizeKb} KB), 0 symlinks, sh/ps1 installers in sync`
+    issues.length ? issues.join('; ') : `dist/wv-antigravity-suite.zip (${sizeKb} KB), SHA-256 verified, 0 symlinks, sh/ps1 installers in sync`
   );
 }
 
@@ -322,11 +338,17 @@ async function checkHermeticLifecycleGates() {
       TMP: canaryTmp,
     };
 
-    // Seed deprecated v2.2.x plugins to prove upgrade auto-cleanup deletes orphaned sidebar icons
+    // Seed deprecated v2.2.x plugins + plugin_data credential directories to prove upgrade auto-cleanup purges both while preserving user memory
     fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-connectors'), { recursive: true });
     fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-coordinator'), { recursive: true });
     fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-connectors', 'plugin.json'), '{"name":"wv-connectors"}\n');
     fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugins', 'wv-coordinator', 'plugin.json'), '{"name":"wv-coordinator"}\n');
+    fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-connectors'), { recursive: true });
+    fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-coordinator'), { recursive: true });
+    fs.mkdirSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-antigravity', 'memory'), { recursive: true });
+    fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-connectors', 'connectors.json'), '{"stale":true}\n');
+    fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-coordinator', 'voice_prefs.json'), '{"staleSecret":true}\n');
+    fs.writeFileSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-antigravity', 'memory', 'action_items.md'), '# Preserved\n');
 
     // --- Gate 8: Live Hermetic Install ---
     if (process.platform === 'win32') {
@@ -382,6 +404,15 @@ async function checkHermeticLifecycleGates() {
     if (JSON.stringify(installedPlugins) !== JSON.stringify(EXPECTED_PLUGINS)) {
       g8Issues.push(`Installed plugins mismatch: ${installedPlugins.join(', ')}`);
     }
+    if (
+      fs.existsSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-connectors')) ||
+      fs.existsSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-coordinator'))
+    ) {
+      g8Issues.push('Legacy plugin_data/wv-{connectors,coordinator} was not purged during install');
+    }
+    if (!fs.existsSync(path.join(fakeHome, '.gemini', 'config', 'plugin_data', 'wv-antigravity', 'memory', 'action_items.md'))) {
+      g8Issues.push('User memory in plugin_data/wv-antigravity/memory/ was not preserved during install');
+    }
 
     recordGate(
       8,
@@ -414,16 +445,22 @@ async function checkHermeticLifecycleGates() {
       const clawyPng = path.join(plugins, 'wv-onboarding', 'sidecars', 'wv-skill-manager', 'assets', 'clawy_mascot.png');
       const hasLegacyCat = cat.some((c) => c.categoryId === 'wv-connectors' || c.categoryId === 'wv-coordinator');
 
-      // Re-seed legacy v2.2.x folders to prove runtime self-healing prunes them even after additive agy plugin install
+      // Re-seed legacy v2.2.x plugins + plugin_data credential folders to prove runtime self-healing prunes both
       fs.mkdirSync(path.join(plugins, 'wv-connectors'), { recursive: true });
       fs.mkdirSync(path.join(plugins, 'wv-coordinator'), { recursive: true });
       fs.writeFileSync(path.join(plugins, 'wv-connectors', 'plugin.json'), '{"name":"wv-connectors"}\\n');
       fs.writeFileSync(path.join(plugins, 'wv-coordinator', 'plugin.json'), '{"name":"wv-coordinator"}\\n');
+      fs.mkdirSync(path.join(cfg, 'plugin_data', 'wv-connectors'), { recursive: true });
+      fs.mkdirSync(path.join(cfg, 'plugin_data', 'wv-coordinator'), { recursive: true });
+      fs.writeFileSync(path.join(cfg, 'plugin_data', 'wv-coordinator', 'voice_prefs.json'), '{"staleSecret":true}\\n');
       const pruned = catalogMod.pruneRetiredWvPlugins(plugins);
       const legacyStillExists =
-        fs.existsSync(path.join(plugins, 'wv-connectors')) || fs.existsSync(path.join(plugins, 'wv-coordinator'));
+        fs.existsSync(path.join(plugins, 'wv-connectors')) ||
+        fs.existsSync(path.join(plugins, 'wv-coordinator')) ||
+        fs.existsSync(path.join(cfg, 'plugin_data', 'wv-connectors')) ||
+        fs.existsSync(path.join(cfg, 'plugin_data', 'wv-coordinator'));
 
-      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || !Array.isArray(cat) || hasLegacyCat || !fs.existsSync(clawyPng) || legacyStillExists || pruned.length !== 2) {
+      if (!vs || !Array.isArray(up.items) || up.items.length < 5 || !Array.isArray(cat) || hasLegacyCat || !fs.existsSync(clawyPng) || legacyStillExists || pruned.length < 2) {
         throw new Error('Runtime state validation failed');
       }
       console.log('RUNTIME_OK');

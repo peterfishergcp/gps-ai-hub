@@ -38,8 +38,13 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 
 ## Step 2: Optional Full Suite Re-Install (Only When a New Sidecar or MCP Binary Is Added)
 
-If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `Preview` or `My Antigravity`), run the full installer:
+If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `Preview` or `My Hub`), download the pinned release installer (`agy-v2.0.2`), inspect it if desired, and execute it (verifies `generic-agy-plugin.zip.sha256` fail-closed before extracting; zero `/tmp` writes):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash
+TAG="agy-v2.0.2"
+S="$HOME/.gemini/config/.install_stage_dl"
+mkdir -p "$S"
+curl -fsSL "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/${TAG}/projects/generic-agy-plugin/scripts/install-agy-suite.sh" -o "$S/install-agy-suite.sh"
+bash "$S/install-agy-suite.sh" --ref "$TAG"
+rm -rf "$S"
 ```
-*(Or on laptops without `git`, run `bash ~/.gemini/config/plugins/agy-onboarding/skills/agy-update/scripts/install-agy-suite.sh --zip-url "https://github.com/peterfishergcp/gps-ai-hub/raw/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"` on macOS/Linux or `install-agy-suite.ps1 -ZipUrl "..."` on Windows PowerShell.)*
+*(Or run the bundled copy directly: `bash ~/.gemini/config/plugins/agy-onboarding/skills/agy-update/scripts/install-agy-suite.sh --ref agy-v2.0.2` on macOS/Linux or `install-agy-suite.ps1 -Ref agy-v2.0.2` on Windows PowerShell. All downloads verify `.zip.sha256` fail-closed and stage strictly inside `~/.gemini/config/`.)*

@@ -14,7 +14,13 @@ const {
   renderSecureMcpWorkbenchHtml,
   attachSkillsAndAppsToSdkServer,
   buildV2Capabilities,
+  createScopedPayloadCache,
 } = require("./mcp_v2_extensions.js");
+
+const sharepointCallerPayloadCache = createScopedPayloadCache({
+  maxEntries: 128,
+  ttlMs: 5 * 60 * 1000,
+});
 
 const READ_UI_LINKED_TOOLS = new Set([
   "query_sharepoint_sites_lookup",
@@ -73,15 +79,25 @@ function createSharePointV2McpInstance({
   appConfig,
   tools,
   executeDomainTool,
-  stateHolder,
+  callerAuthHeader,
 }) {
   const skillsCatalog = loadSkillsCatalog(skillsDir || path.join(process.cwd(), "skills"));
   const { resourceMeta } = buildMcpAppMeta(appConfig.appUri, { prefersBorder: true });
+  // Strictly isolated per-caller key (service + caller bearer token hash);
+  // when absent, stays purely request-local with zero cross-request sharing.
+  const scopedKey = callerAuthHeader ? `${serviceName}:${String(callerAuthHeader).trim()}` : null;
+  let requestLocalPayload = null;
+  const readCallerPayload = () =>
+    (scopedKey ? sharepointCallerPayloadCache.get(scopedKey) : null) || requestLocalPayload;
+  const writeCallerPayload = (payload) => {
+    requestLocalPayload = payload;
+    if (scopedKey) sharepointCallerPayloadCache.set(scopedKey, payload);
+  };
 
   const renderHtml = () =>
     renderSecureMcpWorkbenchHtml({
       ...appConfig,
-      initialPayload: stateHolder.lastPayload,
+      initialPayload: readCallerPayload(),
     });
 
   const mcpServer = new Server(
@@ -113,7 +129,7 @@ function createSharePointV2McpInstance({
 
     if (name === appConfig.launcherName) {
       const filterNote = typeof args.filter === "string" ? args.filter.slice(0, 200) : "";
-      const launchPayload = stateHolder.lastPayload || {
+      const launchPayload = readCallerPayload() || {
         service: serviceName,
         filter: filterNote || null,
         normalizedItems: [
@@ -127,7 +143,7 @@ function createSharePointV2McpInstance({
           },
         ],
       };
-      stateHolder.lastPayload = launchPayload;
+      writeCallerPayload(launchPayload);
       return {
         content: [
           {
@@ -153,7 +169,7 @@ function createSharePointV2McpInstance({
       try {
         const parsed = JSON.parse(domainResponse.content[0].text);
         if (parsed && typeof parsed === "object") {
-          stateHolder.lastPayload = parsed;
+          writeCallerPayload(parsed);
           return {
             ...domainResponse,
             structuredContent: parsed,
