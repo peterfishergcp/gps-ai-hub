@@ -1,120 +1,99 @@
-# Generic AGY Plugin — Public Sector Antigravity Skill & Federated Connector Suite
+# Generic AGY Plugin — Zero-Footprint Public Sector Antigravity Suite (`v2.0.0`)
 
-A fast-installing, Git-updatable customization suite for **Public Sector** (Federal, State, and Local Government) cohorts onboarding onto **Google Antigravity (`AGY`)** under **Gemini Enterprise (`GE`) Subscription** licenses.
+A fast-installing, **100% Zero-Footprint** customization suite for **Public Sector** (Federal, State, and Local Government) cohorts onboarding onto **Google Antigravity (`AGY`)** under **Gemini Enterprise (`GE`) Subscription** licenses.
 
 Designed specifically for **strict government corporate laptop policies**:
-- **Zero Extra Laptop Software Required:** Every skill, dashboard, slide deck, flyer, and MCP bridge runs with **zero separate `Node.js`, `Python`, `npm`, `pip`, or `Docker` installs** on employee laptops.
-  - Our bundled **Gemini Enterprise (`GE`) Bridge MCP** (`agy-ge-bridge`) runs automatically on Antigravity Desktop's **built-in `agy-node` runtime** even when Node.js is not installed on the laptop.
-  - Dashboards (`/agy-dashboard`), decks (`/slides`), and flyers (`/doc-design`) render natively in Antigravity's **Side Pane** (`Extensions -> Preview`) with automatic conversation artifact discovery and open standalone in **Chrome or Edge (`file://` Zero-Node Browser Mode)** with visual drag-and-drop saving via `window.showSaveFilePicker()`, and automatically unlock local `127.0.0.1:4173` live query previews whenever `node` is present on developer workstations.
-- **Built for Public Sector Identity & Connector Architectures:**
-  - **Azure / Entra ID -> Google Cloud Identity Sync:** Works seamlessly with synced Google Cloud Identity accounts and replicated Entra security groups.
-  - **Federated Gemini Enterprise (`GE`) Instance as Default:** Instead of configuring 6 separate per-app connectors on every laptop, users provide their **GE Instance** once (`/connect-ge` or `-GeInstance` during install) to unlock **Outlook, SharePoint, OneDrive, Microsoft Teams, Gmail, Google Drive, and GitHub** through `AssistantService.StreamAssist` and `SearchService.Search` with per-user ACLs intact.
-- **Sub-2-Second Onboarding & Incremental `< 1s` Git Updates (`/agy-update`):**
-  - Ships as a `< 550 KB` pre-built bundle (`dist/generic-agy-plugin.zip`) and modular `plugins/` tree with SHA-256 incremental diffing so cohorts install or update all 9 plugins and 40 skills in seconds—with or without `git` installed.
-- **100% Zero-Footprint Architecture (`~/.gemini/config/` Only — `v1.9.3`, Enforced by 10-Gate Hermetic CI):**
-  - All Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`, `agy-profile.md`), Coordinator sprints (`plugin_data/agy-coordinator/`), toggles, and sidecar state live strictly inside `~/.gemini/config/`—leaving zero `/tmp` files and zero extra folders in `$HOME`, verified on every Linux & Windows build via `node scripts/verify-agy-zero-footprint.mjs` and removable in 1 command via `scripts/uninstall-agy-suite.sh` / `.ps1`.
-- **4 Left-Sidebar `Extensions` with Distinct Custom Icons, Dedicated `Skills` (`★ My Personal Skills`), `Clawy` Bear Coordinator, `TokenEconomics`, & Antigravity Updates Hub (`v1.9.3`):**
-  1. **`My Antigravity`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 6-step Quick Adoption Checklist featuring **`2. Set Up Clawy 🐻`**, **`Stay in sync with Google Antigravity`** blog/video updates & 5 Unlisted how-to video guides), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, `5h`/`24h`/`7d`/`30d` telemetry, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
-  2. **`Clawy`** *(**Warm Brown Bear** Icon)* — Multi-Agent Command Center & **Gemini Live (`Kore`)** neural voice hub featuring an animated 3D Brown Bear perch, Antigravity GCP Project auto-discovery, side-by-side agent pop-outs, 5-state attention triage, and strict 2-level `Group -> Goal -> Task` sprint tracking.
-  3. **`Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid skill & connector hub displaying all 40 curated suite skills **plus** automatic discovery of all user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), `+ New Skill` wizard, `Save My Copy`, per-skill toggles, Safe Export secret scanner, and `<1s` `Sync Updates`.
-  4. **`Preview`** *(**Magnifying Glass** Icon)* — Serverless visual preview of Dashboards, 16:9 Slide Decks, and Branded Flyers with Print-to-PDF, 1-click HTML download, and a live hoverable **`in | out | thinking` Token Consumption Pill** (with `/compact` context-bloat alert) across all panels.
+- **True Zero Footprint (`~/.gemini/config/` Only — Zero `/tmp` Writes, Zero Local MCP Subprocesses):**
+  - **Zero Extra Laptop Software & Zero `PATH` Subprocesses:** Runs 100% on Antigravity Desktop's built-in sidecar runtime—shipping **zero** local `mcp_config.json` stdio processes, **zero** standalone `Node.js`, `Python`, `Git`, `npm`, `pip`, `Docker`, or `gcloud` requirements, and **zero** local Administrator prompts.
+  - **Zero `/tmp` or Home-Directory Clutter:** Installer staging (`.install_stage_*`), configuration, Personal Memory (`action_items.md`, `initiatives/`, `contacts.md`, `voice.md`), and sidecar state live strictly inside `~/.gemini/config/`—never writing to `/tmp`, `/private/tmp`, `%TEMP%`, or `C:\Users\<user>\`, verified on every build via `node scripts/verify-agy-zero-footprint.mjs` (10-Gate CI & pre-build audit) and removable in 1 command via `scripts/uninstall-agy-suite.sh` / `.ps1`.
+  - **Zero Open Firewall Ports & Zero Unapproved Cron Daemons:** Dashboards (`/agy-dashboard`), decks (`/slides`), and flyers (`/doc-design`) render serverlessly via `srcdoc` inside **`Preview`** and standalone `file://` HTML in Chrome/Edge; `agy-twin-automations` ships **disabled (`opt-in`) by default**.
+  - **Windows PowerShell 5.1 & State Proxy Hardened:** Writes BOM-free UTF-8 JSON configs, strips `\uFEFF` across all readers, and bundles local SVG icons + offline Noto Emoji PNG fallbacks so SSL-inspected networks never stall.
+- **3 Streamlined Left-Sidebar `Plugins` (`v2.0.0`) + Inline `🐻 Ask Clawy` & Built-In `Customizations → Google Workspace`:**
+  1. **`My Hub`** *(Antigravity Rainbow **"A"** Icon)* — Unified **AI Inbox** workspace across `Overview 😎` (with **`⚡ Orchestrator`** prompt optimizer, 6-step Quick Adoption Checklist featuring **`2. Connect Google Workspace`** with instant-green completion tracking, and **`Stay in sync with Google Antigravity`** updates & video guides), `Action Items 🍪`, `Initiatives 🚦`, `Stakeholders 🌊`, **`TokenEconomics 💎`** (monthly pooled `$` spending cap estimator, `5h`/`24h`/`7d`/`30d` telemetry, 14-day SVG trend chart, and Orchestrator/Workflows/Swarm playbooks), and `Customize ⚙️`.
+  2. **`Skills`** *(**Skills Sparkle** Icon)* — Dedicated AI-Inbox Card Grid displaying all **36 curated Public Sector skills** **plus** automatic discovery of user-authored **`★ My Personal Skills`** (`~/.gemini/config/skills/` & workspace `.gemini/skills/`), inline **`🐻 Ask Clawy`** plain-English skill matcher beside the search bar, `+ New Skill` wizard, `Save My Copy`, Safe Export secret scanner, and `<1s` SHA-256 `Sync Updates`.
+  3. **`Preview`** *(**Magnifying Glass** Icon)* — Searchable, newest-first visual preview of Public Sector Dashboards, 16:9 Slide Decks, and Branded Flyers with grouped date dropdown (`Today`/`Yesterday`/`This Week`/`Earlier`), **`NEW`** recency pills, **`Save to Downloads ↓`** (with persistent green banner showing the exact `Downloads/<file>.html` path + `Copy Path`), and **`Open in Browser ↗`**.
+  - **Native Google Workspace Connectors:** Connect Google Docs, Sheets, Slides, Drive, Calendar, and Gmail directly under Antigravity's built-in **`Customizations → Marketplace → Google Workspace`** (replacing the legacy GE Connector Hub). Upgrading from `v1.9.x` automatically removes deprecated `agy-connectors` and `agy-coordinator` folders (both in the installer and automatically at sidecar startup / `Sync Updates`).
 
 ---
 
-## Visual Tour — `My Antigravity`, `Clawy`, Dedicated `Skills` & `TokenEconomics` (`v1.9.1`)
+## Visual Tour — The 3 Antigravity Extensions (`v2.0.0`)
 
-### 1. `Overview` — Instant Search, `⚡ Orchestrator` Optimizer & Antigravity Updates + Video Walkthroughs (`😎`)
-Search across Action Items, Initiatives, Stakeholders, and all 40 skills, toggle **`⚡ Orchestrator`** prompt optimization, watch 3–4 minute two-host video walkthroughs, and subscribe to official Google Antigravity updates:
+### 1. `My Hub` *(Antigravity Rainbow "A" Icon)*
 
-![My Antigravity — Overview, Orchestrator & Updates Hub](./docs/screenshots/my-antigravity-overview.png)
+![My Hub — Overview, Quick Adoption Checklist & Updates Hub](./docs/screenshots/my-antigravity-overview.png)
 
-### 2. Dedicated `Skills` Sidebar Hub — 40 Curated Skills + `★ My Personal Skills` (`✨`)
-Browse all 40 suite skills and every personal skill in `~/.gemini/config/skills/` or `.gemini/skills/`—run in 1 click, toggle skills on/off, create new skills, or run Safe Export:
+![My Hub — TokenEconomics & Spend Optimization](./docs/screenshots/my-antigravity-tokeneconomics.png)
 
-| `Skills ✨` *(40 Curated Suite Skills)* | `★ My Personal Skills` *(Auto-Discovered User & Workspace Skills)* |
+![My Hub — AI Inbox Action Items & Topics](./docs/screenshots/my-antigravity-action-items.png)
+
+### 2. Dedicated `Skills` *(Skills Icon — 36 Suite Skills + Inline `🐻 Ask Clawy` + `★ My Personal Skills`)*
+
+| `Skills ✨` *(36 Curated Suite Skills + Inline `Ask Clawy`)* | `★ My Personal Skills` *(Auto-Discovered User & Workspace Skills)* |
 | :---: | :---: |
 | ![Skills Hub — All Skills](./docs/screenshots/my-antigravity-skills.png) | ![Skills Hub — Personal Skills](./docs/screenshots/my-antigravity-personal-skills.png) |
 
-### 3. `TokenEconomics` — Monthly Spending Cap Tracker & Orchestrator / Workflows Playbook (`💎`)
-See where you stand against your monthly pooled `$` quota (`Standard $30`, `Plus $45`, `Enterprise $60`, or Custom Cap), inspect 14-day token velocity, and apply personalized Orchestrator + Hydrogen + Workflows recommendations:
+### 3. `Preview` *(Magnifying Glass Icon — Searchable, Newest-First Deliverable Viewer)*
 
-![My Antigravity — TokenEconomics & Spend Optimization](./docs/screenshots/my-antigravity-tokeneconomics.png)
-
-### 4. `Clawy` (`🐻`), `Action Items` (`🍪`), `Initiatives` (`🚦`) & `Stakeholders` (`🌊`)
-
-![Clawy — Brown Bear Multi-Agent Command Center & Kore Gemini Live Voice](./docs/screenshots/clawy-coordinator.png)
-
-![My Antigravity — AI Inbox Action Items & Topics](./docs/screenshots/my-antigravity-action-items.png)
-
-| `Initiatives 🚦` *(RAG Status & Milestones)* | `Stakeholders 🌊` *(>21d Check-In Radar)* |
-| :---: | :---: |
-| ![My Antigravity — Initiatives](./docs/screenshots/my-antigravity-initiatives.png) | ![My Antigravity — Stakeholders](./docs/screenshots/my-antigravity-stakeholders.png) |
+![Preview — Serverless Deliverable Preview](./docs/screenshots/my-antigravity-initiatives.png)
 
 ---
 
 ## Quick 1-Line Install (Paste into `+ New Conversation` in Antigravity)
 
 ### 1. Recommended — 1-Line Conversation Install
-Click **`+ New Conversation`** in Antigravity and paste:
+Click **`+ New Conversation`** in Antigravity (or open a terminal) and paste:
 ```text
 agy plugin install https://github.com/peterfishergcp/gps-ai-hub/tree/main/projects/generic-agy-plugin
 ```
-*(Agent execution note: when a user pastes this command into an Antigravity conversation, install all 9 modular plugins directly into `~/.gemini/config/plugins/` in `<2s` with zero `/tmp` writes by running `curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash` on macOS/Linux or `irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex` on Windows PowerShell.)*
+*(Agent execution note — IMPORTANT: when a user pastes this command into an Antigravity conversation, **ALWAYS install or upgrade by executing the official Zero-Footprint installer script**: `curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.sh | bash` on macOS/Linux, or `irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/scripts/install-agy-suite.ps1 | iex` on Windows PowerShell. It installs all **7 modular AGY plugins** into `~/.gemini/config/plugins/` in `<2s` with zero `/tmp` writes, **automatically deletes deprecated pre-v2.0.0 `agy-connectors` and `agy-coordinator` folders**, and restarts running AGY sidecars. If installing manually without running the script, you MUST explicitly delete `~/.gemini/config/plugins/agy-connectors` and `~/.gemini/config/plugins/agy-coordinator` so orphaned `Clawy` or `Connectors` entries do not remain in the sidebar. After upgrading from `v1.9.x`, remind the user to **Reload Window / Restart Antigravity** so the left sidebar refreshes to the 3 panels: **`My Hub`**, **`Skills`**, and **`Preview`**.)*
 
-### 2. Offline `.zip` or IT-Scripted Install (`< 500 KB`, Zero `git` Required)
+### 2. Offline `.zip` or IT-Scripted Install (`< 600 KB`, Zero `git` Required)
 
 **Windows PowerShell** (standard agency corporate laptop — extract `generic-agy-plugin.zip` and run in that folder):
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-agy-suite.ps1 `
-  -GeInstance "projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID"
+powershell -ExecutionPolicy Bypass -File .\scripts\install-agy-suite.ps1
 ```
-*(For laptops without `gcloud`, Agency IT can also pass `-OAuthClientId` and `-OAuthClientSecret` for 1-click Google Identity browser SSO, or deploy `deploy/cloudrun-ge-gateway/`. Omit `-GeInstance` if users will enter their GE Resource Path or Cloud Console URL interactively via `/connect-ge`.)*
 
 **macOS / Linux:**
 ```bash
-bash ./scripts/install-agy-suite.sh \
-  --ge-instance "projects/YOUR_PROJECT_ID/locations/global/collections/default_collection/engines/YOUR_GE_ENGINE_ID"
+bash ./scripts/install-agy-suite.sh
 ```
+*(1-Command Clean Uninstall for IT Verification: `powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-agy-suite.ps1 -PurgeMemoryData` or `bash ./scripts/uninstall-agy-suite.sh --purge-data`.)*
 
 ---
 
-## What Gets Installed (9 Modular Plugins · 40 Slash Skills Across 9 `Skills` Categories)
+## What Gets Installed (7 Modular Plugins · 36 Slash Skills Across 8 `Skills` Categories)
 
-8 core plugins are **enabled immediately upon installation** (while **`Scheduled Automations`** ships **opt-in / disabled by default** so background schedules only run when explicitly toggled on), and staff can toggle individual skills or entire categories anytime inside **`Extensions -> Skills`**:
+6 core plugins are **enabled immediately upon installation** (while **`Scheduled Automations`** ships **opt-in / disabled by default** so background schedules only run when explicitly toggled on), and staff can toggle individual skills or entire categories anytime inside **`Plugins -> Skills`**:
 
-| Plugin (`Skills` Category) | Included `/skills` & Capabilities | Target Personas |
+| Plugin (`Skills` Category) | Sidebar Extension & Icon | Included `/skills` & Capabilities |
 | :--- | :--- | :--- |
-| **`agy-onboarding`** | `/agy-onboard` *(+ 1-step Personal Memory setup)* · **`/model-guide` *(Using Claude & Gemini in AGY)*** · **`/orchestrator-guide`** · **`/token-usage`** · `/daily-brief` *(GE + Action Items/milestones)* · `/my-voice` *(calibrated to `voice.md`)* · `/inbox-triage` · `/agy-update` *(+ In-App `Skills` Panel)* | All Public Sector Staff, Admins & Leadership |
-| **`agy-coordinator`** | **`/agy-coordinator` *(+ `Clawy` Left-Panel 3D Multi-Agent & Gemini Live Voice Hub)*** — 3D mascot perch, Gemini Live neural voice, Hold-to-Talk mic rings, 2-level `Group -> Goal -> Task` sprints, and parallel worker relay | All Staff, Leads & Multi-Agent Builders |
-| **`agy-connectors`** | `/connect-ge` *(Default)* · `/connect-m365-workspace` · `/connect-github-bigquery` + **`agy-ge-bridge` MCP** *(Federated Outlook, SharePoint, OneDrive, Teams, Gmail, Drive & GitHub via GE)* | All Staff + IT Onboarding |
-| **`agy-design-studio`** | `/agy-dashboard` *(Civic Command Center UI, 100% serverless Side-Pane preview + 1-click HTML download)* · `/slides` *(16:9 HTML/PDF decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos)* + `agy-design-architect` agent + `Preview` sidecar | Analysts, Comms & Program Leads |
-| **`agy-public-workflows` *(Public Workflows Category)*** | `/foia-expert` *(`5 U.S.C. § 552` + State Open Records + Vault/Purview/GE discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` | FOIA Officers, Legal, Procurement & Policy |
-| **`agy-public-workflows` *(Government Services `public_sector` Category)*** | `/document-intake-cleanup-and-validation` · `/expense-auditor` *(2 CFR Part 200)* · `/foia-request-processing` · `/plain-language-notice-generator` · `/policy-and-statute-assistant` · `/public-records-redaction` · `/rfp-vendor-evaluation` | Caseworkers, Grant Auditors, FOIA, Comms & Procurement |
-| **`agy-engineering-cloud`** | `/modernize-refactor` *(Stage 0/1/2 Crucible adapted from [migrate-to-rust](https://github.com/google/skills/tree/main/skills/developers/migrate-to-rust))* · `/deploy-cloudrun` *(Zero-Docker source deploy)* · `/bigquery-architect` · `/find-cloud-skill` | Application, Data & Cloud Engineers |
-| **`agy-security`** | `/security-audit` *(OWASP + Cloud WAF + Assured Workloads CJIS/HIPAA/FedRAMP)* · `/iam-secret-hygiene` + Always-on `rules/AGENTS.md` | Engineers, Security & All Builders |
-| **`agy-second-brain`** | `/memory` · `/meeting-notes` *(4-Tier Compaction)* · `/meeting-prep` *(Adversarial Minto SCQA)* · `/followup-plan` · `/swarm-prep` *(4 parallel subagents)* · `/weekly-impact` *(3-Altitude ledger)* · `/no-ai-slop` · `/outbound-scrub` + **`My Antigravity` Sidecar UI** *(AI Inbox `Action Items` + `Customize` icon)* | Program Managers, Analysts, Comms, Engineers & Leaders |
-| **`Scheduled Automations` *(Opt-In — Disabled by Default)*** | `/automations` + 4 `"builtin": "schedule"` cron sidecars (*Morning Kickoff Brief*, *Twice-Daily Follow-Up Plan*, *Evening Notes Compactor*, *Friday 3-Altitude Impact*) | Power Users & Team Leads |
+| **`agy-second-brain`** | **`My Hub`** *(Antigravity Rainbow **"A"**)* | `/memory` · `/meeting-notes` *(4-Tier Compaction)* · `/meeting-prep` *(Adversarial Minto SCQA)* · `/followup-plan` · `/swarm-prep` *(4 parallel subagents)* · `/weekly-impact` *(3-Altitude ledger)* · `/no-ai-slop` · `/outbound-scrub` |
+| **`agy-onboarding`** | **`Skills`** *(Skills Sparkle Icon + inline **`🐻 Ask Clawy`**)* | `/agy-onboard` · **`/model-guide`** · **`/orchestrator-guide`** · **`/token-usage`** · `/daily-brief` · `/my-voice` · `/inbox-triage` · `/agy-update` + collapsible **`Ask Clawy`** plain-English skill finder |
+| **`agy-design-studio`** | **`Preview`** *(Magnifying Glass Icon)* | `/agy-dashboard` *(Civic Command Center UI, serverless `Preview` + `Save to Downloads`)* · `/slides` *(16:9 HTML decks)* · `/doc-design` *(Print-CSS flyers, 1-page memos)* + `agy-design-architect` |
+| **`agy-public-workflows` *(Public Workflows Category)*** | — | `/foia-expert` *(`5 U.S.C. § 552` + State Open Records + Vault/Purview discovery + Vaughn Index)* · `/legal-procurement-review` · `/policy-program-audit` |
+| **`agy-public-workflows` *(Government Services `public_sector` Category)*** | — | `/document-intake-cleanup-and-validation` · `/expense-auditor` *(2 CFR Part 200)* · `/foia-request-processing` · `/plain-language-notice-generator` · `/policy-and-statute-assistant` · `/public-records-redaction` · `/rfp-vendor-evaluation` |
+| **`agy-engineering-cloud`** | — | `/modernize-refactor` *(Stage 0/1/2 Crucible)* · `/deploy-cloudrun` *(Zero-Docker source deploy)* · `/bigquery-architect` · `/find-cloud-skill` |
+| **`agy-security`** | — | `/security-audit` *(OWASP + Cloud WAF + Assured Workloads CJIS/HIPAA/FedRAMP)* · `/iam-secret-hygiene` + Always-on `rules/AGENTS.md` |
+| **`agy-twin-automations` *(Opt-In — Disabled by Default)*** | — | `/automations` + 4 `"builtin": "schedule"` cron sidecars (*Morning Kickoff Brief*, *Twice-Daily Follow-Up Plan*, *Evening Notes Compactor*, *Friday 3-Altitude Impact*) |
+
+> **Google Workspace Connectors:** Enable **Google Docs, Sheets, Slides, Drive, Calendar, and Gmail** natively under Antigravity's left sidebar **`Customizations → Marketplace → Google Workspace`**.
 
 ---
 
-## Updating Skills & Plugins Later via Git (`/agy-update`)
+## Updating Skills & Plugins Later (`/agy-update`)
 
-Whenever new skills, FOIA templates, dashboard themes, or connector improvements are pushed to Git and `version-manifest.json` is bumped:
-1. Click **`Sync Git Updates`** (or the **`↻`** icon next to any skill) inside **`Extensions -> Skills`**, OR type **`/agy-update`** (all changed skills) / **`/agy-update agy-dashboard`** (single skill) in chat.
-2. Only changed files are downloaded via SHA-256 diffing over HTTPS 443—preserving the user's saved `ge-instance.json`, skill toggles, `~/.gemini/config/skills/` personal skills, and `~/.gemini/config/plugin_data/my-antigravity/memory/` settings.
+Whenever new skills, FOIA templates, or dashboard improvements are pushed and `version-manifest.json` is bumped:
+1. Click **`Sync Updates`** inside **`Plugins -> Skills`**, OR type **`/agy-update`** (all changed skills) / **`/agy-update agy-dashboard`** (single skill) in chat.
+2. Only changed files are downloaded via SHA-256 diffing over HTTPS 443—preserving skill toggles, `~/.gemini/config/skills/` personal skills, and `~/.gemini/config/plugin_data/my-antigravity/memory/` settings.
 
 ---
 
 ## Workshop Launchpad, AGY Setup Guide & Guided Test Prompts
 
-- **Workshop Launchpad & 40-Skill Registry Source:** [`workshop/`](./workshop/index.html)
+- **Workshop Launchpad & 36-Skill Registry Source:** [`workshop/`](./workshop/index.html)
 - **Generic 7-Step AGY Download & Setup Guide Source:** [`setup-guide/`](./setup-guide/index.html)
-- **Guided Test Prompts (Core 9, Including Action Items, Memory & Swarm):** [`docs/TEST_PROMPTS.md`](./docs/TEST_PROMPTS.md)
+- **Guided Test Prompts:** [`docs/TEST_PROMPTS.md`](./docs/TEST_PROMPTS.md)
 - **Government Services (`public_sector`) Test Prompts (7):** [`docs/PUBLIC_SECTOR_TEST_PROMPTS.md`](./docs/PUBLIC_SECTOR_TEST_PROMPTS.md)
-- **IT & Technical Appendix (Offline `.zip`, Security Policy & MCP Matrix):** [`docs/IT_AND_TECHNICAL_APPENDIX.md`](./docs/IT_AND_TECHNICAL_APPENDIX.md)
-
----
-
-## Optional Central IT Scale-Out: Shared Cloud Run GE Gateway
-
-See [`deploy/cloudrun-ge-gateway/README.md`](./deploy/cloudrun-ge-gateway/README.md) if agency IT wants to deploy one stateless **Cloud Run Streamable HTTP MCP** endpoint pre-bound to the agency's GE Engine ID so 500+ staff connect with zero project/engine variables.
+- **IT & Technical Appendix (Offline `.zip` & Security Policy):** [`docs/IT_AND_TECHNICAL_APPENDIX.md`](./docs/IT_AND_TECHNICAL_APPENDIX.md)
+- **Optional Shared Cloud Run GE Gateway:** [`deploy/cloudrun-ge-gateway/README.md`](./deploy/cloudrun-ge-gateway/README.md)

@@ -15,8 +15,8 @@ While `agy-second-brain` is enabled, ground your assistance in the user's local 
 
 ## 2. Connector & Standalone Execution Rules
 
-1. **Works Standalone or With Connected MCP Bridges:** If MCP connectors are active (such as `agy-ge-bridge` for federated Gemini Enterprise search across Outlook, SharePoint, OneDrive, Teams, Gmail, Drive, and GitHub), query them with user-scoped permissions to ground `/daily-brief`, `/my-voice`, `/followup-plan`, and `/meeting-notes`. When no external MCP server is connected, operate directly on `~/.gemini/config/plugin_data/my-antigravity/memory/`, workspace files, and pasted text without failing.
-2. **Inspectable Plain Markdown:** Store all memory artifacts as clean UTF-8 Markdown (`.md`) or JSON (`.json`) inside `~/.gemini/config/plugin_data/my-antigravity/memory/` so the user can view, search, and customize every file directly inside **`Extensions -> My Antigravity`** (via the top-right **Customize** icon).
+1. **Works Standalone or With Built-In Antigravity Google Workspace Connectors:** Connect **Google Docs, Sheets, Slides, Drive, Calendar, and Gmail** directly via Antigravity's left sidebar (**`Customizations -> Marketplace -> Google Workspace`**). When no connector is enabled yet, operate cleanly on `~/.gemini/config/plugin_data/my-antigravity/memory/`, workspace files, and pasted text without failing.
+2. **Inspectable Plain Markdown:** Store all memory artifacts as clean UTF-8 Markdown (`.md`) or JSON (`.json`) inside `~/.gemini/config/plugin_data/my-antigravity/memory/` so the user can view, search, and customize every file directly inside **`Plugins -> My Hub`** (via the top-right **Customize** icon).
 
 ## 3. Authentic Voice, Anti-Slop & Outbound Safety Guardrails
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+
+const __parseJsonNoBom = (s) => JSON.parse(typeof s === 'string' ? s.replace(/^\uFEFF/, '') : Buffer.isBuffer(s) ? s.toString('utf-8').replace(/^\uFEFF/, '') : s);
 /**
  * Preview — Antigravity Serverless Visual Deliverable Sidecar (`Preview` under Extensions)
  *
@@ -237,6 +239,7 @@ function inspectSafeHtmlFile(candidatePath, allowedRoot, convId) {
     const { title, kind } = extractTitleAndKind(realPath, snippet);
     const id = 'art-' + crypto.createHash('sha1').update(realPath).digest('hex').slice(0, 12);
 
+    const tsMs = Math.max(lstat.mtimeMs || 0, lstat.birthtimeMs || 0);
     return {
       id,
       kind,
@@ -246,8 +249,8 @@ function inspectSafeHtmlFile(candidatePath, allowedRoot, convId) {
       fileName: path.basename(realPath),
       htmlPath: realPath,
       standalonePath: realPath,
-      mtimeMs: lstat.mtimeMs,
-      updatedAt: new Date(lstat.mtimeMs).toISOString(),
+      mtimeMs: tsMs,
+      updatedAt: new Date(tsMs).toISOString(),
     };
   } catch {
     return null;
@@ -340,7 +343,7 @@ function readRegistryDeliverables() {
 
   let rawList = [];
   try {
-    const parsed = JSON.parse(fs.readFileSync(regFile, 'utf-8'));
+    const parsed = __parseJsonNoBom(fs.readFileSync(regFile, 'utf-8'));
     if (Array.isArray(parsed)) rawList = parsed;
   } catch {
     return [];
@@ -358,7 +361,8 @@ function readRegistryDeliverables() {
       const lstat = fs.lstatSync(candidate);
       if (!lstat.isFile() || lstat.isSymbolicLink() || lstat.size > MAX_HTML_BYTES) continue;
       const realPath = fs.realpathSync(candidate);
-      const mtimeMs = entry.updatedAt ? Date.parse(entry.updatedAt) || lstat.mtimeMs : lstat.mtimeMs;
+      const parsedTs = entry.updatedAt ? Date.parse(entry.updatedAt) || 0 : 0;
+      const mtimeMs = Math.max(lstat.mtimeMs || 0, lstat.birthtimeMs || 0, parsedTs);
       out.push({
         id: entry.id,
         kind: entry.kind || 'dashboard',
@@ -411,9 +415,75 @@ function readDeliverables() {
     subtitle: item.subtitle,
     convId: item.convId,
     fileName: item.fileName,
+    mtimeMs: item.mtimeMs || 0,
     updatedAt: item.updatedAt,
     _realPath: item.htmlPath,
   }));
+}
+
+const PREVIEW_BRIDGE_SCRIPT =
+  '<script>(function(){if(window.__agyPreviewBridge)return;window.__agyPreviewBridge=true;document.addEventListener("click",function(ev){var btn=ev.target&&ev.target.closest?ev.target.closest("button,a"):null;if(!btn)return;var id=btn.id||"";var txt=(btn.textContent||"").trim().toLowerCase();var action="";if(id==="downloadHtmlBtn"||txt.indexOf("open / download html")!==-1||txt.indexOf("download html")!==-1){action="open-or-save";}else if(id==="printViewBtn"||txt==="print view"||txt.indexOf("print / save as pdf")!==-1||txt.indexOf("print / pdf")!==-1){action="print";}if(action&&window.parent&&window.parent!==window){ev.preventDefault();ev.stopImmediatePropagation();window.parent.postMessage({type:"agy-preview-action",action:action},"*");}},true);})();</script>';
+
+const AUTOPRINT_SCRIPT =
+  '<script>window.addEventListener("load",function(){setTimeout(function(){try{window.print();}catch(_){}},220);});</script>';
+
+function injectBeforeBodyEnd(html, snippet) {
+  const s = String(html || '');
+  const idx = s.lastIndexOf('</body>');
+  if (idx !== -1) {
+    return s.slice(0, idx) + snippet + s.slice(idx);
+  }
+  return s + snippet;
+}
+
+function sanitizeExportFilename(rawName, fallbackTitle) {
+  const base = path.basename(String(rawName || '')).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  let name = base;
+  if (!name || name === '.html') {
+    const slug = String(fallbackTitle || 'agy-deliverable')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+    name = (slug || 'agy-deliverable') + '.html';
+  }
+  if (!name.toLowerCase().endsWith('.html')) {
+    name += '.html';
+  }
+  return name.slice(0, 120);
+}
+
+function saveHtmlToUserDownloads(html, safeFilename) {
+  const downloadsDir = path.join(os.homedir(), 'Downloads');
+  if (fs.existsSync(downloadsDir)) {
+    const st = fs.lstatSync(downloadsDir);
+    if (!st.isDirectory() || st.isSymbolicLink()) {
+      throw new Error('Downloads folder is not a regular directory');
+    }
+  } else {
+    fs.mkdirSync(downloadsDir, { recursive: true, mode: 0o700 });
+  }
+  const realDownloads = fs.realpathSync(downloadsDir);
+  const ext = '.html';
+  const stem = safeFilename.slice(0, -ext.length);
+  let targetPath = path.join(realDownloads, safeFilename);
+  let suffix = 2;
+  while (fs.existsSync(targetPath) && suffix <= 50) {
+    targetPath = path.join(realDownloads, `${stem}-${suffix}${ext}`);
+    suffix += 1;
+  }
+  if (fs.existsSync(targetPath)) {
+    const existing = fs.lstatSync(targetPath);
+    if (existing.isSymbolicLink() || !existing.isFile()) {
+      throw new Error('Refusing unsafe export target');
+    }
+  }
+  const resolved = path.resolve(targetPath);
+  if (!resolved.startsWith(realDownloads + path.sep)) {
+    throw new Error('Export path outside Downloads');
+  }
+  fs.writeFileSync(resolved, html, 'utf-8');
+  return { savedPath: resolved, fileName: path.basename(resolved) };
 }
 
 function renderDeliverableById(id) {
@@ -477,8 +547,86 @@ app.api('/api/render', async (data) => {
   return {
     ok: true,
     deliverable: result.deliverable,
-    html: result.html,
+    html: injectBeforeBodyEnd(result.html, PREVIEW_BRIDGE_SCRIPT),
   };
 }, 'POST');
 
+app.api('/api/raw', (data) => {
+  const id = String((data && data.id) || '').trim();
+  const autoPrint = String((data && data.autoprint) || '') === '1';
+  const result = renderDeliverableById(id);
+  if (!result) {
+    return new Response('Deliverable not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+  }
+  const body = autoPrint ? injectBeforeBodyEnd(result.html, AUTOPRINT_SCRIPT) : result.html;
+  return new Response(body, {
+    status: 200,
+    contentType: 'text/html; charset=utf-8',
+  });
+}, 'GET');
+
+app.api('/api/download', (data) => {
+  const id = String((data && data.id) || '').trim();
+  const result = renderDeliverableById(id);
+  if (!result) {
+    return new Response('Deliverable not found', { status: 404, contentType: 'text/plain; charset=utf-8' });
+  }
+  const safeName = sanitizeExportFilename(result.deliverable.fileName, result.deliverable.title);
+  return new Response(result.html, {
+    status: 200,
+    contentType: 'text/html; charset=utf-8',
+    headers: {
+      'Content-Disposition': `attachment; filename="${safeName}"`,
+    },
+  });
+}, 'GET');
+
+app.api('/api/save-download', async (data) => {
+  const id = String((data && data.id) || '').trim();
+  const result = renderDeliverableById(id);
+  if (!result) {
+    return new Response(JSON.stringify({ ok: false, error: 'Deliverable not found' }), {
+      status: 404,
+      contentType: 'application/json',
+    });
+  }
+  try {
+    const safeName = sanitizeExportFilename(result.deliverable.fileName, result.deliverable.title);
+    const saved = saveHtmlToUserDownloads(result.html, safeName);
+    return { ok: true, savedPath: saved.savedPath, fileName: saved.fileName };
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: err && err.message ? err.message : 'Save failed' }), {
+      status: 500,
+      contentType: 'application/json',
+    });
+  }
+}, 'POST');
+
+function pruneRetiredAgyPlugins() {
+  try {
+    const pluginsRoot =
+      process.env.ANTIGRAVITY_PLUGINS_ROOT && process.env.ANTIGRAVITY_PLUGINS_ROOT.trim()
+        ? path.resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT.trim())
+        : path.resolve(__dirname, '..', '..', '..');
+    const rootStat = fs.lstatSync(pluginsRoot);
+    if (!rootStat || rootStat.isSymbolicLink() || !rootStat.isDirectory()) return;
+    for (const legacyName of ['agy-connectors', 'agy-coordinator']) {
+      const target = path.resolve(pluginsRoot, legacyName);
+      if (target !== path.join(pluginsRoot, legacyName) || !target.startsWith(pluginsRoot + path.sep)) continue;
+      let st = null;
+      try {
+        st = fs.lstatSync(target);
+      } catch {
+        continue;
+      }
+      if (!st || st.isSymbolicLink() || !st.isDirectory()) continue;
+      if (!fs.existsSync(path.join(target, 'plugin.json'))) continue;
+      try {
+        fs.rmSync(target, { recursive: true, force: true });
+      } catch {}
+    }
+  } catch {}
+}
+
+pruneRetiredAgyPlugins();
 app.run();

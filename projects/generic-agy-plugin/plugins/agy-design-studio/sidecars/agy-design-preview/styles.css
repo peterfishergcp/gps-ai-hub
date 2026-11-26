@@ -635,3 +635,235 @@ svg.brand-logo {
   color: var(--tv-fg);
   border-bottom-color: var(--tv-border);
 }
+
+/* === v2.3.0: Artifact Finder Bar, Grouped Dropdown Picker & Date Badges === */
+.artifact-finder-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.artifact-picker-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.artifact-picker-btn {
+  font-weight: 600;
+}
+
+.artifact-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  width: min(440px, 86vw);
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--pv-card);
+  border: 1px solid var(--pv-border);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+.artifact-group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pv-muted);
+  padding: 6px 8px 4px;
+}
+
+.artifact-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--pv-fg);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.artifact-dropdown-item:hover {
+  background: var(--pv-surface);
+}
+
+.artifact-dropdown-item.active {
+  background: color-mix(in srgb, var(--pv-accent) 12%, var(--pv-card));
+  border-color: color-mix(in srgb, var(--pv-accent) 35%, var(--pv-border));
+  font-weight: 600;
+}
+
+.artifact-dropdown-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.artifact-dropdown-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-time-tag {
+  font-size: 10.5px;
+  color: var(--pv-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tab-pill.active .artifact-time-tag {
+  color: var(--pv-primary-fg);
+  opacity: 0.78;
+}
+
+.preview-search-box {
+  flex: 1;
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--pv-surface);
+  border: 1px solid var(--pv-border);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.preview-search-box:focus-within {
+  border-color: var(--pv-accent);
+  background: var(--pv-card);
+}
+
+.preview-search-box .search-glyph {
+  font-size: 14px;
+  color: var(--pv-muted);
+}
+
+.preview-search-box input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--pv-fg);
+  font-size: 12.5px;
+  outline: none;
+}
+
+.preview-sort-select {
+  border-radius: 999px;
+  border: 1px solid var(--pv-border);
+  background: var(--pv-card);
+  color: var(--pv-fg);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+}
+
+.search-clear-btn {
+  border: none;
+  background: transparent;
+  color: var(--pv-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 3px;
+  cursor: pointer;
+}
+
+.search-clear-btn:hover {
+  color: var(--pv-fg);
+}
+
+.artifact-new-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #10b981;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.save-confirm-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  font-size: 12px;
+}
+
+.save-confirm-banner[hidden] {
+  display: none;
+}
+
+:root[data-theme="dark"] .save-confirm-banner {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(52, 211, 153, 0.42);
+  color: #a7f3d0;
+}
+
+.save-confirm-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.save-confirm-badge {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.save-confirm-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  background: rgba(6, 95, 70, 0.08);
+  padding: 2px 7px;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+:root[data-theme="dark"] .save-confirm-path {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.save-confirm-tip {
+  font-size: 11.5px;
+  opacity: 0.9;
+}
+
+.save-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.save-confirm-btn {
+  padding: 4px 10px;
+  font-size: 11.5px;
+}

@@ -5,13 +5,13 @@ description: Incrementally checks and updates individual or modified Public Sect
 
 # Public Sector Incremental Skill & Suite Updater (`/agy-update`)
 
-Update **only new or modified skills in under 1 second**—without wiping or reinstalling all 6 plugins, and with **zero `git` required** on state corporate laptops.
+Update **only new or modified skills in under 1 second**—without wiping or reinstalling all 7 zero-footprint AGY plugins, and with **zero `git` required** on corporate laptops.
 
 ## Step 1: Run the Zero-Git Incremental SHA-256 Sync Engine (Default — `< 1 Second`)
 
 Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node runtime:
 
-- **To incrementally check & update ALL changed/new skills across all 6 plugins:**
+- **To incrementally check & update ALL changed/new skills & sidecars across all 7 plugins:**
   ```bash
   node ~/.gemini/config/plugins/agy-onboarding/skills/agy-update/scripts/incremental-sync.mjs
   ```
@@ -26,13 +26,13 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 
 ### What `incremental-sync.mjs` Does Automatically:
 1. Fetches `https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/version-manifest.json` over HTTPS `443`.
-2. Compares the SHA-256 hash of every local skill file in `~/.gemini/config/plugins/<plugin>/skills/<skill>/` against `version-manifest.json.skillManifest`.
-3. Downloads **only** the specific files whose SHA-256 hash changed (or any newly added skill), writes them atomically in place, and **preserves**:
+2. Compares the SHA-256 hash of every local skill and sidecar file in `~/.gemini/config/plugins/<plugin>/` against `version-manifest.json`.
+3. Downloads **only** the specific files whose SHA-256 hash changed (or any newly added skill), removes deprecated legacy `agy-connectors` and `agy-coordinator` folders on upgrade, writes updates atomically in place, and **preserves**:
    - Your per-skill enable/disable toggles (`SKILL.md.disabled` / `skill-toggles.json`),
-   - Your saved Gemini Enterprise (`GE`) instance configuration (`~/.gemini/config/plugin_data/agy-connectors/ge-instance.json`), and
-   - Your personal voice & memory files (`~/.gemini/config/plugin_data/my-antigravity/memory/` and `agy-profile.md`).
+   - Your personal skills (`~/.gemini/config/skills/`), and
+   - Your Personal Memory (`~/.gemini/config/plugin_data/my-antigravity/memory/` and `agy-profile.md`).
 
-> **Tip for 1-Click UI Updates:** Users can also click **`Sync Git Updates`** (or the **`↻`** icon next to any individual skill) directly inside the **`Skills`** panel in Antigravity's left sidebar (`Extensions -> Skills`) to run this incremental sync without typing a command!
+> **Tip for 1-Click UI Updates:** Users can also click **`Sync Updates`** directly inside the **`Skills`** panel in Antigravity's left sidebar (`Plugins -> Skills`) to run this incremental sync without typing a command!
 
 ---
 

@@ -46,7 +46,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Google Antigravity Plugin Suite — Complete Tour',
     summary:
-      'Practical tour of where to click across My Antigravity Overview, Clawy 🐻, Action Items, 1-Click & Personal Skills, TokenEconomics, and Visual Preview.',
+      'Practical tour of where to click across My Hub Overview, Action Items, Skills (with Ask Clawy 🐻) & Personal Skills, TokenEconomics, Preview, and built-in Google Workspace connectors.',
     url: 'https://www.youtube.com/watch?v=_VjZQ2_HkSA',
     tryLabel: 'Tour My Workspace →',
     tryPrompt:
@@ -60,7 +60,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Getting Started in 60 Seconds & Using Turbo Mode',
     summary:
-      'Step-by-step guide to pasting the 1-line install command, using ⚡ Turbo during setup vs. 🔒 Default for daily work, and setting your role and writing voice.',
+      'Step-by-step guide to pasting the 1-line install command, using ⚡ Turbo during setup vs. 🔒 Default daily, and enabling built-in Google Workspace connectors under Customizations.',
     url: 'https://www.youtube.com/watch?v=JMNn19uuJCo',
     tryLabel: 'Run 60s Setup →',
     tryPrompt:
@@ -74,7 +74,7 @@ export const BUNDLED_VIDEO_GUIDES = [
     dateLabel: 'Nov 2026',
     title: 'Using 1-Click Skills, Personal Skills & Visual Previews (Dashboards & Slides)',
     summary:
-      'How to run 40 ready-made skills, create your own Personal Skills (+ New Skill), and customize interactive Dashboards & 16:9 Slide Decks in Preview.',
+      'How to run 36 ready-made skills in Skills, ask Clawy 🐻 to find the right skill, search artifacts in Preview, and Save to Downloads or Open in Browser.',
     url: 'https://www.youtube.com/watch?v=EBNOPmh48d0',
     tryLabel: 'Build Sample Deck →',
     tryPrompt:
@@ -100,13 +100,13 @@ export const BUNDLED_VIDEO_GUIDES = [
     topic: 'videos',
     badge: '3 Min · How-To Video',
     dateLabel: 'Nov 2026',
-    title: 'How to Use Clawy — Multi-Agent Command Center & Gemini Live Voice',
+    title: 'How to Use Ask Clawy 🐻 — Plain-English Skill & Chat Assistant in Skills',
     summary:
-      'How to open Clawy 🐻, see which parallel chats Need You, click ↗ Pop Out for side-by-side split view, connect Kore Gemini Live voice, and track Goals.',
+      'How to click the Ask Clawy 🐻 bear icon beside the Skills search bar to match the right Public Sector skill in plain English or launch a chat in 1 click.',
     url: 'https://www.youtube.com/watch?v=TeWdmiyXnxo',
-    tryLabel: 'Open Clawy 🐻 →',
+    tryLabel: 'Run Daily Brief →',
     tryPrompt:
-      '/agy-coordinator Summarize my active agent conversations and show any items waiting on me.',
+      '/daily-brief Summarize my active priorities, open Action Items, and any follow-ups waiting on me.',
   },
 ];
 
@@ -409,6 +409,13 @@ export function saveUpdatesPreferences(prefs = {}, stateDir = '') {
   if (typeof prefs.completeStep === 'string' && /^[a-z0-9_-]{1,32}$/.test(prefs.completeStep)) {
     completedSet.add(prefs.completeStep);
   }
+  if (Array.isArray(prefs.completeSteps)) {
+    for (const st of prefs.completeSteps) {
+      if (typeof st === 'string' && /^[a-z0-9_-]{1,32}$/.test(st)) {
+        completedSet.add(st);
+      }
+    }
+  }
 
   const next = {
     emailHint: rawEmail,
@@ -419,7 +426,7 @@ export function saveUpdatesPreferences(prefs = {}, stateDir = '') {
     updatedAt: new Date().toISOString(),
   };
 
-  const tmp = `${subPath}.tmp-${process.pid}`;
+  const tmp = `${subPath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   fs.writeFileSync(tmp, JSON.stringify(next, null, 2) + '\n', { mode: 0o600 });
   fs.renameSync(tmp, subPath);
   return next;
@@ -462,7 +469,7 @@ export async function syncAntigravityUpdates(stateDir = '', videoJsonUrl = '') {
     items,
     videos: remoteVideos || BUNDLED_VIDEO_GUIDES,
   };
-  const tmp = `${cachePath}.tmp-${process.pid}`;
+  const tmp = `${cachePath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   fs.writeFileSync(tmp, JSON.stringify(payload, null, 2) + '\n', { mode: 0o600 });
   fs.renameSync(tmp, cachePath);
 
