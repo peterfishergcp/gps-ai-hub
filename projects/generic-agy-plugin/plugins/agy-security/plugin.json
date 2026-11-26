@@ -1,7 +1,7 @@
 {
   "name": "agy-security",
   "displayName": "AGY Security, Assured Workloads & IAM Best Practices",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Always-on secure coding guardrails, zero-install OWASP & Google Cloud Well-Architected security audits, Assured Workloads (FedRAMP, CJIS, HIPAA) guidance, and least-privilege IAM & Secret Manager hygiene.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

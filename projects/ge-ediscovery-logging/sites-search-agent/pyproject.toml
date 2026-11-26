@@ -102,4 +102,7 @@ asyncio_default_fixture_loop_scope = "session"
 [tool.hatch.build.targets.wheel]
 packages = ["app","frontend"]
 
+[tool.uv]
+override-dependencies = ["litellm>=1.96.2"]
+
 

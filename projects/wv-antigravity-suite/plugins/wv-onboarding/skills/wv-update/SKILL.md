@@ -38,9 +38,13 @@ Run the bundled `incremental-sync.mjs` script using Antigravity's built-in Node 
 
 ## Step 2: Optional Full Suite Re-Install (Only When a New Sidecar or MCP Binary Is Added)
 
-If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `WV Preview`), run the full installer:
+If a major suite upgrade adds a brand-new plugin or UI sidecar (such as `WV Preview`), download the pinned release installer (`wv-v2.3.5`), inspect it if desired, and execute it (verifies `wv-antigravity-suite.zip.sha256` fail-closed before extracting; zero `/tmp` writes):
 ```powershell
-irm https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1 | iex
+$Tag = "wv-v2.3.5"
+$s = Join-Path $env:USERPROFILE ".gemini\config\.install_stage_dl"
+New-Item -ItemType Directory -Force -Path $s | Out-Null
+Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/$Tag/projects/wv-antigravity-suite/scripts/install-wv-suite.ps1" -OutFile (Join-Path $s "install-wv-suite.ps1")
+powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $s "install-wv-suite.ps1") -Ref $Tag
+Remove-Item -Recurse -Force $s
 ```
-*(Or on macOS/Linux: `curl -fsSL https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/wv-antigravity-suite/scripts/install-wv-suite.sh | bash` — zero `/tmp` writes, stages strictly inside `~/.gemini/config/`.)*
-*(Or on laptops without `git`, run `bash ~/.gemini/config/plugins/wv-onboarding/skills/wv-update/scripts/install-wv-suite.sh --zip-url "https://github.com/peterfishergcp/gps-ai-hub/raw/main/projects/wv-antigravity-suite/dist/wv-antigravity-suite.zip"` on macOS/Linux or `install-wv-suite.ps1 -ZipUrl "..."` on Windows PowerShell.)*
+*(Or run the bundled copy directly: `bash ~/.gemini/config/plugins/wv-onboarding/skills/wv-update/scripts/install-wv-suite.sh --ref wv-v2.3.5` on macOS/Linux or `install-wv-suite.ps1 -Ref wv-v2.3.5` on Windows PowerShell. All downloads verify `.zip.sha256` fail-closed and stage strictly inside `~/.gemini/config/`.)*

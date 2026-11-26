@@ -30,14 +30,36 @@ const {
   renderSecureMcpWorkbenchHtml,
   attachSkillsAndAppsToSdkServer,
   buildV2Capabilities,
+  createScopedPayloadCache,
 } = require("./mcp_v2_extensions.js");
 
 const OUTLOOK_SKILLS_CATALOG = loadSkillsCatalog(path.join(__dirname, "skills"));
 const OUTLOOK_APP_URI = "ui://microsoft-outlook-mcp/comms-hub.html";
 const { toolMeta: OUTLOOK_INLINE_META, resourceMeta: OUTLOOK_RES_META } = buildMcpAppMeta(OUTLOOK_APP_URI);
 const { toolMeta: OUTLOOK_LAUNCHER_META } = buildMcpAppMeta(OUTLOOK_APP_URI, { entrypointTitle: "Outlook Triage & HITL Hub" });
-let lastOutlookAppPayload = null;
-function renderOutlookHubHtml(payload = lastOutlookAppPayload) {
+
+// Per-caller isolated payload cache (keyed by SHA-256 of caller Bearer token;
+// eliminates cross-user state leakage across concurrent Cloud Run requests).
+const outlookCallerPayloadCache = createScopedPayloadCache({
+  maxEntries: 128,
+  ttlMs: 5 * 60 * 1000,
+});
+
+function buildDefaultOutlookPayload() {
+  return {
+    messages: [
+      {
+        id: "hub-init",
+        subject: "Outlook Triage Hub Ready",
+        from: "MCP v2.0",
+        isRead: false,
+        preview: "Search inbox above or open the Human-Reviewed Compose drawer.",
+      },
+    ],
+  };
+}
+
+function renderOutlookHubHtml(payload = null) {
   return renderSecureMcpWorkbenchHtml({
     appUri: OUTLOOK_APP_URI,
     appTitle: "Microsoft Outlook Triage & HITL Action Hub",
@@ -417,7 +439,7 @@ function createMcpServer(getAuthHeader) {
         uri: OUTLOOK_APP_URI,
         name: "Outlook Triage & HITL Hub",
         description: "Interactive M365 Mail & Calendar Workbench",
-        renderHtml: () => renderOutlookHubHtml(),
+        renderHtml: () => renderOutlookHubHtml(outlookCallerPayloadCache.get(getAuthHeader())),
       },
     ],
   });
@@ -634,8 +656,9 @@ function createMcpServer(getAuthHeader) {
       const { headers, mailboxBase, isLocalMock } = authCtx;
 
       if (name === "open_outlook_comms_hub") {
-        const payload = lastOutlookAppPayload || { messages: [{ id: "hub-init", subject: "Outlook Triage Hub Ready", from: "MCP v2.0", isRead: false, preview: "Search inbox above or open the Human-Reviewed Compose drawer." }] };
-        lastOutlookAppPayload = payload;
+        const callerAuth = getAuthHeader();
+        const payload = outlookCallerPayloadCache.get(callerAuth) || buildDefaultOutlookPayload();
+        outlookCallerPayloadCache.set(callerAuth, payload);
         return {
           content: [
             { type: "text", text: JSON.stringify({ status: "opened", appUri: OUTLOOK_APP_URI }, null, 2) },

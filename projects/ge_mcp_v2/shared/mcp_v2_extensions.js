@@ -900,6 +900,75 @@ function buildV2Capabilities() {
   };
 }
 
+/**
+ * Derives an opaque SHA-256 cache key strictly from an explicit per-caller
+ * Authorization Bearer token. Returns null when no caller token is present
+ * so unauthenticated / ADC-fallback requests NEVER share state.
+ */
+function extractCallerCacheKey(authHeaderOrToken) {
+  const raw = String(authHeaderOrToken || "").trim();
+  if (!raw) return null;
+  const bearerMatch = /^Bearer\s+(\S+)$/i.exec(raw);
+  const token = bearerMatch ? bearerMatch[1] : raw;
+  if (!token || token.length < 8) return null;
+  return crypto.createHash("sha256").update(`caller:${token}`).digest("hex");
+}
+
+/**
+ * Bounded per-caller-identity LRU + TTL cache for MCP App payloads.
+ * Eliminates cross-user data leakage in multi-tenant Cloud Run instances
+ * without retaining raw credentials in memory.
+ */
+function createScopedPayloadCache({ maxEntries = 128, ttlMs = 300_000 } = {}) {
+  const store = new Map();
+  function pruneExpired(now) {
+    for (const [k, entry] of store.entries()) {
+      if (now >= entry.expiresAt) store.delete(k);
+    }
+  }
+  return {
+    get(authHeaderOrToken) {
+      const key = extractCallerCacheKey(authHeaderOrToken);
+      if (!key) return null;
+      const now = Date.now();
+      const entry = store.get(key);
+      if (!entry) return null;
+      if (now >= entry.expiresAt) {
+        store.delete(key);
+        return null;
+      }
+      store.delete(key);
+      store.set(key, entry);
+      return entry.payload;
+    },
+    set(authHeaderOrToken, payload) {
+      const key = extractCallerCacheKey(authHeaderOrToken);
+      if (!key || payload === undefined || payload === null) return false;
+      const now = Date.now();
+      pruneExpired(now);
+      if (store.has(key)) {
+        store.delete(key);
+      } else if (store.size >= maxEntries) {
+        const oldestKey = store.keys().next().value;
+        if (oldestKey !== undefined) store.delete(oldestKey);
+      }
+      store.set(key, { payload, expiresAt: now + ttlMs });
+      return true;
+    },
+    delete(authHeaderOrToken) {
+      const key = extractCallerCacheKey(authHeaderOrToken);
+      if (!key) return false;
+      return store.delete(key);
+    },
+    clear() {
+      store.clear();
+    },
+    size() {
+      return store.size;
+    },
+  };
+}
+
 module.exports = {
   MCP_APP_MIME_TYPE,
   SKILL_CACHE_TTL_MS,
@@ -909,4 +978,5 @@ module.exports = {
   renderSecureMcpWorkbenchHtml,
   attachSkillsAndAppsToSdkServer,
   buildV2Capabilities,
+  createScopedPayloadCache,
 };

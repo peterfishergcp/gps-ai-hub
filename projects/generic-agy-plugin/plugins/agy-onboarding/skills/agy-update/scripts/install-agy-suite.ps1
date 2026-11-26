@@ -1,17 +1,24 @@
 <#
 .SYNOPSIS
-  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v2.0.0).
+  Fast (<2 second) Zero-Footprint installer & updater for the Public Sector Antigravity Suite (v2.0.2).
 .DESCRIPTION
   Stages strictly inside $HOME\.gemini\config\.install_stage_<guid> (zero %TEMP% writes, zero
-  local MCP subprocesses, zero standalone Node/Python/Git required). Installs all 7 AGY plugins
-  (3 UI panels: My Hub, Skills [with inline Ask Clawy], Preview; agy-twin-automations opt-in),
-  auto-cleans deprecated legacy plugins (agy-connectors, agy-coordinator) on upgrade, writes
+  local MCP subprocesses, zero standalone Node/Python/Git required). Verifies SHA-256 integrity
+  of downloaded bundles (fail-closed), installs all 7 AGY plugins (3 UI panels: My Hub, Skills
+  [with inline Ask Clawy], Preview; agy-twin-automations opt-in), auto-cleans deprecated legacy
+  plugins and credential directories (agy-connectors, agy-coordinator) on upgrade, writes
   BOM-free UTF-8 JSON configs, and preserves user skill toggles, personal skills, and memory.
 #>
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $false)]
   [string]$ZipUrl = "",
+
+  [Parameter(Mandatory = $false)]
+  [string]$Ref = "agy-v2.0.2",
+
+  [Parameter(Mandatory = $false)]
+  [string]$ExpectedSha256 = "",
 
   [Parameter(Mandatory = $false)]
   [string]$GeInstance = "",
@@ -27,8 +34,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$SuiteVersion = "2.0.2"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/main/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
+if ($Ref -notmatch '^[A-Za-z0-9._/-]+$' -or $Ref.Contains('..')) {
+  throw "Refusing invalid -Ref value: $Ref"
+}
+$DefaultZipUrl = "https://raw.githubusercontent.com/peterfishergcp/gps-ai-hub/$Ref/projects/generic-agy-plugin/dist/generic-agy-plugin.zip"
 
 if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $UserHome = [Environment]::GetFolderPath("UserProfile")
@@ -36,10 +47,23 @@ if ([string]::IsNullOrWhiteSpace($TargetConfigDir)) {
   $TargetConfigDir = Join-Path $UserHome ".gemini\config"
 }
 $PluginsDest = Join-Path $TargetConfigDir "plugins"
-$MemoryDataDir = Join-Path $TargetConfigDir "plugin_data\my-antigravity\memory"
+$PluginDataDest = Join-Path $TargetConfigDir "plugin_data"
+$MemoryDataDir = Join-Path $PluginDataDest "my-antigravity\memory"
 
 New-Item -ItemType Directory -Force -Path $PluginsDest | Out-Null
 New-Item -ItemType Directory -Force -Path $MemoryDataDir | Out-Null
+
+function Assert-ZipSha256 {
+  param([string]$ZipPath, [string]$ExpectedHex)
+  $cleanExpected = ($ExpectedHex -replace '^\s+|\s+$', '').Split()[0].ToLowerInvariant()
+  if ($cleanExpected -notmatch '^[0-9a-f]{64}$') {
+    throw "Refusing install: missing or malformed SHA-256 digest."
+  }
+  $actualHex = (Get-FileHash -Algorithm SHA256 -Path $ZipPath).Hash.ToLowerInvariant()
+  if ($actualHex -ne $cleanExpected) {
+    throw "SHA-256 integrity mismatch for $ZipPath (expected $cleanExpected, got $actualHex)"
+  }
+}
 
 function Test-SafeArchiveEntries {
   param([string]$ZipPath, [string]$ExtractRoot)
@@ -86,8 +110,14 @@ try {
     $StageDir = Join-Path $TargetConfigDir (".install_stage_" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
     $ZipFile = Join-Path $StageDir "generic-agy-plugin.zip"
-    Write-Host "Downloading Generic AGY Plugin Suite v2.0.0 (<700 KB)..." -ForegroundColor Cyan
+    Write-Host "Downloading Generic AGY Plugin Suite v$SuiteVersion ($Ref, <700 KB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing
+    if ([string]::IsNullOrWhiteSpace($ExpectedSha256)) {
+      $ShaFile = Join-Path $StageDir "generic-agy-plugin.zip.sha256"
+      Invoke-WebRequest -Uri "$ZipUrl.sha256" -OutFile $ShaFile -UseBasicParsing
+      $ExpectedSha256 = [System.IO.File]::ReadAllText($ShaFile)
+    }
+    Assert-ZipSha256 -ZipPath $ZipFile -ExpectedHex $ExpectedSha256
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
     Test-SafeArchiveEntries -ZipPath $ZipFile -ExtractRoot $ExtractDir
@@ -107,6 +137,13 @@ try {
     $ExtractDir = Join-Path $StageDir "extracted"
     New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
     $LocalZip = Join-Path $SuiteRoot "dist\generic-agy-plugin.zip"
+    $LocalSha = Join-Path $SuiteRoot "dist\generic-agy-plugin.zip.sha256"
+    if ([string]::IsNullOrWhiteSpace($ExpectedSha256) -and (Test-Path $LocalSha)) {
+      $ExpectedSha256 = [System.IO.File]::ReadAllText($LocalSha)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedSha256)) {
+      Assert-ZipSha256 -ZipPath $LocalZip -ExpectedHex $ExpectedSha256
+    }
     Test-SafeArchiveEntries -ZipPath $LocalZip -ExtractRoot $ExtractDir
     Expand-Archive -Path $LocalZip -DestinationPath $ExtractDir -Force
     $SourcePluginsDir = Join-Path $ExtractDir "plugins"
@@ -159,11 +196,15 @@ try {
     }
   }
 
-  # Clean up deprecated plugins from pre-v2.0.0 installs so orphaned sidebar icons disappear cleanly
+  # Clean up deprecated plugins AND their retired credential directories from pre-v2.0.0 installs
   foreach ($legacyP in @("agy-connectors", "agy-coordinator")) {
     $legacyPath = Join-Path $PluginsDest $legacyP
     if (Test-Path $legacyPath) {
       Remove-Item -Recurse -Force -Path $legacyPath
+    }
+    $legacyDataPath = Join-Path $PluginDataDest $legacyP
+    if (Test-Path $legacyDataPath) {
+      Remove-Item -Recurse -Force -Path $legacyDataPath
     }
   }
 
@@ -185,7 +226,7 @@ try {
     Copy-Item -Recurse -Force -Path $dir.FullName -Destination $dest
     $InstalledNames += $dir.Name
   }
-  Write-Host ("Installed {0} zero-footprint AGY plugins (v2.0.0) to {1}: {2}" -f $InstalledNames.Count, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
+  Write-Host ("Installed {0} zero-footprint AGY plugins (v{1}) to {2}: {3}" -f $InstalledNames.Count, $SuiteVersion, $PluginsDest, ($InstalledNames -join ", ")) -ForegroundColor Green
 
   try {
     Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {

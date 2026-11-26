@@ -62,6 +62,18 @@ build/
 *.tar.gz
 *.tgz
 *.rar
+!projects/wv-antigravity-suite/dist/
+!projects/wv-antigravity-suite/dist/*.zip
+!projects/wv-antigravity-suite/dist/*.zip.sha256
+!projects/wv-antigravity-suite/workshop/dist/
+!projects/wv-antigravity-suite/workshop/dist/*.zip
+!projects/wv-antigravity-suite/workshop/dist/*.zip.sha256
+!projects/generic-agy-plugin/dist/
+!projects/generic-agy-plugin/dist/*.zip
+!projects/generic-agy-plugin/dist/*.zip.sha256
+!projects/generic-agy-plugin/workshop/dist/
+!projects/generic-agy-plugin/workshop/dist/*.zip
+!projects/generic-agy-plugin/workshop/dist/*.zip.sha256
 
 # Databases & Logs
 *.db

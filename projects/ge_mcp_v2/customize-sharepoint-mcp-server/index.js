@@ -76,8 +76,6 @@ const TOOLS = buildSharePointV2Tools(
   }
 );
 
-const stateHolder = { lastPayload: null };
-
 const app = createSharePointHttpServer({
   serviceName: "customize-sharepoint-mcp-server",
   version: "2.0.0",
@@ -85,7 +83,7 @@ const app = createSharePointHttpServer({
   getHealthDetails: () => ({
     extensions: ["io.modelcontextprotocol/skills", "io.modelcontextprotocol/ui"],
   }),
-  buildMcpServer(authContext) {
+  buildMcpServer(authContext, req) {
     return createSharePointV2McpInstance({
       serviceName: "customize-sharepoint-mcp-server",
       version: "2.0.0",
@@ -93,7 +91,7 @@ const app = createSharePointHttpServer({
       skillsDir: path.join(__dirname, "skills"),
       appConfig: APP_CONFIG,
       tools: TOOLS,
-      stateHolder,
+      callerAuthHeader: req?.headers?.authorization,
       async executeDomainTool(name, args) {
         try {
           const resultObj = await executeStandardSharePointTool({

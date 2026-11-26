@@ -1,7 +1,7 @@
 {
   "name": "wv-second-brain",
   "displayName": "WV My Hub \u2014 Action Items, Memory, Workflows & TokenEconomics",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "logo": "assets/logo.svg",
   "description": "Zero-footprint Personal Workspace Memory (~/.gemini/config/plugin_data/wv-antigravity/memory/) with the clean WV My Hub UI, Action Items & Topics to catch up on, 4-file initiative tracking, Customize voice & memory editor, TokenEconomics, Adversarial Minto SCQA pre-meeting prep, 4-agent parallel swarm orchestration, 3-Altitude weekly impact ledger, anti-AI-slop editing, and deterministic outbound scrubbing.",
   "suggestedPrompts": [

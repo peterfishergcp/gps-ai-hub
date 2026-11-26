@@ -43,6 +43,27 @@ export function pruneRetiredAgyPlugins(pluginsRoot) {
         removed.push(legacyName);
       } catch {}
     }
+    const pluginDataRoot = path.resolve(resolvedRoot, '..', 'plugin_data');
+    try {
+      const dataRootStat = fs.lstatSync(pluginDataRoot);
+      if (dataRootStat && !dataRootStat.isSymbolicLink() && dataRootStat.isDirectory()) {
+        for (const legacyName of RETIRED_AGY_PLUGINS) {
+          const dataTarget = path.resolve(pluginDataRoot, legacyName);
+          if (dataTarget !== path.join(pluginDataRoot, legacyName)) continue;
+          if (!dataTarget.startsWith(pluginDataRoot + path.sep)) continue;
+          let dst = null;
+          try {
+            dst = fs.lstatSync(dataTarget);
+          } catch {
+            continue;
+          }
+          if (!dst || dst.isSymbolicLink() || !dst.isDirectory()) continue;
+          try {
+            fs.rmSync(dataTarget, { recursive: true, force: true });
+          } catch {}
+        }
+      }
+    } catch {}
   } catch {}
   return removed;
 }

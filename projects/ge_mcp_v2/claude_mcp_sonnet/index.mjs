@@ -16,6 +16,7 @@ const {
   buildMcpAppMeta,
   renderSecureMcpWorkbenchHtml,
   buildV2Capabilities,
+  createScopedPayloadCache,
 } = require("./mcp_v2_extensions.cjs");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -73,19 +74,38 @@ const auth = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
 });
 
-let lastAppPayload = {
-  items: [
-    {
-      id: "ready",
-      title: `Vertex AI Claude Studio (${DEFAULT_MODEL})`,
-      category: "Ready",
-      meta: `Max tokens cap: ${MAX_TOKENS_HARD_CAP}`,
-      snippet: "Enter a prompt above or open the Critique Composer to invoke Anthropic Claude on Vertex AI.",
-    },
-  ],
-};
+function buildDefaultAppPayload() {
+  return {
+    items: [
+      {
+        id: "ready",
+        title: `Vertex AI Claude Studio (${DEFAULT_MODEL})`,
+        category: "Ready",
+        meta: `Max tokens cap: ${MAX_TOKENS_HARD_CAP}`,
+        snippet: "Enter a prompt above or open the Critique Composer to invoke Anthropic Claude on Vertex AI.",
+      },
+    ],
+  };
+}
 
-function renderWorkbenchHtml(payload = lastAppPayload) {
+// Per-caller isolated payload cache (keyed by SHA-256 of caller Bearer token;
+// ADC-fallback / unauthenticated requests never read or write shared state).
+const callerAppPayloadCache = createScopedPayloadCache({
+  maxEntries: 128,
+  ttlMs: 5 * 60 * 1000,
+});
+
+function getCallerAppPayload(authContext) {
+  return (authContext?.bearerToken && callerAppPayloadCache.get(authContext.bearerToken)) || buildDefaultAppPayload();
+}
+
+function setCallerAppPayload(authContext, payload) {
+  if (authContext?.bearerToken && payload) {
+    callerAppPayloadCache.set(authContext.bearerToken, payload);
+  }
+}
+
+function renderWorkbenchHtml(payload = buildDefaultAppPayload()) {
   return renderSecureMcpWorkbenchHtml({
     appUri: APP_URI,
     appTitle: "Vertex AI Claude Reasoning & Critique Studio",
@@ -508,7 +528,7 @@ async function processJsonRpc(rpc, authContext) {
             {
               uri: APP_URI,
               mimeType: MCP_APP_MIME_TYPE,
-              text: renderWorkbenchHtml(lastAppPayload),
+              text: renderWorkbenchHtml(getCallerAppPayload(authContext)),
               _meta: APP_RESOURCE_META,
             },
           ],
@@ -566,8 +586,8 @@ async function processJsonRpc(rpc, authContext) {
               },
             ],
           }
-        : lastAppPayload;
-      lastAppPayload = payload;
+        : getCallerAppPayload(authContext);
+      setCallerAppPayload(authContext, payload);
       return {
         jsonrpc: "2.0",
         id: rpc.id,
@@ -599,7 +619,7 @@ async function processJsonRpc(rpc, authContext) {
           bearerToken: authContext.bearerToken,
           allowMock: authContext.allowMock,
         });
-        lastAppPayload = out.structured;
+        setCallerAppPayload(authContext, out.structured);
         return {
           jsonrpc: "2.0",
           id: rpc.id,

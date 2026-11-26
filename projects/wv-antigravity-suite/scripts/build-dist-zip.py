@@ -97,6 +97,14 @@ def update_manifest_hashes(suite_root: Path) -> None:
 
 def build_zip() -> Path:
     suite_root = Path(__file__).resolve().parent.parent
+    # Keep embedded wv-update installer copies in lockstep with top-level scripts/ before hashing
+    embedded_scripts = suite_root / "plugins" / "wv-onboarding" / "skills" / "wv-update" / "scripts"
+    if embedded_scripts.is_dir():
+        for name in ("install-wv-suite.sh", "install-wv-suite.ps1"):
+            src = suite_root / "scripts" / name
+            if src.is_file():
+                shutil.copy2(src, embedded_scripts / name)
+
     update_manifest_hashes(suite_root)
 
     dist_dir = suite_root / "dist"
@@ -132,10 +140,15 @@ def build_zip() -> Path:
                         rel = fpath.relative_to(suite_root).as_posix()
                         zf.write(fpath, arcname=rel)
 
+    out_sha = dist_dir / f"{out_zip.name}.sha256"
+    zip_sha = sha256_file(out_zip)
+    out_sha.write_text(f"{zip_sha}  {out_zip.name}\n", encoding="utf-8")
+
     workshop_dist = suite_root / "workshop" / "dist"
     if workshop_dist.parent.is_dir():
         workshop_dist.mkdir(parents=True, exist_ok=True)
         shutil.copy2(out_zip, workshop_dist / out_zip.name)
+        shutil.copy2(out_sha, workshop_dist / out_sha.name)
 
     return out_zip
 
